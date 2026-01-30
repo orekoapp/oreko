@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -20,6 +21,14 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+  },
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Ensure Prisma engine binaries are copied
+      config.externals = [...(config.externals || []), '@prisma/client', '.prisma/client'];
+    }
+    return config;
   },
 };
 
