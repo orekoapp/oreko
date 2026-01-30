@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma, Prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { assertNotDemo } from '@/lib/demo/guard';
 import type {
   BusinessProfileData,
   BrandingSettingsData,
@@ -76,6 +77,7 @@ export async function getWorkspace(): Promise<WorkspaceData> {
 
 // Update workspace name
 export async function updateWorkspaceName(name: string): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   await prisma.workspace.update({
@@ -119,6 +121,7 @@ export async function getBusinessProfile(): Promise<BusinessProfileData | null> 
 export async function updateBusinessProfile(
   input: UpdateBusinessProfileInput
 ): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.businessProfile.findUnique({
@@ -163,6 +166,7 @@ export async function updateBusinessProfile(
 
 // Update business logo
 export async function updateBusinessLogo(logoUrl: string | null): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.businessProfile.findUnique({
@@ -219,6 +223,7 @@ export async function getBrandingSettings(): Promise<BrandingSettingsData | null
 export async function updateBrandingSettings(
   input: UpdateBrandingSettingsInput
 ): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.brandingSettings.findUnique({
@@ -287,6 +292,7 @@ export async function getPaymentSettings(): Promise<PaymentSettingsData | null> 
 export async function updatePaymentSettings(
   input: UpdatePaymentSettingsInput
 ): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.paymentSettings.findUnique({
@@ -351,6 +357,7 @@ export async function getTaxRates(): Promise<TaxRateData[]> {
 
 // Create tax rate
 export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: string }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // If setting as default, unset other defaults
@@ -380,6 +387,7 @@ export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: st
 
 // Update tax rate
 export async function updateTaxRate(input: UpdateTaxRateInput): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -416,6 +424,7 @@ export async function updateTaxRate(input: UpdateTaxRateInput): Promise<void> {
 
 // Delete tax rate
 export async function deleteTaxRate(id: string): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -506,6 +515,7 @@ export async function getNumberSequences(): Promise<NumberSequenceData[]> {
 export async function updateNumberSequence(
   input: UpdateNumberSequenceInput
 ): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.numberSequence.findFirst({

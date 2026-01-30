@@ -3,6 +3,7 @@
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { assertNotDemo } from '@/lib/demo/guard';
 import type { OnboardingProgress, OnboardingStep } from './types';
 
 // Helper to get current user's workspace
@@ -106,6 +107,7 @@ export async function getOnboardingProgress(): Promise<OnboardingProgress> {
  * Mark onboarding as complete
  */
 export async function completeOnboarding(): Promise<{ success: boolean }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const workspace = await prisma.workspace.findUnique({
@@ -137,6 +139,7 @@ export async function completeOnboarding(): Promise<{ success: boolean }> {
 export async function skipOnboardingStep(
   step: OnboardingStep
 ): Promise<{ success: boolean }> {
+  await assertNotDemo();
   // Steps like branding and payment can be skipped
   // Just mark progress in workspace metadata if needed
   return { success: true };

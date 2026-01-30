@@ -1,9 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { Prisma } from '@quotecraft/database';
-import { prisma } from '@quotecraft/database';
+import { prisma, Prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { assertNotDemo } from '@/lib/demo/guard';
 import { NotFoundError, UnauthorizedError } from '@/lib/api/errors';
 import type {
   ClientListItem,
@@ -22,10 +22,13 @@ import type {
 import { nanoid } from 'nanoid';
 
 // Helper to convert Decimal to number
-function toNumber(value: Prisma.Decimal | number | null | undefined): number {
+function toNumber(value: unknown): number {
   if (value === null || value === undefined) return 0;
   if (typeof value === 'number') return value;
-  return value.toNumber();
+  if (typeof value === 'object' && value !== null && 'toNumber' in value) {
+    return (value as { toNumber: () => number }).toNumber();
+  }
+  return Number(value) || 0;
 }
 
 // Helper to get current user and their workspace
@@ -365,6 +368,7 @@ export async function getClientActivity(clientId: string): Promise<ClientActivit
 
 // Create client
 export async function createClient(input: CreateClientInput): Promise<{ id: string }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Build metadata
@@ -400,6 +404,7 @@ export async function createClient(input: CreateClientInput): Promise<{ id: stri
 
 // Update client
 export async function updateClient(input: UpdateClientInput): Promise<{ id: string }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -460,6 +465,7 @@ export async function updateClient(input: UpdateClientInput): Promise<{ id: stri
 
 // Delete client (soft delete)
 export async function deleteClient(id: string): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -485,6 +491,7 @@ export async function deleteClient(id: string): Promise<void> {
 
 // Bulk delete clients
 export async function deleteClients(ids: string[]): Promise<{ deleted: number }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const result = await prisma.client.updateMany({
@@ -566,6 +573,7 @@ export async function importClients(
   }>,
   skipDuplicates = true
 ): Promise<ClientImportResult> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const result: ClientImportResult = {

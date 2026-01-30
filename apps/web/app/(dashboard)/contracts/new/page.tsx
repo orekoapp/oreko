@@ -51,7 +51,7 @@ export default async function NewContractPage({ searchParams }: PageProps) {
           name: c.name,
           company: c.company,
         }))}
-        quotes={quotesResult.quotes.map((q) => ({
+        quotes={quotesResult.quotes.map((q: { id: string; title: string }) => ({
           id: q.id,
           title: q.title,
         }))}

@@ -7,12 +7,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Play } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { DEMO_CONFIG } from '@/lib/demo/constants';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -27,6 +28,7 @@ export function LoginForm() {
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const [isLoading, setIsLoading] = React.useState(false);
   const [isOAuthLoading, setIsOAuthLoading] = React.useState<string | null>(null);
+  const [isDemoLoading, setIsDemoLoading] = React.useState(false);
 
   const {
     register,
@@ -70,6 +72,34 @@ export function LoginForm() {
       toast.error('Something went wrong. Please try again.');
     } finally {
       setIsOAuthLoading(null);
+    }
+  }
+
+  async function onDemoSignIn() {
+    setIsDemoLoading(true);
+
+    try {
+      const result = await signIn('credentials', {
+        email: DEMO_CONFIG.email,
+        password: DEMO_CONFIG.password,
+        redirect: false,
+        callbackUrl: '/dashboard',
+      });
+
+      if (result?.error) {
+        toast.error('Unable to start demo. Please try again.');
+        return;
+      }
+
+      toast.success('Welcome to the demo!', {
+        description: 'Explore all features - changes won\'t be saved.',
+      });
+      router.push('/dashboard');
+      router.refresh();
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsDemoLoading(false);
     }
   }
 
@@ -127,7 +157,7 @@ export function LoginForm() {
           <Button
             variant="outline"
             onClick={() => onOAuthSignIn('google')}
-            disabled={isOAuthLoading !== null}
+            disabled={isOAuthLoading !== null || isDemoLoading}
           >
             {isOAuthLoading === 'google' ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -157,7 +187,7 @@ export function LoginForm() {
           <Button
             variant="outline"
             onClick={() => onOAuthSignIn('github')}
-            disabled={isOAuthLoading !== null}
+            disabled={isOAuthLoading !== null || isDemoLoading}
           >
             {isOAuthLoading === 'github' ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -169,6 +199,30 @@ export function LoginForm() {
             GitHub
           </Button>
         </div>
+
+        {/* Demo Mode Button */}
+        <div className="relative w-full">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">Or try it first</span>
+          </div>
+        </div>
+
+        <Button
+          variant="secondary"
+          className="w-full bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-900/20 dark:text-amber-100 dark:hover:bg-amber-900/30"
+          onClick={onDemoSignIn}
+          disabled={isLoading || isOAuthLoading !== null || isDemoLoading}
+        >
+          {isDemoLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Play className="mr-2 h-4 w-4" />
+          )}
+          Try Demo (No Sign-up Required)
+        </Button>
       </CardFooter>
     </Card>
   );

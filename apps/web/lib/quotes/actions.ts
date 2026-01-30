@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma, type Prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { assertNotDemo } from '@/lib/demo/guard';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 
 /**
@@ -59,6 +60,7 @@ export async function createQuote(data: {
   clientId: string;
   blocks?: QuoteBlock[];
 }) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const quoteNumber = await generateQuoteNumber(workspace.id);
@@ -126,6 +128,7 @@ export async function updateQuote(
     settings?: Record<string, unknown>;
   }
 ) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   // Verify quote belongs to workspace
@@ -329,6 +332,7 @@ export async function getQuotes(options?: {
  * Delete a quote (soft delete)
  */
 export async function deleteQuote(quoteId: string) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   await prisma.quote.update({
@@ -350,6 +354,7 @@ export async function deleteQuote(quoteId: string) {
  * Duplicate a quote
  */
 export async function duplicateQuote(quoteId: string) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const original = await prisma.quote.findFirst({
@@ -411,6 +416,7 @@ export async function updateQuoteStatus(
   quoteId: string,
   status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired'
 ) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const statusTimestamps: Record<string, string> = {

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma, Prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { assertNotDemo } from '@/lib/demo/guard';
 import type {
   RateCardListItem,
   RateCardDetail,
@@ -190,6 +191,7 @@ export async function getRateCardById(id: string): Promise<RateCardDetail> {
 
 // Create rate card
 export async function createRateCard(input: CreateRateCardInput): Promise<{ id: string }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const rateCard = await prisma.rateCard.create({
@@ -213,6 +215,7 @@ export async function createRateCard(input: CreateRateCardInput): Promise<{ id: 
 
 // Update rate card
 export async function updateRateCard(input: UpdateRateCardInput): Promise<{ id: string }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -260,6 +263,7 @@ export async function updateRateCard(input: UpdateRateCardInput): Promise<{ id: 
 
 // Delete rate card (soft delete)
 export async function deleteRateCard(id: string): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -285,6 +289,7 @@ export async function deleteRateCard(id: string): Promise<void> {
 
 // Bulk delete rate cards
 export async function bulkDeleteRateCards(ids: string[]): Promise<{ deleted: number }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const result = await prisma.rateCard.updateMany({
@@ -303,6 +308,7 @@ export async function bulkDeleteRateCards(ids: string[]): Promise<{ deleted: num
 
 // Toggle rate card active status
 export async function toggleRateCardActive(id: string): Promise<{ isActive: boolean }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.rateCard.findFirst({
@@ -332,6 +338,7 @@ export async function duplicateRateCard(
   id: string,
   newName?: string
 ): Promise<{ id: string }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.rateCard.findFirst({
@@ -478,6 +485,7 @@ export async function getCategories(): Promise<CategoryListItem[]> {
 
 // Create category
 export async function createCategory(input: CreateCategoryInput): Promise<{ id: string }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Get max sort order
@@ -502,6 +510,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<{ id: 
 
 // Update category
 export async function updateCategory(input: UpdateCategoryInput): Promise<{ id: string }> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -532,6 +541,7 @@ export async function updateCategory(input: UpdateCategoryInput): Promise<{ id: 
 
 // Delete category
 export async function deleteCategory(id: string): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -564,6 +574,7 @@ export async function deleteCategory(id: string): Promise<void> {
 export async function reorderCategories(
   categoryIds: string[]
 ): Promise<void> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Update sort orders in transaction
@@ -595,6 +606,7 @@ export async function importRateCards(
   }>,
   options: { skipDuplicates?: boolean } = {}
 ): Promise<RateCardImportResult> {
+  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
   const { skipDuplicates = true } = options;
 

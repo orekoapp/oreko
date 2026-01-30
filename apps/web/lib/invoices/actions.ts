@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma, type Prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { assertNotDemo } from '@/lib/demo/guard';
 import type {
   InvoiceDocument,
   InvoiceListItem,
@@ -82,6 +83,7 @@ function calculateTotals(
  * Create a new invoice
  */
 export async function createInvoice(data: CreateInvoiceData) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const invoiceNumber = await generateInvoiceNumber(workspace.id);
@@ -134,6 +136,7 @@ export async function createInvoice(data: CreateInvoiceData) {
  * Create invoice from an accepted quote
  */
 export async function createInvoiceFromQuote(quoteId: string) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   // Get the quote with line items
@@ -242,6 +245,7 @@ export async function createInvoiceFromQuote(quoteId: string) {
  * Update an existing invoice
  */
 export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const existingInvoice = await prisma.invoice.findFirst({
@@ -471,6 +475,7 @@ export async function updateInvoiceStatus(
   invoiceId: string,
   status: InvoiceStatus
 ) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const invoice = await prisma.invoice.findFirst({
@@ -541,6 +546,7 @@ export async function sendInvoice(invoiceId: string) {
  * Delete (soft delete) an invoice
  */
 export async function deleteInvoice(invoiceId: string) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const invoice = await prisma.invoice.findFirst({
@@ -582,6 +588,7 @@ export async function recordPayment(
     notes?: string;
   }
 ) {
+  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const invoice = await prisma.invoice.findFirst({
