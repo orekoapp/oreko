@@ -4,7 +4,7 @@ import path from 'path';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@quotecraft/ui', '@quotecraft/utils', '@quotecraft/types'],
-  serverExternalPackages: ['@prisma/client', '.prisma/client'],
+  serverExternalPackages: ['@prisma/client'],
   images: {
     remotePatterns: [
       {
@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
   },
   // For monorepo with Prisma, include root directory in file tracing
   outputFileTracingRoot: path.resolve('./../../'),
+  outputFileTracingIncludes: {
+    '/**/*': ['../../node_modules/.pnpm/@prisma*/**/*', '../../node_modules/.prisma/**/*'],
+  },
 };
 
 export default nextConfig;
