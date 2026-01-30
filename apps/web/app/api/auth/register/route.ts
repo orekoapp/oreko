@@ -9,6 +9,16 @@ const registerSchema = z.object({
   password: z.string().min(8),
 });
 
+// Generate a unique workspace slug from name
+function generateSlug(name: string): string {
+  const baseSlug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return `${baseSlug}-${randomSuffix}`;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -29,21 +39,49 @@ export async function POST(request: Request) {
     // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      },
+    // Create user with workspace in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create user
+      const user = await tx.user.create({
+        data: {
+          name,
+          email,
+          passwordHash,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+
+      // Create workspace for the user
+      const workspaceName = `${name}'s Workspace`;
+      const workspace = await tx.workspace.create({
+        data: {
+          name: workspaceName,
+          slug: generateSlug(name),
+          ownerId: user.id,
+          settings: {
+            onboardingCompleted: false,
+          },
+        },
+      });
+
+      // Add user as workspace member with owner role
+      await tx.workspaceMember.create({
+        data: {
+          workspaceId: workspace.id,
+          userId: user.id,
+          role: 'owner',
+          acceptedAt: new Date(),
+        },
+      });
+
+      return user;
     });
 
-    return NextResponse.json({ user }, { status: 201 });
+    return NextResponse.json({ user: result }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
