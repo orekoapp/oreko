@@ -261,6 +261,9 @@ importers:
       '@playwright/test':
         specifier: ^1.49.0
         version: 1.58.0
+      '@prisma/nextjs-monorepo-workaround-plugin':
+        specifier: ^7.3.0
+        version: 7.3.0
       '@testing-library/jest-dom':
         specifier: ^6.6.0
         version: 6.9.1
@@ -1219,6 +1222,9 @@ packages:
 
   '@prisma/get-platform@6.19.2':
     resolution: {integrity: sha512-PGLr06JUSTqIvztJtAzIxOwtWKtJm5WwOG6xpsgD37Rc84FpfUBGLKz65YpJBGtkRQGXTYEFie7pYALocC3MtA==}
+
+  '@prisma/nextjs-monorepo-workaround-plugin@7.3.0':
+    resolution: {integrity: sha512-6Qvce1fa78asGdzoseexupJswW45ZFYIcQ3NZ/PZn9TfBSHOsloT6udnZtIaqI6aa3HccxsTKXKK6I/ASM7hkw==}
 
   '@puppeteer/browsers@2.11.2':
     resolution: {integrity: sha512-GBY0+2lI9fDrjgb5dFL9+enKXqyOPok9PXg/69NVkjW3bikbK9RQrNrI3qccQXmDNN7ln4j/yL89Qgvj/tfqrw==}
@@ -5962,6 +5968,8 @@ snapshots:
   '@prisma/get-platform@6.19.2':
     dependencies:
       '@prisma/debug': 6.19.2
+
+  '@prisma/nextjs-monorepo-workaround-plugin@7.3.0': {}
 
   '@puppeteer/browsers@2.11.2':
     dependencies:

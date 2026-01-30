@@ -1,10 +1,9 @@
 import type { NextConfig } from 'next';
-import path from 'path';
+import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@quotecraft/ui', '@quotecraft/utils', '@quotecraft/types'],
-  serverExternalPackages: ['@prisma/client'],
   images: {
     remotePatterns: [
       {
@@ -22,10 +21,11 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  // For monorepo with Prisma, include root directory in file tracing
-  outputFileTracingRoot: path.resolve('./../../'),
-  outputFileTracingIncludes: {
-    '/**/*': ['../../node_modules/.pnpm/@prisma*/**/*', '../../node_modules/.prisma/**/*'],
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.plugins = [...config.plugins, new PrismaPlugin()];
+    }
+    return config;
   },
 };
 
