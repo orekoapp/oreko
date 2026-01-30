@@ -1,0 +1,760 @@
+// packages/database/prisma/schema.prisma
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String?   @map("password_hash")
+  name            String?
+  avatarUrl       String?   @map("avatar_url")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  // Relations
+  accounts            Account[]
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  workspaceMembers    WorkspaceMember[]
+  ownedWorkspaces     Workspace[]          @relation("WorkspaceOwner")
+  workspaceInvites    WorkspaceInvitation[] @relation("InvitedBy")
+  quoteEvents         QuoteEvent[]
+  invoiceEvents       InvoiceEvent[]
+  attachments         Attachment[]
+
+  @@index([email])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refreshToken      String? @map("refresh_token") @db.Text
+  accessToken       String? @map("access_token") @db.Text
+  expiresAt         Int?    @map("expires_at")
+  tokenType         String? @map("token_type")
+  scope             String?
+  idToken           String? @map("id_token") @db.Text
+  sessionState      String? @map("session_state")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  sessionToken String   @unique @map("session_token")
+  expiresAt    DateTime @map("expires_at")
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expiresAt  DateTime @map("expires_at")
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================
+// WORKSPACE & ORGANIZATION
+// ============================================
+
+model Workspace {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  ownerId   String    @map("owner_id")
+  settings  Json      @default("{}")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  owner              User                  @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  members            WorkspaceMember[]
+  invitations        WorkspaceInvitation[]
+  businessProfile    BusinessProfile?
+  clients            Client[]
+  clientTags         ClientTag[]
+  rateCardCategories RateCardCategory[]
+  rateCards          RateCard[]
+  quotes             Quote[]
+  invoices           Invoice[]
+  contracts          Contract[]
+  contractInstances  ContractInstance[]
+  emailTemplates     EmailTemplate[]
+  scheduledEmails    ScheduledEmail[]
+  taxRates           TaxRate[]
+  paymentSettings    PaymentSettings?
+  brandingSettings   BrandingSettings?
+  numberSequences    NumberSequence[]
+  attachments        Attachment[]
+
+  @@index([slug])
+  @@index([ownerId])
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  userId      String    @map("user_id")
+  role        String    @default("member")
+  invitedAt   DateTime? @map("invited_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("workspace_members")
+}
+
+model WorkspaceInvitation {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  email       String
+  role        String    @default("member")
+  token       String    @unique
+  invitedById String    @map("invited_by_id")
+  expiresAt   DateTime  @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@index([workspaceId])
+  @@index([email])
+  @@map("workspace_invitations")
+}
+
+model BusinessProfile {
+  workspaceId  String   @id @map("workspace_id")
+  businessName String   @map("business_name")
+  logoUrl      String?  @map("logo_url")
+  email        String?
+  phone        String?  @db.VarChar(50)
+  website      String?
+  address      Json?
+  taxId        String?  @map("tax_id") @db.VarChar(100)
+  currency     String   @default("USD") @db.VarChar(3)
+  timezone     String   @default("UTC") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("business_profiles")
+}
+
+// ============================================
+// CLIENTS
+// ============================================
+
+model Client {
+  id             String    @id @default(uuid())
+  workspaceId    String    @map("workspace_id")
+  name           String
+  company        String?
+  email          String
+  phone          String?   @db.VarChar(50)
+  address        Json?
+  billingAddress Json?     @map("billing_address")
+  taxId          String?   @map("tax_id") @db.VarChar(100)
+  notes          String?   @db.Text
+  metadata       Json      @default("{}")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  // Relations
+  workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tags              ClientTagAssignment[]
+  quotes            Quote[]
+  invoices          Invoice[]
+  contractInstances ContractInstance[]
+
+  @@index([workspaceId])
+  @@index([email])
+  @@index([company])
+  @@index([workspaceId, deletedAt])
+  @@map("clients")
+}
+
+model ClientTag {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  name        String   @db.VarChar(50)
+  color       String?  @db.VarChar(7)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  clients   ClientTagAssignment[]
+
+  @@unique([workspaceId, name])
+  @@map("client_tags")
+}
+
+model ClientTagAssignment {
+  clientId String @map("client_id")
+  tagId    String @map("tag_id")
+
+  client Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tag    ClientTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, tagId])
+  @@map("client_tag_assignments")
+}
+
+// ============================================
+// RATE CARDS
+// ============================================
+
+model RateCardCategory {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  name        String   @db.VarChar(100)
+  color       String?  @db.VarChar(7)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rateCards RateCard[]
+
+  @@unique([workspaceId, name])
+  @@map("rate_card_categories")
+}
+
+model RateCard {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  categoryId  String?   @map("category_id")
+  name        String
+  description String?   @db.Text
+  pricingType String    @default("fixed") @map("pricing_type") @db.VarChar(20)
+  rate        Decimal   @db.Decimal(12, 2)
+  unit        String?   @db.VarChar(50)
+  taxRateId   String?   @map("tax_rate_id")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  category         RateCardCategory? @relation(fields: [categoryId], references: [id])
+  taxRate          TaxRate?          @relation(fields: [taxRateId], references: [id])
+  quoteLineItems   QuoteLineItem[]
+  invoiceLineItems InvoiceLineItem[]
+
+  @@index([workspaceId])
+  @@index([categoryId])
+  @@index([workspaceId, isActive])
+  @@map("rate_cards")
+}
+
+// ============================================
+// QUOTES
+// ============================================
+
+model Quote {
+  id                   String    @id @default(uuid())
+  workspaceId          String    @map("workspace_id")
+  clientId             String    @map("client_id")
+  quoteNumber          String    @map("quote_number") @db.VarChar(50)
+  status               String    @default("draft") @db.VarChar(20)
+  title                String?
+  issueDate            DateTime  @default(now()) @map("issue_date") @db.Date
+  expirationDate       DateTime? @map("expiration_date") @db.Date
+  subtotal             Decimal   @default(0) @db.Decimal(12, 2)
+  discountType         String?   @map("discount_type") @db.VarChar(10)
+  discountValue        Decimal?  @map("discount_value") @db.Decimal(12, 2)
+  discountAmount       Decimal   @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  taxTotal             Decimal   @default(0) @map("tax_total") @db.Decimal(12, 2)
+  total                Decimal   @default(0) @db.Decimal(12, 2)
+  notes                String?   @db.Text
+  terms                String?   @db.Text
+  internalNotes        String?   @map("internal_notes") @db.Text
+  settings             Json      @default("{}")
+  accessToken          String    @unique @default(uuid()) @map("access_token") @db.VarChar(100)
+  viewedAt             DateTime? @map("viewed_at")
+  viewCount            Int       @default(0) @map("view_count")
+  sentAt               DateTime? @map("sent_at")
+  acceptedAt           DateTime? @map("accepted_at")
+  declinedAt           DateTime? @map("declined_at")
+  signedAt             DateTime? @map("signed_at")
+  signatureData        Json?     @map("signature_data")
+  convertedToInvoiceId String?   @map("converted_to_invoice_id")
+  pdfUrl               String?   @map("pdf_url")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  deletedAt            DateTime? @map("deleted_at")
+
+  // Relations
+  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client            Client             @relation(fields: [clientId], references: [id])
+  lineItems         QuoteLineItem[]
+  events            QuoteEvent[]
+  invoice           Invoice?
+  contractInstances ContractInstance[]
+
+  @@unique([workspaceId, quoteNumber])
+  @@index([workspaceId])
+  @@index([clientId])
+  @@index([status])
+  @@index([accessToken])
+  @@index([workspaceId, status])
+  @@index([expirationDate])
+  @@index([createdAt(sort: Desc)])
+  @@map("quotes")
+}
+
+model QuoteLineItem {
+  id          String   @id @default(uuid())
+  quoteId     String   @map("quote_id")
+  rateCardId  String?  @map("rate_card_id")
+  name        String
+  description String?  @db.Text
+  quantity    Decimal  @default(1) @db.Decimal(10, 2)
+  rate        Decimal  @db.Decimal(12, 2)
+  amount      Decimal  @db.Decimal(12, 2)
+  taxRate     Decimal? @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount   Decimal  @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  quote    Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  rateCard RateCard? @relation(fields: [rateCardId], references: [id])
+
+  @@index([quoteId])
+  @@index([quoteId, sortOrder])
+  @@map("quote_line_items")
+}
+
+model QuoteEvent {
+  id        String   @id @default(uuid())
+  quoteId   String   @map("quote_id")
+  eventType String   @map("event_type") @db.VarChar(50)
+  actorId   String?  @map("actor_id")
+  actorType String   @default("user") @map("actor_type") @db.VarChar(20)
+  metadata  Json     @default("{}")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([quoteId])
+  @@index([createdAt(sort: Desc)])
+  @@map("quote_events")
+}
+
+// ============================================
+// INVOICES
+// ============================================
+
+model Invoice {
+  id             String    @id @default(uuid())
+  workspaceId    String    @map("workspace_id")
+  clientId       String    @map("client_id")
+  quoteId        String?   @unique @map("quote_id")
+  invoiceNumber  String    @map("invoice_number") @db.VarChar(50)
+  status         String    @default("draft") @db.VarChar(20)
+  title          String?
+  issueDate      DateTime  @default(now()) @map("issue_date") @db.Date
+  dueDate        DateTime  @map("due_date") @db.Date
+  subtotal       Decimal   @default(0) @db.Decimal(12, 2)
+  discountType   String?   @map("discount_type") @db.VarChar(10)
+  discountValue  Decimal?  @map("discount_value") @db.Decimal(12, 2)
+  discountAmount Decimal   @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  taxTotal       Decimal   @default(0) @map("tax_total") @db.Decimal(12, 2)
+  total          Decimal   @default(0) @db.Decimal(12, 2)
+  amountPaid     Decimal   @default(0) @map("amount_paid") @db.Decimal(12, 2)
+  amountDue      Decimal   @default(0) @map("amount_due") @db.Decimal(12, 2)
+  notes          String?   @db.Text
+  terms          String?   @db.Text
+  internalNotes  String?   @map("internal_notes") @db.Text
+  settings       Json      @default("{}")
+  accessToken    String    @unique @default(uuid()) @map("access_token") @db.VarChar(100)
+  viewedAt       DateTime? @map("viewed_at")
+  viewCount      Int       @default(0) @map("view_count")
+  sentAt         DateTime? @map("sent_at")
+  paidAt         DateTime? @map("paid_at")
+  voidedAt       DateTime? @map("voided_at")
+  pdfUrl         String?   @map("pdf_url")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  // Relations
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client           Client            @relation(fields: [clientId], references: [id])
+  quote            Quote?            @relation(fields: [quoteId], references: [id])
+  lineItems        InvoiceLineItem[]
+  events           InvoiceEvent[]
+  payments         Payment[]
+  paymentSchedules PaymentSchedule[]
+
+  @@unique([workspaceId, invoiceNumber])
+  @@index([workspaceId])
+  @@index([clientId])
+  @@index([quoteId])
+  @@index([status])
+  @@index([accessToken])
+  @@index([workspaceId, status])
+  @@index([dueDate])
+  @@index([createdAt(sort: Desc)])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(uuid())
+  invoiceId   String   @map("invoice_id")
+  rateCardId  String?  @map("rate_card_id")
+  name        String
+  description String?  @db.Text
+  quantity    Decimal  @default(1) @db.Decimal(10, 2)
+  rate        Decimal  @db.Decimal(12, 2)
+  amount      Decimal  @db.Decimal(12, 2)
+  taxRate     Decimal? @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount   Decimal  @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  invoice  Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  rateCard RateCard? @relation(fields: [rateCardId], references: [id])
+
+  @@index([invoiceId])
+  @@index([invoiceId, sortOrder])
+  @@map("invoice_line_items")
+}
+
+model InvoiceEvent {
+  id        String   @id @default(uuid())
+  invoiceId String   @map("invoice_id")
+  eventType String   @map("event_type") @db.VarChar(50)
+  actorId   String?  @map("actor_id")
+  actorType String   @default("user") @map("actor_type") @db.VarChar(20)
+  metadata  Json     @default("{}")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  actor   User?   @relation(fields: [actorId], references: [id])
+
+  @@index([invoiceId])
+  @@index([createdAt(sort: Desc)])
+  @@map("invoice_events")
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+
+model Payment {
+  id                    String    @id @default(uuid())
+  invoiceId             String    @map("invoice_id")
+  amount                Decimal   @db.Decimal(12, 2)
+  currency              String    @default("USD") @db.VarChar(3)
+  paymentMethod         String    @map("payment_method") @db.VarChar(20)
+  status                String    @default("pending") @db.VarChar(20)
+  stripePaymentIntentId String?   @map("stripe_payment_intent_id")
+  stripeChargeId        String?   @map("stripe_charge_id")
+  stripeReceiptUrl      String?   @map("stripe_receipt_url")
+  referenceNumber       String?   @map("reference_number") @db.VarChar(100)
+  notes                 String?   @db.Text
+  processedAt           DateTime? @map("processed_at")
+  refundedAt            DateTime? @map("refunded_at")
+  refundAmount          Decimal?  @map("refund_amount") @db.Decimal(12, 2)
+  refundReason          String?   @map("refund_reason") @db.Text
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  invoice          Invoice           @relation(fields: [invoiceId], references: [id])
+  paymentSchedules PaymentSchedule[]
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([stripePaymentIntentId])
+  @@index([createdAt(sort: Desc)])
+  @@map("payments")
+}
+
+model PaymentSchedule {
+  id          String    @id @default(uuid())
+  invoiceId   String    @map("invoice_id")
+  type        String    @db.VarChar(20)
+  description String?
+  amount      Decimal?  @db.Decimal(12, 2)
+  percentage  Decimal?  @db.Decimal(5, 2)
+  dueDate     DateTime  @map("due_date") @db.Date
+  status      String    @default("pending") @db.VarChar(20)
+  paymentId   String?   @map("payment_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([invoiceId])
+  @@index([dueDate, status])
+  @@map("payment_schedules")
+}
+
+// ============================================
+// CONTRACTS
+// ============================================
+
+model Contract {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  name        String
+  content     String    @db.Text
+  isTemplate  Boolean   @default(false) @map("is_template")
+  variables   Json      @default("[]")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  instances ContractInstance[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, isTemplate])
+  @@map("contracts")
+}
+
+model ContractInstance {
+  id              String    @id @default(uuid())
+  contractId      String    @map("contract_id")
+  quoteId         String?   @map("quote_id")
+  clientId        String    @map("client_id")
+  workspaceId     String    @map("workspace_id")
+  content         String    @db.Text
+  status          String    @default("draft") @db.VarChar(20)
+  accessToken     String    @unique @default(uuid()) @map("access_token") @db.VarChar(100)
+  sentAt          DateTime? @map("sent_at")
+  viewedAt        DateTime? @map("viewed_at")
+  signedAt        DateTime? @map("signed_at")
+  signatureData   Json?     @map("signature_data")
+  signerIpAddress String?   @map("signer_ip_address") @db.VarChar(45)
+  signerUserAgent String?   @map("signer_user_agent") @db.Text
+  pdfUrl          String?   @map("pdf_url")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  contract  Contract  @relation(fields: [contractId], references: [id])
+  quote     Quote?    @relation(fields: [quoteId], references: [id])
+  client    Client    @relation(fields: [clientId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([quoteId])
+  @@index([clientId])
+  @@index([accessToken])
+  @@map("contract_instances")
+}
+
+// ============================================
+// EMAIL & NOTIFICATIONS
+// ============================================
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  type        String   @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  subject     String
+  body        String   @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  scheduledEmails ScheduledEmail[]
+
+  @@index([workspaceId, type])
+  @@map("email_templates")
+}
+
+model ScheduledEmail {
+  id             String    @id @default(uuid())
+  workspaceId    String    @map("workspace_id")
+  templateId     String?   @map("template_id")
+  type           String    @db.VarChar(50)
+  entityType     String    @map("entity_type") @db.VarChar(20)
+  entityId       String    @map("entity_id")
+  recipientEmail String    @map("recipient_email")
+  recipientName  String?   @map("recipient_name")
+  subject        String
+  body           String    @db.Text
+  scheduledFor   DateTime  @map("scheduled_for")
+  status         String    @default("pending") @db.VarChar(20)
+  sentAt         DateTime? @map("sent_at")
+  errorMessage   String?   @map("error_message") @db.Text
+  retryCount     Int       @default(0) @map("retry_count")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  template  EmailTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([scheduledFor, status])
+  @@index([entityType, entityId])
+  @@map("scheduled_emails")
+}
+
+// ============================================
+// SETTINGS & CONFIGURATION
+// ============================================
+
+model TaxRate {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  name        String   @db.VarChar(100)
+  rate        Decimal  @db.Decimal(5, 2)
+  description String?
+  isInclusive Boolean  @default(false) @map("is_inclusive")
+  isDefault   Boolean  @default(false) @map("is_default")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rateCards RateCard[]
+
+  @@index([workspaceId])
+  @@map("tax_rates")
+}
+
+model PaymentSettings {
+  workspaceId              String   @id @map("workspace_id")
+  stripeAccountId          String?  @map("stripe_account_id")
+  stripeAccountStatus      String?  @map("stripe_account_status") @db.VarChar(20)
+  stripeOnboardingComplete Boolean  @default(false) @map("stripe_onboarding_complete")
+  enabledPaymentMethods    Json     @default("[\"card\"]") @map("enabled_payment_methods")
+  passProcessingFees       Boolean  @default(false) @map("pass_processing_fees")
+  defaultPaymentTerms      Int      @default(30) @map("default_payment_terms")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("payment_settings")
+}
+
+model BrandingSettings {
+  workspaceId    String   @id @map("workspace_id")
+  primaryColor   String?  @map("primary_color") @db.VarChar(7)
+  secondaryColor String?  @map("secondary_color") @db.VarChar(7)
+  accentColor    String?  @map("accent_color") @db.VarChar(7)
+  logoUrl        String?  @map("logo_url")
+  faviconUrl     String?  @map("favicon_url")
+  customCss      String?  @map("custom_css") @db.Text
+  fontFamily     String?  @map("font_family") @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("branding_settings")
+}
+
+model NumberSequence {
+  id           String   @id @default(uuid())
+  workspaceId  String   @map("workspace_id")
+  type         String   @db.VarChar(20)
+  prefix       String?  @db.VarChar(20)
+  suffix       String?  @db.VarChar(20)
+  currentValue Int      @default(0) @map("current_value")
+  padding      Int      @default(4)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, type])
+  @@map("number_sequences")
+}
+
+// ============================================
+// FILE ATTACHMENTS
+// ============================================
+
+model Attachment {
+  id           String    @id @default(uuid())
+  workspaceId  String    @map("workspace_id")
+  entityType   String    @map("entity_type") @db.VarChar(20)
+  entityId     String    @map("entity_id")
+  filename     String
+  filePath     String    @map("file_path")
+  fileSize     Int       @map("file_size")
+  mimeType     String    @map("mime_type") @db.VarChar(100)
+  uploadedById String    @map("uploaded_by_id")
+  isPublic     Boolean   @default(false) @map("is_public")
+  uploadedAt   DateTime  @default(now()) @map("uploaded_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  uploadedBy User      @relation(fields: [uploadedById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([workspaceId])
+  @@map("attachments")
+}

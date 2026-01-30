@@ -1,0 +1,659 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { prisma, type Prisma } from '@quotecraft/database';
+import { auth } from '@/lib/auth';
+import type {
+  InvoiceDocument,
+  InvoiceListItem,
+  InvoiceStatus,
+  CreateInvoiceData,
+  UpdateInvoiceData,
+  DEFAULT_INVOICE_SETTINGS,
+} from './types';
+
+/**
+ * Get the current user's active workspace
+ */
+async function getActiveWorkspace() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  const membership = await prisma.workspaceMember.findFirst({
+    where: { userId: session.user.id },
+    include: { workspace: true },
+  });
+
+  if (!membership) {
+    throw new Error('No workspace found');
+  }
+
+  return {
+    userId: session.user.id,
+    workspace: membership.workspace,
+  };
+}
+
+/**
+ * Generate the next invoice number for a workspace
+ */
+async function generateInvoiceNumber(workspaceId: string): Promise<string> {
+  const lastInvoice = await prisma.invoice.findFirst({
+    where: { workspaceId },
+    orderBy: { createdAt: 'desc' },
+    select: { invoiceNumber: true },
+  });
+
+  const lastNumber = lastInvoice?.invoiceNumber
+    ? parseInt(lastInvoice.invoiceNumber.replace(/\D/g, ''), 10) || 0
+    : 0;
+
+  const nextNumber = lastNumber + 1;
+  return `INV-${String(nextNumber).padStart(4, '0')}`;
+}
+
+/**
+ * Calculate totals from line items
+ */
+function calculateTotals(
+  lineItems: Array<{ quantity: number; rate: number; taxRate?: number }>
+) {
+  let subtotal = 0;
+  let taxTotal = 0;
+
+  for (const item of lineItems) {
+    const amount = item.quantity * item.rate;
+    subtotal += amount;
+    if (item.taxRate) {
+      taxTotal += amount * (item.taxRate / 100);
+    }
+  }
+
+  return {
+    subtotal: Math.round(subtotal * 100) / 100,
+    taxTotal: Math.round(taxTotal * 100) / 100,
+    total: Math.round((subtotal + taxTotal) * 100) / 100,
+  };
+}
+
+/**
+ * Create a new invoice
+ */
+export async function createInvoice(data: CreateInvoiceData) {
+  const { userId, workspace } = await getActiveWorkspace();
+
+  const invoiceNumber = await generateInvoiceNumber(workspace.id);
+  const { subtotal, taxTotal, total } = calculateTotals(data.lineItems);
+
+  const lineItems = data.lineItems.map((item, index) => ({
+    name: item.name,
+    description: item.description || null,
+    quantity: item.quantity,
+    rate: item.rate,
+    amount: item.quantity * item.rate,
+    taxRate: item.taxRate || null,
+    taxAmount: item.taxRate ? item.quantity * item.rate * (item.taxRate / 100) : 0,
+    sortOrder: index,
+  }));
+
+  const invoice = await prisma.invoice.create({
+    data: {
+      workspaceId: workspace.id,
+      clientId: data.clientId,
+      invoiceNumber,
+      title: data.title,
+      status: 'draft',
+      issueDate: new Date(),
+      dueDate: new Date(data.dueDate),
+      subtotal,
+      taxTotal,
+      total,
+      amountDue: total,
+      notes: data.notes || null,
+      terms: data.terms || null,
+      internalNotes: data.internalNotes || null,
+      settings: {} as unknown as Prisma.InputJsonValue,
+      lineItems: {
+        create: lineItems,
+      },
+    },
+    include: {
+      lineItems: true,
+      client: true,
+    },
+  });
+
+  revalidatePath('/invoices');
+
+  return { success: true, invoice };
+}
+
+/**
+ * Create invoice from an accepted quote
+ */
+export async function createInvoiceFromQuote(quoteId: string) {
+  const { userId, workspace } = await getActiveWorkspace();
+
+  // Get the quote with line items
+  const quote = await prisma.quote.findFirst({
+    where: {
+      id: quoteId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+    include: {
+      lineItems: {
+        orderBy: { sortOrder: 'asc' },
+      },
+      client: true,
+    },
+  });
+
+  if (!quote) {
+    return { success: false, error: 'Quote not found' };
+  }
+
+  // Check if an invoice already exists for this quote
+  const existingInvoice = await prisma.invoice.findFirst({
+    where: { quoteId: quote.id },
+  });
+
+  if (existingInvoice) {
+    return { success: false, error: 'Invoice already exists for this quote' };
+  }
+
+  const invoiceNumber = await generateInvoiceNumber(workspace.id);
+
+  // Calculate due date (default: 30 days from now)
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 30);
+
+  const invoice = await prisma.$transaction(async (tx) => {
+    // Create the invoice
+    const newInvoice = await tx.invoice.create({
+      data: {
+        workspaceId: workspace.id,
+        clientId: quote.clientId,
+        quoteId: quote.id,
+        invoiceNumber,
+        title: quote.title || 'Invoice',
+        status: 'draft',
+        issueDate: new Date(),
+        dueDate,
+        subtotal: quote.subtotal,
+        discountType: quote.discountType,
+        discountValue: quote.discountValue,
+        discountAmount: quote.discountAmount,
+        taxTotal: quote.taxTotal,
+        total: quote.total,
+        amountDue: quote.total,
+        notes: quote.notes,
+        terms: quote.terms,
+        settings: {} as unknown as Prisma.InputJsonValue,
+        lineItems: {
+          create: quote.lineItems.map((item: (typeof quote.lineItems)[number]) => ({
+            name: item.name,
+            description: item.description,
+            quantity: item.quantity,
+            rate: item.rate,
+            amount: item.amount,
+            taxRate: item.taxRate,
+            taxAmount: item.taxAmount,
+            sortOrder: item.sortOrder,
+          })),
+        },
+      },
+      include: {
+        lineItems: true,
+        client: true,
+      },
+    });
+
+    // Update quote status to converted
+    await tx.quote.update({
+      where: { id: quote.id },
+      data: { status: 'converted' },
+    });
+
+    // Log the conversion event
+    await tx.quoteEvent.create({
+      data: {
+        quoteId: quote.id,
+        eventType: 'converted_to_invoice',
+        actorId: userId,
+        actorType: 'user',
+        metadata: { invoiceId: newInvoice.id },
+      },
+    });
+
+    return newInvoice;
+  });
+
+  revalidatePath('/invoices');
+  revalidatePath('/quotes');
+  revalidatePath(`/quotes/${quoteId}`);
+
+  return { success: true, invoice };
+}
+
+/**
+ * Update an existing invoice
+ */
+export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) {
+  const { userId, workspace } = await getActiveWorkspace();
+
+  const existingInvoice = await prisma.invoice.findFirst({
+    where: {
+      id: invoiceId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+    include: { lineItems: true },
+  });
+
+  if (!existingInvoice) {
+    return { success: false, error: 'Invoice not found' };
+  }
+
+  // Can only update draft invoices
+  if (existingInvoice.status !== 'draft') {
+    return { success: false, error: 'Can only edit draft invoices' };
+  }
+
+  let subtotal = Number(existingInvoice.subtotal);
+  let taxTotal = Number(existingInvoice.taxTotal);
+  let total = Number(existingInvoice.total);
+
+  if (data.lineItems) {
+    const totals = calculateTotals(data.lineItems);
+    subtotal = totals.subtotal;
+    taxTotal = totals.taxTotal;
+    total = totals.total;
+  }
+
+  const invoice = await prisma.$transaction(async (tx) => {
+    // Delete existing line items if updating
+    if (data.lineItems) {
+      await tx.invoiceLineItem.deleteMany({
+        where: { invoiceId },
+      });
+    }
+
+    return tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        title: data.title,
+        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+        notes: data.notes,
+        terms: data.terms,
+        internalNotes: data.internalNotes,
+        ...(data.lineItems && {
+          subtotal,
+          taxTotal,
+          total,
+          amountDue: total,
+          lineItems: {
+            create: data.lineItems.map((item, index) => ({
+              name: item.name,
+              description: item.description || null,
+              quantity: item.quantity,
+              rate: item.rate,
+              amount: item.quantity * item.rate,
+              taxRate: item.taxRate || null,
+              taxAmount: item.taxRate
+                ? item.quantity * item.rate * (item.taxRate / 100)
+                : 0,
+              sortOrder: index,
+            })),
+          },
+        }),
+      },
+      include: {
+        lineItems: true,
+        client: true,
+      },
+    });
+  });
+
+  revalidatePath('/invoices');
+  revalidatePath(`/invoices/${invoiceId}`);
+
+  return { success: true, invoice };
+}
+
+/**
+ * Get a single invoice by ID
+ */
+export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | null> {
+  const { userId, workspace } = await getActiveWorkspace();
+
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: invoiceId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+    include: {
+      lineItems: {
+        orderBy: { sortOrder: 'asc' },
+      },
+      client: true,
+      payments: true,
+    },
+  });
+
+  if (!invoice) {
+    return null;
+  }
+
+  const settings = invoice.settings as Record<string, unknown>;
+
+  return {
+    id: invoice.id,
+    workspaceId: invoice.workspaceId,
+    clientId: invoice.clientId,
+    quoteId: invoice.quoteId,
+    invoiceNumber: invoice.invoiceNumber,
+    status: invoice.status as InvoiceStatus,
+    title: invoice.title || 'Invoice',
+    issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
+    dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
+    lineItems: invoice.lineItems.map((item: (typeof invoice.lineItems)[number]) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      quantity: Number(item.quantity),
+      rate: Number(item.rate),
+      amount: Number(item.amount),
+      taxRate: item.taxRate ? Number(item.taxRate) : null,
+      taxAmount: Number(item.taxAmount),
+      sortOrder: item.sortOrder,
+    })),
+    settings: {
+      currency: (settings.currency as string) ?? 'USD',
+      showLineItemPrices: (settings.showLineItemPrices as boolean) ?? true,
+      paymentTerms: (settings.paymentTerms as string) ?? 'net30',
+      lateFeeEnabled: (settings.lateFeeEnabled as boolean) ?? false,
+      lateFeeType: (settings.lateFeeType as 'percentage' | 'fixed') ?? 'percentage',
+      lateFeeValue: (settings.lateFeeValue as number) ?? 0,
+      reminderEnabled: (settings.reminderEnabled as boolean) ?? true,
+      reminderDays: (settings.reminderDays as number[]) ?? [7, 3, 1],
+    },
+    totals: {
+      subtotal: Number(invoice.subtotal),
+      discountType: invoice.discountType as 'percentage' | 'fixed' | null,
+      discountValue: invoice.discountValue ? Number(invoice.discountValue) : null,
+      discountAmount: Number(invoice.discountAmount),
+      taxTotal: Number(invoice.taxTotal),
+      total: Number(invoice.total),
+      amountPaid: Number(invoice.amountPaid),
+      amountDue: Number(invoice.amountDue),
+    },
+    notes: invoice.notes || '',
+    terms: invoice.terms || '',
+    internalNotes: invoice.internalNotes || '',
+  };
+}
+
+/**
+ * Get all invoices for the current workspace
+ */
+export async function getInvoices(filters?: {
+  status?: InvoiceStatus;
+  clientId?: string;
+  search?: string;
+}): Promise<InvoiceListItem[]> {
+  const { userId, workspace } = await getActiveWorkspace();
+
+  const where: Prisma.InvoiceWhereInput = {
+    workspaceId: workspace.id,
+    deletedAt: null,
+    ...(filters?.status && { status: filters.status }),
+    ...(filters?.clientId && { clientId: filters.clientId }),
+    ...(filters?.search && {
+      OR: [
+        { invoiceNumber: { contains: filters.search, mode: 'insensitive' } },
+        { title: { contains: filters.search, mode: 'insensitive' } },
+        { client: { name: { contains: filters.search, mode: 'insensitive' } } },
+      ],
+    }),
+  };
+
+  const invoices = await prisma.invoice.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          company: true,
+        },
+      },
+    },
+  });
+
+  const now = new Date();
+
+  return invoices.map((invoice) => {
+    const dueDate = new Date(invoice.dueDate);
+    const isOverdue =
+      invoice.status !== 'paid' &&
+      invoice.status !== 'voided' &&
+      dueDate < now;
+
+    return {
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      status: (isOverdue && invoice.status !== 'partial' ? 'overdue' : invoice.status) as InvoiceStatus,
+      title: invoice.title || 'Invoice',
+      issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
+      dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
+      total: Number(invoice.total),
+      amountPaid: Number(invoice.amountPaid),
+      amountDue: Number(invoice.amountDue),
+      client: {
+        id: invoice.client.id,
+        name: invoice.client.name,
+        company: invoice.client.company,
+      },
+      isOverdue,
+    };
+  });
+}
+
+/**
+ * Update invoice status
+ */
+export async function updateInvoiceStatus(
+  invoiceId: string,
+  status: InvoiceStatus
+) {
+  const { userId, workspace } = await getActiveWorkspace();
+
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: invoiceId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+  });
+
+  if (!invoice) {
+    return { success: false, error: 'Invoice not found' };
+  }
+
+  const updateData: Prisma.InvoiceUpdateInput = {
+    status,
+  };
+
+  // Set timestamps based on status
+  if (status === 'sent' && !invoice.sentAt) {
+    updateData.sentAt = new Date();
+  } else if (status === 'paid') {
+    updateData.paidAt = new Date();
+    updateData.amountPaid = invoice.total;
+    updateData.amountDue = 0;
+  } else if (status === 'voided') {
+    updateData.voidedAt = new Date();
+  }
+
+  await prisma.$transaction([
+    prisma.invoice.update({
+      where: { id: invoiceId },
+      data: updateData,
+    }),
+    prisma.invoiceEvent.create({
+      data: {
+        invoiceId,
+        eventType: `status_changed_to_${status}`,
+        actorId: userId,
+        actorType: 'user',
+        metadata: { previousStatus: invoice.status },
+      },
+    }),
+  ]);
+
+  revalidatePath('/invoices');
+  revalidatePath(`/invoices/${invoiceId}`);
+
+  return { success: true };
+}
+
+/**
+ * Send invoice to client
+ */
+export async function sendInvoice(invoiceId: string) {
+  const result = await updateInvoiceStatus(invoiceId, 'sent');
+
+  if (!result.success) {
+    return result;
+  }
+
+  // TODO: Send email notification to client
+
+  return { success: true };
+}
+
+/**
+ * Delete (soft delete) an invoice
+ */
+export async function deleteInvoice(invoiceId: string) {
+  const { userId, workspace } = await getActiveWorkspace();
+
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: invoiceId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+  });
+
+  if (!invoice) {
+    return { success: false, error: 'Invoice not found' };
+  }
+
+  // Can only delete draft invoices
+  if (invoice.status !== 'draft') {
+    return { success: false, error: 'Can only delete draft invoices. Use void for sent invoices.' };
+  }
+
+  await prisma.invoice.update({
+    where: { id: invoiceId },
+    data: { deletedAt: new Date() },
+  });
+
+  revalidatePath('/invoices');
+
+  return { success: true };
+}
+
+/**
+ * Record a payment for an invoice
+ */
+export async function recordPayment(
+  invoiceId: string,
+  data: {
+    amount: number;
+    paymentMethod: string;
+    referenceNumber?: string;
+    notes?: string;
+  }
+) {
+  const { userId, workspace } = await getActiveWorkspace();
+
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: invoiceId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+  });
+
+  if (!invoice) {
+    return { success: false, error: 'Invoice not found' };
+  }
+
+  if (invoice.status === 'voided') {
+    return { success: false, error: 'Cannot record payment for voided invoice' };
+  }
+
+  const currentAmountPaid = Number(invoice.amountPaid);
+  const total = Number(invoice.total);
+  const newAmountPaid = currentAmountPaid + data.amount;
+  const newAmountDue = total - newAmountPaid;
+
+  // Determine new status
+  let newStatus: InvoiceStatus;
+  if (newAmountPaid >= total) {
+    newStatus = 'paid';
+  } else if (newAmountPaid > 0) {
+    newStatus = 'partial';
+  } else {
+    newStatus = invoice.status as InvoiceStatus;
+  }
+
+  await prisma.$transaction([
+    prisma.payment.create({
+      data: {
+        invoiceId,
+        amount: data.amount,
+        paymentMethod: data.paymentMethod,
+        status: 'completed',
+        referenceNumber: data.referenceNumber || null,
+        notes: data.notes || null,
+        processedAt: new Date(),
+      },
+    }),
+    prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        amountPaid: newAmountPaid,
+        amountDue: Math.max(0, newAmountDue),
+        status: newStatus,
+        ...(newStatus === 'paid' && { paidAt: new Date() }),
+      },
+    }),
+    prisma.invoiceEvent.create({
+      data: {
+        invoiceId,
+        eventType: 'payment_recorded',
+        actorId: userId,
+        actorType: 'user',
+        metadata: {
+          amount: data.amount,
+          paymentMethod: data.paymentMethod,
+          newAmountPaid,
+          newAmountDue,
+        },
+      },
+    }),
+  ]);
+
+  revalidatePath('/invoices');
+  revalidatePath(`/invoices/${invoiceId}`);
+
+  return { success: true };
+}

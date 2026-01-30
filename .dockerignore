@@ -1,0 +1,59 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+dist
+build
+out
+.turbo
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage
+.nyc_output
+playwright-report
+test-results
+
+# Logs
+*.log
+logs
+
+# Documentation (not needed in production)
+docs
+*.md
+!README.md
+
+# Development files
+.eslintcache
+.prettierignore
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+*.Zone.Identifier
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Research and specs (not needed in production)
+research
+specs
