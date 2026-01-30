@@ -22,14 +22,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Ensure Prisma engine binaries are copied
-      config.externals = [...(config.externals || []), '@prisma/client', '.prisma/client'];
-    }
-    return config;
-  },
+  // For monorepo with Prisma, include root directory in file tracing
+  outputFileTracingRoot: path.resolve('./../../'),
 };
 
 export default nextConfig;
