@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { DashboardNav } from '@/components/dashboard/nav';
 import { DashboardHeader } from '@/components/dashboard/header';
+import { SkipToContent } from '@/components/shared/skip-to-content';
+import { needsOnboarding } from '@/lib/onboarding/actions';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -10,16 +12,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login');
   }
 
-  return (
-    <div className="flex min-h-screen">
-      {/* Sidebar Navigation */}
-      <DashboardNav />
+  // Redirect to onboarding if not completed
+  const requiresOnboarding = await needsOnboarding();
+  if (requiresOnboarding) {
+    redirect('/onboarding');
+  }
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col">
-        <DashboardHeader user={session.user} />
-        <main className="flex-1 overflow-auto bg-muted/30">{children}</main>
+  return (
+    <>
+      <SkipToContent />
+      <div className="flex min-h-screen">
+        {/* Sidebar Navigation */}
+        <DashboardNav />
+
+        {/* Main Content */}
+        <div className="flex flex-1 flex-col">
+          <DashboardHeader user={session.user} />
+          <main id="main-content" className="flex-1 overflow-auto bg-muted/30" tabIndex={-1}>
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

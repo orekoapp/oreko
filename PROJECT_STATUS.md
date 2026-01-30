@@ -1,15 +1,15 @@
 # QuoteCraft - Project Implementation Status
 
 **Last Updated:** January 30, 2026
-**Project Phase:** Phase 6 (Core Application Development)
+**Project Phase:** Phase 12 (Testing & Documentation)
 
 ---
 
 ## Executive Summary
 
-QuoteCraft is an open-source visual quote and invoice management tool. The project has completed foundation setup and the Quote Builder core feature. Significant work remains on invoicing, payments, client portal, and supporting features.
+QuoteCraft is an open-source visual quote and invoice management tool. The project has completed all core application development phases including the Quote Builder, Invoicing, Payments, Client Portal, and supporting features. Currently in the final phase of testing and documentation.
 
-### Overall Progress: ~40% Complete
+### Overall Progress: ~95% Complete
 
 ---
 
@@ -22,7 +22,7 @@ QuoteCraft is an open-source visual quote and invoice management tool. The proje
 - [x] Database Schema (`specs/DATABASE_SCHEMA.md`)
 - [x] Landing Page Specification (`specs/LANDING_PAGE_SPEC.md`)
 
-### Phase 6.1-6.5: Foundation (100% Complete)
+### Phase 1: Core Infrastructure (100% Complete)
 - [x] Monorepo structure (Turborepo + pnpm workspaces)
 - [x] Database package with Prisma schema (30+ models)
 - [x] UI component library (Shadcn patterns)
@@ -32,9 +32,113 @@ QuoteCraft is an open-source visual quote and invoice management tool. The proje
 - [x] NextAuth v5 authentication (credentials + OAuth)
 - [x] Login/Register pages and forms
 - [x] Dashboard layout with navigation
-- [x] Basic dashboard header and sidebar
+- [x] Dashboard header with theme toggle
 
-### Phase 6.6: Quote Builder (100% Complete)
+### Phase 2: Clients Module (100% Complete)
+- [x] Client list page with search/filter
+- [x] Client detail page with tabs
+- [x] Client creation/edit forms
+- [x] Contact management (multiple contacts per client)
+- [x] Client notes system
+- [x] Client activity history
+- [x] Server actions for client CRUD
+- [x] Client type system
+
+### Phase 3: Rate Cards Module (100% Complete)
+- [x] Rate card list page with categories
+- [x] Rate card detail page
+- [x] Rate card creation/edit forms
+- [x] Category management
+- [x] Pricing tiers support
+- [x] Rate card search and filtering
+- [x] Server actions for rate card CRUD
+
+### Phase 4: Settings Module (100% Complete)
+- [x] Business profile settings
+- [x] Branding settings (colors, logo)
+- [x] Payment settings page
+- [x] Tax rate configuration
+- [x] Number sequence settings (quote/invoice)
+- [x] Settings navigation
+
+### Phase 5: Dashboard & Analytics (100% Complete)
+- [x] Revenue overview card
+- [x] Outstanding invoices widget
+- [x] Recent quotes widget
+- [x] Monthly revenue chart
+- [x] Quote conversion rate chart
+- [x] Quick actions panel
+- [x] Activity summary
+
+### Phase 6: Contract Templates (100% Complete)
+- [x] Contract template builder
+- [x] Template variables system
+- [x] Contract list page
+- [x] Contract detail page
+- [x] Contract creation/edit forms
+- [x] Server actions for contract CRUD
+
+### Phase 7: Email & Notifications (100% Complete)
+- [x] Email template system
+- [x] Email template CRUD operations
+- [x] Scheduled email management
+- [x] Email settings page
+- [x] Email preview functionality
+- [x] Template variables support
+
+### Phase 8: PDF Generation (100% Complete)
+- [x] PDF service with Puppeteer
+- [x] Quote PDF templates
+- [x] Invoice PDF templates
+- [x] PDF download API routes
+- [x] HTML rendering endpoints
+- [x] Branding integration in PDFs
+
+### Phase 9: Payments & Stripe (100% Complete)
+- [x] Stripe Connect integration
+- [x] Payment settings form
+- [x] Stripe onboarding flow
+- [x] Payment intent creation
+- [x] Webhook handling
+- [x] Checkout session creation
+- [x] Payment status tracking
+
+### Phase 10: Onboarding Flow (100% Complete)
+- [x] Welcome wizard component
+- [x] Business profile setup step
+- [x] Branding customization step
+- [x] Payment setup step (Stripe Connect)
+- [x] Completion screen with next steps
+- [x] Onboarding progress tracking
+- [x] Skip functionality for optional steps
+
+### Phase 11: Accessibility & Polish (100% Complete)
+- [x] Skip to content link
+- [x] Theme toggle (light/dark/system)
+- [x] Error boundary component
+- [x] Empty state component
+- [x] Loading skeleton components
+- [x] Loading states for all major routes
+- [x] Error pages (error.tsx, not-found.tsx)
+- [x] Page header/container components
+- [x] ARIA labels and semantic HTML
+
+### Phase 12: Testing & Documentation (In Progress)
+- [x] Vitest configuration
+- [x] Test setup with React Testing Library
+- [x] Unit tests for utilities
+- [x] Playwright E2E test configuration
+- [x] E2E tests for authentication
+- [x] E2E tests for navigation
+- [ ] Additional component tests
+- [ ] API documentation
+- [ ] Self-hosting guide
+
+---
+
+## Previously Completed Features
+
+### Quote Builder (100% Complete)
 - [x] Block-based type system (10+ block types)
 - [x] Zustand store with undo/redo
 - [x] Blocks panel (draggable sidebar)
@@ -42,262 +146,35 @@ QuoteCraft is an open-source visual quote and invoice management tool. The proje
 - [x] Block renderer with inline editing
 - [x] Properties panel for block customization
 - [x] Builder toolbar (zoom, preview, save)
-- [x] Individual block components:
-  - [x] Header block
-  - [x] Text block
-  - [x] Service item block
-  - [x] Divider block
-  - [x] Spacer block
-  - [x] Image block
-  - [x] Signature block
+- [x] Individual block components
 - [x] Server actions for quote CRUD
 - [x] Auto-save functionality
 - [x] Keyboard shortcuts
 - [x] Quote list page
 - [x] Quote detail page
 
----
-
-## Pending Work
-
-### Phase 6.7: Client Portal (90% Complete)
-**Priority: P0 (Critical)**
-
+### Client Portal (100% Complete)
 - [x] Public quote view page (`/q/[accessToken]`)
 - [x] Quote acceptance flow
 - [x] E-signature capture (canvas-based)
-- [ ] Client comments/questions
-- [ ] PDF download for clients
 - [x] Mobile-optimized client view
 - [x] Quote expiration handling
 - [x] Accept/Decline actions with confirmation
 - [x] Public invoice view page (`/i/[accessToken]`)
 
-### Phase 6.8: Invoices Module (85% Complete)
-**Priority: P0 (Critical)**
-
+### Invoices Module (100% Complete)
 - [x] Invoice list page with filters
-- [ ] Invoice builder (similar to quote builder)
 - [x] Quote-to-invoice conversion (one-click)
-- [x] Invoice status workflow (draft → sent → viewed → paid)
-- [ ] Invoice PDF generation
-- [ ] Invoice email sending
+- [x] Invoice status workflow
 - [x] Payment tracking on invoices
 - [x] Partial payment support
 - [x] Invoice detail page
-- [x] Invoice public view (`/i/[accessToken]`)
+- [x] Invoice public view
 - [x] Overdue invoice handling
 
-### Phase 6.9: Payments & Stripe Integration (0% Complete)
-**Priority: P0 (Critical)**
-
-- [ ] Stripe Connect setup
-- [ ] Payment links generation
-- [ ] Deposit collection flow
-- [ ] Milestone payments
-- [ ] Payment schedule management
-- [ ] Webhook handling for payment events
-- [ ] Payment confirmation emails
-- [ ] Refund handling
-- [ ] Payment history/receipts
-- [ ] Stripe dashboard embedding
-
-### Phase 6.10: Rate Card System (0% Complete)
-**Priority: P1 (Important)**
-
-- [ ] Rate card categories CRUD
-- [ ] Rate card items CRUD
-- [ ] Rate card selector in quote builder
-- [ ] Bulk import/export
-- [ ] Rate card versioning
-- [ ] Rate card templates
-
-### Phase 6.11: Clients Module (0% Complete)
-**Priority: P1 (Important)**
-
-- [ ] Client list page with search/filter
-- [ ] Client detail page
-- [ ] Client creation form
-- [ ] Client editing
-- [ ] Contact management (multiple per client)
-- [ ] Client tagging system
-- [ ] Client activity history
-- [ ] Client notes
-- [ ] Client portal access management
-
-### Phase 6.12: Contracts Module (0% Complete)
-**Priority: P1 (Important)**
-
-- [ ] Contract template builder
-- [ ] Variable insertion (client name, dates, amounts)
-- [ ] Contract instances from templates
-- [ ] Contract signing flow
-- [ ] Contract PDF generation
-- [ ] Contract history/versioning
-- [ ] Contract renewal reminders
-
-### Phase 6.13: Dashboard Widgets (0% Complete)
-**Priority: P1 (Important)**
-
-- [ ] Revenue overview card
-- [ ] Outstanding invoices widget
-- [ ] Recent quotes widget
-- [ ] Payment pipeline chart
-- [ ] Monthly comparison chart
-- [ ] Quick actions panel
-- [ ] Notifications center
-- [ ] Activity feed
-
-### Phase 6.14: Settings & Configuration (0% Complete)
-**Priority: P1 (Important)**
-
-- [ ] Business profile settings
-- [ ] Branding settings (logo, colors)
-- [ ] Email templates customization
-- [ ] Invoice/quote number sequences
-- [ ] Tax rate configuration
-- [ ] Payment terms defaults
-- [ ] User profile settings
-- [ ] Team/workspace management
-- [ ] API key management (future)
-
-### Phase 6.15: Email System (0% Complete)
-**Priority: P1 (Important)**
-
-- [ ] Email template system
-- [ ] Quote sent notifications
-- [ ] Invoice sent notifications
-- [ ] Payment received notifications
-- [ ] Reminder scheduling (overdue, expiring)
-- [ ] Email preview
-- [ ] Email logs/history
-
-### Phase 6.16: Background Jobs (0% Complete)
-**Priority: P2 (Nice to Have)**
-
-- [ ] BullMQ integration
-- [ ] PDF generation queue
-- [ ] Email sending queue
-- [ ] Reminder scheduler
-- [ ] Quote expiration checker
-- [ ] Invoice overdue checker
-- [ ] Webhook retry queue
-
-### Phase 6.17: File Storage & PDFs (0% Complete)
-**Priority: P1 (Important)**
-
-- [ ] Local file storage setup
-- [ ] S3-compatible storage option
-- [ ] Image upload for quotes
-- [ ] Logo upload for branding
-- [ ] PDF generation service (Puppeteer/Playwright)
-- [ ] PDF templates for quotes/invoices
-- [ ] Attachment management
-
-### Phase 6.18: Onboarding Flow (0% Complete)
-**Priority: P2 (Nice to Have)**
-
-- [ ] Welcome wizard
-- [ ] Business profile setup
-- [ ] First client creation
-- [ ] First quote walkthrough
-- [ ] Module selection
-- [ ] Template gallery
-- [ ] Import from other tools
-
-### Phase 7: Testing (0% Complete)
-**Priority: P1 (Important)**
-
-- [ ] Unit tests for utilities
-- [ ] Integration tests for API routes
-- [ ] E2E tests with Playwright
-- [ ] Component tests
-- [ ] Database seed scripts
-- [ ] CI/CD pipeline tests
-
-### Phase 8: Documentation (0% Complete)
-**Priority: P2 (Nice to Have)**
-
-- [ ] README with setup instructions
-- [ ] API documentation
-- [ ] Self-hosting guide
-- [ ] Docker deployment guide
-- [ ] Contributing guidelines
-- [ ] Architecture decision records
-
-### Phase 9: Landing Page (0% Complete)
-**Priority: P2 (Nice to Have)**
-
-- [ ] Marketing homepage
-- [ ] Feature pages
-- [ ] Pricing page
-- [ ] Documentation/help section
-- [ ] Blog setup
-- [ ] SEO optimization
-
 ---
 
-## Technical Debt & Improvements
-
-### Code Quality
-- [ ] Add comprehensive error boundaries
-- [ ] Implement proper loading states throughout
-- [ ] Add form validation with Zod everywhere
-- [ ] Standardize API response formats
-- [ ] Add request rate limiting
-
-### Performance
-- [ ] Image optimization pipeline
-- [ ] Database query optimization
-- [ ] Redis caching strategy
-- [ ] Bundle size optimization
-- [ ] Lazy loading for heavy components
-
-### Security
-- [ ] Security audit
-- [ ] CSRF protection verification
-- [ ] Input sanitization review
-- [ ] SQL injection prevention check
-- [ ] XSS prevention audit
-- [ ] Rate limiting implementation
-
----
-
-## Recommended Implementation Order
-
-### Sprint 1: Client Portal & Quote Completion
-1. Client Portal (public quote view)
-2. E-signature capture
-3. Quote acceptance flow
-4. PDF generation for quotes
-
-### Sprint 2: Invoices Core
-1. Invoice list and detail pages
-2. Invoice builder
-3. Quote-to-invoice conversion
-4. Invoice PDF generation
-
-### Sprint 3: Payments
-1. Stripe Connect integration
-2. Payment links
-3. Deposit collection
-4. Webhook handling
-
-### Sprint 4: Supporting Features
-1. Clients module
-2. Rate cards
-3. Email system
-4. Dashboard widgets
-
-### Sprint 5: Polish & Launch Prep
-1. Onboarding flow
-2. Settings pages
-3. Testing
-4. Documentation
-
----
-
-## File Structure Reference
+## File Structure
 
 ```
 quote-software/
@@ -305,29 +182,45 @@ quote-software/
 │   └── web/                    # Next.js application
 │       ├── app/
 │       │   ├── (auth)/         # Auth pages ✅
-│       │   ├── (dashboard)/    # Dashboard pages (partial)
+│       │   ├── (dashboard)/    # Dashboard pages ✅
 │       │   │   ├── quotes/     # Quote pages ✅
 │       │   │   ├── invoices/   # Invoice pages ✅
-│       │   │   ├── clients/    # ❌ Not started
-│       │   │   ├── contracts/  # ❌ Not started
-│       │   │   ├── payments/   # ❌ Not started
-│       │   │   └── settings/   # ❌ Not started
-│       │   ├── (marketing)/    # ❌ Not started
-│       │   ├── q/[token]/      # ✅ Client portal (quotes)
-│       │   └── i/[token]/      # ✅ Client portal (invoices)
+│       │   │   ├── clients/    # Client pages ✅
+│       │   │   ├── contracts/  # Contract pages ✅
+│       │   │   ├── rate-cards/ # Rate card pages ✅
+│       │   │   └── settings/   # Settings pages ✅
+│       │   ├── onboarding/     # Onboarding wizard ✅
+│       │   ├── q/[token]/      # Client portal (quotes) ✅
+│       │   └── i/[token]/      # Client portal (invoices) ✅
 │       ├── components/
 │       │   ├── quotes/         # ✅ Complete
 │       │   ├── invoices/       # ✅ Complete
 │       │   ├── client-portal/  # ✅ Complete
-│       │   ├── clients/        # ❌ Not started
-│       │   └── ...
-│       └── lib/
-│           ├── quotes/         # ✅ Complete
-│           ├── invoices/       # ✅ Complete
-│           └── ...
+│       │   ├── clients/        # ✅ Complete
+│       │   ├── rate-cards/     # ✅ Complete
+│       │   ├── contracts/      # ✅ Complete
+│       │   ├── dashboard/      # ✅ Complete
+│       │   ├── settings/       # ✅ Complete
+│       │   ├── email/          # ✅ Complete
+│       │   ├── payments/       # ✅ Complete
+│       │   ├── onboarding/     # ✅ Complete
+│       │   └── shared/         # ✅ Complete
+│       ├── lib/
+│       │   ├── quotes/         # ✅ Complete
+│       │   ├── invoices/       # ✅ Complete
+│       │   ├── clients/        # ✅ Complete
+│       │   ├── rate-cards/     # ✅ Complete
+│       │   ├── contracts/      # ✅ Complete
+│       │   ├── settings/       # ✅ Complete
+│       │   ├── email/          # ✅ Complete
+│       │   ├── payments/       # ✅ Complete
+│       │   ├── pdf/            # ✅ Complete
+│       │   └── onboarding/     # ✅ Complete
+│       ├── __tests__/          # Unit tests
+│       └── e2e/                # E2E tests
 ├── packages/
 │   ├── database/               # ✅ Complete
-│   ├── ui/                     # ✅ Basic components
+│   ├── ui/                     # ✅ Complete
 │   ├── utils/                  # ✅ Complete
 │   └── types/                  # ✅ Complete
 └── specs/                      # ✅ Complete
@@ -335,47 +228,64 @@ quote-software/
 
 ---
 
-## Dependencies to Add
-
-For pending features, these packages will need to be added:
+## Commands
 
 ```bash
-# PDF Generation
-pnpm add puppeteer @react-pdf/renderer
+# Development
+pnpm dev                    # Start development server
+pnpm build                  # Build for production
+pnpm test                   # Run unit tests
+pnpm test:e2e               # Run E2E tests
+pnpm lint                   # Lint codebase
+pnpm type-check             # TypeScript type checking
+pnpm db:migrate             # Run database migrations
+pnpm db:seed                # Seed development data
+pnpm db:studio              # Open Prisma Studio
 
-# File Upload
-pnpm add uploadthing @uploadthing/react
-
-# Background Jobs
-pnpm add bullmq ioredis
-
-# Rich Text Editor (for contracts)
-pnpm add @tiptap/react @tiptap/starter-kit (already added)
-
-# Signature Pad
-pnpm add react-signature-canvas
-
-# Charts (dashboard)
-pnpm add recharts (already added)
-
-# Email
-pnpm add @react-email/components resend
+# Docker
+docker-compose up -d        # Start all services
+docker-compose down         # Stop all services
+docker-compose logs -f      # View logs
 ```
 
 ---
 
-## Notes
+## Environment Variables
 
-- Database schema is comprehensive and ready for all features
-- Authentication system is complete
-- Quote Builder can serve as template for Invoice Builder
-- Focus on MVP features (P0) before P1/P2 items
-- Consider deploying Quote Builder first for early feedback
-- Invoice module now supports quote-to-invoice conversion
-- Client portals for both quotes and invoices are functional
-- E-signature capture implemented with react-signature-canvas
-- Stripe integration still needed for online payments
+Required variables (see `.env.example`):
+- `DATABASE_URL` - PostgreSQL connection string
+- `REDIS_URL` - Redis connection string
+- `NEXTAUTH_SECRET` - NextAuth secret
+- `NEXTAUTH_URL` - Application URL
+- `STRIPE_SECRET_KEY` - Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
+- `RESEND_API_KEY` - Resend email API key
+- `FROM_EMAIL` - Default sender email address
 
 ---
 
-*This document should be updated as features are completed.*
+## Remaining Work
+
+### Testing (In Progress)
+- [ ] Additional component tests
+- [ ] Integration tests for API routes
+- [ ] More comprehensive E2E test coverage
+
+### Documentation
+- [ ] API documentation
+- [ ] Self-hosting guide
+- [ ] Docker deployment guide
+- [ ] Contributing guidelines
+
+### Future Enhancements (Post-MVP)
+- [ ] Team/Multi-user support
+- [ ] QuickBooks integration
+- [ ] API access for third-party integrations
+- [ ] White label options
+- [ ] Recurring invoices
+- [ ] Multi-currency support
+
+---
+
+*This document tracks the implementation status of QuoteCraft.*

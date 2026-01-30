@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { Bell, Search, User, LogOut, Settings, HelpCircle } from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -64,8 +65,11 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-2">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
           <Bell className="h-4 w-4" />
           <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
         </Button>
