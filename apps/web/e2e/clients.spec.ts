@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Clients Module', () => {
   test.describe('Clients List Page', () => {
-    test.skip('should display clients list page', async ({ page }) => {
+    test('should display clients list page', async ({ page }) => {
       await page.goto('/clients');
 
       await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
       await expect(page.getByRole('link', { name: /add|create|new client/i })).toBeVisible();
     });
 
-    test.skip('should show empty state when no clients', async ({ page }) => {
+    test('should show empty state when no clients', async ({ page }) => {
       await page.goto('/clients');
 
       const emptyState = page.getByText(/no clients|get started|add.*first/i);
@@ -18,7 +18,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should search clients', async ({ page }) => {
+    test('should search clients', async ({ page }) => {
       await page.goto('/clients');
 
       const searchInput = page.getByPlaceholder(/search/i);
@@ -28,7 +28,7 @@ test.describe('Clients Module', () => {
       await expect(page).toHaveURL(/search=acme/);
     });
 
-    test.skip('should filter by type', async ({ page }) => {
+    test('should filter by type', async ({ page }) => {
       await page.goto('/clients');
 
       const typeFilter = page.getByRole('combobox', { name: /type/i });
@@ -40,7 +40,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should filter by tags', async ({ page }) => {
+    test('should filter by tags', async ({ page }) => {
       await page.goto('/clients');
 
       const tagFilter = page.getByRole('combobox', { name: /tag/i });
@@ -50,7 +50,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should display client list with key info', async ({ page }) => {
+    test('should display client list with key info', async ({ page }) => {
       await page.goto('/clients');
 
       const table = page.locator('table');
@@ -63,7 +63,7 @@ test.describe('Clients Module', () => {
   });
 
   test.describe('Client Creation', () => {
-    test.skip('should navigate to create client page', async ({ page }) => {
+    test('should navigate to create client page', async ({ page }) => {
       await page.goto('/clients');
 
       await page.getByRole('link', { name: /add|create|new client/i }).click();
@@ -71,14 +71,14 @@ test.describe('Clients Module', () => {
       await expect(page).toHaveURL(/\/clients\/new/);
     });
 
-    test.skip('should display client form', async ({ page }) => {
+    test('should display client form', async ({ page }) => {
       await page.goto('/clients/new');
 
       await expect(page.getByLabel(/name/i)).toBeVisible();
       await expect(page.getByLabel(/email/i)).toBeVisible();
     });
 
-    test.skip('should require name and email', async ({ page }) => {
+    test('should require name and email', async ({ page }) => {
       await page.goto('/clients/new');
 
       // Try to save without required fields
@@ -89,7 +89,7 @@ test.describe('Clients Module', () => {
       await expect(page.getByText(/required|please enter/i)).toBeVisible();
     });
 
-    test.skip('should create individual client', async ({ page }) => {
+    test('should create individual client', async ({ page }) => {
       await page.goto('/clients/new');
 
       await page.getByLabel(/name/i).fill('John Doe');
@@ -109,7 +109,7 @@ test.describe('Clients Module', () => {
       await expect(page).toHaveURL(/\/clients/);
     });
 
-    test.skip('should create company client', async ({ page }) => {
+    test('should create company client', async ({ page }) => {
       await page.goto('/clients/new');
 
       await page.getByLabel(/name/i).fill('Acme Corporation');
@@ -132,7 +132,7 @@ test.describe('Clients Module', () => {
       await expect(page).toHaveURL(/\/clients/);
     });
 
-    test.skip('should add address to client', async ({ page }) => {
+    test('should add address to client', async ({ page }) => {
       await page.goto('/clients/new');
 
       await page.getByLabel(/name/i).fill('Test Client');
@@ -148,7 +148,7 @@ test.describe('Clients Module', () => {
       await page.getByRole('button', { name: /save|create/i }).click();
     });
 
-    test.skip('should add contacts to client', async ({ page }) => {
+    test('should add contacts to client', async ({ page }) => {
       await page.goto('/clients/new');
 
       await page.getByLabel(/name/i).fill('Test Company');
@@ -168,7 +168,7 @@ test.describe('Clients Module', () => {
       await page.getByRole('button', { name: /save|create/i }).click();
     });
 
-    test.skip('should add tags to client', async ({ page }) => {
+    test('should add tags to client', async ({ page }) => {
       await page.goto('/clients/new');
 
       await page.getByLabel(/name/i).fill('VIP Client');
@@ -188,7 +188,7 @@ test.describe('Clients Module', () => {
   });
 
   test.describe('Client Detail', () => {
-    test.skip('should display client details', async ({ page }) => {
+    test('should display client details', async ({ page }) => {
       await page.goto('/clients');
 
       const firstClient = page.locator('table tbody tr').first();
@@ -200,7 +200,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should show tabs for quotes and invoices', async ({ page }) => {
+    test('should show tabs for quotes and invoices', async ({ page }) => {
       await page.goto('/clients');
 
       const firstClient = page.locator('table tbody tr').first();
@@ -213,7 +213,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should show client history', async ({ page }) => {
+    test('should show client history', async ({ page }) => {
       await page.goto('/clients');
 
       const firstClient = page.locator('table tbody tr').first();
@@ -229,7 +229,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should show client notes', async ({ page }) => {
+    test('should show client notes', async ({ page }) => {
       await page.goto('/clients');
 
       const firstClient = page.locator('table tbody tr').first();
@@ -246,7 +246,7 @@ test.describe('Clients Module', () => {
   });
 
   test.describe('Client Actions', () => {
-    test.skip('should edit client', async ({ page }) => {
+    test('should edit client', async ({ page }) => {
       await page.goto('/clients');
 
       const firstClient = page.locator('table tbody tr').first();
@@ -261,7 +261,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should create quote from client page', async ({ page }) => {
+    test('should create quote from client page', async ({ page }) => {
       await page.goto('/clients');
 
       const firstClient = page.locator('table tbody tr').first();
@@ -278,7 +278,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should create invoice from client page', async ({ page }) => {
+    test('should create invoice from client page', async ({ page }) => {
       await page.goto('/clients');
 
       const firstClient = page.locator('table tbody tr').first();
@@ -294,7 +294,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should delete client with confirmation', async ({ page }) => {
+    test('should delete client with confirmation', async ({ page }) => {
       await page.goto('/clients');
 
       const actionsMenu = page.locator('button[aria-label="actions"]').first();
@@ -315,7 +315,7 @@ test.describe('Clients Module', () => {
   });
 
   test.describe('Bulk Actions', () => {
-    test.skip('should select multiple clients', async ({ page }) => {
+    test('should select multiple clients', async ({ page }) => {
       await page.goto('/clients');
 
       const checkboxes = page.locator('table tbody input[type="checkbox"]');
@@ -328,7 +328,7 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test.skip('should bulk delete clients', async ({ page }) => {
+    test('should bulk delete clients', async ({ page }) => {
       await page.goto('/clients');
 
       // Select all
@@ -350,7 +350,7 @@ test.describe('Clients Module', () => {
 });
 
 test.describe('Client Accessibility', () => {
-  test.skip('should have proper form labels', async ({ page }) => {
+  test('should have proper form labels', async ({ page }) => {
     await page.goto('/clients/new');
 
     const inputs = page.locator('input:not([type="hidden"]):not([type="checkbox"])');
@@ -367,7 +367,7 @@ test.describe('Client Accessibility', () => {
     }
   });
 
-  test.skip('should support keyboard navigation', async ({ page }) => {
+  test('should support keyboard navigation', async ({ page }) => {
     await page.goto('/clients');
 
     await page.keyboard.press('Tab');
@@ -375,7 +375,7 @@ test.describe('Client Accessibility', () => {
     await expect(focused).toBeVisible();
   });
 
-  test.skip('should have accessible table', async ({ page }) => {
+  test('should have accessible table', async ({ page }) => {
     await page.goto('/clients');
 
     const table = page.locator('table');

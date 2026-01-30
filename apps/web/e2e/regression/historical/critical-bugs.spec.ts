@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Historical Regressions - Quote Builder', () => {
-  test.skip('TC-REG-001: [BUG-001] Block duplication maintains unique IDs', async ({ page }) => {
+  test('TC-REG-001: [BUG-001] Block duplication maintains unique IDs', async ({ page }) => {
     /**
      * Bug: Duplicating blocks caused ID conflicts leading to
      * incorrect block updates.
@@ -45,7 +45,7 @@ test.describe('Historical Regressions - Quote Builder', () => {
     expect(firstBlockId).not.toBe(secondBlockId);
   });
 
-  test.skip('TC-REG-002: [BUG-002] Block reordering persists correctly', async ({ page }) => {
+  test('TC-REG-002: [BUG-002] Block reordering persists correctly', async ({ page }) => {
     /**
      * Bug: Drag-and-drop block reordering didn't persist on save.
      * Fixed: Update block order in state and persist to DB
@@ -93,7 +93,7 @@ test.describe('Historical Regressions - Quote Builder', () => {
     expect(firstBlockContent).toContain('Block 2');
   });
 
-  test.skip('TC-REG-003: [BUG-003] Rich text editor preserves formatting', async ({ page }) => {
+  test('TC-REG-003: [BUG-003] Rich text editor preserves formatting', async ({ page }) => {
     /**
      * Bug: Bold/italic formatting was lost when saving text blocks.
      * Fixed: Properly serialize and deserialize HTML content
@@ -134,7 +134,7 @@ test.describe('Historical Regressions - Quote Builder', () => {
 });
 
 test.describe('Historical Regressions - Calculations', () => {
-  test.skip('TC-REG-004: [BUG-004] Tax calculation rounds correctly', async ({ page }) => {
+  test('TC-REG-004: [BUG-004] Tax calculation rounds correctly', async ({ page }) => {
     /**
      * Bug: Tax amounts had floating point precision errors
      * (e.g., $10.07 showed as $10.069999999)
@@ -174,7 +174,7 @@ test.describe('Historical Regressions - Calculations', () => {
     expect(totalDecimals).toBeLessThanOrEqual(2);
   });
 
-  test.skip('TC-REG-005: [BUG-005] Line item deletion recalculates total', async ({ page }) => {
+  test('TC-REG-005: [BUG-005] Line item deletion recalculates total', async ({ page }) => {
     /**
      * Bug: Deleting a line item didn't update the quote total.
      * Fixed: Recalculate totals on line item changes
@@ -211,7 +211,7 @@ test.describe('Historical Regressions - Calculations', () => {
 });
 
 test.describe('Historical Regressions - Authentication', () => {
-  test.skip('TC-REG-006: [BUG-006] Session persists across page reload', async ({ page }) => {
+  test('TC-REG-006: [BUG-006] Session persists across page reload', async ({ page }) => {
     /**
      * Bug: Users were logged out on page refresh.
      * Fixed: Properly persist session cookies
@@ -233,7 +233,7 @@ test.describe('Historical Regressions - Authentication', () => {
     await expect(page).not.toHaveURL(/\/login/);
   });
 
-  test.skip('TC-REG-007: [BUG-007] Protected routes redirect to login', async ({ page }) => {
+  test('TC-REG-007: [BUG-007] Protected routes redirect to login', async ({ page }) => {
     /**
      * Bug: Some protected routes showed blank page instead of redirect.
      * Fixed: Middleware properly redirects unauthenticated requests
@@ -247,7 +247,7 @@ test.describe('Historical Regressions - Authentication', () => {
 });
 
 test.describe('Historical Regressions - Email', () => {
-  test.skip('TC-REG-008: [BUG-008] Email special characters handled', async ({ page }) => {
+  test('TC-REG-008: [BUG-008] Email special characters handled', async ({ page }) => {
     /**
      * Bug: Client names with special characters broke email sending.
      * Fixed: Properly encode names in email headers
@@ -293,7 +293,7 @@ test.describe('Historical Regressions - Email', () => {
 });
 
 test.describe('Historical Regressions - PDF', () => {
-  test.skip('TC-REG-009: [BUG-009] PDF generation handles long content', async ({ page }) => {
+  test('TC-REG-009: [BUG-009] PDF generation handles long content', async ({ page }) => {
     /**
      * Bug: Quotes with many line items caused PDF generation timeout.
      * Fixed: Optimize PDF rendering for large documents
@@ -333,7 +333,7 @@ test.describe('Historical Regressions - PDF', () => {
     }
   });
 
-  test.skip('TC-REG-010: [BUG-010] PDF includes all pages', async ({ page }) => {
+  test('TC-REG-010: [BUG-010] PDF includes all pages', async ({ page }) => {
     /**
      * Bug: Multi-page PDFs were truncated to first page.
      * Fixed: Configure puppeteer for full document rendering
@@ -344,7 +344,7 @@ test.describe('Historical Regressions - PDF', () => {
 });
 
 test.describe('Historical Regressions - Client Portal', () => {
-  test.skip('TC-REG-011: [BUG-011] Signature captures on touch devices', async ({ page }) => {
+  test('TC-REG-011: [BUG-011] Signature captures on touch devices', async ({ page }) => {
     /**
      * Bug: Signature pad didn't work on mobile/touch devices.
      * Fixed: Add touch event handlers alongside mouse events
@@ -366,7 +366,7 @@ test.describe('Historical Regressions - Client Portal', () => {
     }
   });
 
-  test.skip('TC-REG-012: [BUG-012] Quote view tracks correctly', async ({ page }) => {
+  test('TC-REG-012: [BUG-012] Quote view tracks correctly', async ({ page }) => {
     /**
      * Bug: Quote view tracking didn't fire in some browsers.
      * Fixed: Use reliable tracking method with fallbacks
@@ -377,7 +377,7 @@ test.describe('Historical Regressions - Client Portal', () => {
 });
 
 test.describe('Historical Regressions - Data Integrity', () => {
-  test.skip('TC-REG-013: [BUG-013] Concurrent edits handled gracefully', async ({ page, context }) => {
+  test('TC-REG-013: [BUG-013] Concurrent edits handled gracefully', async ({ page, context }) => {
     /**
      * Bug: Two users editing same quote caused data loss.
      * Fixed: Implement optimistic locking with version check
@@ -413,7 +413,7 @@ test.describe('Historical Regressions - Data Integrity', () => {
     await expect(conflictMessage).toBeVisible();
   });
 
-  test.skip('TC-REG-014: [BUG-014] Deletion cascades correctly', async ({ page }) => {
+  test('TC-REG-014: [BUG-014] Deletion cascades correctly', async ({ page }) => {
     /**
      * Bug: Deleting a client left orphaned quotes.
      * Fixed: Implement proper cascade delete/soft delete
@@ -422,7 +422,7 @@ test.describe('Historical Regressions - Data Integrity', () => {
     // Create client, create quote, delete client, verify quote status
   });
 
-  test.skip('TC-REG-015: [BUG-015] Number sequences do not skip or duplicate', async ({ page }) => {
+  test('TC-REG-015: [BUG-015] Number sequences do not skip or duplicate', async ({ page }) => {
     /**
      * Bug: Quote numbers sometimes skipped or duplicated under load.
      * Fixed: Use database sequences with proper locking

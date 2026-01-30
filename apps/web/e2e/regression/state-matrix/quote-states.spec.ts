@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Quote State Matrix Tests', () => {
   test.describe('Valid State Transitions', () => {
-    test.skip('TC-SM-001: draft -> sent transition', async ({ page }) => {
+    test('TC-SM-001: draft -> sent transition', async ({ page }) => {
       // Setup: Create a draft quote
       await page.goto('/quotes/new');
       await page.waitForLoadState('networkidle');
@@ -40,7 +40,7 @@ test.describe('Quote State Matrix Tests', () => {
       await expect(page.locator('[data-testid="quote-status"]')).toHaveText(/sent/i);
     });
 
-    test.skip('TC-SM-002: sent -> viewed transition (via client portal)', async ({ page, context }) => {
+    test('TC-SM-002: sent -> viewed transition (via client portal)', async ({ page, context }) => {
       // This test requires a sent quote with valid access token
       // The transition happens when client views the quote
 
@@ -51,7 +51,7 @@ test.describe('Quote State Matrix Tests', () => {
       // In production, verify the quote status updated to 'viewed'
     });
 
-    test.skip('TC-SM-003: viewed -> accepted transition', async ({ page }) => {
+    test('TC-SM-003: viewed -> accepted transition', async ({ page }) => {
       // Navigate to quote in client portal (viewed state)
       await page.goto('/q/test-token');
 
@@ -78,7 +78,7 @@ test.describe('Quote State Matrix Tests', () => {
       await expect(page.getByText(/accepted|thank you/i)).toBeVisible();
     });
 
-    test.skip('TC-SM-004: viewed -> declined transition', async ({ page }) => {
+    test('TC-SM-004: viewed -> declined transition', async ({ page }) => {
       await page.goto('/q/test-token');
 
       // Click decline button
@@ -97,7 +97,7 @@ test.describe('Quote State Matrix Tests', () => {
       await expect(page.getByText(/declined/i)).toBeVisible();
     });
 
-    test.skip('TC-SM-005: accepted -> converted transition', async ({ page }) => {
+    test('TC-SM-005: accepted -> converted transition', async ({ page }) => {
       // Navigate to accepted quote
       await page.goto('/quotes');
 
@@ -124,7 +124,7 @@ test.describe('Quote State Matrix Tests', () => {
   });
 
   test.describe('Invalid State Transitions', () => {
-    test.skip('TC-SM-006: cannot send already sent quote', async ({ page }) => {
+    test('TC-SM-006: cannot send already sent quote', async ({ page }) => {
       // Navigate to a sent quote
       await page.goto('/quotes');
       await page.click('tr:has-text("sent")');
@@ -134,7 +134,7 @@ test.describe('Quote State Matrix Tests', () => {
       await expect(sendButton).toBeDisabled().or(expect(sendButton).toBeHidden());
     });
 
-    test.skip('TC-SM-007: cannot convert draft quote directly', async ({ page }) => {
+    test('TC-SM-007: cannot convert draft quote directly', async ({ page }) => {
       // Navigate to a draft quote
       await page.goto('/quotes');
       await page.click('tr:has-text("draft")');
@@ -144,7 +144,7 @@ test.describe('Quote State Matrix Tests', () => {
       await expect(convertButton).toBeHidden();
     });
 
-    test.skip('TC-SM-008: cannot accept/decline from dashboard', async ({ page }) => {
+    test('TC-SM-008: cannot accept/decline from dashboard', async ({ page }) => {
       // Navigate to quote detail in dashboard (not client portal)
       await page.goto('/quotes');
       await page.click('tr:has-text("sent")');
@@ -157,7 +157,7 @@ test.describe('Quote State Matrix Tests', () => {
       await expect(declineButton).toBeHidden();
     });
 
-    test.skip('TC-SM-009: cannot modify accepted quote', async ({ page }) => {
+    test('TC-SM-009: cannot modify accepted quote', async ({ page }) => {
       await page.goto('/quotes');
       await page.click('tr:has-text("accepted")');
 
@@ -171,7 +171,7 @@ test.describe('Quote State Matrix Tests', () => {
       }
     });
 
-    test.skip('TC-SM-010: cannot revert converted quote', async ({ page }) => {
+    test('TC-SM-010: cannot revert converted quote', async ({ page }) => {
       await page.goto('/quotes');
       await page.click('tr:has-text("converted")');
 
@@ -185,7 +185,7 @@ test.describe('Quote State Matrix Tests', () => {
   });
 
   test.describe('State Persistence', () => {
-    test.skip('TC-SM-011: state persists after page reload', async ({ page }) => {
+    test('TC-SM-011: state persists after page reload', async ({ page }) => {
       // Navigate to a quote with specific state
       await page.goto('/quotes');
       await page.click('tr:has-text("sent")');
@@ -201,7 +201,7 @@ test.describe('Quote State Matrix Tests', () => {
       expect(statusAfter).toBe(statusBefore);
     });
 
-    test.skip('TC-SM-012: state persists after session change', async ({ page, context }) => {
+    test('TC-SM-012: state persists after session change', async ({ page, context }) => {
       // Navigate to quote
       await page.goto('/quotes');
       await page.click('tr:has-text("sent")');
@@ -229,7 +229,7 @@ test.describe('Quote State Matrix Tests', () => {
   });
 
   test.describe('State Audit Trail', () => {
-    test.skip('TC-SM-013: state changes are logged in activity', async ({ page }) => {
+    test('TC-SM-013: state changes are logged in activity', async ({ page }) => {
       await page.goto('/quotes');
       await page.click('tr:has-text("accepted")');
 
@@ -245,7 +245,7 @@ test.describe('Quote State Matrix Tests', () => {
       }
     });
 
-    test.skip('TC-SM-014: state changes include timestamp', async ({ page }) => {
+    test('TC-SM-014: state changes include timestamp', async ({ page }) => {
       await page.goto('/quotes');
       await page.click('tbody tr').first();
 

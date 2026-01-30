@@ -2,13 +2,13 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Settings Module', () => {
   test.describe('Settings Navigation', () => {
-    test.skip('should display settings page', async ({ page }) => {
+    test('should display settings page', async ({ page }) => {
       await page.goto('/settings');
 
       await expect(page.getByRole('heading', { name: /settings/i })).toBeVisible();
     });
 
-    test.skip('should have navigation tabs', async ({ page }) => {
+    test('should have navigation tabs', async ({ page }) => {
       await page.goto('/settings');
 
       // Should see settings categories
@@ -19,7 +19,7 @@ test.describe('Settings Module', () => {
   });
 
   test.describe('Business Profile Settings', () => {
-    test.skip('should display business profile form', async ({ page }) => {
+    test('should display business profile form', async ({ page }) => {
       await page.goto('/settings/profile');
 
       await expect(page.getByLabel(/business.*name|company.*name/i)).toBeVisible();
@@ -27,7 +27,7 @@ test.describe('Settings Module', () => {
       await expect(page.getByLabel(/phone/i)).toBeVisible();
     });
 
-    test.skip('should update business name', async ({ page }) => {
+    test('should update business name', async ({ page }) => {
       await page.goto('/settings/profile');
 
       const nameInput = page.getByLabel(/business.*name|company.*name/i);
@@ -41,7 +41,7 @@ test.describe('Settings Module', () => {
       await expect(page.getByText(/saved|success|updated/i)).toBeVisible({ timeout: 5000 });
     });
 
-    test.skip('should update business address', async ({ page }) => {
+    test('should update business address', async ({ page }) => {
       await page.goto('/settings/profile');
 
       await page.getByLabel(/street/i).fill('456 Business Ave');
@@ -53,7 +53,7 @@ test.describe('Settings Module', () => {
       await expect(page.getByText(/saved|success/i)).toBeVisible({ timeout: 5000 });
     });
 
-    test.skip('should validate required fields', async ({ page }) => {
+    test('should validate required fields', async ({ page }) => {
       await page.goto('/settings/profile');
 
       const nameInput = page.getByLabel(/business.*name|company.*name/i);
@@ -67,7 +67,7 @@ test.describe('Settings Module', () => {
   });
 
   test.describe('Branding Settings', () => {
-    test.skip('should display branding settings', async ({ page }) => {
+    test('should display branding settings', async ({ page }) => {
       await page.goto('/settings/branding');
 
       // Should see logo upload and color pickers
@@ -75,7 +75,7 @@ test.describe('Settings Module', () => {
       await expect(page.getByText(/primary.*color|brand.*color/i)).toBeVisible();
     });
 
-    test.skip('should upload logo', async ({ page }) => {
+    test('should upload logo', async ({ page }) => {
       await page.goto('/settings/branding');
 
       const fileInput = page.locator('input[type="file"]');
@@ -85,7 +85,7 @@ test.describe('Settings Module', () => {
       }
     });
 
-    test.skip('should update primary color', async ({ page }) => {
+    test('should update primary color', async ({ page }) => {
       await page.goto('/settings/branding');
 
       const colorInput = page.getByLabel(/primary.*color/i);
@@ -98,7 +98,7 @@ test.describe('Settings Module', () => {
       }
     });
 
-    test.skip('should show color preview', async ({ page }) => {
+    test('should show color preview', async ({ page }) => {
       await page.goto('/settings/branding');
 
       // Should have color preview elements
@@ -110,13 +110,13 @@ test.describe('Settings Module', () => {
   });
 
   test.describe('Payment Settings', () => {
-    test.skip('should display payment settings', async ({ page }) => {
+    test('should display payment settings', async ({ page }) => {
       await page.goto('/settings/payments');
 
       await expect(page.getByText(/stripe|payment.*gateway/i)).toBeVisible();
     });
 
-    test.skip('should show Stripe connection status', async ({ page }) => {
+    test('should show Stripe connection status', async ({ page }) => {
       await page.goto('/settings/payments');
 
       // Should show connected/disconnected status
@@ -124,7 +124,7 @@ test.describe('Settings Module', () => {
       await expect(status).toBeVisible();
     });
 
-    test.skip('should have connect Stripe button when not connected', async ({ page }) => {
+    test('should have connect Stripe button when not connected', async ({ page }) => {
       await page.goto('/settings/payments');
 
       const connectButton = page.getByRole('button', { name: /connect.*stripe/i });
@@ -133,7 +133,7 @@ test.describe('Settings Module', () => {
       expect(typeof isVisible).toBe('boolean');
     });
 
-    test.skip('should configure payment terms', async ({ page }) => {
+    test('should configure payment terms', async ({ page }) => {
       await page.goto('/settings/payments');
 
       const paymentTerms = page.getByLabel(/default.*payment.*terms/i);
@@ -149,13 +149,13 @@ test.describe('Settings Module', () => {
   });
 
   test.describe('Tax Settings', () => {
-    test.skip('should display tax settings', async ({ page }) => {
+    test('should display tax settings', async ({ page }) => {
       await page.goto('/settings/taxes');
 
       await expect(page.getByText(/tax.*rate|tax.*settings/i)).toBeVisible();
     });
 
-    test.skip('should add tax rate', async ({ page }) => {
+    test('should add tax rate', async ({ page }) => {
       await page.goto('/settings/taxes');
 
       const addButton = page.getByRole('button', { name: /add.*tax/i });
@@ -172,7 +172,7 @@ test.describe('Settings Module', () => {
       }
     });
 
-    test.skip('should edit tax rate', async ({ page }) => {
+    test('should edit tax rate', async ({ page }) => {
       await page.goto('/settings/taxes');
 
       const editButton = page.getByRole('button', { name: /edit/i }).first();
@@ -188,7 +188,7 @@ test.describe('Settings Module', () => {
       }
     });
 
-    test.skip('should delete tax rate', async ({ page }) => {
+    test('should delete tax rate', async ({ page }) => {
       await page.goto('/settings/taxes');
 
       const deleteButton = page.getByRole('button', { name: /delete/i }).first();
@@ -202,7 +202,7 @@ test.describe('Settings Module', () => {
   });
 
   test.describe('Number Sequence Settings', () => {
-    test.skip('should configure quote numbering', async ({ page }) => {
+    test('should configure quote numbering', async ({ page }) => {
       await page.goto('/settings/numbering');
 
       // Configure quote prefix
@@ -216,7 +216,7 @@ test.describe('Settings Module', () => {
       }
     });
 
-    test.skip('should configure invoice numbering', async ({ page }) => {
+    test('should configure invoice numbering', async ({ page }) => {
       await page.goto('/settings/numbering');
 
       const invoicePrefix = page.getByLabel(/invoice.*prefix/i);
@@ -229,7 +229,7 @@ test.describe('Settings Module', () => {
       }
     });
 
-    test.skip('should show next number preview', async ({ page }) => {
+    test('should show next number preview', async ({ page }) => {
       await page.goto('/settings/numbering');
 
       // Should show what the next number will be
@@ -238,13 +238,13 @@ test.describe('Settings Module', () => {
   });
 
   test.describe('Email Settings', () => {
-    test.skip('should display email settings', async ({ page }) => {
+    test('should display email settings', async ({ page }) => {
       await page.goto('/settings/emails');
 
       await expect(page.getByText(/email.*templates|email.*settings/i)).toBeVisible();
     });
 
-    test.skip('should configure email sender name', async ({ page }) => {
+    test('should configure email sender name', async ({ page }) => {
       await page.goto('/settings/emails');
 
       const senderName = page.getByLabel(/sender.*name|from.*name/i);
@@ -257,7 +257,7 @@ test.describe('Settings Module', () => {
       }
     });
 
-    test.skip('should edit email templates', async ({ page }) => {
+    test('should edit email templates', async ({ page }) => {
       await page.goto('/settings/emails');
 
       // Click on a template to edit
@@ -273,7 +273,7 @@ test.describe('Settings Module', () => {
 });
 
 test.describe('Settings Accessibility', () => {
-  test.skip('should have proper form labels', async ({ page }) => {
+  test('should have proper form labels', async ({ page }) => {
     await page.goto('/settings/profile');
 
     const inputs = page.locator('input:not([type="hidden"])');
@@ -290,7 +290,7 @@ test.describe('Settings Accessibility', () => {
     }
   });
 
-  test.skip('should support keyboard navigation', async ({ page }) => {
+  test('should support keyboard navigation', async ({ page }) => {
     await page.goto('/settings');
 
     await page.keyboard.press('Tab');
@@ -298,7 +298,7 @@ test.describe('Settings Accessibility', () => {
     await expect(focused).toBeVisible();
   });
 
-  test.skip('should have accessible navigation', async ({ page }) => {
+  test('should have accessible navigation', async ({ page }) => {
     await page.goto('/settings');
 
     // Settings nav should be a navigation landmark

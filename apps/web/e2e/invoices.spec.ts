@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Invoices Module', () => {
   test.describe('Invoices List Page', () => {
-    test.skip('should display invoices list page', async ({ page }) => {
+    test('should display invoices list page', async ({ page }) => {
       await page.goto('/invoices');
 
       await expect(page.getByRole('heading', { name: /invoices/i })).toBeVisible();
       await expect(page.getByRole('link', { name: /create|new invoice/i })).toBeVisible();
     });
 
-    test.skip('should show empty state when no invoices', async ({ page }) => {
+    test('should show empty state when no invoices', async ({ page }) => {
       await page.goto('/invoices');
 
       const emptyState = page.getByText(/no invoices|get started/i);
@@ -18,7 +18,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should filter by status', async ({ page }) => {
+    test('should filter by status', async ({ page }) => {
       await page.goto('/invoices');
 
       const statusFilter = page.getByRole('combobox', { name: /status/i });
@@ -30,7 +30,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should filter overdue invoices', async ({ page }) => {
+    test('should filter overdue invoices', async ({ page }) => {
       await page.goto('/invoices');
 
       const overdueFilter = page.getByRole('checkbox', { name: /overdue/i });
@@ -41,7 +41,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should search invoices', async ({ page }) => {
+    test('should search invoices', async ({ page }) => {
       await page.goto('/invoices');
 
       const searchInput = page.getByPlaceholder(/search/i);
@@ -51,7 +51,7 @@ test.describe('Invoices Module', () => {
       await expect(page).toHaveURL(/search=acme/);
     });
 
-    test.skip('should highlight overdue invoices', async ({ page }) => {
+    test('should highlight overdue invoices', async ({ page }) => {
       await page.goto('/invoices');
 
       // Check for overdue styling
@@ -65,7 +65,7 @@ test.describe('Invoices Module', () => {
   });
 
   test.describe('Invoice Creation', () => {
-    test.skip('should navigate to create invoice page', async ({ page }) => {
+    test('should navigate to create invoice page', async ({ page }) => {
       await page.goto('/invoices');
 
       await page.getByRole('link', { name: /create|new invoice/i }).click();
@@ -73,7 +73,7 @@ test.describe('Invoices Module', () => {
       await expect(page).toHaveURL(/\/invoices\/new/);
     });
 
-    test.skip('should display invoice form', async ({ page }) => {
+    test('should display invoice form', async ({ page }) => {
       await page.goto('/invoices/new');
 
       // Should see form fields
@@ -82,7 +82,7 @@ test.describe('Invoices Module', () => {
       await expect(page.getByLabel(/due date/i)).toBeVisible();
     });
 
-    test.skip('should require at least one line item', async ({ page }) => {
+    test('should require at least one line item', async ({ page }) => {
       await page.goto('/invoices/new');
 
       // Fill basic info without line items
@@ -96,7 +96,7 @@ test.describe('Invoices Module', () => {
       await expect(page.getByText(/line item/i)).toBeVisible();
     });
 
-    test.skip('should add line items', async ({ page }) => {
+    test('should add line items', async ({ page }) => {
       await page.goto('/invoices/new');
 
       // Add line item
@@ -113,7 +113,7 @@ test.describe('Invoices Module', () => {
       await expect(total).toBeVisible();
     });
 
-    test.skip('should calculate totals with tax', async ({ page }) => {
+    test('should calculate totals with tax', async ({ page }) => {
       await page.goto('/invoices/new');
 
       // Add line item
@@ -136,7 +136,7 @@ test.describe('Invoices Module', () => {
   });
 
   test.describe('Invoice Detail', () => {
-    test.skip('should display invoice details', async ({ page }) => {
+    test('should display invoice details', async ({ page }) => {
       await page.goto('/invoices');
 
       const firstInvoice = page.locator('table tbody tr').first();
@@ -147,7 +147,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should show payment status', async ({ page }) => {
+    test('should show payment status', async ({ page }) => {
       await page.goto('/invoices');
 
       const firstInvoice = page.locator('table tbody tr').first();
@@ -160,7 +160,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should show amount due', async ({ page }) => {
+    test('should show amount due', async ({ page }) => {
       await page.goto('/invoices');
 
       const firstInvoice = page.locator('table tbody tr').first();
@@ -174,7 +174,7 @@ test.describe('Invoices Module', () => {
   });
 
   test.describe('Invoice Actions', () => {
-    test.skip('should send invoice', async ({ page }) => {
+    test('should send invoice', async ({ page }) => {
       await page.goto('/invoices');
 
       const firstInvoice = page.locator('table tbody tr').first();
@@ -189,7 +189,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should record manual payment', async ({ page }) => {
+    test('should record manual payment', async ({ page }) => {
       await page.goto('/invoices');
 
       const unpaidInvoice = page.locator('tr:has-text("sent")').first();
@@ -206,7 +206,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should mark as paid', async ({ page }) => {
+    test('should mark as paid', async ({ page }) => {
       await page.goto('/invoices');
 
       const unpaidInvoice = page.locator('tr:has-text("sent")').first();
@@ -223,7 +223,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should download invoice PDF', async ({ page }) => {
+    test('should download invoice PDF', async ({ page }) => {
       await page.goto('/invoices');
 
       const firstInvoice = page.locator('table tbody tr').first();
@@ -241,7 +241,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should cancel invoice with confirmation', async ({ page }) => {
+    test('should cancel invoice with confirmation', async ({ page }) => {
       await page.goto('/invoices');
 
       const draftInvoice = page.locator('tr:has-text("draft")').first();
@@ -260,7 +260,7 @@ test.describe('Invoices Module', () => {
   });
 
   test.describe('Payment Tracking', () => {
-    test.skip('should display payment history', async ({ page }) => {
+    test('should display payment history', async ({ page }) => {
       await page.goto('/invoices');
 
       const paidInvoice = page.locator('tr:has-text("paid")').first();
@@ -272,7 +272,7 @@ test.describe('Invoices Module', () => {
       }
     });
 
-    test.skip('should show partial payment amount', async ({ page }) => {
+    test('should show partial payment amount', async ({ page }) => {
       await page.goto('/invoices');
 
       const partialInvoice = page.locator('tr:has-text("partial")').first();
@@ -297,13 +297,13 @@ test.describe('Client Portal - Invoice View', () => {
     await expect(notFound.or(invoiceView)).toBeVisible();
   });
 
-  test.skip('should display pay now button', async ({ page }) => {
+  test('should display pay now button', async ({ page }) => {
     await page.goto('/i/valid-token');
 
     await expect(page.getByRole('button', { name: /pay.*now|pay.*invoice/i })).toBeVisible();
   });
 
-  test.skip('should show payment options', async ({ page }) => {
+  test('should show payment options', async ({ page }) => {
     await page.goto('/i/valid-token');
 
     await page.getByRole('button', { name: /pay/i }).click();
@@ -312,7 +312,7 @@ test.describe('Client Portal - Invoice View', () => {
     await expect(page.getByText(/payment|credit.*card|bank/i)).toBeVisible();
   });
 
-  test.skip('should allow partial payment if enabled', async ({ page }) => {
+  test('should allow partial payment if enabled', async ({ page }) => {
     await page.goto('/i/valid-token-with-partial');
 
     const partialOption = page.getByLabel(/partial|custom.*amount/i);
@@ -326,7 +326,7 @@ test.describe('Client Portal - Invoice View', () => {
 });
 
 test.describe('Invoice Accessibility', () => {
-  test.skip('should have proper table structure', async ({ page }) => {
+  test('should have proper table structure', async ({ page }) => {
     await page.goto('/invoices');
 
     const table = page.locator('table');
@@ -337,7 +337,7 @@ test.describe('Invoice Accessibility', () => {
     }
   });
 
-  test.skip('should support keyboard navigation', async ({ page }) => {
+  test('should support keyboard navigation', async ({ page }) => {
     await page.goto('/invoices');
 
     await page.keyboard.press('Tab');

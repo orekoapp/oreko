@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Backward Compatibility - API Response Format', () => {
-  test.skip('TC-BC-001: quotes API returns expected shape', async ({ page }) => {
+  test('TC-BC-001: quotes API returns expected shape', async ({ page }) => {
     // Login first
     await page.goto('/login');
     await page.fill('input[name="email"]', 'test@quotecraft.dev');
@@ -41,7 +41,7 @@ test.describe('Backward Compatibility - API Response Format', () => {
     }
   });
 
-  test.skip('TC-BC-002: invoices API returns expected shape', async ({ page }) => {
+  test('TC-BC-002: invoices API returns expected shape', async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'test@quotecraft.dev');
     await page.fill('input[name="password"]', 'TestPassword123!');
@@ -68,7 +68,7 @@ test.describe('Backward Compatibility - API Response Format', () => {
     }
   });
 
-  test.skip('TC-BC-003: clients API returns expected shape', async ({ page }) => {
+  test('TC-BC-003: clients API returns expected shape', async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'test@quotecraft.dev');
     await page.fill('input[name="password"]', 'TestPassword123!');
@@ -94,7 +94,7 @@ test.describe('Backward Compatibility - API Response Format', () => {
 });
 
 test.describe('Backward Compatibility - URL Structure', () => {
-  test.skip('TC-BC-004: legacy quote URLs redirect correctly', async ({ page }) => {
+  test('TC-BC-004: legacy quote URLs redirect correctly', async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'test@quotecraft.dev');
     await page.fill('input[name="password"]', 'TestPassword123!');
@@ -113,7 +113,7 @@ test.describe('Backward Compatibility - URL Structure', () => {
     expect(shows404 || redirected).toBeTruthy();
   });
 
-  test.skip('TC-BC-005: client portal URLs remain stable', async ({ page }) => {
+  test('TC-BC-005: client portal URLs remain stable', async ({ page }) => {
     // Client portal URLs must never change (external links may exist)
     const response = await page.goto('/q/some-token');
 
@@ -121,7 +121,7 @@ test.describe('Backward Compatibility - URL Structure', () => {
     expect([200, 404]).toContain(response?.status() || 0);
   });
 
-  test.skip('TC-BC-006: invoice portal URLs remain stable', async ({ page }) => {
+  test('TC-BC-006: invoice portal URLs remain stable', async ({ page }) => {
     const response = await page.goto('/i/some-token');
 
     expect([200, 404]).toContain(response?.status() || 0);
@@ -129,7 +129,7 @@ test.describe('Backward Compatibility - URL Structure', () => {
 });
 
 test.describe('Backward Compatibility - Data Format', () => {
-  test.skip('TC-BC-007: old quote block format still renders', async ({ page }) => {
+  test('TC-BC-007: old quote block format still renders', async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'test@quotecraft.dev');
     await page.fill('input[name="password"]', 'TestPassword123!');
@@ -149,7 +149,7 @@ test.describe('Backward Compatibility - Data Format', () => {
     await expect(quoteContent).toBeVisible();
   });
 
-  test.skip('TC-BC-008: old client metadata format supported', async ({ page }) => {
+  test('TC-BC-008: old client metadata format supported', async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'test@quotecraft.dev');
     await page.fill('input[name="password"]', 'TestPassword123!');
@@ -168,7 +168,7 @@ test.describe('Backward Compatibility - Data Format', () => {
     await expect(page.locator('[data-testid="client-name"]')).toBeVisible();
   });
 
-  test.skip('TC-BC-009: old signature format displays correctly', async ({ page }) => {
+  test('TC-BC-009: old signature format displays correctly', async ({ page }) => {
     // Signatures are immutable records - old formats must always work
     await page.goto('/q/accepted-quote-token');
 
@@ -183,7 +183,7 @@ test.describe('Backward Compatibility - Data Format', () => {
 });
 
 test.describe('Backward Compatibility - Feature Flags', () => {
-  test.skip('TC-BC-010: disabled features show appropriate UI', async ({ page }) => {
+  test('TC-BC-010: disabled features show appropriate UI', async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'test@quotecraft.dev');
     await page.fill('input[name="password"]', 'TestPassword123!');

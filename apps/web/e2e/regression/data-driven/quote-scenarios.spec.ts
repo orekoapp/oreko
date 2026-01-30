@@ -88,7 +88,7 @@ const EMAIL_FORMATS = [
 
 test.describe('Data-Driven: Quote Calculations', () => {
   for (const scenario of QUOTE_SCENARIOS) {
-    test.skip(`TC-DD-001: ${scenario.name}`, async ({ page }) => {
+    test(`TC-DD-001: ${scenario.name}`, async ({ page }) => {
       await page.goto('/login');
       await page.fill('input[name="email"]', 'test@quotecraft.dev');
       await page.fill('input[name="password"]', 'TestPassword123!');
@@ -122,7 +122,7 @@ test.describe('Data-Driven: Quote Calculations', () => {
 
 test.describe('Data-Driven: Tax Calculations', () => {
   for (const scenario of TAX_SCENARIOS) {
-    test.skip(`TC-DD-002: Tax ${scenario.rate}% on $${scenario.subtotal}`, async ({ page }) => {
+    test(`TC-DD-002: Tax ${scenario.rate}% on $${scenario.subtotal}`, async ({ page }) => {
       await page.goto('/login');
       await page.fill('input[name="email"]', 'test@quotecraft.dev');
       await page.fill('input[name="password"]', 'TestPassword123!');
@@ -156,7 +156,7 @@ test.describe('Data-Driven: Tax Calculations', () => {
 
 test.describe('Data-Driven: Discount Calculations', () => {
   for (const scenario of DISCOUNT_SCENARIOS) {
-    test.skip(`TC-DD-003: ${scenario.type} discount ${scenario.value} on $${scenario.subtotal}`, async ({ page }) => {
+    test(`TC-DD-003: ${scenario.type} discount ${scenario.value} on $${scenario.subtotal}`, async ({ page }) => {
       await page.goto('/login');
       await page.fill('input[name="email"]', 'test@quotecraft.dev');
       await page.fill('input[name="password"]', 'TestPassword123!');
@@ -188,7 +188,7 @@ test.describe('Data-Driven: Discount Calculations', () => {
 
 test.describe('Data-Driven: Client Validation', () => {
   for (const data of CLIENT_DATA) {
-    test.skip(`TC-DD-004: Client name "${data.name.substring(0, 20)}..."`, async ({ page }) => {
+    test(`TC-DD-004: Client name "${data.name.substring(0, 20)}..."`, async ({ page }) => {
       await page.goto('/login');
       await page.fill('input[name="email"]', 'test@quotecraft.dev');
       await page.fill('input[name="password"]', 'TestPassword123!');
@@ -216,7 +216,7 @@ test.describe('Data-Driven: Client Validation', () => {
 
 test.describe('Data-Driven: Email Validation', () => {
   for (const data of EMAIL_FORMATS) {
-    test.skip(`TC-DD-005: Email format "${data.email}"`, async ({ page }) => {
+    test(`TC-DD-005: Email format "${data.email}"`, async ({ page }) => {
       await page.goto('/login');
       await page.fill('input[name="email"]', 'test@quotecraft.dev');
       await page.fill('input[name="password"]', 'TestPassword123!');
@@ -248,7 +248,7 @@ test.describe('Data-Driven: Quote Status Transitions', () => {
   ];
 
   for (const transition of STATUS_TRANSITIONS) {
-    test.skip(`TC-DD-006: ${transition.from} -> ${transition.to} via ${transition.action}`, async ({ page }) => {
+    test(`TC-DD-006: ${transition.from} -> ${transition.to} via ${transition.action}`, async ({ page }) => {
       // This test verifies that the state machine works correctly
       // Each transition should result in the expected end state
     });
@@ -266,7 +266,7 @@ test.describe('Data-Driven: Currency Formatting', () => {
   ];
 
   for (const data of CURRENCY_TESTS) {
-    test.skip(`TC-DD-007: Format ${data.value} in ${data.locale}`, async ({ page }) => {
+    test(`TC-DD-007: Format ${data.value} in ${data.locale}`, async ({ page }) => {
       // This would test currency formatting based on workspace locale settings
     });
   }
@@ -281,7 +281,7 @@ test.describe('Data-Driven: Date Formatting', () => {
   ];
 
   for (const data of DATE_TESTS) {
-    test.skip(`TC-DD-008: Format ${data.date} in ${data.locale}`, async ({ page }) => {
+    test(`TC-DD-008: Format ${data.date} in ${data.locale}`, async ({ page }) => {
       // This would test date formatting based on workspace locale settings
     });
   }
@@ -299,7 +299,7 @@ test.describe('Data-Driven: Search Functionality', () => {
   ];
 
   for (const data of SEARCH_TESTS) {
-    test.skip(`TC-DD-009: Search "${data.query}" in ${data.field}`, async ({ page }) => {
+    test(`TC-DD-009: Search "${data.query}" in ${data.field}`, async ({ page }) => {
       await page.goto('/login');
       await page.fill('input[name="email"]', 'test@quotecraft.dev');
       await page.fill('input[name="password"]', 'TestPassword123!');
@@ -337,7 +337,7 @@ test.describe('Data-Driven: Pagination', () => {
   ];
 
   for (const data of PAGINATION_TESTS) {
-    test.skip(`TC-DD-010: ${data.totalItems} items, page size ${data.pageSize}`, async ({ page }) => {
+    test(`TC-DD-010: ${data.totalItems} items, page size ${data.pageSize}`, async ({ page }) => {
       // This would test pagination with different configurations
     });
   }

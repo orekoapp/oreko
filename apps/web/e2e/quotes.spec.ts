@@ -5,7 +5,7 @@ test.describe('Quotes Module', () => {
   // or a test user setup. Tests marked with .skip need auth to be configured.
 
   test.describe('Quotes List Page', () => {
-    test.skip('should display quotes list page', async ({ page }) => {
+    test('should display quotes list page', async ({ page }) => {
       await page.goto('/quotes');
 
       // Should see the page title
@@ -15,7 +15,7 @@ test.describe('Quotes Module', () => {
       await expect(page.getByRole('link', { name: /create|new quote/i })).toBeVisible();
     });
 
-    test.skip('should show empty state when no quotes', async ({ page }) => {
+    test('should show empty state when no quotes', async ({ page }) => {
       await page.goto('/quotes');
 
       // If no quotes, should show empty state
@@ -25,7 +25,7 @@ test.describe('Quotes Module', () => {
       }
     });
 
-    test.skip('should have search functionality', async ({ page }) => {
+    test('should have search functionality', async ({ page }) => {
       await page.goto('/quotes');
 
       const searchInput = page.getByPlaceholder(/search/i);
@@ -38,7 +38,7 @@ test.describe('Quotes Module', () => {
       await expect(page).toHaveURL(/search=website/);
     });
 
-    test.skip('should filter by status', async ({ page }) => {
+    test('should filter by status', async ({ page }) => {
       await page.goto('/quotes');
 
       // Find status filter
@@ -52,7 +52,7 @@ test.describe('Quotes Module', () => {
       }
     });
 
-    test.skip('should sort quotes', async ({ page }) => {
+    test('should sort quotes', async ({ page }) => {
       await page.goto('/quotes');
 
       // Find sort control
@@ -67,7 +67,7 @@ test.describe('Quotes Module', () => {
   });
 
   test.describe('Quote Creation', () => {
-    test.skip('should navigate to create quote page', async ({ page }) => {
+    test('should navigate to create quote page', async ({ page }) => {
       await page.goto('/quotes');
 
       await page.getByRole('link', { name: /create|new quote/i }).click();
@@ -75,7 +75,7 @@ test.describe('Quotes Module', () => {
       await expect(page).toHaveURL(/\/quotes\/new/);
     });
 
-    test.skip('should display quote builder interface', async ({ page }) => {
+    test('should display quote builder interface', async ({ page }) => {
       await page.goto('/quotes/new');
 
       // Should see the builder components
@@ -88,7 +88,7 @@ test.describe('Quotes Module', () => {
       }
     });
 
-    test.skip('should add blocks to quote', async ({ page }) => {
+    test('should add blocks to quote', async ({ page }) => {
       await page.goto('/quotes/new');
 
       // Find blocks panel
@@ -105,7 +105,7 @@ test.describe('Quotes Module', () => {
       await expect(canvas).toBeVisible();
     });
 
-    test.skip('should save quote as draft', async ({ page }) => {
+    test('should save quote as draft', async ({ page }) => {
       await page.goto('/quotes/new');
 
       // Fill in basic info
@@ -126,7 +126,7 @@ test.describe('Quotes Module', () => {
   });
 
   test.describe('Quote Detail', () => {
-    test.skip('should display quote details', async ({ page }) => {
+    test('should display quote details', async ({ page }) => {
       // Navigate to a specific quote (would need a real quote ID)
       await page.goto('/quotes');
 
@@ -140,7 +140,7 @@ test.describe('Quotes Module', () => {
       }
     });
 
-    test.skip('should show quote status badge', async ({ page }) => {
+    test('should show quote status badge', async ({ page }) => {
       await page.goto('/quotes');
 
       // Status badges should be visible
@@ -150,7 +150,7 @@ test.describe('Quotes Module', () => {
       }
     });
 
-    test.skip('should have send quote action', async ({ page }) => {
+    test('should have send quote action', async ({ page }) => {
       await page.goto('/quotes');
 
       // Click on first quote
@@ -164,7 +164,7 @@ test.describe('Quotes Module', () => {
       }
     });
 
-    test.skip('should have convert to invoice action', async ({ page }) => {
+    test('should have convert to invoice action', async ({ page }) => {
       await page.goto('/quotes');
 
       // Click on accepted quote (would need specific setup)
@@ -180,7 +180,7 @@ test.describe('Quotes Module', () => {
   });
 
   test.describe('Quote Actions', () => {
-    test.skip('should duplicate quote', async ({ page }) => {
+    test('should duplicate quote', async ({ page }) => {
       await page.goto('/quotes');
 
       // Open quote actions menu
@@ -196,7 +196,7 @@ test.describe('Quotes Module', () => {
       }
     });
 
-    test.skip('should download quote PDF', async ({ page }) => {
+    test('should download quote PDF', async ({ page }) => {
       await page.goto('/quotes');
 
       const firstQuote = page.locator('table tbody tr').first();
@@ -216,7 +216,7 @@ test.describe('Quotes Module', () => {
       }
     });
 
-    test.skip('should delete quote with confirmation', async ({ page }) => {
+    test('should delete quote with confirmation', async ({ page }) => {
       await page.goto('/quotes');
 
       const actionsMenu = page.locator('button[aria-label="actions"]').first();
@@ -253,14 +253,14 @@ test.describe('Client Portal - Quote View', () => {
     await expect(notFound.or(quoteView)).toBeVisible();
   });
 
-  test.skip('should display accept/decline buttons', async ({ page }) => {
+  test('should display accept/decline buttons', async ({ page }) => {
     await page.goto('/q/valid-token');
 
     await expect(page.getByRole('button', { name: /accept/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /decline/i })).toBeVisible();
   });
 
-  test.skip('should show signature pad on accept', async ({ page }) => {
+  test('should show signature pad on accept', async ({ page }) => {
     await page.goto('/q/valid-token');
 
     await page.getByRole('button', { name: /accept/i }).click();
@@ -269,7 +269,7 @@ test.describe('Client Portal - Quote View', () => {
     await expect(page.getByText(/signature/i)).toBeVisible();
   });
 
-  test.skip('should show decline reason dialog', async ({ page }) => {
+  test('should show decline reason dialog', async ({ page }) => {
     await page.goto('/q/valid-token');
 
     await page.getByRole('button', { name: /decline/i }).click();
@@ -280,7 +280,7 @@ test.describe('Client Portal - Quote View', () => {
 });
 
 test.describe('Quote Accessibility', () => {
-  test.skip('should have proper headings hierarchy', async ({ page }) => {
+  test('should have proper headings hierarchy', async ({ page }) => {
     await page.goto('/quotes');
 
     // Check heading structure
@@ -288,7 +288,7 @@ test.describe('Quote Accessibility', () => {
     await expect(h1).toHaveCount(1);
   });
 
-  test.skip('should support keyboard navigation in quote builder', async ({ page }) => {
+  test('should support keyboard navigation in quote builder', async ({ page }) => {
     await page.goto('/quotes/new');
 
     // Tab through interface
@@ -299,7 +299,7 @@ test.describe('Quote Accessibility', () => {
     await expect(focused).toBeVisible();
   });
 
-  test.skip('should have accessible table', async ({ page }) => {
+  test('should have accessible table', async ({ page }) => {
     await page.goto('/quotes');
 
     const table = page.locator('table');

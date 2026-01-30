@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
-  test.skip('TC-FI-001: rate card items populate in quote builder', async ({ page }) => {
+  test('TC-FI-001: rate card items populate in quote builder', async ({ page }) => {
     // First, ensure a rate card exists
     await page.goto('/rate-cards');
 
@@ -47,7 +47,7 @@ test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
     }
   });
 
-  test.skip('TC-FI-002: rate card changes reflect in new quotes', async ({ page }) => {
+  test('TC-FI-002: rate card changes reflect in new quotes', async ({ page }) => {
     // Update a rate card
     await page.goto('/rate-cards');
     await page.click('tbody tr').first();
@@ -70,7 +70,7 @@ test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
     }
   });
 
-  test.skip('TC-FI-003: existing quotes unaffected by rate card changes', async ({ page }) => {
+  test('TC-FI-003: existing quotes unaffected by rate card changes', async ({ page }) => {
     // View an existing quote created before rate card update
     await page.goto('/quotes');
     await page.click('tbody tr').first();
@@ -84,7 +84,7 @@ test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
 });
 
 test.describe('Feature Interaction - Quote to Invoice Conversion', () => {
-  test.skip('TC-FI-004: all quote data transfers to invoice', async ({ page }) => {
+  test('TC-FI-004: all quote data transfers to invoice', async ({ page }) => {
     // Navigate to an accepted quote
     await page.goto('/quotes');
 
@@ -114,7 +114,7 @@ test.describe('Feature Interaction - Quote to Invoice Conversion', () => {
     }
   });
 
-  test.skip('TC-FI-005: line items preserved in conversion', async ({ page }) => {
+  test('TC-FI-005: line items preserved in conversion', async ({ page }) => {
     await page.goto('/quotes');
 
     const acceptedQuote = page.locator('tr:has-text("accepted")').first();
@@ -135,7 +135,7 @@ test.describe('Feature Interaction - Quote to Invoice Conversion', () => {
     }
   });
 
-  test.skip('TC-FI-006: signature data attached to converted invoice', async ({ page }) => {
+  test('TC-FI-006: signature data attached to converted invoice', async ({ page }) => {
     await page.goto('/invoices');
 
     // Find an invoice that was converted from a quote
@@ -151,7 +151,7 @@ test.describe('Feature Interaction - Quote to Invoice Conversion', () => {
     }
   });
 
-  test.skip('TC-FI-007: quote links to generated invoice', async ({ page }) => {
+  test('TC-FI-007: quote links to generated invoice', async ({ page }) => {
     await page.goto('/quotes');
 
     const convertedQuote = page.locator('tr:has-text("converted")').first();
@@ -170,7 +170,7 @@ test.describe('Feature Interaction - Quote to Invoice Conversion', () => {
 });
 
 test.describe('Feature Interaction - Client Data Propagation', () => {
-  test.skip('TC-FI-008: client updates reflect in draft quotes', async ({ page }) => {
+  test('TC-FI-008: client updates reflect in draft quotes', async ({ page }) => {
     // Update client info
     await page.goto('/clients');
     await page.click('tbody tr').first();
@@ -196,7 +196,7 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
     }
   });
 
-  test.skip('TC-FI-009: client deletion blocks for active quotes', async ({ page }) => {
+  test('TC-FI-009: client deletion blocks for active quotes', async ({ page }) => {
     await page.goto('/clients');
 
     // Find a client with quotes
@@ -217,7 +217,7 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
     }
   });
 
-  test.skip('TC-FI-010: new contact syncs to quote recipient options', async ({ page }) => {
+  test('TC-FI-010: new contact syncs to quote recipient options', async ({ page }) => {
     // Add a new contact to a client
     await page.goto('/clients');
     await page.click('tbody tr').first();
@@ -253,7 +253,7 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
 });
 
 test.describe('Feature Interaction - Template Application', () => {
-  test.skip('TC-FI-011: template applies to new quote', async ({ page }) => {
+  test('TC-FI-011: template applies to new quote', async ({ page }) => {
     // Ensure a template exists
     await page.goto('/templates');
 
@@ -272,7 +272,7 @@ test.describe('Feature Interaction - Template Application', () => {
     }
   });
 
-  test.skip('TC-FI-012: template changes do not affect existing quotes', async ({ page }) => {
+  test('TC-FI-012: template changes do not affect existing quotes', async ({ page }) => {
     // Get existing quote block count
     await page.goto('/quotes');
     await page.click('tr:has-text("draft")');
@@ -299,7 +299,7 @@ test.describe('Feature Interaction - Template Application', () => {
 });
 
 test.describe('Feature Interaction - PDF Generation with Branding', () => {
-  test.skip('TC-FI-013: workspace branding appears in PDF', async ({ page }) => {
+  test('TC-FI-013: workspace branding appears in PDF', async ({ page }) => {
     // Set workspace branding
     await page.goto('/settings/branding');
 
@@ -331,7 +331,7 @@ test.describe('Feature Interaction - PDF Generation with Branding', () => {
     }
   });
 
-  test.skip('TC-FI-014: client-specific branding overrides workspace', async ({ page }) => {
+  test('TC-FI-014: client-specific branding overrides workspace', async ({ page }) => {
     // Some clients may have custom branding
     await page.goto('/clients');
     await page.click('tbody tr').first();
@@ -349,7 +349,7 @@ test.describe('Feature Interaction - PDF Generation with Branding', () => {
     // PDF should use client branding, not workspace
   });
 
-  test.skip('TC-FI-015: PDF reflects current quote state', async ({ page }) => {
+  test('TC-FI-015: PDF reflects current quote state', async ({ page }) => {
     await page.goto('/quotes');
     await page.click('tbody tr').first();
 

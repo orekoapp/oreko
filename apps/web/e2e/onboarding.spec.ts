@@ -5,7 +5,7 @@ test.describe('Onboarding Flow', () => {
   // In a real setup, you would seed a test database or use test fixtures
 
   test.describe('Onboarding Wizard Structure', () => {
-    test.skip('should display onboarding wizard for new users', async ({ page }) => {
+    test('should display onboarding wizard for new users', async ({ page }) => {
       // This test would require authentication setup with a new user
       await page.goto('/onboarding');
 
@@ -13,7 +13,7 @@ test.describe('Onboarding Flow', () => {
       await expect(page.getByRole('heading', { name: /welcome|get started/i })).toBeVisible();
     });
 
-    test.skip('should show progress indicator', async ({ page }) => {
+    test('should show progress indicator', async ({ page }) => {
       await page.goto('/onboarding');
 
       // Should have step indicators
@@ -21,7 +21,7 @@ test.describe('Onboarding Flow', () => {
       await expect(steps).toHaveCount(4); // Business, Branding, Payment, Complete
     });
 
-    test.skip('should display business profile step first', async ({ page }) => {
+    test('should display business profile step first', async ({ page }) => {
       await page.goto('/onboarding');
 
       // Business profile form fields
@@ -31,7 +31,7 @@ test.describe('Onboarding Flow', () => {
   });
 
   test.describe('Form Validation', () => {
-    test.skip('should validate required fields in business step', async ({ page }) => {
+    test('should validate required fields in business step', async ({ page }) => {
       await page.goto('/onboarding');
 
       // Try to proceed without filling required fields
@@ -42,7 +42,7 @@ test.describe('Onboarding Flow', () => {
       await expect(page.getByText(/required|please enter/i)).toBeVisible();
     });
 
-    test.skip('should allow skipping optional steps', async ({ page }) => {
+    test('should allow skipping optional steps', async ({ page }) => {
       await page.goto('/onboarding');
 
       // Fill required business info
@@ -61,7 +61,7 @@ test.describe('Onboarding Flow', () => {
   });
 
   test.describe('Step Navigation', () => {
-    test.skip('should navigate between steps', async ({ page }) => {
+    test('should navigate between steps', async ({ page }) => {
       await page.goto('/onboarding');
 
       // Fill first step
@@ -83,7 +83,7 @@ test.describe('Onboarding Flow', () => {
   });
 
   test.describe('Completion', () => {
-    test.skip('should redirect to dashboard after completion', async ({ page }) => {
+    test('should redirect to dashboard after completion', async ({ page }) => {
       await page.goto('/onboarding');
 
       // Complete all steps (simplified)
@@ -110,7 +110,7 @@ test.describe('Onboarding Flow', () => {
 });
 
 test.describe('Onboarding Accessibility', () => {
-  test.skip('should be keyboard navigable', async ({ page }) => {
+  test('should be keyboard navigable', async ({ page }) => {
     await page.goto('/onboarding');
 
     // Tab through the form
@@ -121,7 +121,7 @@ test.describe('Onboarding Accessibility', () => {
     await expect(focusedElement).toBeVisible();
   });
 
-  test.skip('should have proper form labels', async ({ page }) => {
+  test('should have proper form labels', async ({ page }) => {
     await page.goto('/onboarding');
 
     // All inputs should have associated labels

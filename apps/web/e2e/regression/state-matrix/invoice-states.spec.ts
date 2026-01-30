@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Invoice State Matrix Tests', () => {
   test.describe('Valid State Transitions', () => {
-    test.skip('TC-SM-015: draft -> sent transition', async ({ page }) => {
+    test('TC-SM-015: draft -> sent transition', async ({ page }) => {
       // Create a draft invoice
       await page.goto('/invoices/new');
       await page.waitForLoadState('networkidle');
@@ -45,7 +45,7 @@ test.describe('Invoice State Matrix Tests', () => {
       await expect(page.locator('[data-testid="invoice-status"]')).toHaveText(/sent/i);
     });
 
-    test.skip('TC-SM-016: sent -> viewed transition', async ({ page }) => {
+    test('TC-SM-016: sent -> viewed transition', async ({ page }) => {
       // View is tracked when client opens invoice portal
       await page.goto('/i/test-invoice-token');
 
@@ -53,7 +53,7 @@ test.describe('Invoice State Matrix Tests', () => {
       // Verify by checking back in dashboard
     });
 
-    test.skip('TC-SM-017: sent -> partial payment transition', async ({ page }) => {
+    test('TC-SM-017: sent -> partial payment transition', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("sent")');
 
@@ -70,7 +70,7 @@ test.describe('Invoice State Matrix Tests', () => {
       await expect(page.locator('[data-testid="invoice-status"]')).toHaveText(/partial/i);
     });
 
-    test.skip('TC-SM-018: partial -> paid transition', async ({ page }) => {
+    test('TC-SM-018: partial -> paid transition', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("partial")');
 
@@ -89,7 +89,7 @@ test.describe('Invoice State Matrix Tests', () => {
       await expect(page.locator('[data-testid="invoice-status"]')).toHaveText(/paid/i);
     });
 
-    test.skip('TC-SM-019: sent -> overdue transition (automatic)', async ({ page }) => {
+    test('TC-SM-019: sent -> overdue transition (automatic)', async ({ page }) => {
       // This transition happens automatically when due date passes
       // Create invoice with past due date for testing
 
@@ -104,7 +104,7 @@ test.describe('Invoice State Matrix Tests', () => {
       await expect(page.locator('[data-testid="invoice-status"]')).toHaveText(/overdue/i);
     });
 
-    test.skip('TC-SM-020: any state -> void transition', async ({ page }) => {
+    test('TC-SM-020: any state -> void transition', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("sent")');
 
@@ -126,7 +126,7 @@ test.describe('Invoice State Matrix Tests', () => {
   });
 
   test.describe('Invalid State Transitions', () => {
-    test.skip('TC-SM-021: cannot send voided invoice', async ({ page }) => {
+    test('TC-SM-021: cannot send voided invoice', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("void")');
 
@@ -135,7 +135,7 @@ test.describe('Invoice State Matrix Tests', () => {
       await expect(sendButton).toBeDisabled().or(expect(sendButton).toBeHidden());
     });
 
-    test.skip('TC-SM-022: cannot record payment on voided invoice', async ({ page }) => {
+    test('TC-SM-022: cannot record payment on voided invoice', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("void")');
 
@@ -144,7 +144,7 @@ test.describe('Invoice State Matrix Tests', () => {
       await expect(paymentButton).toBeDisabled().or(expect(paymentButton).toBeHidden());
     });
 
-    test.skip('TC-SM-023: cannot void paid invoice', async ({ page }) => {
+    test('TC-SM-023: cannot void paid invoice', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("paid")');
 
@@ -157,7 +157,7 @@ test.describe('Invoice State Matrix Tests', () => {
       }
     });
 
-    test.skip('TC-SM-024: cannot overpay invoice', async ({ page }) => {
+    test('TC-SM-024: cannot overpay invoice', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("sent")');
 
@@ -180,7 +180,7 @@ test.describe('Invoice State Matrix Tests', () => {
   });
 
   test.describe('Payment History', () => {
-    test.skip('TC-SM-025: payments are tracked in history', async ({ page }) => {
+    test('TC-SM-025: payments are tracked in history', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("partial")');
 
@@ -196,7 +196,7 @@ test.describe('Invoice State Matrix Tests', () => {
       }
     });
 
-    test.skip('TC-SM-026: payment refunds are tracked', async ({ page }) => {
+    test('TC-SM-026: payment refunds are tracked', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("paid")');
 
@@ -222,7 +222,7 @@ test.describe('Invoice State Matrix Tests', () => {
   });
 
   test.describe('Due Date Handling', () => {
-    test.skip('TC-SM-027: overdue status shows days overdue', async ({ page }) => {
+    test('TC-SM-027: overdue status shows days overdue', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("overdue")');
 
@@ -230,7 +230,7 @@ test.describe('Invoice State Matrix Tests', () => {
       await expect(page.getByText(/\d+\s*days?\s*overdue/i)).toBeVisible();
     });
 
-    test.skip('TC-SM-028: payment clears overdue status', async ({ page }) => {
+    test('TC-SM-028: payment clears overdue status', async ({ page }) => {
       await page.goto('/invoices');
       await page.click('tr:has-text("overdue")');
 

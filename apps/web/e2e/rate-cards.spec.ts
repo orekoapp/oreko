@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Rate Cards Module', () => {
   test.describe('Rate Cards List Page', () => {
-    test.skip('should display rate cards list page', async ({ page }) => {
+    test('should display rate cards list page', async ({ page }) => {
       await page.goto('/rate-cards');
 
       await expect(page.getByRole('heading', { name: /rate cards/i })).toBeVisible();
       await expect(page.getByRole('link', { name: /add|create|new/i })).toBeVisible();
     });
 
-    test.skip('should show empty state when no rate cards', async ({ page }) => {
+    test('should show empty state when no rate cards', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const emptyState = page.getByText(/no rate cards|get started/i);
@@ -18,7 +18,7 @@ test.describe('Rate Cards Module', () => {
       }
     });
 
-    test.skip('should search rate cards', async ({ page }) => {
+    test('should search rate cards', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const searchInput = page.getByPlaceholder(/search/i);
@@ -28,7 +28,7 @@ test.describe('Rate Cards Module', () => {
       await expect(page).toHaveURL(/search=development/);
     });
 
-    test.skip('should filter by category', async ({ page }) => {
+    test('should filter by category', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const categoryFilter = page.getByRole('combobox', { name: /category/i });
@@ -38,7 +38,7 @@ test.describe('Rate Cards Module', () => {
       }
     });
 
-    test.skip('should display rate card items', async ({ page }) => {
+    test('should display rate card items', async ({ page }) => {
       await page.goto('/rate-cards');
 
       // Should show table or card grid
@@ -50,7 +50,7 @@ test.describe('Rate Cards Module', () => {
   });
 
   test.describe('Rate Card Creation', () => {
-    test.skip('should navigate to create rate card page', async ({ page }) => {
+    test('should navigate to create rate card page', async ({ page }) => {
       await page.goto('/rate-cards');
 
       await page.getByRole('link', { name: /add|create|new/i }).click();
@@ -58,14 +58,14 @@ test.describe('Rate Cards Module', () => {
       await expect(page).toHaveURL(/\/rate-cards\/new/);
     });
 
-    test.skip('should display rate card form', async ({ page }) => {
+    test('should display rate card form', async ({ page }) => {
       await page.goto('/rate-cards/new');
 
       await expect(page.getByLabel(/name/i)).toBeVisible();
       await expect(page.getByLabel(/rate|price/i)).toBeVisible();
     });
 
-    test.skip('should require name and rate', async ({ page }) => {
+    test('should require name and rate', async ({ page }) => {
       await page.goto('/rate-cards/new');
 
       await page.getByRole('button', { name: /save|create/i }).click();
@@ -73,7 +73,7 @@ test.describe('Rate Cards Module', () => {
       await expect(page.getByText(/required/i)).toBeVisible();
     });
 
-    test.skip('should create rate card item', async ({ page }) => {
+    test('should create rate card item', async ({ page }) => {
       await page.goto('/rate-cards/new');
 
       await page.getByLabel(/name/i).fill('Web Development');
@@ -86,7 +86,7 @@ test.describe('Rate Cards Module', () => {
       await expect(page).toHaveURL(/\/rate-cards/);
     });
 
-    test.skip('should create rate card with category', async ({ page }) => {
+    test('should create rate card with category', async ({ page }) => {
       await page.goto('/rate-cards/new');
 
       await page.getByLabel(/name/i).fill('Logo Design');
@@ -103,7 +103,7 @@ test.describe('Rate Cards Module', () => {
       await page.getByRole('button', { name: /save|create/i }).click();
     });
 
-    test.skip('should create rate card with pricing tiers', async ({ page }) => {
+    test('should create rate card with pricing tiers', async ({ page }) => {
       await page.goto('/rate-cards/new');
 
       await page.getByLabel(/name/i).fill('Consulting');
@@ -128,7 +128,7 @@ test.describe('Rate Cards Module', () => {
   });
 
   test.describe('Rate Card Detail', () => {
-    test.skip('should display rate card details', async ({ page }) => {
+    test('should display rate card details', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const firstItem = page.locator('table tbody tr, [data-testid="rate-card-item"]').first();
@@ -139,7 +139,7 @@ test.describe('Rate Cards Module', () => {
       }
     });
 
-    test.skip('should show pricing information', async ({ page }) => {
+    test('should show pricing information', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const firstItem = page.locator('table tbody tr').first();
@@ -153,7 +153,7 @@ test.describe('Rate Cards Module', () => {
   });
 
   test.describe('Rate Card Actions', () => {
-    test.skip('should edit rate card', async ({ page }) => {
+    test('should edit rate card', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const firstItem = page.locator('table tbody tr').first();
@@ -168,7 +168,7 @@ test.describe('Rate Cards Module', () => {
       }
     });
 
-    test.skip('should delete rate card with confirmation', async ({ page }) => {
+    test('should delete rate card with confirmation', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const actionsMenu = page.locator('button[aria-label="actions"]').first();
@@ -184,7 +184,7 @@ test.describe('Rate Cards Module', () => {
       }
     });
 
-    test.skip('should duplicate rate card', async ({ page }) => {
+    test('should duplicate rate card', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const actionsMenu = page.locator('button[aria-label="actions"]').first();
@@ -199,7 +199,7 @@ test.describe('Rate Cards Module', () => {
   });
 
   test.describe('Category Management', () => {
-    test.skip('should display categories', async ({ page }) => {
+    test('should display categories', async ({ page }) => {
       await page.goto('/rate-cards');
 
       // Categories should be visible in sidebar or filter
@@ -209,7 +209,7 @@ test.describe('Rate Cards Module', () => {
       }
     });
 
-    test.skip('should create new category', async ({ page }) => {
+    test('should create new category', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const manageCategoriesButton = page.getByRole('button', { name: /manage.*categories|add.*category/i });
@@ -225,7 +225,7 @@ test.describe('Rate Cards Module', () => {
       }
     });
 
-    test.skip('should filter rate cards by category', async ({ page }) => {
+    test('should filter rate cards by category', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const categoryTab = page.getByRole('tab', { name: /development/i });
@@ -239,7 +239,7 @@ test.describe('Rate Cards Module', () => {
   });
 
   test.describe('Rate Card Usage', () => {
-    test.skip('should show usage in quotes', async ({ page }) => {
+    test('should show usage in quotes', async ({ page }) => {
       await page.goto('/rate-cards');
 
       const firstItem = page.locator('table tbody tr').first();
@@ -255,7 +255,7 @@ test.describe('Rate Cards Module', () => {
 });
 
 test.describe('Rate Card Accessibility', () => {
-  test.skip('should have proper form labels', async ({ page }) => {
+  test('should have proper form labels', async ({ page }) => {
     await page.goto('/rate-cards/new');
 
     const nameInput = page.getByLabel(/name/i);
@@ -265,7 +265,7 @@ test.describe('Rate Card Accessibility', () => {
     await expect(rateInput).toBeVisible();
   });
 
-  test.skip('should support keyboard navigation', async ({ page }) => {
+  test('should support keyboard navigation', async ({ page }) => {
     await page.goto('/rate-cards');
 
     await page.keyboard.press('Tab');

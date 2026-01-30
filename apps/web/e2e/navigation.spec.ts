@@ -29,7 +29,7 @@ test.describe('Public Navigation', () => {
 });
 
 test.describe('Theme Toggle', () => {
-  test.skip('should toggle between light and dark mode', async ({ page }) => {
+  test('should toggle between light and dark mode', async ({ page }) => {
     // Skip this test until authenticated
     await page.goto('/');
 

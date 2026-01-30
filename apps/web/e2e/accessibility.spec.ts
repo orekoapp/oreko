@@ -292,7 +292,7 @@ test.describe('Accessibility Tests', () => {
 });
 
 test.describe('Theme Toggle Accessibility', () => {
-  test.skip('theme toggle should be keyboard accessible', async ({ page }) => {
+  test('theme toggle should be keyboard accessible', async ({ page }) => {
     await page.goto('/');
 
     const themeToggle = page.getByRole('button', { name: /theme|toggle/i });
@@ -308,7 +308,7 @@ test.describe('Theme Toggle Accessibility', () => {
     }
   });
 
-  test.skip('theme options should be navigable', async ({ page }) => {
+  test('theme options should be navigable', async ({ page }) => {
     await page.goto('/');
 
     const themeToggle = page.getByRole('button', { name: /theme/i });
