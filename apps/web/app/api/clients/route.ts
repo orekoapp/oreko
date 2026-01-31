@@ -54,21 +54,25 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Transform to API response shape
-    const data = clients.map((client) => ({
-      id: client.id,
-      name: client.name,
-      email: client.email,
-      phone: client.phone || '',
-      company: client.company || '',
-      address: client.address || '',
-      city: client.city || '',
-      state: client.state || '',
-      postalCode: client.postalCode || '',
-      country: client.country || '',
-      notes: client.notes || '',
-      createdAt: client.createdAt.toISOString(),
-      updatedAt: client.updatedAt.toISOString(),
-    }));
+    const data = clients.map((client) => {
+      // Address is stored as JSON
+      const address = (client.address as Record<string, string> | null) || {};
+      return {
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        phone: client.phone || '',
+        company: client.company || '',
+        address: address.street || address.line1 || '',
+        city: address.city || '',
+        state: address.state || '',
+        postalCode: address.postalCode || address.zip || '',
+        country: address.country || '',
+        notes: client.notes || '',
+        createdAt: client.createdAt.toISOString(),
+        updatedAt: client.updatedAt.toISOString(),
+      };
+    });
 
     return NextResponse.json({
       data,
