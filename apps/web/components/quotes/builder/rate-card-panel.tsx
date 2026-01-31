@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import { createBlock } from '@/lib/quotes/types';
 import { formatCurrency } from '@/lib/utils';
-import { getRateCards } from '@/lib/rate-cards/actions';
+import { getRateCardsForSelection } from '@/lib/rate-cards/actions';
 import type { RateCardSelection } from '@/lib/rate-cards/types';
 
 const PRICING_TYPE_LABELS: Record<string, string> = {
@@ -32,15 +32,13 @@ export function RateCardPanel() {
   useEffect(() => {
     async function fetchRateCards() {
       try {
-        const result = await getRateCards();
-        if (result.rateCards) {
-          setRateCards(result.rateCards as RateCardSelection[]);
-          // Expand all categories by default
-          const categories = new Set(
-            result.rateCards.map((rc: RateCardSelection) => rc.categoryId || 'uncategorized')
-          );
-          setExpandedCategories(categories);
-        }
+        const result = await getRateCardsForSelection();
+        setRateCards(result);
+        // Expand all categories by default
+        const categories = new Set(
+          result.map((rc) => rc.categoryId || 'uncategorized')
+        );
+        setExpandedCategories(categories);
       } catch (error) {
         console.error('Failed to fetch rate cards:', error);
       } finally {
