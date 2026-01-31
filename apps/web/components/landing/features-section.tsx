@@ -40,8 +40,8 @@ const features = [
       'Built-in electronic signatures that are legally binding. Clients can sign from any device, anywhere.',
     points: ['Legally binding', 'Mobile-friendly', 'Signature tracking'],
     color: 'from-emerald-500 to-emerald-600',
-    image: '/images/landing/feature-dashboard.png',
-    imageAlt: 'Dashboard with business overview and conversion metrics',
+    image: '/images/landing/feature-quote-builder.png',
+    imageAlt: 'Quote builder with signature block for electronic signatures',
   },
   {
     icon: CalendarClock,
@@ -51,8 +51,8 @@ const features = [
       'Set up deposits, milestone payments, and auto-reminders. Get paid on your terms without chasing clients.',
     points: ['Deposit requests', 'Milestone payments', 'Auto-reminders'],
     color: 'from-amber-500 to-amber-600',
-    image: '/images/landing/feature-invoices.png',
-    imageAlt: 'Invoice management with payment tracking',
+    image: '/images/landing/feature-dashboard.png',
+    imageAlt: 'Dashboard showing revenue tracking and invoice status',
   },
   {
     icon: Layers,
@@ -63,7 +63,7 @@ const features = [
     points: ['Reusable services', 'Automatic calculations', 'Version history'],
     color: 'from-pink-500 to-pink-600',
     image: '/images/landing/feature-clients.png',
-    imageAlt: 'Client management with organized data and statistics',
+    imageAlt: 'Client management with quotes and invoices tracking per client',
   },
   {
     icon: Server,
