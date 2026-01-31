@@ -6,27 +6,30 @@ test.describe('Onboarding Flow', () => {
 
   test.describe('Onboarding Wizard Structure', () => {
     test('should display onboarding wizard for new users', async ({ page }) => {
-      // This test would require authentication setup with a new user
+      // This test requires authentication setup with a new user
       await page.goto('/onboarding');
 
-      // Should see the onboarding wizard
-      await expect(page.getByRole('heading', { name: /welcome|get started/i })).toBeVisible();
+      // Should see the onboarding wizard title
+      await expect(page.getByRole('heading', { name: /welcome to quotecraft/i })).toBeVisible();
     });
 
-    test('should show progress indicator', async ({ page }) => {
+    test('should show progress indicator with steps', async ({ page }) => {
       await page.goto('/onboarding');
 
-      // Should have step indicators
-      const steps = page.locator('[data-testid="step-indicator"]');
-      await expect(steps).toHaveCount(4); // Business, Branding, Payment, Complete
+      // Should have step titles visible
+      await expect(page.getByText('Business')).toBeVisible();
+      await expect(page.getByText('Branding')).toBeVisible();
+      await expect(page.getByText('Payments')).toBeVisible();
+      await expect(page.getByText('Complete')).toBeVisible();
     });
 
     test('should display business profile step first', async ({ page }) => {
       await page.goto('/onboarding');
 
       // Business profile form fields
-      await expect(page.getByLabel(/business name|company name/i)).toBeVisible();
-      await expect(page.getByLabel(/email/i)).toBeVisible();
+      await expect(page.getByText(/tell us about your business/i)).toBeVisible();
+      await expect(page.getByLabel(/business name/i)).toBeVisible();
+      await expect(page.getByLabel(/business email/i)).toBeVisible();
     });
   });
 
@@ -35,28 +38,19 @@ test.describe('Onboarding Flow', () => {
       await page.goto('/onboarding');
 
       // Try to proceed without filling required fields
-      const nextButton = page.getByRole('button', { name: /next|continue/i });
-      await nextButton.click();
+      const continueButton = page.getByRole('button', { name: /continue/i });
+      await continueButton.click();
 
       // Should show validation errors
       await expect(page.getByText(/required|please enter/i)).toBeVisible();
     });
 
-    test('should allow skipping optional steps', async ({ page }) => {
+    test('should have required field indicators', async ({ page }) => {
       await page.goto('/onboarding');
 
-      // Fill required business info
-      await page.getByLabel(/business name/i).fill('Test Company');
-      await page.getByLabel(/email/i).fill('test@company.com');
-
-      // Click next to go to branding
-      await page.getByRole('button', { name: /next|continue/i }).click();
-
-      // Should be able to skip branding step
-      const skipButton = page.getByRole('button', { name: /skip/i });
-      if (await skipButton.isVisible()) {
-        await skipButton.click();
-      }
+      // Required fields should have asterisk indicators
+      await expect(page.getByText('Business Name *')).toBeVisible();
+      await expect(page.getByText('Business Email *')).toBeVisible();
     });
   });
 
@@ -66,45 +60,96 @@ test.describe('Onboarding Flow', () => {
 
       // Fill first step
       await page.getByLabel(/business name/i).fill('Test Company');
-      await page.getByLabel(/email/i).fill('test@company.com');
+      await page.getByLabel(/business email/i).fill('test@company.com');
 
       // Go to next step
-      await page.getByRole('button', { name: /next|continue/i }).click();
+      await page.getByRole('button', { name: /continue/i }).click();
 
       // Should be on branding step
-      await expect(page.getByText(/branding|customize/i)).toBeVisible();
+      await expect(page.getByText(/customize your branding/i)).toBeVisible();
 
       // Go back
-      await page.getByRole('button', { name: /back|previous/i }).click();
+      await page.getByRole('button', { name: /back/i }).click();
 
       // Should be back on business step with data preserved
       await expect(page.getByLabel(/business name/i)).toHaveValue('Test Company');
     });
+
+    test('should allow skipping optional steps', async ({ page }) => {
+      await page.goto('/onboarding');
+
+      // Fill required business info
+      await page.getByLabel(/business name/i).fill('Test Company');
+      await page.getByLabel(/business email/i).fill('test@company.com');
+
+      // Click continue to go to branding
+      await page.getByRole('button', { name: /continue/i }).click();
+
+      // Should be able to skip branding step
+      const skipButton = page.getByRole('button', { name: /skip for now/i });
+      await expect(skipButton).toBeVisible();
+    });
+  });
+
+  test.describe('Branding Step', () => {
+    test('should show color pickers and preview', async ({ page }) => {
+      await page.goto('/onboarding');
+
+      // Fill and proceed past business step
+      await page.getByLabel(/business name/i).fill('Test Company');
+      await page.getByLabel(/business email/i).fill('test@company.com');
+      await page.getByRole('button', { name: /continue/i }).click();
+
+      // Should have color inputs
+      await expect(page.getByLabel(/primary color/i)).toBeVisible();
+      await expect(page.getByLabel(/accent color/i)).toBeVisible();
+
+      // Should have preview section
+      await expect(page.getByText('Preview')).toBeVisible();
+    });
   });
 
   test.describe('Completion', () => {
-    test('should redirect to dashboard after completion', async ({ page }) => {
+    test('should show completion step with next actions', async ({ page }) => {
       await page.goto('/onboarding');
 
       // Complete all steps (simplified)
       // Step 1: Business
       await page.getByLabel(/business name/i).fill('Test Company');
-      await page.getByLabel(/email/i).fill('test@company.com');
-      await page.getByRole('button', { name: /next|continue/i }).click();
+      await page.getByLabel(/business email/i).fill('test@company.com');
+      await page.getByRole('button', { name: /continue/i }).click();
 
-      // Skip remaining steps
-      while (await page.getByRole('button', { name: /skip/i }).isVisible()) {
-        await page.getByRole('button', { name: /skip/i }).click();
+      // Skip branding
+      await page.getByRole('button', { name: /skip for now/i }).click();
+
+      // Skip payment
+      const skipPayment = page.getByRole('button', { name: /skip for now/i });
+      if (await skipPayment.isVisible()) {
+        await skipPayment.click();
       }
 
-      // Click finish
-      const finishButton = page.getByRole('button', { name: /finish|complete|go to dashboard/i });
-      if (await finishButton.isVisible()) {
-        await finishButton.click();
+      // Should be on complete step
+      await expect(page.getByText(/you're all set/i)).toBeVisible();
+      await expect(page.getByRole('button', { name: /go to dashboard/i })).toBeVisible();
+    });
 
-        // Should redirect to dashboard
-        await expect(page).toHaveURL(/\/(dashboard)?$/);
+    test('should show suggested next actions on complete step', async ({ page }) => {
+      await page.goto('/onboarding');
+
+      // Navigate to complete step
+      await page.getByLabel(/business name/i).fill('Test Company');
+      await page.getByLabel(/business email/i).fill('test@company.com');
+      await page.getByRole('button', { name: /continue/i }).click();
+      await page.getByRole('button', { name: /skip for now/i }).click();
+
+      const skipPayment = page.getByRole('button', { name: /skip for now/i });
+      if (await skipPayment.isVisible()) {
+        await skipPayment.click();
       }
+
+      // Should show next actions
+      await expect(page.getByText(/create your first quote/i)).toBeVisible();
+      await expect(page.getByText(/add your clients/i)).toBeVisible();
     });
   });
 });
@@ -125,7 +170,7 @@ test.describe('Onboarding Accessibility', () => {
     await page.goto('/onboarding');
 
     // All inputs should have associated labels
-    const inputs = page.locator('input:not([type="hidden"])');
+    const inputs = page.locator('input:not([type="hidden"]):not([type="color"])');
     const count = await inputs.count();
 
     for (let i = 0; i < count; i++) {

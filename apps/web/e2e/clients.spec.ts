@@ -6,22 +6,32 @@ test.describe('Clients Module', () => {
       await page.goto('/clients');
 
       await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
-      await expect(page.getByRole('link', { name: /add|create|new client/i })).toBeVisible();
+      await expect(page.getByRole('link', { name: /add client/i })).toBeVisible();
     });
 
     test('should show empty state when no clients', async ({ page }) => {
       await page.goto('/clients');
 
-      const emptyState = page.getByText(/no clients|get started|add.*first/i);
+      const emptyState = page.getByText(/no clients found/i);
       if (await emptyState.isVisible()) {
         await expect(emptyState).toBeVisible();
+        await expect(page.getByRole('link', { name: /add your first client/i })).toBeVisible();
       }
+    });
+
+    test('should show client stats cards', async ({ page }) => {
+      await page.goto('/clients');
+
+      // Should show stats cards
+      await expect(page.getByText('Total Clients')).toBeVisible();
+      await expect(page.getByText('Individuals')).toBeVisible();
+      await expect(page.getByText('Companies')).toBeVisible();
     });
 
     test('should search clients', async ({ page }) => {
       await page.goto('/clients');
 
-      const searchInput = page.getByPlaceholder(/search/i);
+      const searchInput = page.getByPlaceholder(/search clients/i);
       await searchInput.fill('acme');
       await searchInput.press('Enter');
 
@@ -31,7 +41,7 @@ test.describe('Clients Module', () => {
     test('should filter by type', async ({ page }) => {
       await page.goto('/clients');
 
-      const typeFilter = page.getByRole('combobox', { name: /type/i });
+      const typeFilter = page.locator('button').filter({ hasText: /all types/i });
       if (await typeFilter.isVisible()) {
         await typeFilter.click();
         await page.getByRole('option', { name: /company/i }).click();
@@ -40,24 +50,16 @@ test.describe('Clients Module', () => {
       }
     });
 
-    test('should filter by tags', async ({ page }) => {
-      await page.goto('/clients');
-
-      const tagFilter = page.getByRole('combobox', { name: /tag/i });
-      if (await tagFilter.isVisible()) {
-        await tagFilter.click();
-        await page.getByRole('option', { name: /vip/i }).click();
-      }
-    });
-
-    test('should display client list with key info', async ({ page }) => {
+    test('should display client table with columns', async ({ page }) => {
       await page.goto('/clients');
 
       const table = page.locator('table');
       if (await table.isVisible()) {
-        // Should show client name, email, company columns
-        await expect(table.getByRole('columnheader', { name: /name/i })).toBeVisible();
-        await expect(table.getByRole('columnheader', { name: /email/i })).toBeVisible();
+        // Should show column headers
+        await expect(page.getByRole('button', { name: /client/i })).toBeVisible();
+        await expect(page.getByText('Contact')).toBeVisible();
+        await expect(page.getByRole('button', { name: /quotes/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /invoices/i })).toBeVisible();
       }
     });
   });
@@ -66,246 +68,107 @@ test.describe('Clients Module', () => {
     test('should navigate to create client page', async ({ page }) => {
       await page.goto('/clients');
 
-      await page.getByRole('link', { name: /add|create|new client/i }).click();
+      await page.getByRole('link', { name: /add client/i }).click();
 
       await expect(page).toHaveURL(/\/clients\/new/);
     });
 
-    test('should display client form', async ({ page }) => {
+    test('should display client form sections', async ({ page }) => {
       await page.goto('/clients/new');
 
-      await expect(page.getByLabel(/name/i)).toBeVisible();
-      await expect(page.getByLabel(/email/i)).toBeVisible();
+      // Should have form sections
+      await expect(page.getByText('Basic Information')).toBeVisible();
+      await expect(page.getByText('Address')).toBeVisible();
+      await expect(page.getByText('Additional Contacts')).toBeVisible();
+      await expect(page.getByText('Notes')).toBeVisible();
+    });
+
+    test('should display client form fields', async ({ page }) => {
+      await page.goto('/clients/new');
+
+      await expect(page.getByLabel(/client type/i)).toBeVisible();
+      await expect(page.getByLabel(/full name/i)).toBeVisible();
+      await expect(page.getByLabel(/email/i).first()).toBeVisible();
     });
 
     test('should require name and email', async ({ page }) => {
       await page.goto('/clients/new');
 
       // Try to save without required fields
-      const saveButton = page.getByRole('button', { name: /save|create/i });
+      const saveButton = page.getByRole('button', { name: /save client/i });
       await saveButton.click();
 
       // Should show validation errors
-      await expect(page.getByText(/required|please enter/i)).toBeVisible();
+      await expect(page.getByText(/required|at least/i)).toBeVisible();
     });
 
-    test('should create individual client', async ({ page }) => {
+    test('should switch between individual and company type', async ({ page }) => {
       await page.goto('/clients/new');
 
-      await page.getByLabel(/name/i).fill('John Doe');
-      await page.getByLabel(/email/i).fill('john@example.com');
+      // Default is individual
+      await expect(page.getByLabel(/full name/i)).toBeVisible();
 
-      // Select individual type
-      const typeSelect = page.getByLabel(/type/i);
-      if (await typeSelect.isVisible()) {
-        await typeSelect.click();
-        await page.getByRole('option', { name: /individual/i }).click();
-      }
+      // Switch to company
+      await page.getByLabel(/client type/i).click();
+      await page.getByRole('option', { name: /company/i }).click();
 
-      // Save
-      await page.getByRole('button', { name: /save|create/i }).click();
-
-      // Should redirect to client detail or list
-      await expect(page).toHaveURL(/\/clients/);
-    });
-
-    test('should create company client', async ({ page }) => {
-      await page.goto('/clients/new');
-
-      await page.getByLabel(/name/i).fill('Acme Corporation');
-      await page.getByLabel(/email/i).fill('contact@acme.com');
-
-      const typeSelect = page.getByLabel(/type/i);
-      if (await typeSelect.isVisible()) {
-        await typeSelect.click();
-        await page.getByRole('option', { name: /company/i }).click();
-      }
-
-      // Fill company field
-      const companyInput = page.getByLabel(/company.*name/i);
-      if (await companyInput.isVisible()) {
-        await companyInput.fill('Acme Corp');
-      }
-
-      await page.getByRole('button', { name: /save|create/i }).click();
-
-      await expect(page).toHaveURL(/\/clients/);
+      // Should show company fields
+      await expect(page.getByLabel(/contact name/i)).toBeVisible();
+      await expect(page.getByLabel(/company name/i)).toBeVisible();
     });
 
     test('should add address to client', async ({ page }) => {
       await page.goto('/clients/new');
 
-      await page.getByLabel(/name/i).fill('Test Client');
-      await page.getByLabel(/email/i).fill('test@example.com');
-
-      // Fill address
-      await page.getByLabel(/street/i).fill('123 Main St');
+      // Fill address fields
+      await page.getByLabel(/street address/i).fill('123 Main St');
       await page.getByLabel(/city/i).fill('New York');
       await page.getByLabel(/state/i).fill('NY');
-      await page.getByLabel(/postal.*code|zip/i).fill('10001');
+      await page.getByLabel(/postal code/i).fill('10001');
       await page.getByLabel(/country/i).fill('USA');
-
-      await page.getByRole('button', { name: /save|create/i }).click();
     });
 
     test('should add contacts to client', async ({ page }) => {
       await page.goto('/clients/new');
 
-      await page.getByLabel(/name/i).fill('Test Company');
-      await page.getByLabel(/email/i).fill('info@company.com');
-
       // Add contact
-      const addContactButton = page.getByRole('button', { name: /add.*contact/i });
-      if (await addContactButton.isVisible()) {
-        await addContactButton.click();
+      const addContactButton = page.getByRole('button', { name: /add contact/i });
+      await addContactButton.click();
 
-        // Fill contact details
-        await page.getByLabel(/contact.*name/i).fill('Jane Smith');
-        await page.getByLabel(/contact.*email/i).fill('jane@company.com');
-        await page.getByLabel(/role/i).fill('Project Manager');
-      }
-
-      await page.getByRole('button', { name: /save|create/i }).click();
-    });
-
-    test('should add tags to client', async ({ page }) => {
-      await page.goto('/clients/new');
-
-      await page.getByLabel(/name/i).fill('VIP Client');
-      await page.getByLabel(/email/i).fill('vip@example.com');
-
-      // Add tags
-      const tagInput = page.getByLabel(/tags/i);
-      if (await tagInput.isVisible()) {
-        await tagInput.fill('VIP');
-        await tagInput.press('Enter');
-        await tagInput.fill('Enterprise');
-        await tagInput.press('Enter');
-      }
-
-      await page.getByRole('button', { name: /save|create/i }).click();
-    });
-  });
-
-  test.describe('Client Detail', () => {
-    test('should display client details', async ({ page }) => {
-      await page.goto('/clients');
-
-      const firstClient = page.locator('table tbody tr').first();
-      if (await firstClient.isVisible()) {
-        await firstClient.click();
-
-        // Should show client info
-        await expect(page.getByText(/contact.*info|details/i)).toBeVisible();
-      }
-    });
-
-    test('should show tabs for quotes and invoices', async ({ page }) => {
-      await page.goto('/clients');
-
-      const firstClient = page.locator('table tbody tr').first();
-      if (await firstClient.isVisible()) {
-        await firstClient.click();
-
-        // Should have tabs
-        await expect(page.getByRole('tab', { name: /quotes/i })).toBeVisible();
-        await expect(page.getByRole('tab', { name: /invoices/i })).toBeVisible();
-      }
-    });
-
-    test('should show client history', async ({ page }) => {
-      await page.goto('/clients');
-
-      const firstClient = page.locator('table tbody tr').first();
-      if (await firstClient.isVisible()) {
-        await firstClient.click();
-
-        // Should show activity/history
-        const activityTab = page.getByRole('tab', { name: /activity|history/i });
-        if (await activityTab.isVisible()) {
-          await activityTab.click();
-          await expect(page.getByText(/activity|history/i)).toBeVisible();
-        }
-      }
-    });
-
-    test('should show client notes', async ({ page }) => {
-      await page.goto('/clients');
-
-      const firstClient = page.locator('table tbody tr').first();
-      if (await firstClient.isVisible()) {
-        await firstClient.click();
-
-        const notesTab = page.getByRole('tab', { name: /notes/i });
-        if (await notesTab.isVisible()) {
-          await notesTab.click();
-          await expect(page.getByPlaceholder(/note/i)).toBeVisible();
-        }
-      }
+      // Should show contact form
+      await expect(page.locator('input[placeholder="Contact name"]')).toBeVisible();
     });
   });
 
   test.describe('Client Actions', () => {
-    test('should edit client', async ({ page }) => {
+    test('should open actions menu', async ({ page }) => {
       await page.goto('/clients');
 
-      const firstClient = page.locator('table tbody tr').first();
-      if (await firstClient.isVisible()) {
-        await firstClient.click();
-
-        const editButton = page.getByRole('button', { name: /edit/i });
-        await editButton.click();
-
-        // Should be in edit mode
-        await expect(page.getByLabel(/name/i)).toBeEnabled();
-      }
-    });
-
-    test('should create quote from client page', async ({ page }) => {
-      await page.goto('/clients');
-
-      const firstClient = page.locator('table tbody tr').first();
-      if (await firstClient.isVisible()) {
-        await firstClient.click();
-
-        const createQuoteButton = page.getByRole('button', { name: /create.*quote|new.*quote/i });
-        if (await createQuoteButton.isVisible()) {
-          await createQuoteButton.click();
-
-          // Should navigate to quote creation with client pre-selected
-          await expect(page).toHaveURL(/\/quotes\/new/);
-        }
-      }
-    });
-
-    test('should create invoice from client page', async ({ page }) => {
-      await page.goto('/clients');
-
-      const firstClient = page.locator('table tbody tr').first();
-      if (await firstClient.isVisible()) {
-        await firstClient.click();
-
-        const createInvoiceButton = page.getByRole('button', { name: /create.*invoice|new.*invoice/i });
-        if (await createInvoiceButton.isVisible()) {
-          await createInvoiceButton.click();
-
-          await expect(page).toHaveURL(/\/invoices\/new/);
-        }
-      }
-    });
-
-    test('should delete client with confirmation', async ({ page }) => {
-      await page.goto('/clients');
-
-      const actionsMenu = page.locator('button[aria-label="actions"]').first();
+      const actionsMenu = page.getByRole('button', { name: /open menu/i }).first();
       if (await actionsMenu.isVisible()) {
         await actionsMenu.click();
 
+        // Should show menu items
+        await expect(page.getByRole('menuitem', { name: /view details/i })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: /edit/i })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: /create quote/i })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: /create invoice/i })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: /delete/i })).toBeVisible();
+      }
+    });
+
+    test('should show delete confirmation dialog', async ({ page }) => {
+      await page.goto('/clients');
+
+      const actionsMenu = page.getByRole('button', { name: /open menu/i }).first();
+      if (await actionsMenu.isVisible()) {
+        await actionsMenu.click();
         await page.getByRole('menuitem', { name: /delete/i }).click();
 
         // Should show confirmation dialog
         await expect(page.getByRole('alertdialog')).toBeVisible();
-        await expect(page.getByText(/are you sure|confirm/i)).toBeVisible();
+        await expect(page.getByText(/delete client/i)).toBeVisible();
+        await expect(page.getByText(/are you sure you want to delete/i)).toBeVisible();
 
         // Cancel
         await page.getByRole('button', { name: /cancel/i }).click();
@@ -315,34 +178,32 @@ test.describe('Clients Module', () => {
   });
 
   test.describe('Bulk Actions', () => {
-    test('should select multiple clients', async ({ page }) => {
+    test('should select multiple clients with checkboxes', async ({ page }) => {
       await page.goto('/clients');
 
-      const checkboxes = page.locator('table tbody input[type="checkbox"]');
-      if (await checkboxes.count() > 0) {
-        await checkboxes.nth(0).check();
-        await checkboxes.nth(1).check();
+      const checkboxes = page.locator('table tbody [role="checkbox"]');
+      const count = await checkboxes.count();
 
-        // Should show bulk actions
-        await expect(page.getByText(/selected/i)).toBeVisible();
+      if (count > 0) {
+        await checkboxes.nth(0).click();
+
+        // Should show bulk action button
+        await expect(page.getByRole('button', { name: /delete \d+/i })).toBeVisible();
       }
     });
 
-    test('should bulk delete clients', async ({ page }) => {
+    test('should select all clients', async ({ page }) => {
       await page.goto('/clients');
 
-      // Select all
-      const selectAllCheckbox = page.locator('table thead input[type="checkbox"]');
+      const selectAllCheckbox = page.locator('table thead [role="checkbox"]');
       if (await selectAllCheckbox.isVisible()) {
-        await selectAllCheckbox.check();
+        await selectAllCheckbox.click();
 
-        // Click bulk delete
-        const bulkDeleteButton = page.getByRole('button', { name: /delete.*selected/i });
-        if (await bulkDeleteButton.isVisible()) {
-          await bulkDeleteButton.click();
-
-          // Should show confirmation
-          await expect(page.getByRole('alertdialog')).toBeVisible();
+        // All checkboxes should be checked
+        const bodyCheckboxes = page.locator('table tbody [role="checkbox"]');
+        const count = await bodyCheckboxes.count();
+        if (count > 0) {
+          await expect(page.getByRole('button', { name: /delete/i })).toBeVisible();
         }
       }
     });

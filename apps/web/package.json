@@ -10,7 +10,9 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "e2e:seed": "npx ts-node e2e/utils/seed-e2e-data.ts",
+    "e2e:cleanup": "CLEANUP=true npx ts-node e2e/utils/seed-e2e-data.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.0",

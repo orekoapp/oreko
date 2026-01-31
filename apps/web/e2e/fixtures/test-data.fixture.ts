@@ -80,16 +80,17 @@ export const test = base.extend<TestDataFixtures>({
     await page.goto('/clients/new');
     await page.waitForLoadState('networkidle');
 
-    // Fill client form
-    await page.fill('input[name="name"]', TEST_CLIENT.name + ' ' + Date.now());
-    await page.fill('input[name="email"]', `e2e-${Date.now()}@test.com`);
+    // Fill client form using id selectors
+    const timestamp = Date.now();
+    await page.fill('#name', TEST_CLIENT.name + ' ' + timestamp);
+    await page.fill('#email', `e2e-${timestamp}@test.com`);
 
-    const phoneInput = page.locator('input[name="phone"]');
+    const phoneInput = page.locator('#phone');
     if (await phoneInput.isVisible()) {
       await phoneInput.fill(TEST_CLIENT.phone);
     }
 
-    const companyInput = page.locator('input[name="company"]');
+    const companyInput = page.locator('#company');
     if (await companyInput.isVisible()) {
       await companyInput.fill(TEST_CLIENT.company);
     }
@@ -112,11 +113,12 @@ export const test = base.extend<TestDataFixtures>({
     // Cleanup: delete the test client
     try {
       await page.goto(`/clients/${id}`);
-      const deleteButton = page.locator('button:has-text("Delete")');
+      const deleteButton = page.getByRole('button', { name: /delete/i });
       if (await deleteButton.isVisible()) {
         await deleteButton.click();
-        // Confirm deletion
-        await page.click('button:has-text("Confirm")');
+        // Confirm deletion in dialog
+        const confirmButton = page.getByRole('button', { name: /confirm|delete/i });
+        await confirmButton.click();
       }
     } catch {
       // Ignore cleanup errors
@@ -128,18 +130,26 @@ export const test = base.extend<TestDataFixtures>({
     await page.goto('/quotes/new');
     await page.waitForLoadState('networkidle');
 
-    // Fill quote form
-    await page.fill('input[name="title"]', TEST_QUOTE.title + ' ' + Date.now());
+    // Fill quote form using id selectors
+    const titleInput = page.locator('#title');
+    if (await titleInput.isVisible()) {
+      await titleInput.fill(TEST_QUOTE.title + ' ' + Date.now());
+    }
 
-    // Select client
-    const clientSelect = page.locator('[data-testid="client-select"]');
-    if (await clientSelect.isVisible()) {
-      await clientSelect.click();
-      await page.click(`[data-testid="client-option-${testClient.id}"]`);
+    // Select client using combobox pattern
+    const clientTrigger = page.getByRole('combobox', { name: /client/i });
+    if (await clientTrigger.isVisible()) {
+      await clientTrigger.click();
+      // Select from dropdown
+      const clientOption = page.getByRole('option').filter({ hasText: new RegExp(testClient.name, 'i') });
+      if (await clientOption.isVisible()) {
+        await clientOption.click();
+      }
     }
 
     // Save quote
-    await page.click('button:has-text("Save")');
+    const saveButton = page.getByRole('button', { name: /save|create/i });
+    await saveButton.click();
 
     // Wait for redirect
     await page.waitForURL(/\/quotes\/[a-z0-9-]+/);
@@ -147,7 +157,10 @@ export const test = base.extend<TestDataFixtures>({
     const id = url.split('/quotes/')[1]?.split('?')[0] || '';
 
     // Get quote number from page
-    const quoteNumber = await page.locator('[data-testid="quote-number"]').textContent() || 'QT-0001';
+    const quoteNumberEl = page.locator('[data-testid="quote-number"]');
+    const quoteNumber = await quoteNumberEl.isVisible()
+      ? await quoteNumberEl.textContent() || 'QT-0001'
+      : 'QT-0001';
 
     const quoteData = {
       id,
@@ -159,10 +172,11 @@ export const test = base.extend<TestDataFixtures>({
     // Cleanup
     try {
       await page.goto(`/quotes/${id}`);
-      const deleteButton = page.locator('button:has-text("Delete")');
+      const deleteButton = page.getByRole('button', { name: /delete/i });
       if (await deleteButton.isVisible()) {
         await deleteButton.click();
-        await page.click('button:has-text("Confirm")');
+        const confirmButton = page.getByRole('button', { name: /confirm|delete/i });
+        await confirmButton.click();
       }
     } catch {
       // Ignore cleanup errors
@@ -174,32 +188,51 @@ export const test = base.extend<TestDataFixtures>({
     await page.goto('/invoices/new');
     await page.waitForLoadState('networkidle');
 
-    // Fill invoice form
-    await page.fill('input[name="title"]', TEST_INVOICE.title + ' ' + Date.now());
+    // Fill invoice form using id selectors
+    const titleInput = page.locator('#title');
+    if (await titleInput.isVisible()) {
+      await titleInput.fill(TEST_INVOICE.title + ' ' + Date.now());
+    }
+
+    // Select client using combobox pattern
+    const clientTrigger = page.getByRole('combobox', { name: /client/i });
+    if (await clientTrigger.isVisible()) {
+      await clientTrigger.click();
+      const clientOption = page.getByRole('option').filter({ hasText: new RegExp(testClient.name, 'i') });
+      if (await clientOption.isVisible()) {
+        await clientOption.click();
+      }
+    }
 
     // Set due date
-    const dueDateInput = page.locator('input[name="dueDate"]');
+    const dueDateInput = page.locator('#dueDate, input[type="date"]');
     if (await dueDateInput.isVisible()) {
       await dueDateInput.fill(TEST_INVOICE.dueDate!);
     }
 
     // Add line item
-    const addItemButton = page.locator('button:has-text("Add Item")');
+    const addItemButton = page.getByRole('button', { name: /add.*item/i });
     if (await addItemButton.isVisible()) {
       await addItemButton.click();
-      await page.fill('input[name="lineItems.0.name"]', TEST_INVOICE.lineItems[0]!.name);
-      await page.fill('input[name="lineItems.0.quantity"]', String(TEST_INVOICE.lineItems[0]!.quantity));
-      await page.fill('input[name="lineItems.0.rate"]', String(TEST_INVOICE.lineItems[0]!.rate));
+      // Fill line item fields
+      const itemNameInput = page.locator('input').filter({ has: page.locator('[placeholder*="item"], [placeholder*="description"]') }).first();
+      if (await itemNameInput.isVisible()) {
+        await itemNameInput.fill(TEST_INVOICE.lineItems[0]!.name);
+      }
     }
 
     // Save invoice
-    await page.click('button:has-text("Save")');
+    const saveButton = page.getByRole('button', { name: /save|create/i });
+    await saveButton.click();
 
     await page.waitForURL(/\/invoices\/[a-z0-9-]+/);
     const url = page.url();
     const id = url.split('/invoices/')[1]?.split('?')[0] || '';
 
-    const invoiceNumber = await page.locator('[data-testid="invoice-number"]').textContent() || 'INV-0001';
+    const invoiceNumberEl = page.locator('[data-testid="invoice-number"]');
+    const invoiceNumber = await invoiceNumberEl.isVisible()
+      ? await invoiceNumberEl.textContent() || 'INV-0001'
+      : 'INV-0001';
 
     const invoiceData = {
       id,
@@ -211,10 +244,11 @@ export const test = base.extend<TestDataFixtures>({
     // Cleanup
     try {
       await page.goto(`/invoices/${id}`);
-      const deleteButton = page.locator('button:has-text("Delete")');
+      const deleteButton = page.getByRole('button', { name: /delete/i });
       if (await deleteButton.isVisible()) {
         await deleteButton.click();
-        await page.click('button:has-text("Confirm")');
+        const confirmButton = page.getByRole('button', { name: /confirm|delete/i });
+        await confirmButton.click();
       }
     } catch {
       // Ignore cleanup errors
@@ -226,24 +260,28 @@ export const test = base.extend<TestDataFixtures>({
     await page.goto('/rate-cards/new');
     await page.waitForLoadState('networkidle');
 
-    // Fill rate card form
-    await page.fill('input[name="name"]', TEST_RATE_CARD.name + ' ' + Date.now());
+    // Fill rate card form using id selectors
+    const nameInput = page.locator('#name');
+    if (await nameInput.isVisible()) {
+      await nameInput.fill(TEST_RATE_CARD.name + ' ' + Date.now());
+    }
 
-    const descInput = page.locator('textarea[name="description"]');
+    const descInput = page.locator('#description, textarea');
     if (await descInput.isVisible()) {
-      await descInput.fill(TEST_RATE_CARD.description);
+      await descInput.first().fill(TEST_RATE_CARD.description);
     }
 
     // Add items
+    const addButton = page.getByRole('button', { name: /add.*item/i });
     for (const item of TEST_RATE_CARD.items) {
-      const addButton = page.locator('button:has-text("Add Item")');
       if (await addButton.isVisible()) {
         await addButton.click();
       }
     }
 
     // Save
-    await page.click('button:has-text("Save")');
+    const saveButton = page.getByRole('button', { name: /save|create/i });
+    await saveButton.click();
 
     await page.waitForURL(/\/rate-cards\/[a-z0-9-]+/);
     const url = page.url();
@@ -259,10 +297,11 @@ export const test = base.extend<TestDataFixtures>({
     // Cleanup
     try {
       await page.goto(`/rate-cards/${id}`);
-      const deleteButton = page.locator('button:has-text("Delete")');
+      const deleteButton = page.getByRole('button', { name: /delete/i });
       if (await deleteButton.isVisible()) {
         await deleteButton.click();
-        await page.click('button:has-text("Confirm")');
+        const confirmButton = page.getByRole('button', { name: /confirm|delete/i });
+        await confirmButton.click();
       }
     } catch {
       // Ignore cleanup errors

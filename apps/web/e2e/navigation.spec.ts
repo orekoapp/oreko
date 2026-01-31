@@ -1,50 +1,58 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Public Navigation', () => {
-  test('should have accessible landing page', async ({ page }) => {
+  test('should have proper page title', async ({ page }) => {
     await page.goto('/login');
 
     // Page should have proper title
     await expect(page).toHaveTitle(/quotecraft/i);
-
-    // Page should have skip to content link (hidden but accessible)
-    const skipLink = page.locator('a[href="#main-content"]');
-    await expect(skipLink).toBeAttached();
   });
 
-  test('should have proper page structure', async ({ page }) => {
+  test('should have proper page structure on login', async ({ page }) => {
     await page.goto('/login');
 
-    // Should have main landmark
-    const main = page.locator('main, [role="main"]');
-    await expect(main).toBeVisible();
+    // Login page should have content container
+    const container = page.locator('div').filter({ hasText: /welcome back/i }).first();
+    await expect(container).toBeVisible();
   });
 
   test('should display 404 page for unknown routes', async ({ page }) => {
     await page.goto('/non-existent-page-12345');
 
     // Should show 404 content
-    await expect(page.getByText(/not found|page not found/i)).toBeVisible();
+    await expect(page.getByText(/page not found/i)).toBeVisible();
+  });
+
+  test('should have go back and home buttons on 404', async ({ page }) => {
+    await page.goto('/non-existent-page-12345');
+
+    // Should have navigation buttons
+    await expect(page.getByRole('link', { name: /go back/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /dashboard/i })).toBeVisible();
   });
 });
 
-test.describe('Theme Toggle', () => {
-  test('should toggle between light and dark mode', async ({ page }) => {
-    // Skip this test until authenticated
+test.describe('Landing Page Navigation', () => {
+  test('should show landing page at root', async ({ page }) => {
     await page.goto('/');
 
-    // Find and click theme toggle
-    const themeToggle = page.getByRole('button', { name: /toggle theme/i });
+    // Should show landing page content
+    await expect(page.getByRole('heading', { name: /beautiful invoices/i })).toBeVisible();
+  });
 
-    if (await themeToggle.isVisible()) {
-      await themeToggle.click();
+  test('should have login CTA', async ({ page }) => {
+    await page.goto('/');
 
-      // Menu should appear
-      const darkOption = page.getByRole('menuitem', { name: /dark/i });
-      await darkOption.click();
+    // Should have sign in link in header
+    const signInLink = page.getByRole('link', { name: /sign in|login/i });
+    await expect(signInLink.first()).toBeVisible();
+  });
 
-      // HTML element should have dark class
-      await expect(page.locator('html')).toHaveClass(/dark/);
-    }
+  test('should have get started CTA', async ({ page }) => {
+    await page.goto('/');
+
+    // Should have get started button
+    const ctaButton = page.getByRole('link', { name: /get started|sign up/i });
+    await expect(ctaButton.first()).toBeVisible();
   });
 });

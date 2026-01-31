@@ -15,7 +15,7 @@ test.describe('Invoice State Matrix Tests', () => {
       await page.goto('/invoices/new');
       await page.waitForLoadState('networkidle');
 
-      await page.fill('input[name="title"]', 'State Matrix Test Invoice');
+      await page.fill('#title', 'State Matrix Test Invoice');
 
       // Add line item
       const addItemBtn = page.locator('button:has-text("Add Item")');

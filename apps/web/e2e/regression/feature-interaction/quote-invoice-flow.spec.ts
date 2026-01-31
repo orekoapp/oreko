@@ -21,7 +21,7 @@ test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
     if (!rateCardExists) {
       // Create a rate card
       await page.goto('/rate-cards/new');
-      await page.fill('input[name="name"]', 'Development Rates');
+      await page.fill('#name', 'Development Rates');
       await page.click('button:has-text("Add Item")');
       await page.fill('input[name="items.0.name"]', 'Senior Developer');
       await page.fill('input[name="items.0.rate"]', '150');
@@ -180,7 +180,7 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
     // Update email
     await page.getByRole('button', { name: /edit/i }).click();
     const newEmail = `updated-${Date.now()}@test.com`;
-    await page.fill('input[name="email"]', newEmail);
+    await page.getByRole('textbox', { name: 'Email' }).fill(newEmail);
     await page.click('button:has-text("Save")');
 
     // Check a draft quote for this client

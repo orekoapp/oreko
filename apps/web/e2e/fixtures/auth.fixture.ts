@@ -2,9 +2,9 @@ import { test as base, expect } from '@playwright/test';
 
 // Test user credentials for E2E tests
 export const TEST_USER = {
-  email: 'test@quotecraft.dev',
-  password: 'TestPassword123!',
-  name: 'Test User',
+  email: process.env.E2E_TEST_USER_EMAIL || 'e2e-test@quotecraft.dev',
+  password: process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!',
+  name: process.env.E2E_TEST_USER_NAME || 'E2E Test User',
 };
 
 // Admin user for elevated permissions tests
@@ -37,15 +37,15 @@ export const test = base.extend<AuthFixtures>({
     const isLoggedIn = await page.locator('[data-testid="user-menu"]').isVisible().catch(() => false);
 
     if (!isLoggedIn) {
-      // Fill in login form
-      await page.fill('input[name="email"]', TEST_USER.email);
-      await page.fill('input[name="password"]', TEST_USER.password);
+      // Fill in login form using id selectors
+      await page.fill('#email', TEST_USER.email);
+      await page.fill('#password', TEST_USER.password);
 
       // Submit login form
       await page.click('button[type="submit"]');
 
-      // Wait for redirect to dashboard
-      await page.waitForURL(/\/(dashboard|quotes|invoices|clients)?$/);
+      // Wait for redirect to dashboard or onboarding
+      await page.waitForURL(/\/(dashboard|onboarding|quotes|invoices|clients)?$/);
     }
 
     // Use the authenticated page
@@ -60,10 +60,10 @@ export const test = base.extend<AuthFixtures>({
     const isLoggedIn = await page.locator('[data-testid="user-menu"]').isVisible().catch(() => false);
 
     if (!isLoggedIn) {
-      await page.fill('input[name="email"]', ADMIN_USER.email);
-      await page.fill('input[name="password"]', ADMIN_USER.password);
+      await page.fill('#email', ADMIN_USER.email);
+      await page.fill('#password', ADMIN_USER.password);
       await page.click('button[type="submit"]');
-      await page.waitForURL(/\/(dashboard|quotes|invoices|clients)?$/);
+      await page.waitForURL(/\/(dashboard|onboarding|quotes|invoices|clients)?$/);
     }
 
     await use(page as any);
@@ -84,13 +84,13 @@ export async function setupAuthState(browser: any): Promise<void> {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    // Fill login form
-    await page.fill('input[name="email"]', TEST_USER.email);
-    await page.fill('input[name="password"]', TEST_USER.password);
+    // Fill login form using id selectors
+    await page.fill('#email', TEST_USER.email);
+    await page.fill('#password', TEST_USER.password);
     await page.click('button[type="submit"]');
 
     // Wait for successful login
-    await page.waitForURL(/\/(dashboard|quotes|invoices|clients)?$/, { timeout: 10000 });
+    await page.waitForURL(/\/(dashboard|onboarding|quotes|invoices|clients)?$/, { timeout: 10000 });
 
     // Save storage state
     await context.storageState({ path: 'e2e/.auth/user.json' });
@@ -107,23 +107,35 @@ export async function ensureTestUserExists(page: any): Promise<void> {
   // Try to login first
   await page.goto('/login');
 
-  await page.fill('input[name="email"]', TEST_USER.email);
-  await page.fill('input[name="password"]', TEST_USER.password);
+  await page.fill('#email', TEST_USER.email);
+  await page.fill('#password', TEST_USER.password);
   await page.click('button[type="submit"]');
 
-  // Check if login failed (user doesn't exist)
-  const loginError = await page.locator('[data-testid="login-error"]').isVisible().catch(() => false);
+  // Wait for navigation or error
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1000);
 
-  if (loginError) {
-    // Register new user
-    await page.goto('/register');
-    await page.fill('input[name="name"]', TEST_USER.name);
-    await page.fill('input[name="email"]', TEST_USER.email);
-    await page.fill('input[name="password"]', TEST_USER.password);
-    await page.click('button[type="submit"]');
+  // Check if login succeeded
+  const currentUrl = page.url();
+  const isLoggedIn = currentUrl.includes('/dashboard') || currentUrl.includes('/onboarding');
 
-    // Wait for registration success
-    await page.waitForURL(/\/(onboarding|dashboard)?$/);
+  if (!isLoggedIn) {
+    // Check for error - user may not exist
+    const errorText = await page.locator('.text-destructive, [role="alert"]').textContent().catch(() => '');
+
+    if (errorText?.toLowerCase().includes('invalid') || errorText?.toLowerCase().includes('incorrect')) {
+      // Register new user
+      await page.goto('/register');
+      await page.waitForLoadState('networkidle');
+      await page.fill('#name', TEST_USER.name);
+      await page.fill('#email', TEST_USER.email);
+      await page.fill('#password', TEST_USER.password);
+      await page.fill('#confirmPassword', TEST_USER.password);
+      await page.click('button[type="submit"]');
+
+      // Wait for registration success
+      await page.waitForURL(/\/(onboarding|dashboard)?$/);
+    }
   }
 }
 
@@ -147,9 +159,9 @@ export async function logout(page: any): Promise<void> {
 export async function switchUser(page: any, user: typeof TEST_USER): Promise<void> {
   await logout(page);
 
-  await page.fill('input[name="email"]', user.email);
-  await page.fill('input[name="password"]', user.password);
+  await page.fill('#email', user.email);
+  await page.fill('#password', user.password);
   await page.click('button[type="submit"]');
 
-  await page.waitForURL(/\/(dashboard|quotes|invoices|clients)?$/);
+  await page.waitForURL(/\/(dashboard|onboarding|quotes|invoices|clients)?$/);
 }

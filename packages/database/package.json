@@ -14,6 +14,10 @@
     "migrate": "prisma migrate dev",
     "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
+    "seed:prod": "tsx prisma/seed-production.ts",
+    "seed:e2e": "tsx prisma/seed-e2e-production.ts",
+    "seed:e2e:cleanup": "tsx prisma/seed-e2e-production.ts --cleanup",
+    "seed:reset": "prisma migrate reset --force && tsx prisma/seed.ts",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
