@@ -94,7 +94,7 @@ test.describe('Client Portal - Invoice View', () => {
     await page.goto('/i/test-token-123');
 
     const notFound = page.getByText(/not found|expired|invalid/i);
-    const invoiceView = page.getByText(/invoice/i);
+    const invoiceView = page.getByText(/invoice/i).first();
 
     await expect(notFound.or(invoiceView)).toBeVisible();
   });

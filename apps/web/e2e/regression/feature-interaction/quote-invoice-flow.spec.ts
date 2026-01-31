@@ -36,7 +36,7 @@ test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
     const rateCardPanel = page.locator('[data-testid="rate-card-panel"]');
     if (await rateCardPanel.isVisible()) {
       // Select the rate card
-      await page.click('[data-testid="rate-card-item"]').first();
+      await page.locator('[data-testid="rate-card-item"]').first().click();
 
       // Verify item added to quote
       const lineItem = page.locator('[data-testid="quote-line-item"]');
@@ -50,7 +50,7 @@ test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
   test('TC-FI-002: rate card changes reflect in new quotes', async ({ page }) => {
     // Update a rate card
     await page.goto('/rate-cards');
-    await page.click('tbody tr').first();
+    await page.locator('tbody tr').first().click();
 
     await page.getByRole('button', { name: /edit/i }).click();
 
@@ -63,7 +63,7 @@ test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
 
     const rateCardPanel = page.locator('[data-testid="rate-card-panel"]');
     if (await rateCardPanel.isVisible()) {
-      await page.click('[data-testid="rate-card-item"]').first();
+      await page.locator('[data-testid="rate-card-item"]').first().click();
 
       // New rate should be used
       await expect(page.locator('input[name*="rate"]').first()).toHaveValue('175');
@@ -73,7 +73,7 @@ test.describe('Feature Interaction - Quote Creation with Rate Cards', () => {
   test('TC-FI-003: existing quotes unaffected by rate card changes', async ({ page }) => {
     // View an existing quote created before rate card update
     await page.goto('/quotes');
-    await page.click('tbody tr').first();
+    await page.locator('tbody tr').first().click();
 
     // The rate in the existing quote should be unchanged
     const rateValue = await page.locator('[data-testid="line-item-rate"]').first().textContent();
@@ -173,7 +173,7 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
   test('TC-FI-008: client updates reflect in draft quotes', async ({ page }) => {
     // Update client info
     await page.goto('/clients');
-    await page.click('tbody tr').first();
+    await page.locator('tbody tr').first().click();
 
     const clientId = page.url().split('/clients/')[1]?.split('?')[0];
 
@@ -220,7 +220,7 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
   test('TC-FI-010: new contact syncs to quote recipient options', async ({ page }) => {
     // Add a new contact to a client
     await page.goto('/clients');
-    await page.click('tbody tr').first();
+    await page.locator('tbody tr').first().click();
 
     const clientId = page.url().split('/clients/')[1]?.split('?')[0];
 
@@ -265,7 +265,7 @@ test.describe('Feature Interaction - Template Application', () => {
     const templateSelect = page.locator('[data-testid="template-select"]');
     if (await templateSelect.isVisible()) {
       await templateSelect.click();
-      await page.click('[data-testid="template-option"]').first();
+      await page.locator('[data-testid="template-option"]').first().click();
 
       // Template blocks should appear
       await expect(page.locator('[data-testid="block"]')).toHaveCount({ min: 1 });
@@ -281,7 +281,7 @@ test.describe('Feature Interaction - Template Application', () => {
 
     // Update template
     await page.goto('/templates');
-    await page.click('tbody tr').first();
+    await page.locator('tbody tr').first().click();
 
     await page.getByRole('button', { name: /edit/i }).click();
 
@@ -315,7 +315,7 @@ test.describe('Feature Interaction - PDF Generation with Branding', () => {
 
     // Generate PDF for a quote
     await page.goto('/quotes');
-    await page.click('tbody tr').first();
+    await page.locator('tbody tr').first().click();
 
     const pdfButton = page.getByRole('button', { name: /pdf|download/i });
     if (await pdfButton.isVisible()) {
@@ -334,7 +334,7 @@ test.describe('Feature Interaction - PDF Generation with Branding', () => {
   test('TC-FI-014: client-specific branding overrides workspace', async ({ page }) => {
     // Some clients may have custom branding
     await page.goto('/clients');
-    await page.click('tbody tr').first();
+    await page.locator('tbody tr').first().click();
 
     // Set client-specific branding
     const brandingTab = page.getByRole('tab', { name: /branding/i });
@@ -351,7 +351,7 @@ test.describe('Feature Interaction - PDF Generation with Branding', () => {
 
   test('TC-FI-015: PDF reflects current quote state', async ({ page }) => {
     await page.goto('/quotes');
-    await page.click('tbody tr').first();
+    await page.locator('tbody tr').first().click();
 
     // Get current status
     const status = await page.locator('[data-testid="quote-status"]').textContent();

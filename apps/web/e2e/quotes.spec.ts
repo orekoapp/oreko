@@ -73,7 +73,7 @@ test.describe('Quotes Module', () => {
       await page.goto('/quotes/new/builder');
 
       // Should see the blocks panel
-      await expect(page.getByText('Blocks')).toBeVisible();
+      await expect(page.getByText('Blocks').first()).toBeVisible();
       await expect(page.getByText(/drag blocks to the canvas/i)).toBeVisible();
     });
 
@@ -81,19 +81,19 @@ test.describe('Quotes Module', () => {
       await page.goto('/quotes/new/builder');
 
       // Should see block categories
-      await expect(page.getByText('Content')).toBeVisible();
-      await expect(page.getByText('Services')).toBeVisible();
-      await expect(page.getByText('Layout')).toBeVisible();
-      await expect(page.getByText('Interactive')).toBeVisible();
+      await expect(page.getByText('Content').first()).toBeVisible();
+      await expect(page.getByText('Services').first()).toBeVisible();
+      await expect(page.getByText('Layout').first()).toBeVisible();
+      await expect(page.getByText('Interactive').first()).toBeVisible();
     });
 
     test('should have draggable blocks', async ({ page }) => {
       await page.goto('/quotes/new/builder');
 
       // Should see specific block types
-      await expect(page.getByText('Header')).toBeVisible();
-      await expect(page.getByText('Text')).toBeVisible();
-      await expect(page.getByText('Service Item')).toBeVisible();
+      await expect(page.getByText('Header').first()).toBeVisible();
+      await expect(page.getByText('Text').first()).toBeVisible();
+      await expect(page.getByText('Service Item').first()).toBeVisible();
     });
   });
 
@@ -145,9 +145,9 @@ test.describe('Quotes Module', () => {
         await firstQuote.click();
 
         // Should show sidebar cards
-        await expect(page.getByText('Quote Details')).toBeVisible();
-        await expect(page.getByText('Client')).toBeVisible();
-        await expect(page.getByText('Activity')).toBeVisible();
+        await expect(page.getByText('Quote Details').first()).toBeVisible();
+        await expect(page.getByText('Client').first()).toBeVisible();
+        await expect(page.getByText('Activity').first()).toBeVisible();
       }
     });
 

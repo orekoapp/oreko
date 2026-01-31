@@ -36,8 +36,8 @@ test.describe('Landing Page Navigation', () => {
   test('should show landing page at root', async ({ page }) => {
     await page.goto('/');
 
-    // Should show landing page content
-    await expect(page.getByRole('heading', { name: /beautiful invoices/i })).toBeVisible();
+    // Should show landing page content (use first() as there are multiple headings with this text)
+    await expect(page.getByRole('heading', { name: /beautiful invoices/i }).first()).toBeVisible();
   });
 
   test('should have login CTA', async ({ page }) => {

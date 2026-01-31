@@ -24,7 +24,8 @@ test.describe('Error Boundaries', () => {
     test('should have link to home page on 404', async ({ page }) => {
       await page.goto('/non-existent-page');
 
-      const homeLink = page.getByRole('link', { name: /home|dashboard|go back/i });
+      // Use .first() since there may be multiple navigation links
+      const homeLink = page.getByRole('link', { name: /home|dashboard|go back/i }).first();
       if (await homeLink.isVisible()) {
         await expect(homeLink).toBeVisible();
       }

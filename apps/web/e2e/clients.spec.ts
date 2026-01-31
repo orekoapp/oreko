@@ -55,9 +55,9 @@ test.describe('Clients Module', () => {
 
       const table = page.locator('table');
       if (await table.isVisible()) {
-        // Should show column headers
+        // Should show column headers (use role for specificity)
         await expect(page.getByRole('button', { name: /client/i })).toBeVisible();
-        await expect(page.getByText('Contact')).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'Contact' })).toBeVisible();
         await expect(page.getByRole('button', { name: /quotes/i })).toBeVisible();
         await expect(page.getByRole('button', { name: /invoices/i })).toBeVisible();
       }
@@ -78,7 +78,7 @@ test.describe('Clients Module', () => {
 
       // Should have form sections
       await expect(page.getByText('Basic Information')).toBeVisible();
-      await expect(page.getByText('Address')).toBeVisible();
+      await expect(page.getByText('Address').first()).toBeVisible();
       await expect(page.getByText('Additional Contacts')).toBeVisible();
       await expect(page.getByText('Notes')).toBeVisible();
     });

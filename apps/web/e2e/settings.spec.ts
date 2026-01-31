@@ -13,13 +13,13 @@ test.describe('Settings Module', () => {
       await page.goto('/settings');
 
       // Should see settings categories as cards
-      await expect(page.getByText('Business Profile')).toBeVisible();
-      await expect(page.getByText('Branding')).toBeVisible();
-      await expect(page.getByText('Tax Rates')).toBeVisible();
-      await expect(page.getByText('Quote Settings')).toBeVisible();
-      await expect(page.getByText('Invoice Settings')).toBeVisible();
-      await expect(page.getByText('Email Templates')).toBeVisible();
-      await expect(page.getByText('Payment Settings')).toBeVisible();
+      await expect(page.getByText('Business Profile').first()).toBeVisible();
+      await expect(page.getByText('Branding').first()).toBeVisible();
+      await expect(page.getByText('Tax Rates').first()).toBeVisible();
+      await expect(page.getByText('Quote Settings').first()).toBeVisible();
+      await expect(page.getByText('Invoice Settings').first()).toBeVisible();
+      await expect(page.getByText('Email Templates').first()).toBeVisible();
+      await expect(page.getByText('Payment Settings').first()).toBeVisible();
     });
 
     test('should navigate to business profile', async ({ page }) => {
