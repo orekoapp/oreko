@@ -93,7 +93,7 @@ export function TeamMemberList({ members, currentUserRole }: TeamMemberListProps
           <CardContent className="flex items-center justify-between p-4">
             <div className="flex items-center gap-4">
               <Avatar>
-                <AvatarImage src={member.user.image || undefined} />
+                <AvatarImage src={member.user.avatarUrl || undefined} />
                 <AvatarFallback>
                   {member.user.name?.charAt(0) || member.user.email.charAt(0).toUpperCase()}
                 </AvatarFallback>

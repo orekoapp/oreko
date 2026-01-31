@@ -581,7 +581,7 @@ export async function getWorkspaceMembers(): Promise<WorkspaceMemberData[]> {
           id: true,
           name: true,
           email: true,
-          image: true,
+          avatarUrl: true,
         },
       },
     },
