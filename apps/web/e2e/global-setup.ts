@@ -9,7 +9,17 @@ const TEST_USER = {
   name: process.env.E2E_TEST_USER_NAME || 'Test User',
 };
 
+// Onboarding test user - generate a unique email for each test run to ensure fresh user
+const timestamp = Date.now();
+const ONBOARDING_USER = {
+  email: process.env.E2E_ONBOARDING_USER_EMAIL || `onboarding-${timestamp}@quotecraft.dev`,
+  password: process.env.E2E_ONBOARDING_USER_PASSWORD || 'OnboardingTest123!',
+  name: process.env.E2E_ONBOARDING_USER_NAME || 'Onboarding Test User',
+};
+
 const AUTH_FILE = path.join(__dirname, '.auth/user.json');
+const ONBOARDING_AUTH_FILE = path.join(__dirname, '.auth/onboarding-user.json');
+const ONBOARDING_CREDENTIALS_FILE = path.join(__dirname, '.auth/onboarding-credentials.json');
 
 /**
  * Complete the onboarding flow if we're on the onboarding page
@@ -163,17 +173,17 @@ async function globalSetup(config: FullConfig) {
       await page.goto(`${appUrl}/register`);
       await page.waitForLoadState('networkidle');
 
-      // Wait for register form
-      await page.waitForSelector('input[type="text"], input#name, [name="name"]', { timeout: 10000 });
+      // Wait for register form to be ready
+      await page.getByLabel('Name').waitFor({ timeout: 10000 });
 
       // Fill registration form using role-based selectors
-      await page.getByRole('textbox', { name: 'Full name' }).fill(TEST_USER.name);
-      await page.getByRole('textbox', { name: 'Email' }).fill(TEST_USER.email);
+      await page.getByLabel('Name').fill(TEST_USER.name);
+      await page.getByLabel('Email').fill(TEST_USER.email);
       await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
-      await page.getByLabel('Confirm password').fill(TEST_USER.password);
+      await page.getByLabel('Confirm Password').fill(TEST_USER.password);
 
       // Submit registration
-      await page.getByRole('button', { name: 'Create account' }).click();
+      await page.getByRole('button', { name: 'Create Account' }).click();
 
       // Wait for navigation
       await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 15000 });
@@ -211,4 +221,132 @@ async function globalSetup(config: FullConfig) {
   }
 }
 
-export default globalSetup;
+/**
+ * Setup onboarding test user - creates/logs in user but does NOT complete onboarding
+ */
+async function setupOnboardingUser(appUrl: string, authDir: string) {
+  console.log(`\n🔧 Onboarding User Setup`);
+  console.log(`📧 Onboarding test user: ${ONBOARDING_USER.email}`);
+
+  // Save credentials early so tests can use them even if setup fails
+  fs.writeFileSync(ONBOARDING_CREDENTIALS_FILE, JSON.stringify(ONBOARDING_USER, null, 2));
+
+  const browser = await chromium.launch();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  try {
+    // Navigate to login page
+    await page.goto(`${appUrl}/login`);
+    await page.waitForLoadState('networkidle');
+
+    // Check if already on dashboard or onboarding
+    if (page.url().includes('/onboarding')) {
+      console.log('✓ User on onboarding page (perfect for tests)');
+      await context.storageState({ path: ONBOARDING_AUTH_FILE });
+      return;
+    }
+
+    if (page.url().includes('/dashboard')) {
+      console.log('⚠ User already completed onboarding - tests will verify this');
+      await context.storageState({ path: ONBOARDING_AUTH_FILE });
+      return;
+    }
+
+    // Try to login
+    console.log('🔐 Attempting login for onboarding user...');
+    await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+    await page.getByRole('textbox', { name: 'Email' }).fill(ONBOARDING_USER.email);
+    await page.getByRole('textbox', { name: 'Password' }).fill(ONBOARDING_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+
+    try {
+      await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 10000 });
+      await page.waitForLoadState('networkidle');
+
+      if (page.url().includes('/onboarding')) {
+        console.log('✓ Onboarding user logged in - on onboarding page');
+        await context.storageState({ path: ONBOARDING_AUTH_FILE });
+        return;
+      }
+
+      console.log('⚠ Onboarding user already completed onboarding');
+      await context.storageState({ path: ONBOARDING_AUTH_FILE });
+      return;
+    } catch {
+      // Login failed, need to register
+    }
+
+    // Register new user
+    console.log('📝 Registering new onboarding test user...');
+    await page.goto(`${appUrl}/register`);
+    await page.waitForLoadState('networkidle');
+
+    // Wait for form to be ready
+    await page.getByLabel('Name').waitFor({ timeout: 10000 });
+
+    await page.getByLabel('Name').fill(ONBOARDING_USER.name);
+    await page.getByLabel('Email').fill(ONBOARDING_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(ONBOARDING_USER.password);
+    await page.getByLabel('Confirm Password').fill(ONBOARDING_USER.password);
+
+    await page.getByRole('button', { name: 'Create Account' }).click();
+
+    await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 15000 });
+    await page.waitForLoadState('networkidle');
+
+    console.log(`📍 Current URL: ${page.url()}`);
+
+    if (page.url().includes('/onboarding')) {
+      console.log('✓ Onboarding user registered - on onboarding page (NOT completing it)');
+    } else {
+      console.log('✓ Onboarding user registered');
+    }
+
+    // Save auth state WITHOUT completing onboarding
+    await context.storageState({ path: ONBOARDING_AUTH_FILE });
+
+    // Save credentials for tests to use
+    fs.writeFileSync(ONBOARDING_CREDENTIALS_FILE, JSON.stringify(ONBOARDING_USER, null, 2));
+    console.log('📝 Saved onboarding credentials for tests');
+
+  } catch (error) {
+    console.error('❌ Onboarding user setup failed:', error);
+    try {
+      await page.screenshot({ path: path.join(authDir, 'onboarding-setup-error.png') });
+    } catch {
+      // Ignore screenshot errors
+    }
+
+    // Create an empty auth file so tests can still run (they will handle auth themselves)
+    try {
+      fs.writeFileSync(ONBOARDING_AUTH_FILE, JSON.stringify({ cookies: [], origins: [] }));
+      // Save credentials so tests can register user if needed
+      fs.writeFileSync(ONBOARDING_CREDENTIALS_FILE, JSON.stringify(ONBOARDING_USER, null, 2));
+      console.log('📝 Created empty onboarding auth file (tests will handle auth themselves)');
+    } catch {
+      // Ignore file write errors
+    }
+  } finally {
+    await context.close();
+    await browser.close();
+  }
+}
+
+/**
+ * Main global setup - runs both regular and onboarding user setups
+ */
+async function mainGlobalSetup(config: FullConfig) {
+  // Run the main user setup
+  await globalSetup(config);
+
+  // Also setup the onboarding user
+  const { baseURL } = config.projects[0]?.use || {};
+  const appUrl = baseURL || process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+  const authDir = path.dirname(AUTH_FILE);
+
+  await setupOnboardingUser(appUrl, authDir);
+}
+
+export default mainGlobalSetup;

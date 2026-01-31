@@ -3,8 +3,9 @@ import path from 'path';
 
 const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 
-// Authentication storage state path
+// Authentication storage state paths
 const authFile = path.join(__dirname, 'e2e/.auth/user.json');
+const onboardingAuthFile = path.join(__dirname, 'e2e/.auth/onboarding-user.json');
 
 export default defineConfig({
   testDir: './e2e',
@@ -42,21 +43,40 @@ export default defineConfig({
         '**/auth.spec.ts',
         '**/navigation.spec.ts',
         '**/accessibility.spec.ts',
+        '**/rate-limiting.spec.ts',
+        '**/error-boundaries.spec.ts',
       ],
       use: { ...devices['Desktop Chrome'] },
+    },
+
+    // Onboarding tests - use fresh user that hasn't completed onboarding
+    // This project runs its own setup to create a non-onboarded user
+    {
+      name: 'onboarding',
+      testMatch: '**/onboarding.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: onboardingAuthFile,
+      },
     },
 
     // Authenticated tests - use stored auth state from global setup
     {
       name: 'authenticated',
       testMatch: [
-        '**/onboarding.spec.ts',
         '**/clients.spec.ts',
         '**/quotes.spec.ts',
         '**/invoices.spec.ts',
         '**/rate-cards.spec.ts',
         '**/settings.spec.ts',
         '**/dashboard-accessibility.spec.ts',
+        '**/stripe-webhooks.spec.ts',
+        '**/file-uploads.spec.ts',
+        '**/email-delivery.spec.ts',
+        '**/search-filtering.spec.ts',
+        '**/multi-user-team.spec.ts',
+        '**/notifications.spec.ts',
+        '**/offline-network.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
