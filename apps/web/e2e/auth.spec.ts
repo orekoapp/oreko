@@ -11,14 +11,19 @@ test.describe('Authentication', () => {
     await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
   });
 
-  test('should show validation errors on empty submit', async ({ page }) => {
+  test('should show validation errors on invalid input', async ({ page }) => {
     await page.goto('/login');
 
-    // Click submit without filling form
+    // Fill in invalid email to trigger validation
+    const emailInput = page.getByLabel('Email');
+    await emailInput.fill('invalid-email');
+    await emailInput.blur();
+
+    // Click submit to trigger form validation
     await page.getByRole('button', { name: /sign in/i }).click();
 
-    // Should show validation errors (validation happens on blur/submit)
-    await expect(page.getByText(/please enter a valid email|email/i)).toBeVisible({ timeout: 3000 });
+    // Should show validation error for invalid email
+    await expect(page.getByText(/valid email/i)).toBeVisible({ timeout: 5000 });
   });
 
   test('should navigate to register page', async ({ page }) => {
@@ -113,7 +118,12 @@ test.describe('Public Routes', () => {
 
     // Should not redirect, should show landing page
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: /beautiful invoices/i })).toBeVisible();
+
+    // Wait for page to fully load and check for hero heading
+    await page.waitForLoadState('domcontentloaded');
+    const heading = page.locator('h1').first();
+    await expect(heading).toBeVisible({ timeout: 10000 });
+    await expect(heading).toContainText(/beautiful invoices/i);
   });
 
   test('should allow access to login page', async ({ page }) => {

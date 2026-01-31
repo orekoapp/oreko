@@ -56,6 +56,7 @@ export default defineConfig({
         '**/invoices.spec.ts',
         '**/rate-cards.spec.ts',
         '**/settings.spec.ts',
+        '**/dashboard-accessibility.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
