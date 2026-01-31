@@ -157,13 +157,13 @@ export function FeaturesSection() {
                       feature.color
                     )}
                   />
-                  <div className="relative aspect-[4/3] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden">
+                  <div className="relative aspect-[16/10] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden">
                     <Image
                       src={feature.image}
                       alt={feature.imageAlt}
                       fill
-                      className="object-cover object-top"
-                      quality={85}
+                      className="object-contain"
+                      quality={90}
                     />
                   </div>
                 </div>

@@ -96,7 +96,7 @@ export function HeroSection() {
                   src="/images/landing/hero-screenshot.png"
                   alt="QuoteCraft visual quote builder - drag and drop blocks to create professional quotes"
                   fill
-                  className="object-cover object-top"
+                  className="object-contain"
                   priority
                   quality={90}
                 />
