@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ArrowRight, Github, Play } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function HeroSection() {
@@ -89,15 +90,16 @@ export function HeroSection() {
                 </div>
               </div>
 
-              {/* Screenshot placeholder - In production, this would be an actual screenshot */}
-              <div className="aspect-[16/10] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
-                <div className="text-center text-slate-400 dark:text-slate-500">
-                  <div className="w-24 h-24 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                    <Play className="h-12 w-12 text-white" />
-                  </div>
-                  <p className="text-lg font-medium">Visual Quote Builder</p>
-                  <p className="text-sm">Screenshot coming soon</p>
-                </div>
+              {/* App screenshot */}
+              <div className="aspect-[16/10] relative">
+                <Image
+                  src="/images/landing/hero-screenshot.png"
+                  alt="QuoteCraft visual quote builder - drag and drop blocks to create professional quotes"
+                  fill
+                  className="object-cover object-top"
+                  priority
+                  quality={90}
+                />
               </div>
             </div>
           </div>

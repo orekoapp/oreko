@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import {
   Blocks,
   ArrowRightLeft,
@@ -17,6 +18,8 @@ const features = [
       'Drag-and-drop blocks, not spreadsheet rows. Create quotes your clients will remember with our intuitive visual editor.',
     points: ['Block-based editor', 'Real-time preview', 'Professional templates'],
     color: 'from-blue-500 to-blue-600',
+    image: '/images/landing/hero-screenshot.png',
+    imageAlt: 'Visual quote builder with drag and drop blocks',
   },
   {
     icon: ArrowRightLeft,
@@ -26,6 +29,8 @@ const features = [
       'Stop copying data between documents. When a quote is accepted, convert it to an invoice instantly with zero re-entry.',
     points: ['Zero data re-entry', 'Automatic data transfer', 'Maintain history'],
     color: 'from-violet-500 to-violet-600',
+    image: '/images/landing/feature-quotes-list.png',
+    imageAlt: 'Quotes list showing draft, sent, and accepted statuses',
   },
   {
     icon: PenTool,
@@ -35,6 +40,8 @@ const features = [
       'Built-in electronic signatures that are legally binding. Clients can sign from any device, anywhere.',
     points: ['Legally binding', 'Mobile-friendly', 'Signature tracking'],
     color: 'from-emerald-500 to-emerald-600',
+    image: '/images/landing/feature-dashboard.png',
+    imageAlt: 'Dashboard with business overview and conversion metrics',
   },
   {
     icon: CalendarClock,
@@ -44,6 +51,8 @@ const features = [
       'Set up deposits, milestone payments, and auto-reminders. Get paid on your terms without chasing clients.',
     points: ['Deposit requests', 'Milestone payments', 'Auto-reminders'],
     color: 'from-amber-500 to-amber-600',
+    image: '/images/landing/feature-invoices.png',
+    imageAlt: 'Invoice management with payment tracking',
   },
   {
     icon: Layers,
@@ -53,6 +62,8 @@ const features = [
       'Create reusable services with saved rates. Build quotes faster and maintain consistent pricing across projects.',
     points: ['Reusable services', 'Automatic calculations', 'Version history'],
     color: 'from-pink-500 to-pink-600',
+    image: '/images/landing/feature-clients.png',
+    imageAlt: 'Client management with organized data and statistics',
   },
   {
     icon: Server,
@@ -62,6 +73,8 @@ const features = [
       'Deploy on your own infrastructure with Docker. Full control over your data with no vendor lock-in.',
     points: ['Docker deployment', 'Full data control', 'No vendor lock-in'],
     color: 'from-slate-500 to-slate-600',
+    image: '/images/landing/feature-settings.png',
+    imageAlt: 'Comprehensive settings for full customization',
   },
 ];
 
@@ -135,7 +148,7 @@ export function FeaturesSection() {
                 </ul>
               </div>
 
-              {/* Image placeholder */}
+              {/* Feature screenshot */}
               <div className={cn(index % 2 === 1 && 'md:col-start-1')}>
                 <div className="relative">
                   <div
@@ -144,13 +157,14 @@ export function FeaturesSection() {
                       feature.color
                     )}
                   />
-                  <div className="relative aspect-[4/3] rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-400 dark:text-slate-500">
-                      <div className="text-center">
-                        <feature.icon className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                        <p className="text-sm font-medium">Feature Screenshot</p>
-                      </div>
-                    </div>
+                  <div className="relative aspect-[4/3] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden">
+                    <Image
+                      src={feature.image}
+                      alt={feature.imageAlt}
+                      fill
+                      className="object-cover object-top"
+                      quality={85}
+                    />
                   </div>
                 </div>
               </div>
