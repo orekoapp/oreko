@@ -13,10 +13,12 @@ test.describe('Rate Cards Module', () => {
     test('should show stats cards', async ({ page }) => {
       await page.goto('/rate-cards');
 
-      // Should show stats
+      // Should show stats - use more specific selectors to avoid matching status badges
       await expect(page.getByText('Total Rate Cards')).toBeVisible();
-      await expect(page.getByText('Active')).toBeVisible();
-      await expect(page.getByText('Inactive')).toBeVisible();
+      // Look for stats card titles which appear in the stats grid at the top
+      const statsSection = page.locator('.grid').first();
+      await expect(statsSection.getByText('Active')).toBeVisible();
+      await expect(statsSection.getByText('Inactive')).toBeVisible();
     });
 
     test('should show empty state when no rate cards', async ({ page }) => {

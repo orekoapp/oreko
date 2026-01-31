@@ -25,7 +25,9 @@ test.describe('Settings Module', () => {
     test('should navigate to business profile', async ({ page }) => {
       await page.goto('/settings');
 
-      await page.getByRole('link', { name: /business profile/i }).click();
+      // Settings uses Link wrapping Card components
+      const businessLink = page.locator('a[href="/settings/business"]');
+      await businessLink.click();
 
       await expect(page).toHaveURL(/\/settings\/business/);
     });
@@ -33,7 +35,9 @@ test.describe('Settings Module', () => {
     test('should navigate to branding', async ({ page }) => {
       await page.goto('/settings');
 
-      await page.getByRole('link', { name: /branding/i }).click();
+      // Settings uses Link wrapping Card components
+      const brandingLink = page.locator('a[href="/settings/branding"]');
+      await brandingLink.click();
 
       await expect(page).toHaveURL(/\/settings\/branding/);
     });
@@ -41,7 +45,9 @@ test.describe('Settings Module', () => {
     test('should navigate to tax rates', async ({ page }) => {
       await page.goto('/settings');
 
-      await page.getByRole('link', { name: /tax rates/i }).click();
+      // Settings uses Link wrapping Card components
+      const taxRatesLink = page.locator('a[href="/settings/tax-rates"]');
+      await taxRatesLink.click();
 
       await expect(page).toHaveURL(/\/settings\/tax-rates/);
     });
@@ -49,7 +55,9 @@ test.describe('Settings Module', () => {
     test('should navigate to payment settings', async ({ page }) => {
       await page.goto('/settings');
 
-      await page.getByRole('link', { name: /payment settings/i }).click();
+      // Settings uses Link wrapping Card components
+      const paymentsLink = page.locator('a[href="/settings/payments"]');
+      await paymentsLink.click();
 
       await expect(page).toHaveURL(/\/settings\/payments/);
     });

@@ -55,7 +55,9 @@ test.describe('Invoice State Matrix Tests', () => {
 
     test('TC-SM-017: sent -> partial payment transition', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("sent")');
+      // Invoices page uses Card components, not table rows
+      const sentInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /sent/i }).first();
+      await sentInvoice.click();
 
       // Record partial payment
       await page.getByRole('button', { name: /record payment/i }).click();
@@ -72,7 +74,9 @@ test.describe('Invoice State Matrix Tests', () => {
 
     test('TC-SM-018: partial -> paid transition', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("partial")');
+      // Invoices page uses Card components, not table rows
+      const partialInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /partial/i }).first();
+      await partialInvoice.click();
 
       // Record remaining payment
       await page.getByRole('button', { name: /record payment/i }).click();
@@ -95,18 +99,20 @@ test.describe('Invoice State Matrix Tests', () => {
 
       await page.goto('/invoices');
 
-      // Find overdue invoice (should show automatically)
-      const overdueRow = page.locator('tr:has-text("overdue")');
-      await expect(overdueRow).toBeVisible();
+      // Find overdue invoice (should show automatically) - uses Card components
+      const overdueInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /overdue/i }).first();
+      await expect(overdueInvoice).toBeVisible();
 
       // Verify overdue badge
-      await overdueRow.click();
+      await overdueInvoice.click();
       await expect(page.locator('[data-testid="invoice-status"]')).toHaveText(/overdue/i);
     });
 
     test('TC-SM-020: any state -> void transition', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("sent")');
+      // Invoices page uses Card components, not table rows
+      const sentInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /sent/i }).first();
+      await sentInvoice.click();
 
       // Void the invoice
       const actionsMenu = page.locator('button[aria-label="actions"]');
@@ -128,7 +134,9 @@ test.describe('Invoice State Matrix Tests', () => {
   test.describe('Invalid State Transitions', () => {
     test('TC-SM-021: cannot send voided invoice', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("void")');
+      // Invoices page uses Card components, not table rows
+      const voidInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /void/i }).first();
+      await voidInvoice.click();
 
       // Send button should be disabled
       const sendButton = page.getByRole('button', { name: /send/i });
@@ -137,7 +145,9 @@ test.describe('Invoice State Matrix Tests', () => {
 
     test('TC-SM-022: cannot record payment on voided invoice', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("void")');
+      // Invoices page uses Card components, not table rows
+      const voidInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /void/i }).first();
+      await voidInvoice.click();
 
       // Record payment button should be disabled
       const paymentButton = page.getByRole('button', { name: /record payment/i });
@@ -146,7 +156,9 @@ test.describe('Invoice State Matrix Tests', () => {
 
     test('TC-SM-023: cannot void paid invoice', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("paid")');
+      // Invoices page uses Card components, not table rows
+      const paidInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /paid/i }).first();
+      await paidInvoice.click();
 
       // Void option should not be available
       const actionsMenu = page.locator('button[aria-label="actions"]');
@@ -159,7 +171,9 @@ test.describe('Invoice State Matrix Tests', () => {
 
     test('TC-SM-024: cannot overpay invoice', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("sent")');
+      // Invoices page uses Card components, not table rows
+      const sentInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /sent/i }).first();
+      await sentInvoice.click();
 
       // Get total amount
       const totalText = await page.locator('[data-testid="invoice-total"]').textContent();
@@ -182,7 +196,9 @@ test.describe('Invoice State Matrix Tests', () => {
   test.describe('Payment History', () => {
     test('TC-SM-025: payments are tracked in history', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("partial")');
+      // Invoices page uses Card components, not table rows
+      const partialInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /partial/i }).first();
+      await partialInvoice.click();
 
       // Navigate to payments/history tab
       const paymentsTab = page.getByRole('tab', { name: /payments|history/i });
@@ -198,7 +214,9 @@ test.describe('Invoice State Matrix Tests', () => {
 
     test('TC-SM-026: payment refunds are tracked', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("paid")');
+      // Invoices page uses Card components, not table rows
+      const paidInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /paid/i }).first();
+      await paidInvoice.click();
 
       // Record refund
       const actionsMenu = page.locator('button[aria-label="actions"]');
@@ -224,7 +242,9 @@ test.describe('Invoice State Matrix Tests', () => {
   test.describe('Due Date Handling', () => {
     test('TC-SM-027: overdue status shows days overdue', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("overdue")');
+      // Invoices page uses Card components, not table rows
+      const overdueInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /overdue/i }).first();
+      await overdueInvoice.click();
 
       // Should show days overdue
       await expect(page.getByText(/\d+\s*days?\s*overdue/i)).toBeVisible();
@@ -232,7 +252,9 @@ test.describe('Invoice State Matrix Tests', () => {
 
     test('TC-SM-028: payment clears overdue status', async ({ page }) => {
       await page.goto('/invoices');
-      await page.click('tr:has-text("overdue")');
+      // Invoices page uses Card components, not table rows
+      const overdueInvoice = page.locator('a[href^="/invoices/"]').filter({ hasText: /overdue/i }).first();
+      await overdueInvoice.click();
 
       // Record full payment
       await page.getByRole('button', { name: /record payment/i }).click();
