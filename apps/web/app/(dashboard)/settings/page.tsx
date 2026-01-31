@@ -10,6 +10,7 @@ import {
   Users,
   Settings2,
   Wallet,
+  UserCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -18,6 +19,12 @@ export const metadata = {
 };
 
 const settingsLinks = [
+  {
+    href: '/settings/account',
+    icon: UserCircle,
+    title: 'Account',
+    description: 'Your profile, password, and security settings',
+  },
   {
     href: '/settings/business',
     icon: Building2,
