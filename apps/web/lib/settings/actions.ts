@@ -564,7 +564,7 @@ export interface WorkspaceMemberData {
     id: string;
     name: string | null;
     email: string;
-    image: string | null;
+    avatarUrl: string | null;
   };
   joinedAt: Date;
 }
