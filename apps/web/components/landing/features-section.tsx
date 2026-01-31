@@ -62,8 +62,8 @@ const features = [
       'Create reusable services with saved rates. Build quotes faster and maintain consistent pricing across projects.',
     points: ['Reusable services', 'Automatic calculations', 'Version history'],
     color: 'from-pink-500 to-pink-600',
-    image: '/images/landing/feature-clients.png',
-    imageAlt: 'Client management with quotes and invoices tracking per client',
+    image: '/images/landing/feature-rate-cards.png',
+    imageAlt: 'Rate cards with service pricing for hourly and fixed rates',
   },
   {
     icon: Server,
