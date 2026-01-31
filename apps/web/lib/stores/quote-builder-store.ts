@@ -24,6 +24,7 @@ interface QuoteBuilderState {
   // UI state
   showBlocksPanel: boolean;
   showPropertiesPanel: boolean;
+  showRateCardPanel: boolean;
   previewMode: boolean;
   zoom: number;
 
@@ -56,6 +57,7 @@ interface QuoteBuilderActions {
   // UI actions
   toggleBlocksPanel: () => void;
   togglePropertiesPanel: () => void;
+  toggleRateCardPanel: () => void;
   togglePreviewMode: () => void;
   setZoom: (zoom: number) => void;
 
@@ -134,6 +136,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
         hoveredBlockId: null,
         showBlocksPanel: true,
         showPropertiesPanel: true,
+        showRateCardPanel: false,
         previewMode: false,
         zoom: 100,
         history: [],
@@ -320,6 +323,12 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
           });
         },
 
+        toggleRateCardPanel: () => {
+          set((state) => {
+            state.showRateCardPanel = !state.showRateCardPanel;
+          });
+        },
+
         togglePreviewMode: () => {
           set((state) => {
             state.previewMode = !state.previewMode;
@@ -452,6 +461,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
         partialize: (state) => ({
           showBlocksPanel: state.showBlocksPanel,
           showPropertiesPanel: state.showPropertiesPanel,
+          showRateCardPanel: state.showRateCardPanel,
           zoom: state.zoom,
         }),
       }

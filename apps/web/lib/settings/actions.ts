@@ -551,6 +551,345 @@ export async function updateNumberSequence(
 }
 
 // ============================================
+// TEAM SETTINGS ACTIONS
+// ============================================
+
+export type WorkspaceMemberRole = 'owner' | 'admin' | 'member' | 'viewer';
+
+export interface WorkspaceMemberData {
+  id: string;
+  userId: string;
+  role: WorkspaceMemberRole;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  };
+  joinedAt: Date;
+}
+
+// Get workspace members
+export async function getWorkspaceMembers(): Promise<WorkspaceMemberData[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const members = await prisma.workspaceMember.findMany({
+    where: { workspaceId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  return members.map((m) => ({
+    id: m.id,
+    userId: m.userId,
+    role: m.role as WorkspaceMemberRole,
+    user: m.user,
+    joinedAt: m.createdAt,
+  }));
+}
+
+// Get current user's role
+export async function getCurrentUserRole(): Promise<WorkspaceMemberRole> {
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
+
+  const member = await prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId,
+        userId,
+      },
+    },
+  });
+
+  return (member?.role as WorkspaceMemberRole) || 'member';
+}
+
+// Update member role
+export async function updateMemberRole(
+  memberId: string,
+  newRole: WorkspaceMemberRole
+): Promise<{ success: boolean; error?: string }> {
+  await assertNotDemo();
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
+
+  // Get current user's role
+  const currentUserMember = await prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId,
+        userId,
+      },
+    },
+  });
+
+  if (!currentUserMember) {
+    return { success: false, error: 'Not a member of this workspace' };
+  }
+
+  const currentRole = currentUserMember.role as WorkspaceMemberRole;
+
+  // Only owners and admins can change roles
+  if (currentRole !== 'owner' && currentRole !== 'admin') {
+    return { success: false, error: 'Insufficient permissions' };
+  }
+
+  // Get target member
+  const targetMember = await prisma.workspaceMember.findFirst({
+    where: { id: memberId, workspaceId },
+  });
+
+  if (!targetMember) {
+    return { success: false, error: 'Member not found' };
+  }
+
+  // Admins cannot promote to owner
+  if (currentRole === 'admin' && newRole === 'owner') {
+    return { success: false, error: 'Only owners can promote to owner' };
+  }
+
+  // Cannot demote the only owner
+  if (targetMember.role === 'owner') {
+    const ownerCount = await prisma.workspaceMember.count({
+      where: { workspaceId, role: 'owner' },
+    });
+    if (ownerCount === 1 && newRole !== 'owner') {
+      return { success: false, error: 'Cannot demote the only owner' };
+    }
+  }
+
+  await prisma.workspaceMember.update({
+    where: { id: memberId },
+    data: { role: newRole },
+  });
+
+  revalidatePath('/settings/team');
+
+  return { success: true };
+}
+
+// Invite member
+export async function inviteMember(
+  email: string,
+  role: WorkspaceMemberRole = 'member'
+): Promise<{ success: boolean; error?: string }> {
+  await assertNotDemo();
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  // Check if user exists
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    // TODO: Create invitation record and send email
+    return { success: false, error: 'User not found. Invitation emails coming soon.' };
+  }
+
+  // Check if already a member
+  const existingMember = await prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId,
+        userId: user.id,
+      },
+    },
+  });
+
+  if (existingMember) {
+    return { success: false, error: 'User is already a member of this workspace' };
+  }
+
+  // Add member
+  await prisma.workspaceMember.create({
+    data: {
+      workspaceId,
+      userId: user.id,
+      role,
+    },
+  });
+
+  revalidatePath('/settings/team');
+
+  return { success: true };
+}
+
+// Remove member
+export async function removeMember(
+  memberId: string
+): Promise<{ success: boolean; error?: string }> {
+  await assertNotDemo();
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
+
+  // Get current user's role
+  const currentRole = await getCurrentUserRole();
+
+  // Only owners and admins can remove members
+  if (currentRole !== 'owner' && currentRole !== 'admin') {
+    return { success: false, error: 'Insufficient permissions' };
+  }
+
+  const targetMember = await prisma.workspaceMember.findFirst({
+    where: { id: memberId, workspaceId },
+  });
+
+  if (!targetMember) {
+    return { success: false, error: 'Member not found' };
+  }
+
+  // Cannot remove the only owner
+  if (targetMember.role === 'owner') {
+    const ownerCount = await prisma.workspaceMember.count({
+      where: { workspaceId, role: 'owner' },
+    });
+    if (ownerCount === 1) {
+      return { success: false, error: 'Cannot remove the only owner' };
+    }
+  }
+
+  // Cannot remove yourself
+  if (targetMember.userId === userId) {
+    return { success: false, error: 'Cannot remove yourself' };
+  }
+
+  await prisma.workspaceMember.delete({
+    where: { id: memberId },
+  });
+
+  revalidatePath('/settings/team');
+
+  return { success: true };
+}
+
+// ============================================
+// BILLING SETTINGS ACTIONS
+// ============================================
+
+export interface BillingInfo {
+  plan: 'free' | 'pro' | 'team';
+  status: 'active' | 'canceled' | 'past_due';
+  nextBillingDate: string | null;
+  paymentMethod: {
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+  } | null;
+}
+
+// Get billing info
+export async function getBillingInfo(): Promise<BillingInfo | null> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { settings: true },
+  });
+
+  if (!workspace) {
+    return null;
+  }
+
+  const settings = workspace.settings as Record<string, unknown> | null;
+
+  // Return mock billing data for now
+  return {
+    plan: (settings?.plan as 'free' | 'pro' | 'team') || 'free',
+    status: 'active',
+    nextBillingDate: null,
+    paymentMethod: null,
+  };
+}
+
+// ============================================
+// WORKSPACE SETTINGS ACTIONS
+// ============================================
+
+export interface WorkspaceSettings {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+// Get workspace settings
+export async function getWorkspaceSettings(): Promise<WorkspaceSettings | null> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { id: true, name: true, slug: true },
+  });
+
+  return workspace;
+}
+
+// Update workspace settings
+export async function updateWorkspaceSettings(
+  input: { name?: string; slug?: string }
+): Promise<{ success: boolean; error?: string }> {
+  await assertNotDemo();
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  // Verify current user is owner
+  const role = await getCurrentUserRole();
+  if (role !== 'owner') {
+    return { success: false, error: 'Only owners can update workspace settings' };
+  }
+
+  // Check slug uniqueness if changing
+  if (input.slug) {
+    const existing = await prisma.workspace.findFirst({
+      where: { slug: input.slug, id: { not: workspaceId } },
+    });
+    if (existing) {
+      return { success: false, error: 'This slug is already taken' };
+    }
+  }
+
+  await prisma.workspace.update({
+    where: { id: workspaceId },
+    data: {
+      ...(input.name && { name: input.name }),
+      ...(input.slug && { slug: input.slug }),
+    },
+  });
+
+  revalidatePath('/settings/workspace');
+
+  return { success: true };
+}
+
+// Delete workspace
+export async function deleteWorkspace(): Promise<{ success: boolean; error?: string }> {
+  await assertNotDemo();
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  // Verify current user is owner
+  const role = await getCurrentUserRole();
+  if (role !== 'owner') {
+    return { success: false, error: 'Only owners can delete the workspace' };
+  }
+
+  // Soft delete workspace (or implement hard delete with cascading)
+  await prisma.workspace.update({
+    where: { id: workspaceId },
+    data: { deletedAt: new Date() },
+  });
+
+  revalidatePath('/');
+
+  return { success: true };
+}
+
+// ============================================
 // COMBINED SETTINGS
 // ============================================
 

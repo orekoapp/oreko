@@ -230,8 +230,8 @@ test.describe('Historical Regressions - Authentication', () => {
      * Bug: Some protected routes showed blank page instead of redirect.
      * Fixed: Middleware properly redirects unauthenticated requests
      */
-    // Create a fresh context without storageState to test unauthenticated access
-    const context = await browser.newContext();
+    // Create a fresh context with explicitly NO storage state to test unauthenticated access
+    const context = await browser.newContext({ storageState: undefined });
     const page = await context.newPage();
 
     // Without logging in, try to access protected route

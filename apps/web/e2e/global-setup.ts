@@ -12,6 +12,59 @@ const TEST_USER = {
 const AUTH_FILE = path.join(__dirname, '.auth/user.json');
 
 /**
+ * Complete the onboarding flow if we're on the onboarding page
+ */
+async function completeOnboardingIfNeeded(page: import('@playwright/test').Page) {
+  const currentUrl = page.url();
+  if (!currentUrl.includes('/onboarding')) {
+    return; // Not on onboarding, nothing to do
+  }
+
+  console.log('📝 Completing onboarding...');
+
+  // Keep clicking through onboarding steps until we reach dashboard
+  let maxAttempts = 10;
+  while (page.url().includes('/onboarding') && maxAttempts > 0) {
+    maxAttempts--;
+
+    // Wait for page to stabilize
+    await page.waitForLoadState('networkidle');
+
+    // Look for "Skip for now" or "Continue" buttons
+    const skipButton = page.getByRole('button', { name: 'Skip for now' });
+    const continueButton = page.getByRole('button', { name: 'Continue' });
+    const getStartedButton = page.getByRole('button', { name: 'Get Started' });
+    const completeButton = page.getByRole('button', { name: 'Complete Setup' });
+    const goToDashboardButton = page.getByRole('button', { name: 'Go to Dashboard' });
+
+    if (await goToDashboardButton.isVisible()) {
+      await goToDashboardButton.click();
+    } else if (await completeButton.isVisible()) {
+      await completeButton.click();
+    } else if (await getStartedButton.isVisible()) {
+      await getStartedButton.click();
+    } else if (await skipButton.isVisible()) {
+      await skipButton.click();
+    } else if (await continueButton.isVisible()) {
+      await continueButton.click();
+    } else {
+      // No known buttons, wait a bit and try again
+      await page.waitForTimeout(500);
+    }
+
+    // Wait for any navigation
+    await page.waitForTimeout(500);
+  }
+
+  // Wait for dashboard
+  if (!page.url().includes('/onboarding')) {
+    console.log('✓ Onboarding completed');
+  } else {
+    console.log('⚠ Could not complete onboarding');
+  }
+}
+
+/**
  * Global setup for E2E tests
  * This runs once before all tests to:
  * 1. Ensure the application is running
@@ -73,7 +126,17 @@ async function globalSetup(config: FullConfig) {
     // Wait for navigation to dashboard/onboarding (with longer timeout for production)
     try {
       await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 30000 });
+
+      // Wait for page to fully stabilize (handles layout-level redirects)
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000); // Extra buffer for client-side redirects
+
       console.log('✓ Login successful');
+      console.log(`📍 Current URL: ${page.url()}`);
+
+      // Complete onboarding if we're on the onboarding page
+      await completeOnboardingIfNeeded(page);
+
       await context.storageState({ path: AUTH_FILE });
       return;
     } catch {
@@ -116,6 +179,10 @@ async function globalSetup(config: FullConfig) {
       await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 15000 });
 
       console.log('✓ Registration successful');
+
+      // Complete onboarding if we're on the onboarding page
+      await completeOnboardingIfNeeded(page);
+
       await context.storageState({ path: AUTH_FILE });
       return;
     }

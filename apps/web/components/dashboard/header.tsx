@@ -77,7 +77,11 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <Button
+              variant="ghost"
+              className="relative h-9 w-9 rounded-full"
+              data-testid="user-menu"
+            >
               <Avatar className="h-9 w-9">
                 <AvatarImage src={user.avatarUrl || undefined} alt={user.name || 'User'} />
                 <AvatarFallback>{initials}</AvatarFallback>

@@ -18,6 +18,7 @@ import {
   ZoomIn,
   ZoomOut,
   Loader2,
+  Package,
 } from 'lucide-react';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import { Button } from '@/components/ui/button';
@@ -39,10 +40,12 @@ export function BuilderToolbar() {
     zoom,
     showBlocksPanel,
     showPropertiesPanel,
+    showRateCardPanel,
     historyIndex,
     history,
     toggleBlocksPanel,
     togglePropertiesPanel,
+    toggleRateCardPanel,
     togglePreviewMode,
     setZoom,
     undo,
@@ -90,6 +93,15 @@ export function BuilderToolbar() {
           ) : (
             <PanelLeftOpen className="h-4 w-4" />
           )}
+        </Button>
+
+        <Button
+          variant={showRateCardPanel ? 'secondary' : 'ghost'}
+          size="icon"
+          onClick={toggleRateCardPanel}
+          title={showRateCardPanel ? 'Hide rate cards' : 'Show rate cards'}
+        >
+          <Package className="h-4 w-4" />
         </Button>
 
         <Button

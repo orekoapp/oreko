@@ -61,7 +61,7 @@ export function OnboardingWizard({ initialProgress, stripeEnabled }: OnboardingW
     setIsLoading(true);
     try {
       await completeOnboarding();
-      router.push('/');
+      router.push('/dashboard');
       router.refresh();
     } finally {
       setIsLoading(false);

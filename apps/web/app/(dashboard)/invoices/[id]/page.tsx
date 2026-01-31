@@ -64,6 +64,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{invoice.title}</h1>
             <span
+              data-testid="invoice-status"
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
             >
               {statusStyle.icon}
@@ -215,18 +216,10 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-2xl font-bold">
+                <p data-testid="invoice-total" className="text-2xl font-bold">
                   {formatCurrency(invoice.totals.total, invoice.settings.currency)}
                 </p>
               </div>
-              {invoice.totals.amountDue !== invoice.totals.total && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Amount Due</p>
-                  <p className={`text-xl font-bold ${invoice.totals.amountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                    {formatCurrency(invoice.totals.amountDue, invoice.settings.currency)}
-                  </p>
-                </div>
-              )}
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
                 <span
@@ -235,6 +228,12 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   {statusStyle.icon}
                   {displayStatus}
                 </span>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Amount Due</p>
+                <p data-testid="amount-due" className={`text-xl font-bold ${invoice.totals.amountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                  {formatCurrency(invoice.totals.amountDue, invoice.settings.currency)}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Due Date</p>

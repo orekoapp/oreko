@@ -93,6 +93,7 @@ export function BlockRenderer({ block, index, isSelected, isPreview }: BlockRend
     <div
       ref={setNodeRef}
       style={style}
+      data-testid={block.type === 'service-item' ? 'quote-line-item' : undefined}
       className={cn(
         'group relative rounded-lg transition-all',
         isDragging && 'z-50 opacity-50',

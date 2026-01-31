@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   const requiresOnboarding = await needsOnboarding();
 
   if (!requiresOnboarding) {
-    redirect('/');
+    redirect('/dashboard');
   }
 
   const progress = await getOnboardingProgress();

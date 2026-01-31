@@ -7,6 +7,9 @@ import {
   CreditCard,
   Percent,
   Mail,
+  Users,
+  Settings2,
+  Wallet,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -26,6 +29,24 @@ const settingsLinks = [
     icon: Palette,
     title: 'Branding',
     description: 'Colors, fonts, and visual customization',
+  },
+  {
+    href: '/settings/team',
+    icon: Users,
+    title: 'Team Members',
+    description: 'Manage who has access to this workspace',
+  },
+  {
+    href: '/settings/workspace',
+    icon: Settings2,
+    title: 'Workspace',
+    description: 'Workspace name, URL, and settings',
+  },
+  {
+    href: '/settings/billing',
+    icon: Wallet,
+    title: 'Billing & Subscription',
+    description: 'Manage your plan and payment methods',
   },
   {
     href: '/settings/tax-rates',

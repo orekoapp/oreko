@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import { createBlock, type BlockType, type QuoteBlock } from '@/lib/quotes/types';
 import { BlocksPanel } from '@/components/quotes/builder/blocks-panel';
+import { RateCardPanel } from '@/components/quotes/builder/rate-card-panel';
 import { DocumentCanvas } from '@/components/quotes/builder/document-canvas';
 import { PropertiesPanel } from '@/components/quotes/builder/properties-panel';
 import { BuilderToolbar } from '@/components/quotes/builder/builder-toolbar';
@@ -32,6 +33,7 @@ export default function QuoteBuilderPage() {
     document,
     showBlocksPanel,
     showPropertiesPanel,
+    showRateCardPanel,
     addBlock,
     moveBlock,
     resetDocument,
@@ -147,6 +149,7 @@ export default function QuoteBuilderPage() {
       >
         <div className="flex flex-1 overflow-hidden">
           {showBlocksPanel && <BlocksPanel />}
+          {showRateCardPanel && <RateCardPanel />}
 
           <DocumentCanvas />
 

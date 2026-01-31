@@ -19,10 +19,24 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
-      const isOnAuth = nextUrl.pathname.startsWith('/login') ||
-                       nextUrl.pathname.startsWith('/register');
-      const isOnPortal = nextUrl.pathname.startsWith('/p/'); // Client portal
+      const pathname = nextUrl.pathname;
+
+      // Protected routes - all dashboard-related paths
+      const protectedRoutes = [
+        '/dashboard',
+        '/quotes',
+        '/invoices',
+        '/clients',
+        '/settings',
+        '/rate-cards',
+        '/templates',
+        '/contracts',
+        '/onboarding',
+      ];
+      const isOnProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+
+      const isOnAuth = pathname.startsWith('/login') || pathname.startsWith('/register');
+      const isOnPortal = pathname.startsWith('/p/') || pathname.startsWith('/q/'); // Client portals
 
       // Allow public access to client portal
       if (isOnPortal) {
@@ -35,7 +49,7 @@ export const authConfig: NextAuthConfig = {
       }
 
       // Protect dashboard routes
-      if (isOnDashboard) {
+      if (isOnProtectedRoute) {
         if (isLoggedIn) return true;
         return false; // Redirect to login
       }
