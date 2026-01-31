@@ -140,14 +140,14 @@ export function RateCardForm({
           <div className="space-y-2">
             <Label htmlFor="categoryId">Category</Label>
             <Select
-              value={form.watch('categoryId') || ''}
-              onValueChange={(value) => form.setValue('categoryId', value || '')}
+              value={form.watch('categoryId') || 'none'}
+              onValueChange={(value) => form.setValue('categoryId', value === 'none' ? '' : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a category (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No Category</SelectItem>
+                <SelectItem value="none">No Category</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
@@ -253,14 +253,14 @@ export function RateCardForm({
             <div className="space-y-2">
               <Label htmlFor="taxRateId">Tax Rate</Label>
               <Select
-                value={form.watch('taxRateId') || ''}
-                onValueChange={(value) => form.setValue('taxRateId', value || '')}
+                value={form.watch('taxRateId') || 'none'}
+                onValueChange={(value) => form.setValue('taxRateId', value === 'none' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select tax rate (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Tax</SelectItem>
+                  <SelectItem value="none">No Tax</SelectItem>
                   {taxRates.map((taxRate) => (
                     <SelectItem key={taxRate.id} value={taxRate.id}>
                       {taxRate.name} ({taxRate.rate}%)

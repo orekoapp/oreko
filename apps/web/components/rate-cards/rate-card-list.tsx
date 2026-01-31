@@ -181,10 +181,11 @@ export function RateCardList({ initialData, categories, stats }: RateCardListPro
           </div>
 
           <Select
-            value={categoryFilter}
+            value={categoryFilter || 'all'}
             onValueChange={(value) => {
-              setCategoryFilter(value);
-              updateFilters({ categoryId: value });
+              const filterValue = value === 'all' ? '' : value;
+              setCategoryFilter(filterValue);
+              updateFilters({ categoryId: filterValue });
             }}
           >
             <SelectTrigger className="w-full md:w-[180px]">
@@ -192,7 +193,7 @@ export function RateCardList({ initialData, categories, stats }: RateCardListPro
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   <div className="flex items-center gap-2">
@@ -210,17 +211,18 @@ export function RateCardList({ initialData, categories, stats }: RateCardListPro
           </Select>
 
           <Select
-            value={statusFilter}
+            value={statusFilter || 'all'}
             onValueChange={(value) => {
-              setStatusFilter(value);
-              updateFilters({ isActive: value });
+              const filterValue = value === 'all' ? '' : value;
+              setStatusFilter(filterValue);
+              updateFilters({ isActive: filterValue });
             }}
           >
             <SelectTrigger className="w-full md:w-[140px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="true">Active</SelectItem>
               <SelectItem value="false">Inactive</SelectItem>
             </SelectContent>
