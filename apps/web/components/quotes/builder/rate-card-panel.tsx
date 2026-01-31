@@ -97,8 +97,8 @@ export function RateCardPanel() {
       quantity: 1,
       rate: rateCard.rate,
       unit: rateCard.pricingType === 'hourly' ? 'hour' : 'unit',
-      taxable: rateCard.taxable ?? false,
-      taxRate: 0,
+      taxRate: null,
+      rateCardId: rateCard.id,
     });
     addBlock(block);
   };
