@@ -71,19 +71,19 @@ export function BuilderToolbar() {
   };
 
   return (
-    <div className="flex items-center justify-between border-b bg-card px-4 py-2">
+    <div className="flex items-center justify-between border-b bg-card px-2 py-2 md:px-4">
       {/* Left section */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/quotes">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
 
-        <div className="mx-2 h-6 w-px bg-border" />
+        <div className="mx-1 h-6 w-px bg-border hidden md:block" />
 
         <Button
-          variant="ghost"
+          variant={showBlocksPanel ? 'secondary' : 'ghost'}
           size="icon"
           onClick={toggleBlocksPanel}
           title={showBlocksPanel ? 'Hide blocks panel' : 'Show blocks panel'}
@@ -100,12 +100,13 @@ export function BuilderToolbar() {
           size="icon"
           onClick={toggleRateCardPanel}
           title={showRateCardPanel ? 'Hide rate cards' : 'Show rate cards'}
+          className="hidden sm:inline-flex"
         >
           <Package className="h-4 w-4" />
         </Button>
 
         <Button
-          variant="ghost"
+          variant={showPropertiesPanel ? 'secondary' : 'ghost'}
           size="icon"
           onClick={togglePropertiesPanel}
           title={showPropertiesPanel ? 'Hide properties panel' : 'Show properties panel'}
@@ -117,7 +118,7 @@ export function BuilderToolbar() {
           )}
         </Button>
 
-        <div className="mx-2 h-6 w-px bg-border" />
+        <div className="mx-1 h-6 w-px bg-border hidden md:block" />
 
         <Button
           variant="ghost"
@@ -125,6 +126,7 @@ export function BuilderToolbar() {
           onClick={undo}
           disabled={!canUndo}
           title="Undo (Ctrl+Z)"
+          className="hidden sm:inline-flex"
         >
           <Undo2 className="h-4 w-4" />
         </Button>
@@ -135,25 +137,26 @@ export function BuilderToolbar() {
           onClick={redo}
           disabled={!canRedo}
           title="Redo (Ctrl+Shift+Z)"
+          className="hidden sm:inline-flex"
         >
           <Redo2 className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Center section - Document title */}
-      <div className="flex items-center gap-2">
-        <h1 className="font-medium">
+      <div className="flex items-center gap-2 min-w-0">
+        <h1 className="font-medium truncate text-sm md:text-base">
           {document?.title || 'Untitled Quote'}
         </h1>
         {isDirty && (
-          <span className="text-xs text-muted-foreground">(unsaved changes)</span>
+          <span className="text-xs text-muted-foreground hidden sm:inline">(unsaved)</span>
         )}
       </div>
 
       {/* Right section */}
-      <div className="flex items-center gap-2">
-        {/* Zoom controls */}
-        <div className="flex items-center gap-1 rounded-md border bg-background">
+      <div className="flex items-center gap-1 md:gap-2">
+        {/* Zoom controls - hidden on mobile */}
+        <div className="hidden lg:flex items-center gap-1 rounded-md border bg-background">
           <Button
             variant="ghost"
             size="icon"
@@ -179,6 +182,7 @@ export function BuilderToolbar() {
           variant={previewMode ? 'default' : 'outline'}
           size="sm"
           onClick={togglePreviewMode}
+          className="hidden sm:inline-flex"
         >
           {previewMode ? (
             <>
@@ -193,13 +197,24 @@ export function BuilderToolbar() {
           )}
         </Button>
 
-        <div className="mx-2 h-6 w-px bg-border" />
+        {/* Mobile preview icon-only button */}
+        <Button
+          variant={previewMode ? 'default' : 'outline'}
+          size="icon"
+          onClick={togglePreviewMode}
+          className="sm:hidden"
+        >
+          {previewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </Button>
+
+        <div className="mx-1 h-6 w-px bg-border hidden md:block" />
 
         <Button
           variant="outline"
           size="sm"
           onClick={handleSave}
           disabled={isSaving || !isDirty}
+          className="hidden md:inline-flex"
         >
           {isSaving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -209,9 +224,24 @@ export function BuilderToolbar() {
           Save
         </Button>
 
+        {/* Mobile save icon-only */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleSave}
+          disabled={isSaving || !isDirty}
+          className="md:hidden"
+        >
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
+        </Button>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hidden md:inline-flex">
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
@@ -226,9 +256,31 @@ export function BuilderToolbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button size="sm" onClick={handleSend}>
+        {/* Mobile Export icon-only */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="md:hidden">
+              <Download className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportPDF}>
+              Export as PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem>Export as Image</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Copy shareable link</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Button size="sm" onClick={handleSend} className="hidden md:inline-flex">
           <Send className="mr-2 h-4 w-4" />
           Send
+        </Button>
+
+        {/* Mobile Send icon-only */}
+        <Button size="icon" onClick={handleSend} className="md:hidden">
+          <Send className="h-4 w-4" />
         </Button>
       </div>
     </div>

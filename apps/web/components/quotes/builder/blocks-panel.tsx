@@ -12,10 +12,13 @@ import {
   Columns,
   Table,
   PenTool,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BLOCK_TEMPLATES, type BlockType } from '@/lib/quotes/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 
 const BLOCK_ICONS: Record<BlockType, React.ComponentType<{ className?: string }>> = {
   header: Heading,
@@ -50,11 +53,23 @@ const BLOCK_CATEGORIES = [
 ];
 
 export function BlocksPanel() {
+  const { toggleBlocksPanel } = useQuoteBuilderStore();
+
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-card">
-      <div className="border-b px-4 py-3">
-        <h2 className="font-semibold">Blocks</h2>
-        <p className="text-xs text-muted-foreground">Drag blocks to the canvas</p>
+    <div className="absolute md:relative left-0 top-0 z-20 flex h-full w-64 flex-col border-r bg-card shadow-lg md:shadow-none">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <div>
+          <h2 className="font-semibold">Blocks</h2>
+          <p className="text-xs text-muted-foreground">Drag blocks to the canvas</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden h-8 w-8"
+          onClick={toggleBlocksPanel}
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       <ScrollArea className="flex-1">

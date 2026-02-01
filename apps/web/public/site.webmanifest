@@ -1,0 +1,17 @@
+{
+  "name": "QuoteCraft",
+  "short_name": "QuoteCraft",
+  "description": "Beautiful invoices. No expensive subscription. The open-source quote and invoice builder.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

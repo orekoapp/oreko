@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Plus, ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { Search, Plus, ChevronDown, ChevronRight, Package, X } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -103,11 +103,21 @@ export function RateCardPanel() {
     addBlock(block);
   };
 
+  const { toggleRateCardPanel } = useQuoteBuilderStore();
+
   if (isLoading) {
     return (
-      <div className="flex h-full w-64 flex-col border-r bg-card">
-        <div className="border-b px-4 py-3">
+      <div className="absolute md:relative left-0 top-0 z-20 flex h-full w-64 flex-col border-r bg-card shadow-lg md:shadow-none">
+        <div className="flex items-center justify-between border-b px-4 py-3">
           <h2 className="font-semibold">Rate Cards</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-8 w-8"
+            onClick={toggleRateCardPanel}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -117,10 +127,20 @@ export function RateCardPanel() {
   }
 
   return (
-    <div data-testid="rate-card-panel" className="flex h-full w-64 flex-col border-r bg-card">
-      <div className="border-b px-4 py-3">
-        <h2 className="font-semibold">Rate Cards</h2>
-        <p className="text-xs text-muted-foreground">Click or drag to add</p>
+    <div data-testid="rate-card-panel" className="absolute md:relative left-0 top-0 z-20 flex h-full w-64 flex-col border-r bg-card shadow-lg md:shadow-none">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <div>
+          <h2 className="font-semibold">Rate Cards</h2>
+          <p className="text-xs text-muted-foreground">Click or drag to add</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden h-8 w-8"
+          onClick={toggleRateCardPanel}
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Search */}

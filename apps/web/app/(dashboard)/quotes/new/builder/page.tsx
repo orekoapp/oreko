@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -41,6 +41,7 @@ export default function QuoteBuilderPage() {
 
   const [activeBlock, setActiveBlock] = useState<QuoteBlock | null>(null);
   const [activeTemplateType, setActiveTemplateType] = useState<BlockType | null>(null);
+  const hasInitialized = useRef(false);
 
   // Initialize document if not exists
   useEffect(() => {
@@ -48,6 +49,20 @@ export default function QuoteBuilderPage() {
       resetDocument();
     }
   }, [document, resetDocument]);
+
+  // Hide panels on mobile on first load
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      const store = useQuoteBuilderStore.getState();
+      if (store.showBlocksPanel) store.toggleBlocksPanel();
+      if (store.showPropertiesPanel) store.togglePropertiesPanel();
+      if (store.showRateCardPanel) store.toggleRateCardPanel();
+    }
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -147,7 +162,7 @@ export default function QuoteBuilderPage() {
         onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
       >
-        <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex flex-1 overflow-hidden">
           {showBlocksPanel && <BlocksPanel />}
           {showRateCardPanel && <RateCardPanel />}
 

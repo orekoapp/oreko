@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import {
   DndContext,
@@ -29,6 +29,7 @@ export default function EditQuoteBuilderPage() {
   const quoteId = params.id as string;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
 
   const {
     document,
@@ -48,6 +49,20 @@ export default function EditQuoteBuilderPage() {
 
   // Keyboard shortcuts
   useBuilderKeyboardShortcuts();
+
+  // Hide panels on mobile on first load
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      const store = useQuoteBuilderStore.getState();
+      if (store.showBlocksPanel) store.toggleBlocksPanel();
+      if (store.showPropertiesPanel) store.togglePropertiesPanel();
+      if (store.showRateCardPanel) store.toggleRateCardPanel();
+    }
+  }, []);
 
   // Load quote on mount
   useEffect(() => {
@@ -180,7 +195,7 @@ export default function EditQuoteBuilderPage() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex flex-1 overflow-hidden">
           {showBlocksPanel && <BlocksPanel />}
           {showRateCardPanel && <RateCardPanel />}
 

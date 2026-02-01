@@ -1,6 +1,6 @@
 'use client';
 
-import { AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, AlignJustify, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import type { QuoteBlock, BlockType } from '@/lib/quotes/types';
@@ -20,16 +20,26 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function PropertiesPanel() {
-  const { document, selectedBlockId, updateBlock } = useQuoteBuilderStore();
+  const { document, selectedBlockId, updateBlock, togglePropertiesPanel } = useQuoteBuilderStore();
 
   const selectedBlock = document?.blocks.find((b) => b.id === selectedBlockId);
 
   if (!selectedBlock) {
     return (
-      <div className="flex h-full w-72 flex-col border-l bg-card">
-        <div className="border-b px-4 py-3">
-          <h2 className="font-semibold">Properties</h2>
-          <p className="text-xs text-muted-foreground">Select a block to edit</p>
+      <div className="absolute md:relative right-0 top-0 z-20 flex h-full w-72 flex-col border-l bg-card shadow-lg md:shadow-none">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <div>
+            <h2 className="font-semibold">Properties</h2>
+            <p className="text-xs text-muted-foreground">Select a block to edit</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-8 w-8"
+            onClick={togglePropertiesPanel}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex flex-1 items-center justify-center p-4">
           <p className="text-center text-sm text-muted-foreground">
@@ -41,12 +51,22 @@ export function PropertiesPanel() {
   }
 
   return (
-    <div className="flex h-full w-72 flex-col border-l bg-card">
-      <div className="border-b px-4 py-3">
-        <h2 className="font-semibold">Properties</h2>
-        <p className="text-xs text-muted-foreground capitalize">
-          {selectedBlock.type.replace('-', ' ')} Block
-        </p>
+    <div className="absolute md:relative right-0 top-0 z-20 flex h-full w-72 flex-col border-l bg-card shadow-lg md:shadow-none">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <div>
+          <h2 className="font-semibold">Properties</h2>
+          <p className="text-xs text-muted-foreground capitalize">
+            {selectedBlock.type.replace('-', ' ')} Block
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden h-8 w-8"
+          onClick={togglePropertiesPanel}
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       <ScrollArea className="flex-1">

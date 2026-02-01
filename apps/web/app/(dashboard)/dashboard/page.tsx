@@ -55,22 +55,22 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   return (
-    <div className="container py-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="container max-w-full px-4 py-6 md:px-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
             Welcome back! Here&apos;s your business overview.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
             <Link href="/quotes/new">
               <FileText className="mr-2 h-4 w-4" />
               New Quote
             </Link>
           </Button>
-          <Button asChild>
+          <Button size="sm" asChild className="flex-1 sm:flex-none">
             <Link href="/invoices/new">
               <Receipt className="mr-2 h-4 w-4" />
               New Invoice

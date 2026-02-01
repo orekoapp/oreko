@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
-const navItems = [
+export const navItems = [
   {
     title: 'Dashboard',
     href: '/dashboard',
@@ -62,7 +62,7 @@ export function DashboardNav() {
   return (
     <aside
       className={cn(
-        'flex h-screen flex-col border-r bg-card transition-all duration-300',
+        'hidden md:flex h-screen flex-col border-r bg-card transition-all duration-300',
         collapsed ? 'w-16' : 'w-64'
       )}
     >

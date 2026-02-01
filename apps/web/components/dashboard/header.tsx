@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MobileNav } from './mobile-nav';
 
 interface DashboardHeaderProps {
   user: {
@@ -40,22 +41,25 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-4">
-      {/* Search */}
-      <div className="flex items-center gap-4">
+      {/* Mobile Nav + Search */}
+      <div className="flex items-center gap-2 md:gap-4">
+        {/* Mobile Navigation */}
+        <MobileNav />
+        {/* Search */}
         {searchOpen ? (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search quotes, invoices, clients..."
-              className="w-80 pl-9"
+              placeholder="Search..."
+              className="w-40 sm:w-60 md:w-80 pl-9"
               autoFocus
               onBlur={() => setSearchOpen(false)}
             />
           </div>
         ) : (
           <Button variant="ghost" size="sm" onClick={() => setSearchOpen(true)}>
-            <Search className="mr-2 h-4 w-4" />
-            Search
+            <Search className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Search</span>
             <kbd className="ml-4 hidden rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground md:inline">
               ⌘K
             </kbd>
