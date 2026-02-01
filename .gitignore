@@ -61,3 +61,6 @@ Thumbs.db
 *.Zone.Identifier
 .vercel
 .env*.local
+
+# Playwright auth state
+apps/web/e2e/.auth/
