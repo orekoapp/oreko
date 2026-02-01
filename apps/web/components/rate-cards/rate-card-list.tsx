@@ -251,7 +251,7 @@ export function RateCardList({ initialData, categories, stats }: RateCardListPro
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="rate-cards-grid">
           {initialData.data.map((rateCard) => (
             <Card
               key={rateCard.id}

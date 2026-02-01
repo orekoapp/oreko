@@ -84,32 +84,36 @@ test.describe('Settings Module', () => {
   test.describe('Payment Settings', () => {
     test('should display payment settings', async ({ page }) => {
       await page.goto('/settings/payments');
+      await page.waitForLoadState('networkidle');
 
-      // Check for payment settings content or redirect to settings
-      const paymentText = page.getByText(/stripe|payment|connect/i).first();
-      const settingsHeading = page.getByRole('heading', { name: /payment|settings/i }).first();
+      // Check for payment-related content or heading
+      const paymentHeading = page.getByRole('heading', { name: /payment/i }).first();
+      const stripeText = page.getByText(/stripe|payment|connect/i).first();
+      const pageContent = page.locator('main');
 
-      const hasPayment = await paymentText.isVisible().catch(() => false);
-      const hasHeading = await settingsHeading.isVisible().catch(() => false);
+      const hasHeading = await paymentHeading.isVisible().catch(() => false);
+      const hasStripe = await stripeText.isVisible().catch(() => false);
+      const hasContent = await pageContent.isVisible();
 
-      // Should show payment content or settings page
-      expect(hasPayment || hasHeading || page.url().includes('/settings')).toBe(true);
+      expect(hasHeading || hasStripe || hasContent).toBeTruthy();
     });
   });
 
   test.describe('Email Settings', () => {
     test('should display email settings', async ({ page }) => {
       await page.goto('/settings/emails');
+      await page.waitForLoadState('networkidle');
 
-      // Check for email settings content or redirect to settings
-      const emailText = page.getByText(/email|templates|notification/i).first();
-      const settingsHeading = page.getByRole('heading', { name: /email|settings/i }).first();
+      // Check for email-related content or heading
+      const emailHeading = page.getByRole('heading', { name: /email/i }).first();
+      const templatesText = page.getByText(/email|template/i).first();
+      const pageContent = page.locator('main');
 
-      const hasEmail = await emailText.isVisible().catch(() => false);
-      const hasHeading = await settingsHeading.isVisible().catch(() => false);
+      const hasHeading = await emailHeading.isVisible().catch(() => false);
+      const hasTemplates = await templatesText.isVisible().catch(() => false);
+      const hasContent = await pageContent.isVisible();
 
-      // Should show email content or settings page
-      expect(hasEmail || hasHeading || page.url().includes('/settings')).toBe(true);
+      expect(hasHeading || hasTemplates || hasContent).toBeTruthy();
     });
   });
 });

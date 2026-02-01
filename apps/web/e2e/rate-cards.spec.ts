@@ -15,10 +15,10 @@ test.describe('Rate Cards Module', () => {
 
       // Should show stats - use data-testid for reliable selection
       await expect(page.getByText('Total Rate Cards')).toBeVisible();
-      // Use data-testid for stats grid selection
+      // Use data-testid for stats grid selection with exact text matching
       const statsSection = page.getByTestId('stats-grid');
-      await expect(statsSection.getByText('Active')).toBeVisible();
-      await expect(statsSection.getByText('Inactive')).toBeVisible();
+      await expect(statsSection.getByText('Active', { exact: true })).toBeVisible();
+      await expect(statsSection.getByText('Inactive', { exact: true })).toBeVisible();
     });
 
     test('should show empty state when no rate cards', async ({ page }) => {
@@ -65,18 +65,18 @@ test.describe('Rate Cards Module', () => {
 
     test('should display rate card grid', async ({ page }) => {
       await page.goto('/rate-cards');
+      await page.waitForLoadState('networkidle');
 
-      // Rate cards should show in a grid or list or empty state
-      const grid = page.locator('.grid').first();
-      const emptyState = page.getByText(/no rate cards|create your first/i).first();
-      const heading = page.getByRole('heading', { name: /rate cards/i });
+      // Rate cards page should show stats or rate card content
+      const totalRateCards = page.getByText('Total Rate Cards');
+      const rateCardLinks = page.locator('a[href*="/rate-cards/"]');
+      const noRateCards = page.getByText(/no rate cards found/i);
 
-      const hasGrid = await grid.isVisible().catch(() => false);
-      const hasEmpty = await emptyState.isVisible().catch(() => false);
-      const hasHeading = await heading.isVisible().catch(() => false);
+      const hasStats = await totalRateCards.isVisible().catch(() => false);
+      const hasCards = await rateCardLinks.count() > 1;  // > 1 because "Add Rate Card" link exists
+      const hasEmpty = await noRateCards.isVisible().catch(() => false);
 
-      // Should show grid, empty state, or at least the page heading
-      expect(hasGrid || hasEmpty || hasHeading).toBe(true);
+      expect(hasStats || hasCards || hasEmpty).toBeTruthy();
     });
   });
 
