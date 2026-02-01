@@ -28,7 +28,8 @@ test.describe('Multi-user & Team', () => {
     test('should show member email', async ({ page }) => {
       await page.goto('/settings/team');
 
-      const email = page.getByText(/@/);
+      // Use first() to handle multiple email matches
+      const email = page.getByText(/@/).first();
       if (await email.isVisible()) {
         await expect(email).toBeVisible();
       }
@@ -233,12 +234,17 @@ test.describe('Multi-user & Team', () => {
 
       // Owner row should not have remove button or it should be disabled
       const ownerCard = page.getByTestId('team-member-card').filter({ hasText: /owner/i });
-      if (await ownerCard.isVisible()) {
-        const removeButton = ownerCard.getByRole('button', { name: /remove/i });
-        if (await removeButton.count() > 0) {
+      const ownerCardCount = await ownerCard.count();
+
+      if (ownerCardCount > 0) {
+        const removeButton = ownerCard.first().getByRole('button', { name: /remove/i });
+        const removeButtonCount = await removeButton.count();
+        if (removeButtonCount > 0) {
           await expect(removeButton).toBeDisabled();
         }
+        // If no remove button exists for owner, test passes (owner cannot be removed)
       }
+      // If no owner card visible, skip the assertion (test passes)
     });
   });
 
@@ -359,7 +365,8 @@ test.describe('Multi-user & Team', () => {
     test('should show workspace URL', async ({ page }) => {
       await page.goto('/settings/workspace');
 
-      const urlInfo = page.getByText(/url|subdomain|slug/i);
+      // Use first() to handle multiple matches (label and description)
+      const urlInfo = page.getByText(/url|subdomain|slug/i).first();
       if (await urlInfo.isVisible()) {
         await expect(urlInfo).toBeVisible();
       }
@@ -420,7 +427,8 @@ test.describe('Multi-user & Team', () => {
     test('should show team activity overview', async ({ page }) => {
       await page.goto('/dashboard');
 
-      const teamActivity = page.getByText(/team activity|recent activity/i);
+      // Use first() to handle multiple matches (heading and empty state message)
+      const teamActivity = page.getByText(/team activity|recent activity/i).first();
       if (await teamActivity.isVisible()) {
         await expect(teamActivity).toBeVisible();
       }
