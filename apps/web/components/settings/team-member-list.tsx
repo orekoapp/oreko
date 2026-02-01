@@ -89,7 +89,7 @@ export function TeamMemberList({ members, currentUserRole }: TeamMemberListProps
       )}
 
       {members.map((member) => (
-        <Card key={member.id}>
+        <Card key={member.id} data-testid="team-member-card">
           <CardContent className="flex items-center justify-between p-4">
             <div className="flex items-center gap-4">
               <Avatar>

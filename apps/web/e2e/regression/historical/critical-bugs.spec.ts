@@ -108,8 +108,8 @@ test.describe('Historical Regressions - Quote Builder', () => {
         await editor.click();
         await editor.fill('Test content');
 
-        // Select text and bold it
-        await page.keyboard.press('Control+a');
+        // Select text and bold it (use Meta for Mac, Control for Windows/Linux)
+        await page.keyboard.press('ControlOrMeta+a');
         await page.click('button[aria-label="Bold"]');
 
         // Save

@@ -128,7 +128,8 @@ test.describe('Data-Driven: Quote Calculations', () => {
       if (await totalElement.isVisible()) {
         const totalText = await totalElement.textContent();
         const total = parseFloat(totalText?.replace(/[^0-9.]/g, '') || '0');
-        expect(total).toBe(scenario.expectedTotal);
+        // Use toBeCloseTo for floating point comparison
+        expect(total).toBeCloseTo(scenario.expectedTotal, 2);
       }
     });
   }
@@ -196,7 +197,8 @@ test.describe('Data-Driven: Discount Calculations', () => {
         if (await discountElement.isVisible()) {
           const discountText = await discountElement.textContent();
           const discount = parseFloat(discountText?.replace(/[^0-9.]/g, '') || '0');
-          expect(discount).toBe(scenario.expectedDiscount);
+          // Use toBeCloseTo for floating point comparison
+          expect(discount).toBeCloseTo(scenario.expectedDiscount, 2);
         }
       }
     });
