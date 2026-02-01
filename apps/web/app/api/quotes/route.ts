@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
 
 /**
  * GET /api/quotes
  * Returns quotes for the current user's workspace
  */
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+                   request.headers.get('x-real-ip') ||
+                   'unknown';
+  const rateLimitResult = checkRateLimit(`quotes:${clientIp}`, defaultRateLimitOptions);
+  const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
+
+  if (rateLimitResult.limited) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders }
+    );
+  }
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: rateLimitHeaders });
     }
 
     // Get user's workspace
@@ -76,20 +91,23 @@ export async function GET(request: NextRequest) {
       client: quote.client,
     }));
 
-    return NextResponse.json({
-      data,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
+    return NextResponse.json(
+      {
+        data,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
       },
-    });
+      { headers: rateLimitHeaders }
+    );
   } catch (error) {
     console.error('Error fetching quotes:', error);
     return NextResponse.json(
       { error: 'Failed to fetch quotes' },
-      { status: 500 }
+      { status: 500, headers: rateLimitHeaders }
     );
   }
 }

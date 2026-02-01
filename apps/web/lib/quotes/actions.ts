@@ -35,21 +35,55 @@ async function getActiveWorkspace() {
 
 /**
  * Generate the next quote number for a workspace
+ * Uses atomic increment on NumberSequence table to prevent race conditions
  */
 async function generateQuoteNumber(workspaceId: string): Promise<string> {
-  const lastQuote = await prisma.quote.findFirst({
-    where: { workspaceId },
-    orderBy: { createdAt: 'desc' },
-    select: { quoteNumber: true },
+  // Use a transaction to atomically increment the sequence
+  const result = await prisma.$transaction(async (tx) => {
+    // Try to find and update existing sequence
+    const sequence = await tx.numberSequence.findFirst({
+      where: { workspaceId, type: 'quote' },
+    });
+
+    if (sequence) {
+      // Atomically increment and return the updated sequence
+      const updated = await tx.numberSequence.update({
+        where: { id: sequence.id },
+        data: { currentValue: { increment: 1 } },
+      });
+      return {
+        prefix: updated.prefix || 'QT',
+        suffix: updated.suffix,
+        value: updated.currentValue,
+        padding: updated.padding,
+      };
+    }
+
+    // Create new sequence if none exists
+    const created = await tx.numberSequence.create({
+      data: {
+        workspaceId,
+        type: 'quote',
+        prefix: 'QT',
+        currentValue: 1,
+        padding: 4,
+      },
+    });
+    return {
+      prefix: created.prefix || 'QT',
+      suffix: created.suffix,
+      value: created.currentValue,
+      padding: created.padding,
+    };
   });
 
-  // Parse the last number or start at 0
-  const lastNumber = lastQuote?.quoteNumber
-    ? parseInt(lastQuote.quoteNumber.replace(/\D/g, ''), 10) || 0
-    : 0;
-
-  const nextNumber = lastNumber + 1;
-  return `QT-${String(nextNumber).padStart(4, '0')}`;
+  // Format the quote number
+  const paddedValue = String(result.value).padStart(result.padding, '0');
+  const parts = [result.prefix, paddedValue];
+  if (result.suffix) {
+    parts.push(result.suffix);
+  }
+  return parts.join('-');
 }
 
 /**

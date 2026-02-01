@@ -13,15 +13,12 @@ test.describe('Rate Cards Module', () => {
     test('should show stats cards', async ({ page }) => {
       await page.goto('/rate-cards');
 
-      // Check for stats or page content
-      const totalStats = page.getByText(/total rate cards|rate cards/i).first();
-      const heading = page.getByRole('heading', { name: /rate cards/i });
-
-      const hasStats = await totalStats.isVisible().catch(() => false);
-      const hasHeading = await heading.isVisible().catch(() => false);
-
-      // Page should show stats or at least the heading
-      expect(hasStats || hasHeading).toBe(true);
+      // Should show stats - use data-testid for reliable selection
+      await expect(page.getByText('Total Rate Cards')).toBeVisible();
+      // Use data-testid for stats grid selection
+      const statsSection = page.getByTestId('stats-grid');
+      await expect(statsSection.getByText('Active')).toBeVisible();
+      await expect(statsSection.getByText('Inactive')).toBeVisible();
     });
 
     test('should show empty state when no rate cards', async ({ page }) => {
@@ -44,21 +41,23 @@ test.describe('Rate Cards Module', () => {
     test('should filter by category', async ({ page }) => {
       await page.goto('/rate-cards');
 
-      // Find category filter
-      const categoryFilter = page.locator('button').filter({ hasText: /all categories/i });
+      // Find category filter - use role selector for combobox
+      const categoryFilter = page.getByRole('combobox').filter({ hasText: /all categories/i });
       if (await categoryFilter.isVisible()) {
         await categoryFilter.click();
+        // Close the dropdown
+        await page.keyboard.press('Escape');
       }
     });
 
     test('should filter by status', async ({ page }) => {
       await page.goto('/rate-cards');
 
-      // Find status filter
-      const statusFilter = page.locator('button').filter({ hasText: /all status/i });
+      // Find status filter - use role selector for combobox
+      const statusFilter = page.getByRole('combobox').filter({ hasText: /all status/i });
       if (await statusFilter.isVisible()) {
         await statusFilter.click();
-        await page.getByRole('option', { name: /active/i }).click();
+        await page.getByRole('option', { name: /^active$/i }).click();
 
         await expect(page).toHaveURL(/isActive=true/);
       }
@@ -102,7 +101,8 @@ test.describe('Rate Cards Module', () => {
     test('should open actions menu', async ({ page }) => {
       await page.goto('/rate-cards');
 
-      const actionsMenu = page.locator('button').filter({ has: page.locator('svg.lucide-more-horizontal') }).first();
+      // Use aria-label for reliable actions button selection
+      const actionsMenu = page.getByRole('button', { name: 'Actions' }).first();
       if (await actionsMenu.isVisible()) {
         await actionsMenu.click();
 
@@ -116,7 +116,8 @@ test.describe('Rate Cards Module', () => {
     test('should show delete confirmation dialog', async ({ page }) => {
       await page.goto('/rate-cards');
 
-      const actionsMenu = page.locator('button').filter({ has: page.locator('svg.lucide-more-horizontal') }).first();
+      // Use aria-label for reliable actions button selection
+      const actionsMenu = page.getByRole('button', { name: 'Actions' }).first();
       if (await actionsMenu.isVisible()) {
         await actionsMenu.click();
         await page.getByRole('menuitem', { name: /delete/i }).click();
