@@ -148,10 +148,14 @@ test.describe('Email Delivery', () => {
   test.describe('Invoice Email Sending', () => {
     test('should show send invoice button', async ({ page }) => {
       await page.goto('/invoices');
+      await page.waitForLoadState('networkidle');
 
       const invoiceLink = page.locator('a[href^="/invoices/"]').first();
-      if (await invoiceLink.isVisible()) {
+      const hasInvoiceLink = await invoiceLink.isVisible().catch(() => false);
+
+      if (hasInvoiceLink) {
         await invoiceLink.click();
+        await page.waitForLoadState('networkidle');
 
         // Check for send button or any action buttons
         const sendButton = page.getByRole('button', { name: /send|email|share/i }).first();
@@ -160,8 +164,9 @@ test.describe('Email Delivery', () => {
         // Either has send button or invoice detail page loaded
         expect(hasBtn || page.url().includes('/invoices/')).toBe(true);
       } else {
-        // No invoices exist
-        expect(true).toBe(true);
+        // No invoices exist - page should still be functional
+        const pageLoaded = page.url().includes('/invoices');
+        expect(pageLoaded).toBe(true);
       }
     });
 
