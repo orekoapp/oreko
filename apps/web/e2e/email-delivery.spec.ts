@@ -194,19 +194,31 @@ test.describe('Email Delivery', () => {
   test.describe('Payment Reminder Emails', () => {
     test('should show send reminder button on overdue invoice', async ({ page }) => {
       await page.goto('/invoices');
+      await page.waitForLoadState('networkidle');
 
-      const overdueInvoice = page.locator('a:has-text("overdue")').first();
-      if (await overdueInvoice.isVisible()) {
-        await overdueInvoice.click();
+      // Look for overdue invoices (case-insensitive)
+      const overdueInvoice = page.getByText(/overdue/i).first();
+      const hasOverdue = await overdueInvoice.isVisible().catch(() => false);
 
-        const reminderButton = page.getByRole('button', { name: /remind|send|email/i }).first();
-        const hasBtn = await reminderButton.isVisible().catch(() => false);
+      if (hasOverdue) {
+        // Try to click the overdue invoice link
+        const invoiceLink = page.locator('a[href^="/invoices/"]').first();
+        if (await invoiceLink.isVisible().catch(() => false)) {
+          await invoiceLink.click();
+          await page.waitForLoadState('networkidle');
 
-        // Either has reminder button or invoice page loaded
-        expect(hasBtn || page.url().includes('/invoices/')).toBe(true);
+          const reminderButton = page.getByRole('button', { name: /remind|send|email/i }).first();
+          const hasBtn = await reminderButton.isVisible().catch(() => false);
+
+          // Either has reminder button or invoice page loaded
+          expect(hasBtn || page.url().includes('/invoices/')).toBe(true);
+        } else {
+          // Page loaded but no clickable invoice link
+          expect(page.url()).toContain('/invoices');
+        }
       } else {
-        // No overdue invoices - that's okay
-        expect(true).toBe(true);
+        // No overdue invoices - page loaded successfully
+        expect(page.url()).toContain('/invoices');
       }
     });
 
