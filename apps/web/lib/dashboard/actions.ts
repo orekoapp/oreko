@@ -455,3 +455,355 @@ export async function getDashboardData(): Promise<DashboardData> {
     revenueData,
   };
 }
+
+// ============================================
+// Advanced Analytics Actions
+// ============================================
+
+import type {
+  ConversionFunnelData,
+  PaymentAgingData,
+  ClientDistributionData,
+  MonthlyComparisonData,
+  ForecastDataPoint,
+  AnalyticsDateRange,
+} from './types';
+
+// Get conversion funnel data
+export async function getConversionFunnelData(
+  dateRange?: AnalyticsDateRange
+): Promise<ConversionFunnelData> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const dateFilter = dateRange
+    ? { gte: dateRange.from, lte: dateRange.to }
+    : undefined;
+
+  const [
+    quotesCreated,
+    quotesSent,
+    quotesViewed,
+    quotesAccepted,
+    invoicesCreated,
+    invoicesPaid,
+  ] = await Promise.all([
+    prisma.quote.count({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        createdAt: dateFilter,
+      },
+    }),
+    prisma.quote.count({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        sentAt: dateFilter || { not: null },
+      },
+    }),
+    prisma.quote.count({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        viewedAt: dateFilter || { not: null },
+      },
+    }),
+    prisma.quote.count({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        status: 'accepted',
+        ...(dateFilter && { acceptedAt: dateFilter }),
+      },
+    }),
+    prisma.invoice.count({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        createdAt: dateFilter,
+      },
+    }),
+    prisma.invoice.count({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        status: 'paid',
+        ...(dateFilter && { paidAt: dateFilter }),
+      },
+    }),
+  ]);
+
+  return {
+    quotesCreated,
+    quotesSent,
+    quotesViewed,
+    quotesAccepted,
+    invoicesCreated,
+    invoicesPaid,
+  };
+}
+
+// Get payment aging data
+export async function getPaymentAgingData(): Promise<PaymentAgingData> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+  const now = new Date();
+
+  // Get all unpaid invoices
+  const unpaidInvoices = await prisma.invoice.findMany({
+    where: {
+      workspaceId,
+      deletedAt: null,
+      status: { in: ['sent', 'viewed', 'partial', 'overdue'] },
+    },
+    select: {
+      total: true,
+      amountPaid: true,
+      dueDate: true,
+    },
+  });
+
+  const aging: PaymentAgingData = {
+    current: 0,
+    days1to30: 0,
+    days31to60: 0,
+    days61to90: 0,
+    days90plus: 0,
+    totalOutstanding: 0,
+  };
+
+  unpaidInvoices.forEach((invoice) => {
+    const outstanding = toNumber(invoice.total) - toNumber(invoice.amountPaid);
+    aging.totalOutstanding += outstanding;
+
+    if (!invoice.dueDate) {
+      aging.current += outstanding;
+      return;
+    }
+
+    const daysPastDue = Math.floor(
+      (now.getTime() - invoice.dueDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (daysPastDue <= 0) {
+      aging.current += outstanding;
+    } else if (daysPastDue <= 30) {
+      aging.days1to30 += outstanding;
+    } else if (daysPastDue <= 60) {
+      aging.days31to60 += outstanding;
+    } else if (daysPastDue <= 90) {
+      aging.days61to90 += outstanding;
+    } else {
+      aging.days90plus += outstanding;
+    }
+  });
+
+  return aging;
+}
+
+// Get client distribution by region
+export async function getClientDistributionData(
+  limit: number = 10
+): Promise<ClientDistributionData[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  // Get all clients with their addresses and invoice totals
+  const clients = await prisma.client.findMany({
+    where: {
+      workspaceId,
+      deletedAt: null,
+    },
+    select: {
+      address: true,
+      invoices: {
+        where: { status: 'paid', deletedAt: null },
+        select: { amountPaid: true },
+      },
+      quotes: {
+        where: { deletedAt: null },
+        select: { id: true },
+      },
+      _count: {
+        select: { invoices: true },
+      },
+    },
+  });
+
+  // Group by region
+  const regionMap = new Map<
+    string,
+    { clientCount: number; totalRevenue: number; quoteCount: number; invoiceCount: number }
+  >();
+
+  clients.forEach((client) => {
+    // Parse address to get region (state/country)
+    let region = 'Unknown';
+    if (client.address) {
+      const addr = client.address as { state?: string; country?: string };
+      region = addr.state || addr.country || 'Unknown';
+    }
+
+    const existing = regionMap.get(region) || {
+      clientCount: 0,
+      totalRevenue: 0,
+      quoteCount: 0,
+      invoiceCount: 0,
+    };
+
+    const revenue = client.invoices.reduce(
+      (sum, inv) => sum + toNumber(inv.amountPaid),
+      0
+    );
+
+    regionMap.set(region, {
+      clientCount: existing.clientCount + 1,
+      totalRevenue: existing.totalRevenue + revenue,
+      quoteCount: existing.quoteCount + client.quotes.length,
+      invoiceCount: existing.invoiceCount + client._count.invoices,
+    });
+  });
+
+  // Convert to array and sort by client count
+  const result = Array.from(regionMap.entries())
+    .map(([region, data]) => ({
+      region,
+      ...data,
+    }))
+    .sort((a, b) => b.clientCount - a.clientCount)
+    .slice(0, limit);
+
+  return result;
+}
+
+// Get monthly comparison data
+export async function getMonthlyComparisonData(
+  months: number = 12
+): Promise<MonthlyComparisonData[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+  const now = new Date();
+
+  const result: MonthlyComparisonData[] = [];
+
+  for (let i = months - 1; i >= 0; i--) {
+    const monthDate = subMonths(now, i);
+    const monthStart = startOfDay(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1));
+    const monthEnd = startOfDay(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1));
+
+    const [revenue, quoteCount, invoiceCount, clientCount] = await Promise.all([
+      prisma.invoice.aggregate({
+        where: {
+          workspaceId,
+          status: 'paid',
+          deletedAt: null,
+          paidAt: { gte: monthStart, lt: monthEnd },
+        },
+        _sum: { amountPaid: true },
+      }),
+      prisma.quote.count({
+        where: {
+          workspaceId,
+          deletedAt: null,
+          createdAt: { gte: monthStart, lt: monthEnd },
+        },
+      }),
+      prisma.invoice.count({
+        where: {
+          workspaceId,
+          deletedAt: null,
+          createdAt: { gte: monthStart, lt: monthEnd },
+        },
+      }),
+      prisma.client.count({
+        where: {
+          workspaceId,
+          deletedAt: null,
+          createdAt: { gte: monthStart, lt: monthEnd },
+        },
+      }),
+    ]);
+
+    result.push({
+      month: format(monthDate, 'MMM yyyy'),
+      monthKey: format(monthDate, 'yyyy-MM'),
+      revenue: toNumber(revenue._sum.amountPaid),
+      quoteCount,
+      invoiceCount,
+      clientCount,
+    });
+  }
+
+  return result;
+}
+
+// Get revenue forecast
+export async function getRevenueForecast(
+  historicalMonths: number = 6,
+  forecastMonths: number = 3
+): Promise<ForecastDataPoint[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+  const now = new Date();
+
+  // Get historical monthly revenue
+  const historical: ForecastDataPoint[] = [];
+
+  for (let i = historicalMonths - 1; i >= 0; i--) {
+    const monthDate = subMonths(now, i);
+    const monthStart = startOfDay(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1));
+    const monthEnd = startOfDay(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1));
+
+    const revenue = await prisma.invoice.aggregate({
+      where: {
+        workspaceId,
+        status: 'paid',
+        deletedAt: null,
+        paidAt: { gte: monthStart, lt: monthEnd },
+      },
+      _sum: { amountPaid: true },
+    });
+
+    historical.push({
+      date: format(monthDate, 'yyyy-MM'),
+      actual: toNumber(revenue._sum.amountPaid),
+      isProjection: false,
+    });
+  }
+
+  // Simple linear regression for forecast
+  const values = historical.map((h) => h.actual || 0);
+  const n = values.length;
+
+  if (n < 2) {
+    return historical;
+  }
+
+  // Calculate regression
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  for (let i = 0; i < n; i++) {
+    const val = values[i] ?? 0;
+    sumX += i;
+    sumY += val;
+    sumXY += i * val;
+    sumXX += i * i;
+  }
+
+  const denominator = n * sumXX - sumX * sumX;
+  const slope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0;
+  const intercept = (sumY - slope * sumX) / n;
+
+  // Generate forecast
+  const forecast: ForecastDataPoint[] = [];
+  for (let i = 0; i < forecastMonths; i++) {
+    const monthDate = subMonths(now, -(i + 1));
+    const projectedValue = Math.max(0, slope * (n + i) + intercept);
+    const margin = projectedValue * 0.15; // 15% confidence interval
+
+    forecast.push({
+      date: format(monthDate, 'yyyy-MM'),
+      forecast: projectedValue,
+      lowerBound: Math.max(0, projectedValue - margin),
+      upperBound: projectedValue + margin,
+      isProjection: true,
+    });
+  }
+
+  return [...historical, ...forecast];
+}

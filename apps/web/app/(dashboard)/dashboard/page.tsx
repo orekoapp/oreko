@@ -6,7 +6,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { RecentQuotes, RecentInvoices } from '@/components/dashboard/recent-items';
-import { getDashboardData } from '@/lib/dashboard/actions';
+import { AnalyticsSection } from '@/components/dashboard/analytics-section';
+import { getDashboardData, getConversionFunnelData, getPaymentAgingData } from '@/lib/dashboard/actions';
 
 export const metadata = {
   title: 'Dashboard',
@@ -14,12 +15,30 @@ export const metadata = {
 };
 
 async function DashboardContent() {
-  const data = await getDashboardData();
+  // Fetch all dashboard data in parallel
+  const [data, conversionFunnelData, paymentAgingData] = await Promise.all([
+    getDashboardData(),
+    getConversionFunnelData(),
+    getPaymentAgingData(),
+  ]);
 
   return (
     <>
+      {/* Stats Cards */}
       <StatsCards stats={data.stats} />
 
+      {/* Analytics Charts Section */}
+      <div className="mt-6">
+        <AnalyticsSection
+          revenueData={data.revenueData}
+          quoteStatusCounts={data.quoteStatusCounts}
+          invoiceStatusCounts={data.invoiceStatusCounts}
+          conversionFunnelData={conversionFunnelData}
+          paymentAgingData={paymentAgingData}
+        />
+      </div>
+
+      {/* Recent Items Section */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <RecentQuotes quotes={data.recentQuotes} />
@@ -36,12 +55,28 @@ async function DashboardContent() {
 function DashboardSkeleton() {
   return (
     <>
+      {/* Stats Cards Skeleton */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[...Array(6)].map((_, i) => (
           <Skeleton key={i} className="h-32" />
         ))}
       </div>
 
+      {/* Analytics Section Skeleton */}
+      <div className="mt-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+        <Skeleton className="h-[350px]" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-[300px]" />
+          <Skeleton className="h-[300px]" />
+          <Skeleton className="h-[300px]" />
+        </div>
+      </div>
+
+      {/* Recent Items Skeleton */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <Skeleton className="h-80" />
