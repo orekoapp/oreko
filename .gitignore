@@ -64,3 +64,9 @@ Thumbs.db
 
 # Playwright auth state
 apps/web/e2e/.auth/
+
+# Playwright MCP screenshots
+.playwright-mcp/
+
+# PDF files
+*.pdf
