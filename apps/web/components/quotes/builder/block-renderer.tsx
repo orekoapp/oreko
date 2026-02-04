@@ -19,9 +19,12 @@ import {
   HeaderBlockContent,
   TextBlockContent,
   ServiceItemBlockContent,
+  ServiceGroupBlockContent,
   DividerBlockContent,
   SpacerBlockContent,
   ImageBlockContent,
+  ColumnsBlockContent,
+  TableBlockContent,
   SignatureBlockContent,
 } from '../blocks';
 
@@ -68,20 +71,29 @@ export function BlockRenderer({ block, index, isSelected, isPreview }: BlockRend
         return <TextBlockContent block={block} />;
       case 'service-item':
         return <ServiceItemBlockContent block={block} />;
+      case 'service-group':
+        return <ServiceGroupBlockContent block={block} />;
       case 'divider':
         return <DividerBlockContent block={block} />;
       case 'spacer':
         return <SpacerBlockContent block={block} />;
       case 'image':
         return <ImageBlockContent block={block} />;
+      case 'columns':
+        return <ColumnsBlockContent block={block} />;
+      case 'table':
+        return <TableBlockContent block={block} />;
       case 'signature':
         return <SignatureBlockContent block={block} />;
-      default:
+      default: {
+        // Exhaustive check - this should never happen if all block types are handled
+        const _exhaustiveCheck: never = block;
         return (
           <div className="rounded bg-muted p-4 text-center text-sm text-muted-foreground">
-            Unknown block type: {block.type}
+            Unknown block type: {(_exhaustiveCheck as QuoteBlock).type}
           </div>
         );
+      }
     }
   };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   DndContext,
   DragOverlay,
@@ -29,6 +30,9 @@ import { PropertiesPanel } from '@/components/quotes/builder/properties-panel';
 import { BuilderToolbar } from '@/components/quotes/builder/builder-toolbar';
 
 export default function QuoteBuilderPage() {
+  const searchParams = useSearchParams();
+  const clientId = searchParams.get('clientId');
+
   const {
     document,
     showBlocksPanel,
@@ -42,6 +46,7 @@ export default function QuoteBuilderPage() {
   const [activeBlock, setActiveBlock] = useState<QuoteBlock | null>(null);
   const [activeTemplateType, setActiveTemplateType] = useState<BlockType | null>(null);
   const hasInitialized = useRef(false);
+  const clientIdSet = useRef(false);
 
   // Initialize document if not exists
   useEffect(() => {
@@ -49,6 +54,23 @@ export default function QuoteBuilderPage() {
       resetDocument();
     }
   }, [document, resetDocument]);
+
+  // Set clientId on document when available
+  useEffect(() => {
+    if (clientId && document && !clientIdSet.current) {
+      const store = useQuoteBuilderStore.getState();
+      if (store.document && store.document.clientId !== clientId) {
+        // Update the document with the clientId using immer
+        useQuoteBuilderStore.setState((state) => {
+          if (state.document) {
+            state.document.clientId = clientId;
+            state.isDirty = true;
+          }
+        });
+        clientIdSet.current = true;
+      }
+    }
+  }, [clientId, document]);
 
   // Hide panels on mobile on first load
   useEffect(() => {

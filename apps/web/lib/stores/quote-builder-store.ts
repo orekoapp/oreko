@@ -459,11 +459,18 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
       {
         name: 'quote-builder',
         partialize: (state) => ({
+          // Persist document for auto-save (draft recovery)
+          document: state.document,
+          isDirty: state.isDirty,
+          lastSavedAt: state.lastSavedAt,
+          // UI preferences
           showBlocksPanel: state.showBlocksPanel,
           showPropertiesPanel: state.showPropertiesPanel,
           showRateCardPanel: state.showRateCardPanel,
           zoom: state.zoom,
         }),
+        // Don't persist to localStorage if document is empty or saved
+        skipHydration: false,
       }
     ),
     { name: 'QuoteBuilder' }

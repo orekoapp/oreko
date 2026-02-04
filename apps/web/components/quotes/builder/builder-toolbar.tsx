@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Undo2,
@@ -20,7 +22,9 @@ import {
   Loader2,
   Package,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
+import { updateQuote, updateQuoteStatus } from '@/lib/quotes/actions';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -32,6 +36,9 @@ import {
 import { cn } from '@/lib/utils';
 
 export function BuilderToolbar() {
+  const router = useRouter();
+  const [isSendLoading, setIsSendLoading] = useState(false);
+
   const {
     document,
     isDirty,
@@ -50,24 +57,75 @@ export function BuilderToolbar() {
     setZoom,
     undo,
     redo,
+    setSaving,
+    markSaved,
   } = useQuoteBuilderStore();
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
   const handleSave = async () => {
-    // TODO: Implement save functionality
-    console.log('Save quote', document);
+    if (!document || !document.id) {
+      toast.error('No document to save');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await updateQuote(document.id, {
+        title: document.title,
+        blocks: document.blocks,
+        notes: document.notes,
+        terms: document.terms,
+        internalNotes: document.internalNotes,
+      });
+
+      if (result.success) {
+        markSaved();
+        toast.success('Quote saved successfully');
+      } else {
+        toast.error('Failed to save quote');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save quote');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleExportPDF = async () => {
     // TODO: Implement PDF export
-    console.log('Export PDF');
+    toast.info('PDF export coming soon');
   };
 
   const handleSend = async () => {
-    // TODO: Implement send functionality
-    console.log('Send quote');
+    if (!document || !document.id) {
+      toast.error('Please save the quote first');
+      return;
+    }
+
+    // Save first if there are unsaved changes
+    if (isDirty) {
+      await handleSave();
+    }
+
+    setIsSendLoading(true);
+    try {
+      const result = await updateQuoteStatus(document.id, 'sent');
+
+      if (result.success) {
+        toast.success('Quote sent to client');
+        router.push(`/quotes/${document.id}`);
+      } else {
+        toast.error('Failed to send quote');
+      }
+    } catch (error) {
+      console.error('Send error:', error);
+      toast.error('Failed to send quote');
+    } finally {
+      setIsSendLoading(false);
+    }
   };
 
   return (
@@ -273,14 +331,22 @@ export function BuilderToolbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button size="sm" onClick={handleSend} className="hidden md:inline-flex">
-          <Send className="mr-2 h-4 w-4" />
+        <Button size="sm" onClick={handleSend} disabled={isSendLoading} className="hidden md:inline-flex">
+          {isSendLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="mr-2 h-4 w-4" />
+          )}
           Send
         </Button>
 
         {/* Mobile Send icon-only */}
-        <Button size="icon" onClick={handleSend} className="md:hidden">
-          <Send className="h-4 w-4" />
+        <Button size="icon" onClick={handleSend} disabled={isSendLoading} className="md:hidden">
+          {isSendLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
         </Button>
       </div>
     </div>

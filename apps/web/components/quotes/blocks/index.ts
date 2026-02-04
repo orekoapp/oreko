@@ -1,7 +1,10 @@
 export { HeaderBlockContent } from './header-block';
 export { TextBlockContent } from './text-block';
 export { ServiceItemBlockContent } from './service-item-block';
+export { ServiceGroupBlockContent } from './service-group-block';
 export { DividerBlockContent } from './divider-block';
 export { SpacerBlockContent } from './spacer-block';
 export { ImageBlockContent } from './image-block';
+export { ColumnsBlockContent } from './columns-block';
+export { TableBlockContent } from './table-block';
 export { SignatureBlockContent } from './signature-block';

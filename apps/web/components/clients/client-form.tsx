@@ -172,6 +172,9 @@ export function ClientForm({
           <CardTitle>Address</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {form.formState.errors.address && typeof form.formState.errors.address.message === 'string' && (
+            <p className="text-sm text-destructive">{form.formState.errors.address.message}</p>
+          )}
           <div className="space-y-2">
             <Label htmlFor="address.street">Street Address</Label>
             <Input
@@ -179,6 +182,9 @@ export function ClientForm({
               {...form.register('address.street')}
               placeholder="123 Main St"
             />
+            {form.formState.errors.address?.street && (
+              <p className="text-sm text-destructive">{form.formState.errors.address.street.message}</p>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -189,6 +195,9 @@ export function ClientForm({
                 {...form.register('address.city')}
                 placeholder="New York"
               />
+              {form.formState.errors.address?.city && (
+                <p className="text-sm text-destructive">{form.formState.errors.address.city.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="address.state">State / Province</Label>
@@ -197,6 +206,9 @@ export function ClientForm({
                 {...form.register('address.state')}
                 placeholder="NY"
               />
+              {form.formState.errors.address?.state && (
+                <p className="text-sm text-destructive">{form.formState.errors.address.state.message}</p>
+              )}
             </div>
           </div>
 
@@ -208,6 +220,9 @@ export function ClientForm({
                 {...form.register('address.postalCode')}
                 placeholder="10001"
               />
+              {form.formState.errors.address?.postalCode && (
+                <p className="text-sm text-destructive">{form.formState.errors.address.postalCode.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="address.country">Country</Label>
@@ -216,6 +231,9 @@ export function ClientForm({
                 {...form.register('address.country')}
                 placeholder="United States"
               />
+              {form.formState.errors.address?.country && (
+                <p className="text-sm text-destructive">{form.formState.errors.address.country.message}</p>
+              )}
             </div>
           </div>
         </CardContent>
