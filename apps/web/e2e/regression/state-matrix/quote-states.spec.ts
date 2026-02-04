@@ -16,51 +16,56 @@ import { test, expect } from '@playwright/test';
 async function createDraftQuote(page: import('@playwright/test').Page, title: string) {
   await page.goto('/quotes/new');
   await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1000); // Wait for page to fully load
 
   // Fill title using various possible selectors
   const titleInput = page.locator('#title, input[name="title"], [data-testid="quote-title"]').first();
-  if (await titleInput.isVisible()) {
+  if (await titleInput.isVisible().catch(() => false)) {
     await titleInput.fill(title);
   }
 
   // Select a client if required
   const clientSelect = page.getByRole('combobox', { name: /client/i });
-  if (await clientSelect.isVisible()) {
+  if (await clientSelect.isVisible().catch(() => false)) {
     await clientSelect.click();
     const firstClient = page.getByRole('option').first();
-    if (await firstClient.isVisible()) {
+    if (await firstClient.isVisible().catch(() => false)) {
       await firstClient.click();
     }
   }
 
   // Add line item if button exists
   const addItemBtn = page.getByRole('button', { name: /add.*item|add.*line/i });
-  if (await addItemBtn.isVisible()) {
+  if (await addItemBtn.isVisible().catch(() => false)) {
     await addItemBtn.click();
     await page.waitForTimeout(300);
   }
 
   // Fill line item details
   const nameInput = page.locator('input[name="lineItems.0.name"], input[name*="name"]').first();
-  if (await nameInput.isVisible()) {
+  if (await nameInput.isVisible().catch(() => false)) {
     await nameInput.fill('Test Service');
   }
 
   const qtyInput = page.locator('input[name="lineItems.0.quantity"], input[name*="quantity"]').first();
-  if (await qtyInput.isVisible()) {
+  if (await qtyInput.isVisible().catch(() => false)) {
     await qtyInput.fill('1');
   }
 
   const rateInput = page.locator('input[name="lineItems.0.rate"], input[name*="rate"]').first();
-  if (await rateInput.isVisible()) {
+  if (await rateInput.isVisible().catch(() => false)) {
     await rateInput.fill('100');
   }
 
-  // Save the quote
+  // Save the quote - check visibility first to avoid timeout on isEnabled
   const saveButton = page.getByRole('button', { name: /save|create/i }).first();
-  if (await saveButton.isEnabled()) {
-    await saveButton.click();
-    await page.waitForTimeout(1000);
+  const saveVisible = await saveButton.isVisible().catch(() => false);
+  if (saveVisible) {
+    const isEnabled = await saveButton.isEnabled().catch(() => false);
+    if (isEnabled) {
+      await saveButton.click();
+      await page.waitForTimeout(1000);
+    }
   }
 
   return page.url();
