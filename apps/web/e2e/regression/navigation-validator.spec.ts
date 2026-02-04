@@ -178,18 +178,24 @@ test.describe('Navigation Validator - Dead Link Prevention', () => {
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
-    const settingsLinks = await page.locator('a[href^="/settings"]').all();
-    const visitedLinks = new Set<string>();
+    // Collect hrefs first to avoid stale element issues
+    const hrefs: string[] = [];
+    const settingsLinkElements = page.locator('a[href^="/settings"]');
+    const count = await settingsLinkElements.count();
+
+    for (let i = 0; i < count; i++) {
+      const href = await settingsLinkElements.nth(i).getAttribute('href').catch(() => null);
+      if (href && !hrefs.includes(href)) {
+        hrefs.push(href);
+      }
+    }
+
     const brokenLinks: string[] = [];
 
     // Links that may redirect based on user role (not 404s)
     const roleRestrictedLinks = ['/settings/billing', '/settings/team'];
 
-    for (const link of settingsLinks) {
-      const href = await link.getAttribute('href');
-      if (!href || visitedLinks.has(href)) continue;
-      visitedLinks.add(href);
-
+    for (const href of hrefs) {
       const response = await page.goto(href);
       const status = response?.status() ?? 0;
 
@@ -198,7 +204,9 @@ test.describe('Navigation Validator - Dead Link Prevention', () => {
       const redirectedToSettings = page.url().endsWith('/settings') || page.url().includes('/settings?');
 
       // Only count as broken if it's 404 AND not a role-based redirect
-      if (status === 404 || (await is404Page(page) && !isRoleRestricted)) {
+      if (status === 404) {
+        brokenLinks.push(href);
+      } else if (await is404Page(page)) {
         // Role-restricted pages redirect to /settings, not 404
         if (!(isRoleRestricted && redirectedToSettings)) {
           brokenLinks.push(href);
