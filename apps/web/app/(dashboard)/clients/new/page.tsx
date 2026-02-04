@@ -13,22 +13,26 @@ import { toast } from 'sonner';
 export default function NewClientPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [serverError, setServerError] = React.useState<string | null>(null);
 
   const handleSubmit = async (data: CreateClientInput) => {
     setIsLoading(true);
+    setServerError(null);
     try {
       const result = await createClient(data);
       toast.success('Client created successfully');
       router.push(`/clients/${result.id}`);
     } catch (error) {
-      toast.error('Failed to create client');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create client';
+      setServerError(errorMessage);
+      toast.error(errorMessage);
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="container max-w-3xl py-6">
-      <div className="mb-6 flex items-center gap-4">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
+      <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/clients">
             <ArrowLeft className="h-4 w-4" />
@@ -39,6 +43,12 @@ export default function NewClientPage() {
           <p className="text-muted-foreground">Create a new client profile</p>
         </div>
       </div>
+
+      {serverError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          {serverError}
+        </div>
+      )}
 
       <ClientForm onSubmit={handleSubmit} isLoading={isLoading} submitLabel="Create Client" />
     </div>

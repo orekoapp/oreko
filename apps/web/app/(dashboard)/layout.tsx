@@ -28,8 +28,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Main Content */}
         <div className="flex flex-1 flex-col">
           <DashboardHeader user={session.user} />
-          <main id="main-content" className="flex-1 overflow-auto bg-muted/30" tabIndex={-1}>
-            {children}
+          <main id="main-content" className="flex-1 overflow-auto bg-muted/30 p-4 md:p-6 lg:p-8" tabIndex={-1}>
+            <div className="mx-auto max-w-7xl">
+              {children}
+            </div>
           </main>
         </div>
       </div>

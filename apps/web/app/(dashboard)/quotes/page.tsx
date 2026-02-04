@@ -2,41 +2,8 @@ import Link from 'next/link';
 import { Plus, FileText, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-// TODO: Replace with actual data fetching
-const mockQuotes = [
-  {
-    id: '1',
-    quoteNumber: 'QT-001',
-    title: 'Website Redesign Project',
-    clientName: 'Acme Corporation',
-    status: 'sent',
-    total: 15000,
-    issueDate: '2024-01-15',
-    expirationDate: '2024-02-15',
-  },
-  {
-    id: '2',
-    quoteNumber: 'QT-002',
-    title: 'Mobile App Development',
-    clientName: 'TechStart Inc',
-    status: 'draft',
-    total: 45000,
-    issueDate: '2024-01-18',
-    expirationDate: null,
-  },
-  {
-    id: '3',
-    quoteNumber: 'QT-003',
-    title: 'Brand Identity Package',
-    clientName: 'Fresh Foods Co',
-    status: 'accepted',
-    total: 8500,
-    issueDate: '2024-01-10',
-    expirationDate: '2024-02-10',
-  },
-];
+import { Card, CardContent } from '@/components/ui/card';
+import { getQuotes } from '@/lib/quotes/actions';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-700',
@@ -45,9 +12,19 @@ const statusColors: Record<string, string> = {
   accepted: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-700',
   expired: 'bg-orange-100 text-orange-700',
+  converted: 'bg-purple-100 text-purple-700',
 };
 
-export default function QuotesPage() {
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+}
+
+export default async function QuotesPage() {
+  const { quotes } = await getQuotes();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -76,7 +53,7 @@ export default function QuotesPage() {
       </div>
 
       <div className="grid gap-4">
-        {mockQuotes.map((quote) => (
+        {quotes.map((quote) => (
           <Link key={quote.id} href={`/quotes/${quote.id}`}>
             <Card className="transition-shadow hover:shadow-md">
               <CardContent className="flex items-center justify-between p-6">
@@ -94,12 +71,12 @@ export default function QuotesPage() {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {quote.quoteNumber} &bull; {quote.clientName}
+                      {quote.quoteNumber} &bull; {quote.client?.name || 'No client'}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">${quote.total.toLocaleString()}</p>
+                  <p className="font-semibold">{formatCurrency(quote.total)}</p>
                   <p className="text-sm text-muted-foreground">
                     {new Date(quote.issueDate).toLocaleDateString()}
                   </p>
@@ -110,7 +87,7 @@ export default function QuotesPage() {
         ))}
       </div>
 
-      {mockQuotes.length === 0 && (
+      {quotes.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />

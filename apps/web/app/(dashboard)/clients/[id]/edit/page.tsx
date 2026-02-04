@@ -20,6 +20,7 @@ export default function EditClientPage() {
   const [client, setClient] = React.useState<ClientDetail | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [serverError, setServerError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     async function loadClient() {
@@ -38,20 +39,23 @@ export default function EditClientPage() {
 
   const handleSubmit = async (data: CreateClientInput) => {
     setIsSaving(true);
+    setServerError(null);
     try {
       await updateClient({ ...data, id: clientId });
       toast.success('Client updated successfully');
       router.push(`/clients/${clientId}`);
-    } catch {
-      toast.error('Failed to update client');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update client';
+      setServerError(errorMessage);
+      toast.error(errorMessage);
       setIsSaving(false);
     }
   };
 
   if (isLoading) {
     return (
-      <div className="container max-w-3xl py-6">
-        <div className="mb-6 flex items-center gap-4">
+      <div className="mx-auto w-full max-w-3xl space-y-6">
+        <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10" />
           <div className="space-y-2">
             <Skeleton className="h-6 w-48" />
@@ -72,8 +76,8 @@ export default function EditClientPage() {
   }
 
   return (
-    <div className="container max-w-3xl py-6">
-      <div className="mb-6 flex items-center gap-4">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
+      <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href={`/clients/${clientId}`}>
             <ArrowLeft className="h-4 w-4" />
@@ -84,6 +88,12 @@ export default function EditClientPage() {
           <p className="text-muted-foreground">{client.company || client.name}</p>
         </div>
       </div>
+
+      {serverError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          {serverError}
+        </div>
+      )}
 
       <ClientForm
         defaultValues={{
