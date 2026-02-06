@@ -82,7 +82,7 @@ const ProfileDropdown = ({ trigger, defaultOpen, align = 'end' }: Props) => {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem variant='destructive' className='px-4 py-2.5 text-base'>
+        <DropdownMenuItem className='px-4 py-2.5 text-base text-destructive focus:text-destructive'>
           <LogOutIcon className='size-5' />
           <span>Logout</span>
         </DropdownMenuItem>
