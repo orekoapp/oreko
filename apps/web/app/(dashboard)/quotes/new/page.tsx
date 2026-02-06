@@ -70,19 +70,18 @@ export default function NewQuotePage() {
     // Reset and initialize document with selected client
     resetDocument();
 
-    // Navigate to builder - the client ID will be set in the document
-    // For now, we just pass the clientId as a query param for the builder to pick up
+    // Navigate to form-based editor (default) - the client ID will be passed as a query param
     if (selectedClient) {
-      router.push(`/quotes/new/builder?clientId=${selectedClient.id}`);
+      router.push(`/quotes/new/editor?clientId=${selectedClient.id}`);
     } else {
-      router.push('/quotes/new/builder');
+      router.push('/quotes/new/editor');
     }
   };
 
   const handleSkipClientSelection = () => {
     setIsCreating(true);
     resetDocument();
-    router.push('/quotes/new/builder');
+    router.push('/quotes/new/editor');
   };
 
   return (
@@ -220,7 +219,7 @@ export default function NewQuotePage() {
             </>
           ) : (
             <>
-              Continue to Builder
+              Continue to Editor
               <ArrowRight className="ml-2 h-4 w-4" />
             </>
           )}
