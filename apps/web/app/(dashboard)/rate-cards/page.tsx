@@ -50,8 +50,8 @@ export default async function RateCardsPage(props: RateCardsPageProps) {
   const categories = await getCategories();
 
   return (
-    <div className="container py-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Rate Cards</h1>
           <p className="text-muted-foreground">

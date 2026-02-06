@@ -25,8 +25,8 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const params = await searchParams;
 
   return (
-    <div className="container py-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Clients</h1>
           <p className="text-muted-foreground">Manage your clients and contacts</p>
@@ -43,11 +43,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         <ClientStats />
       </Suspense>
 
-      <div className="mt-6">
-        <Suspense fallback={<ListLoading />}>
-          <ClientListWrapper searchParams={params} />
-        </Suspense>
-      </div>
+      <Suspense fallback={<ListLoading />}>
+        <ClientListWrapper searchParams={params} />
+      </Suspense>
     </div>
   );
 }

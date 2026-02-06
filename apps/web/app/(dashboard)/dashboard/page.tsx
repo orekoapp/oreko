@@ -28,18 +28,16 @@ async function DashboardContent() {
       <StatsCards stats={data.stats} />
 
       {/* Analytics Charts Section */}
-      <div className="mt-6">
-        <AnalyticsSection
-          revenueData={data.revenueData}
-          quoteStatusCounts={data.quoteStatusCounts}
-          invoiceStatusCounts={data.invoiceStatusCounts}
-          conversionFunnelData={conversionFunnelData}
-          paymentAgingData={paymentAgingData}
-        />
-      </div>
+      <AnalyticsSection
+        revenueData={data.revenueData}
+        quoteStatusCounts={data.quoteStatusCounts}
+        invoiceStatusCounts={data.invoiceStatusCounts}
+        conversionFunnelData={conversionFunnelData}
+        paymentAgingData={paymentAgingData}
+      />
 
       {/* Recent Items Section */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <RecentQuotes quotes={data.recentQuotes} />
           <RecentInvoices invoices={data.recentInvoices} />
@@ -63,7 +61,7 @@ function DashboardSkeleton() {
       </div>
 
       {/* Analytics Section Skeleton */}
-      <div className="mt-6 space-y-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <Skeleton className="h-6 w-24" />
           <Skeleton className="h-9 w-24" />
@@ -77,7 +75,7 @@ function DashboardSkeleton() {
       </div>
 
       {/* Recent Items Skeleton */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <Skeleton className="h-80" />
           <Skeleton className="h-80" />
@@ -90,8 +88,8 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   return (
-    <div className="container max-w-full px-4 py-6 md:px-6">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">

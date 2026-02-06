@@ -47,8 +47,8 @@ export default async function TemplatesPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   return (
-    <div className="container py-6">
-      <div className="mb-6">
+    <div className="space-y-6">
+      <div>
         <h1 className="text-2xl font-bold">Contract Templates</h1>
         <p className="text-muted-foreground">
           Create and manage reusable contract templates for your clients.
