@@ -376,7 +376,11 @@ export async function getQuotes(options?: {
       total: Number(quote.total),
       issueDate: quote.issueDate.toISOString().split('T')[0],
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] || null,
-      client: quote.client,
+      client: quote.client ? {
+        id: quote.client.id,
+        name: quote.client.name,
+        email: quote.client.email,
+      } : null,
       createdAt: quote.createdAt.toISOString(),
     })),
     total,

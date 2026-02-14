@@ -466,9 +466,9 @@ export async function getInvoices(filters?: {
       amountPaid: Number(invoice.amountPaid),
       amountDue: Number(invoice.amountDue),
       client: {
-        id: invoice.client.id,
-        name: invoice.client.name,
-        company: invoice.client.company,
+        id: invoice.client?.id ?? '',
+        name: invoice.client?.name ?? 'Unknown Client',
+        company: invoice.client?.company ?? null,
       },
       isOverdue,
     };
