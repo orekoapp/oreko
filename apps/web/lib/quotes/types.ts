@@ -171,10 +171,17 @@ export type QuoteBlock =
 /**
  * Quote document structure
  */
+export interface LinkedInvoice {
+  id: string;
+  invoiceNumber: string;
+  status: string;
+}
+
 export interface QuoteDocument {
   id: string;
   workspaceId: string;
   clientId: string;
+  projectId: string | null;
   quoteNumber: string;
   status: QuoteStatus;
   title: string;
@@ -186,6 +193,7 @@ export interface QuoteDocument {
   notes: string;
   terms: string;
   internalNotes: string;
+  linkedInvoice?: LinkedInvoice | null;
 }
 
 export type QuoteStatus =
@@ -352,6 +360,25 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
     },
   },
 ];
+
+/**
+ * Quote list item for displaying in tables/lists
+ */
+export interface QuoteListItem {
+  id: string;
+  quoteNumber: string;
+  title: string;
+  status: QuoteStatus;
+  total: number;
+  issueDate: string;
+  expirationDate: string | null;
+  client: {
+    id: string;
+    name: string;
+    email: string | null;
+  };
+  createdAt: string;
+}
 
 /**
  * Helper to create a new block with defaults

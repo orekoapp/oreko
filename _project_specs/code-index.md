@@ -1,630 +1,780 @@
 # QuoteCraft Code Capability Index
 
-> Generated: 2026-01-30
->
-> This document provides a comprehensive index of all code capabilities in the QuoteCraft codebase, including components, server actions, API routes, database models, hooks, and utilities.
+> Auto-generated: 2026-02-13
+> Total Files: 414 TypeScript/TSX | LOC: ~72,125 | React Components: 228
 
 ---
 
 ## Table of Contents
 
-1. [Components](#components)
-2. [Server Actions](#server-actions)
+1. [Server Actions](#server-actions)
+2. [React Components](#react-components)
 3. [API Routes](#api-routes)
-4. [Database Models](#database-models)
-5. [Hooks](#hooks)
-6. [Utilities](#utilities)
-7. [Type Definitions](#type-definitions)
-
----
-
-## Components
-
-### UI Components (Shadcn/UI)
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `Accordion` | `components/ui/accordion.tsx` | Collapsible content sections |
-| `AlertDialog` | `components/ui/alert-dialog.tsx` | Confirmation dialogs with actions |
-| `Avatar` | `components/ui/avatar.tsx` | User avatar display with fallback |
-| `Badge` | `components/ui/badge.tsx` | Status labels and tags |
-| `Breadcrumb` | `components/ui/breadcrumb.tsx` | Navigation breadcrumbs |
-| `Button` | `components/ui/button.tsx` | Primary interactive element |
-| `Calendar` | `components/ui/calendar.tsx` | Date picker calendar component |
-| `Card` | `components/ui/card.tsx` | Content container with header/footer |
-| `Carousel` | `components/ui/carousel.tsx` | Image/content carousel slider |
-| `Checkbox` | `components/ui/checkbox.tsx` | Boolean input control |
-| `Collapsible` | `components/ui/collapsible.tsx` | Expandable/collapsible container |
-| `Command` | `components/ui/command.tsx` | Command palette / search interface |
-| `ContextMenu` | `components/ui/context-menu.tsx` | Right-click context menus |
-| `DataTable` | `components/ui/data-table.tsx` | Advanced data table with sorting/filtering |
-| `Dialog` | `components/ui/dialog.tsx` | Modal dialog windows |
-| `Drawer` | `components/ui/drawer.tsx` | Side panel drawer |
-| `DropdownMenu` | `components/ui/dropdown-menu.tsx` | Dropdown action menus |
-| `Form` | `components/ui/form.tsx` | Form wrapper with react-hook-form integration |
-| `HoverCard` | `components/ui/hover-card.tsx` | Hover-triggered popover |
-| `Input` | `components/ui/input.tsx` | Text input field |
-| `Label` | `components/ui/label.tsx` | Form field labels |
-| `Menubar` | `components/ui/menubar.tsx` | Horizontal menu bar |
-| `NavigationMenu` | `components/ui/navigation-menu.tsx` | Complex navigation menus |
-| `Pagination` | `components/ui/pagination.tsx` | Page navigation controls |
-| `Popover` | `components/ui/popover.tsx` | Click-triggered popover |
-| `Progress` | `components/ui/progress.tsx` | Progress bar indicator |
-| `RadioGroup` | `components/ui/radio-group.tsx` | Single-select radio options |
-| `ResizablePanel` | `components/ui/resizable.tsx` | Resizable panel layouts |
-| `ScrollArea` | `components/ui/scroll-area.tsx` | Custom scrollable container |
-| `Select` | `components/ui/select.tsx` | Dropdown select input |
-| `Separator` | `components/ui/separator.tsx` | Visual divider |
-| `Sheet` | `components/ui/sheet.tsx` | Slide-out panel |
-| `Skeleton` | `components/ui/skeleton.tsx` | Loading placeholder |
-| `Slider` | `components/ui/slider.tsx` | Range slider input |
-| `Sonner` | `components/ui/sonner.tsx` | Toast notification system |
-| `Switch` | `components/ui/switch.tsx` | Toggle switch control |
-| `Table` | `components/ui/table.tsx` | Data table display |
-| `Tabs` | `components/ui/tabs.tsx` | Tabbed content navigation |
-| `Textarea` | `components/ui/textarea.tsx` | Multi-line text input |
-| `Toast` | `components/ui/toast.tsx` | Notification toasts |
-| `Toggle` | `components/ui/toggle.tsx` | Toggle button |
-| `ToggleGroup` | `components/ui/toggle-group.tsx` | Group of toggle buttons |
-| `Tooltip` | `components/ui/tooltip.tsx` | Hover tooltips |
-
-### Quote Builder Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `QuoteBuilder` | `components/quotes/builder/QuoteBuilder.tsx` | Main visual quote builder interface |
-| `QuoteBlockRenderer` | `components/quotes/builder/QuoteBlockRenderer.tsx` | Renders individual quote blocks |
-| `QuoteBlockToolbar` | `components/quotes/builder/QuoteBlockToolbar.tsx` | Block editing toolbar |
-| `QuoteDragHandle` | `components/quotes/builder/QuoteDragHandle.tsx` | Drag-and-drop handle for blocks |
-| `QuotePreview` | `components/quotes/builder/QuotePreview.tsx` | Quote document preview |
-| `TextBlock` | `components/quotes/blocks/TextBlock.tsx` | Rich text content block |
-| `LineItemsBlock` | `components/quotes/blocks/LineItemsBlock.tsx` | Services/products line items |
-| `ImageBlock` | `components/quotes/blocks/ImageBlock.tsx` | Image content block |
-| `DividerBlock` | `components/quotes/blocks/DividerBlock.tsx` | Visual separator block |
-| `SignatureBlock` | `components/quotes/blocks/SignatureBlock.tsx` | E-signature capture block |
-
-### Quote Management Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `QuoteList` | `components/quotes/QuoteList.tsx` | Quote listing with filters |
-| `QuoteCard` | `components/quotes/QuoteCard.tsx` | Quote summary card |
-| `QuoteStatusBadge` | `components/quotes/QuoteStatusBadge.tsx` | Quote status indicator |
-| `QuoteFilters` | `components/quotes/QuoteFilters.tsx` | Quote filtering controls |
-| `QuoteActions` | `components/quotes/QuoteActions.tsx` | Quote action buttons (send, duplicate, etc.) |
-| `QuoteSendDialog` | `components/quotes/QuoteSendDialog.tsx` | Send quote to client dialog |
-
-### Invoice Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `InvoiceList` | `components/invoices/InvoiceList.tsx` | Invoice listing with filters |
-| `InvoiceCard` | `components/invoices/InvoiceCard.tsx` | Invoice summary card |
-| `InvoiceStatusBadge` | `components/invoices/InvoiceStatusBadge.tsx` | Invoice status indicator |
-| `InvoiceFilters` | `components/invoices/InvoiceFilters.tsx` | Invoice filtering controls |
-| `InvoiceActions` | `components/invoices/InvoiceActions.tsx` | Invoice action buttons |
-| `InvoiceSendDialog` | `components/invoices/InvoiceSendDialog.tsx` | Send invoice to client dialog |
-| `PaymentHistory` | `components/invoices/PaymentHistory.tsx` | Payment history table |
-
-### Client Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `ClientList` | `components/clients/ClientList.tsx` | Client listing with search |
-| `ClientCard` | `components/clients/ClientCard.tsx` | Client summary card |
-| `ClientForm` | `components/clients/ClientForm.tsx` | Client create/edit form |
-| `ClientSelector` | `components/clients/ClientSelector.tsx` | Client dropdown selector |
-| `ClientDetails` | `components/clients/ClientDetails.tsx` | Full client details view |
-
-### Rate Card Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `RateCardList` | `components/rate-cards/RateCardList.tsx` | Rate card listing |
-| `RateCardForm` | `components/rate-cards/RateCardForm.tsx` | Rate card create/edit form |
-| `RateCardSelector` | `components/rate-cards/RateCardSelector.tsx` | Rate card dropdown selector |
-| `CategoryManager` | `components/rate-cards/CategoryManager.tsx` | Rate card category management |
-
-### Contract Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `ContractTemplateList` | `components/contracts/ContractTemplateList.tsx` | Contract template listing |
-| `ContractEditor` | `components/contracts/ContractEditor.tsx` | Contract content editor |
-| `ContractPreview` | `components/contracts/ContractPreview.tsx` | Contract document preview |
-| `ContractSignature` | `components/contracts/ContractSignature.tsx` | Contract e-signature component |
-
-### Dashboard Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `DashboardStats` | `components/dashboard/DashboardStats.tsx` | Key metrics cards |
-| `RevenueChart` | `components/dashboard/RevenueChart.tsx` | Revenue over time chart |
-| `QuoteStatusChart` | `components/dashboard/QuoteStatusChart.tsx` | Quote status distribution |
-| `RecentActivity` | `components/dashboard/RecentActivity.tsx` | Activity feed |
-| `QuickActions` | `components/dashboard/QuickActions.tsx` | Quick action buttons |
-
-### Settings Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `BusinessProfileForm` | `components/settings/BusinessProfileForm.tsx` | Business profile settings |
-| `BrandingSettings` | `components/settings/BrandingSettings.tsx` | Logo, colors configuration |
-| `EmailTemplateEditor` | `components/settings/EmailTemplateEditor.tsx` | Email template customization |
-| `PaymentSettings` | `components/settings/PaymentSettings.tsx` | Stripe Connect setup |
-| `TaxRateManager` | `components/settings/TaxRateManager.tsx` | Tax rate configuration |
-
-### Shared Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `PageHeader` | `components/shared/PageHeader.tsx` | Page title and actions header |
-| `EmptyState` | `components/shared/EmptyState.tsx` | Empty data placeholder |
-| `LoadingSpinner` | `components/shared/LoadingSpinner.tsx` | Loading indicator |
-| `ErrorBoundary` | `components/shared/ErrorBoundary.tsx` | Error handling wrapper |
-| `Sidebar` | `components/shared/Sidebar.tsx` | Main navigation sidebar |
-| `UserNav` | `components/shared/UserNav.tsx` | User account dropdown |
-| `SearchCommand` | `components/shared/SearchCommand.tsx` | Global search command palette |
-| `ThemeToggle` | `components/shared/ThemeToggle.tsx` | Dark/light mode toggle |
-
-### Client Portal Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| `QuoteViewer` | `components/portal/QuoteViewer.tsx` | Public quote viewing page |
-| `InvoiceViewer` | `components/portal/InvoiceViewer.tsx` | Public invoice viewing page |
-| `ContractViewer` | `components/portal/ContractViewer.tsx` | Public contract viewing page |
-| `SignaturePad` | `components/portal/SignaturePad.tsx` | E-signature drawing pad |
-| `PaymentForm` | `components/portal/PaymentForm.tsx` | Stripe payment form |
-| `DeclineQuoteDialog` | `components/portal/DeclineQuoteDialog.tsx` | Quote decline with reason |
+4. [Custom Hooks](#custom-hooks)
+5. [Stores (Zustand)](#stores)
+6. [Validation Schemas (Zod)](#validation-schemas)
+7. [Types & Models](#types--models)
+8. [Utility Functions](#utility-functions)
+9. [Services](#services)
+10. [Database Models (Prisma)](#database-models)
+11. [Page Routes](#page-routes)
 
 ---
 
 ## Server Actions
 
-### Quote Actions (`lib/quotes/actions.ts`)
+### Quotes (`/apps/web/lib/quotes/actions.ts`)
 
-| Function | Description |
-|----------|-------------|
-| `getQuotes(filter)` | Get paginated quotes with filtering |
-| `getQuoteById(id)` | Get single quote by ID |
-| `createQuote(input)` | Create a new quote |
-| `updateQuote(id, input)` | Update an existing quote |
-| `deleteQuote(id)` | Soft delete a quote |
-| `duplicateQuote(id)` | Create a copy of a quote |
-| `sendQuote(id)` | Send quote to client via email |
-| `convertToInvoice(id)` | Convert accepted quote to invoice |
-| `getQuoteNumber(workspaceId)` | Generate next quote number |
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `getQuotes` | Get paginated quotes with filters | `filter?: QuoteFilter` |
+| `getQuoteById` | Get single quote by ID | `id: string` |
+| `createQuote` | Create new quote | `input: CreateQuoteInput` |
+| `updateQuote` | Update existing quote | `input: UpdateQuoteInput` |
+| `deleteQuote` | Soft delete quote | `id: string` |
+| `duplicateQuote` | Duplicate existing quote | `id: string, newTitle?: string` |
+| `sendQuote` | Send quote to client | `id: string` |
+| `markQuoteViewed` | Mark quote as viewed | `token: string` |
+| `acceptQuote` | Client accepts quote | `token: string, signatureData?: SignatureData` |
+| `declineQuote` | Client declines quote | `token: string, reason?: string` |
+| `getQuoteByToken` | Get quote for client portal | `token: string` |
+| `getQuoteStats` | Get quote statistics | `void` |
 
-### Quote Portal Actions (`lib/quotes/portal-actions.ts`)
+### Invoices (`/apps/web/lib/invoices/actions.ts`)
 
-| Function | Description |
-|----------|-------------|
-| `getQuoteByAccessToken(token)` | Get public quote data by access token |
-| `trackQuoteView(token)` | Track client viewing a quote |
-| `acceptQuote(data)` | Accept quote with signature |
-| `declineQuote(data)` | Decline quote with optional reason |
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `getInvoices` | Get paginated invoices with filters | `filter?: InvoiceFilter` |
+| `getInvoiceById` | Get single invoice by ID | `id: string` |
+| `createInvoice` | Create new invoice | `input: CreateInvoiceInput` |
+| `updateInvoice` | Update existing invoice | `input: UpdateInvoiceInput` |
+| `deleteInvoice` | Soft delete invoice | `id: string` |
+| `sendInvoice` | Send invoice to client | `id: string` |
+| `recordPayment` | Record payment on invoice | `input: RecordPaymentInput` |
+| `voidInvoice` | Void an invoice | `id: string` |
+| `convertQuoteToInvoice` | Convert accepted quote to invoice | `quoteId: string, options?: ConvertOptions` |
+| `getInvoiceByToken` | Get invoice for client portal | `token: string` |
+| `getInvoiceStats` | Get invoice statistics | `void` |
 
-### Invoice Actions (`lib/invoices/actions.ts`)
+### Clients (`/apps/web/lib/clients/actions.ts`)
 
-| Function | Description |
-|----------|-------------|
-| `getInvoices(filter)` | Get paginated invoices with filtering |
-| `getInvoiceById(id)` | Get single invoice by ID |
-| `createInvoice(input)` | Create a new invoice |
-| `updateInvoice(id, input)` | Update an existing invoice |
-| `deleteInvoice(id)` | Soft delete an invoice |
-| `duplicateInvoice(id)` | Create a copy of an invoice |
-| `sendInvoice(id)` | Send invoice to client via email |
-| `markAsPaid(id, paymentData)` | Record manual payment |
-| `voidInvoice(id)` | Void an invoice |
-| `getInvoiceNumber(workspaceId)` | Generate next invoice number |
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `getClients` | Get paginated clients with filters | `filter?: ClientFilter` |
+| `getClientById` | Get single client by ID | `id: string` |
+| `createClient` | Create new client | `input: CreateClientInput` |
+| `updateClient` | Update existing client | `input: UpdateClientInput` |
+| `deleteClient` | Soft delete client | `id: string` |
+| `getClientQuotes` | Get quotes for a client | `clientId: string` |
+| `getClientInvoices` | Get invoices for a client | `clientId: string` |
+| `getClientStats` | Get client statistics | `void` |
 
-### Invoice Portal Actions (`lib/invoices/portal-actions.ts`)
+### Rate Cards (`/apps/web/lib/rate-cards/actions.ts`)
 
-| Function | Description |
-|----------|-------------|
-| `getInvoiceByAccessToken(token)` | Get public invoice data by access token |
-| `trackInvoiceView(token)` | Track client viewing an invoice |
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `getRateCards` | Get paginated rate cards | `filter?: RateCardFilter` |
+| `getRateCardById` | Get single rate card | `id: string` |
+| `createRateCard` | Create new rate card | `input: CreateRateCardInput` |
+| `updateRateCard` | Update existing rate card | `input: UpdateRateCardInput` |
+| `deleteRateCard` | Soft delete rate card | `id: string` |
+| `bulkDeleteRateCards` | Bulk delete rate cards | `ids: string[]` |
+| `toggleRateCardActive` | Toggle active status | `id: string` |
+| `duplicateRateCard` | Duplicate rate card | `id: string, newName?: string` |
+| `getRateCardsForSelection` | Get active rate cards for picker | `categoryId?: string` |
+| `getRateCardStats` | Get rate card statistics | `void` |
+| `getCategories` | Get all categories | `void` |
+| `createCategory` | Create category | `input: CreateCategoryInput` |
+| `updateCategory` | Update category | `input: UpdateCategoryInput` |
+| `deleteCategory` | Delete category | `id: string` |
+| `reorderCategories` | Reorder categories | `categoryIds: string[]` |
+| `importRateCards` | Import from CSV | `data: RateCardImportData[], options?: ImportOptions` |
 
-### Client Actions (`lib/clients/actions.ts`)
+### Contracts (`/apps/web/lib/contracts/actions.ts`)
 
-| Function | Description |
-|----------|-------------|
-| `getClients(filter)` | Get paginated clients with search |
-| `getClientById(id)` | Get single client by ID |
-| `createClient(input)` | Create a new client |
-| `updateClient(id, input)` | Update client details |
-| `deleteClient(id)` | Soft delete a client |
-| `getClientStats(id)` | Get client's quote/invoice statistics |
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `getContractTemplates` | Get contract templates | `filter?: ContractFilter` |
+| `getContractTemplateById` | Get template by ID | `id: string` |
+| `createContractTemplate` | Create template | `input: CreateContractTemplateInput` |
+| `updateContractTemplate` | Update template | `input: UpdateContractTemplateInput` |
+| `deleteContractTemplate` | Delete template | `id: string` |
+| `duplicateContractTemplate` | Duplicate template | `id: string` |
+| `getContractInstances` | Get contract instances | `filter?: ContractInstanceFilter` |
+| `getContractInstanceById` | Get instance by ID | `id: string` |
+| `getContractInstanceByToken` | Get instance for client portal | `token: string` |
+| `createContractInstance` | Create instance from template | `input: CreateContractInstanceInput` |
+| `sendContractInstance` | Send contract to client | `id: string` |
+| `signContract` | Client signs contract | `input: SignContractInput, ipAddress?: string` |
+| `deleteContractInstance` | Delete instance | `id: string` |
 
-### Rate Card Actions (`lib/rate-cards/actions.ts`)
+### Dashboard (`/apps/web/lib/dashboard/actions.ts`)
 
-| Function | Description |
-|----------|-------------|
-| `getRateCards(filter)` | Get rate cards with filtering |
-| `getRateCardById(id)` | Get single rate card by ID |
-| `createRateCard(input)` | Create a new rate card |
-| `updateRateCard(id, input)` | Update rate card details |
-| `deleteRateCard(id)` | Soft delete a rate card |
-| `getCategories()` | Get rate card categories |
-| `createCategory(input)` | Create a new category |
-| `updateCategory(id, input)` | Update category details |
-| `deleteCategory(id)` | Delete a category |
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `getDashboardStats` | Get dashboard statistics | `void` |
+| `getQuoteStatusCounts` | Get quote status breakdown | `void` |
+| `getInvoiceStatusCounts` | Get invoice status breakdown | `void` |
+| `getRevenueData` | Get revenue over time | `period?: DashboardPeriod` |
+| `getRecentQuotes` | Get recent quotes | `limit?: number` |
+| `getRecentInvoices` | Get recent invoices | `limit?: number` |
+| `getRecentActivity` | Get activity feed | `limit?: number` |
+| `getDashboardData` | Get all dashboard data | `void` |
+| `getConversionFunnelData` | Get conversion funnel | `dateRange?: AnalyticsDateRange` |
+| `getPaymentAgingData` | Get payment aging report | `void` |
+| `getClientDistributionData` | Get client distribution | `limit?: number` |
+| `getMonthlyComparisonData` | Get monthly comparison | `months?: number` |
+| `getRevenueForecast` | Get revenue forecast | `historicalMonths?: number, forecastMonths?: number` |
 
-### Contract Actions (`lib/contracts/actions.ts`)
+### Settings (`/apps/web/lib/settings/actions.ts`)
 
-| Function | Description |
-|----------|-------------|
-| `getContractTemplates(filter)` | Get contract templates |
-| `getContractTemplateById(id)` | Get single template by ID |
-| `createContractTemplate(input)` | Create a new contract template |
-| `updateContractTemplate(input)` | Update contract template |
-| `deleteContractTemplate(id)` | Soft delete contract template |
-| `duplicateContractTemplate(id)` | Duplicate a contract template |
-| `getContractInstances(filter)` | Get contract instances |
-| `getContractInstanceById(id)` | Get single instance by ID |
-| `getContractInstanceByToken(token)` | Get contract by public token |
-| `createContractInstance(input)` | Create contract from template |
-| `sendContractInstance(id)` | Send contract to client |
-| `signContract(input, ipAddress)` | Sign a contract (public) |
-| `deleteContractInstance(id)` | Delete contract instance |
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `getWorkspace` | Get workspace data | `void` |
+| `updateWorkspaceName` | Update workspace name | `name: string` |
+| `getBusinessProfile` | Get business profile | `void` |
+| `updateBusinessProfile` | Update business profile | `input: UpdateBusinessProfileInput` |
+| `updateBusinessLogo` | Update logo | `logoUrl: string \| null` |
+| `getBrandingSettings` | Get branding settings | `void` |
+| `updateBrandingSettings` | Update branding | `input: UpdateBrandingSettingsInput` |
+| `getPaymentSettings` | Get payment settings | `void` |
+| `updatePaymentSettings` | Update payment settings | `input: UpdatePaymentSettingsInput` |
+| `getTaxRates` | Get all tax rates | `void` |
+| `createTaxRate` | Create tax rate | `input: CreateTaxRateInput` |
+| `updateTaxRate` | Update tax rate | `input: UpdateTaxRateInput` |
+| `deleteTaxRate` | Delete tax rate | `id: string` |
+| `getNumberSequences` | Get number sequences | `void` |
+| `updateNumberSequence` | Update number sequence | `input: UpdateNumberSequenceInput` |
+| `getWorkspaceMembers` | Get team members | `void` |
+| `getCurrentUserRole` | Get current user role | `void` |
+| `updateMemberRole` | Update member role | `memberId: string, newRole: WorkspaceMemberRole` |
+| `inviteMember` | Invite team member | `email: string, role?: WorkspaceMemberRole` |
+| `removeMember` | Remove team member | `memberId: string` |
+| `getBillingInfo` | Get billing info | `void` |
+| `getWorkspaceSettings` | Get workspace settings | `void` |
+| `updateWorkspaceSettings` | Update workspace settings | `input: { name?: string; slug?: string }` |
+| `deleteWorkspace` | Delete workspace | `void` |
+| `getAllSettings` | Get all settings | `void` |
 
-### Dashboard Actions (`lib/dashboard/actions.ts`)
+---
 
-| Function | Description |
-|----------|-------------|
-| `getDashboardData()` | Get all dashboard data |
-| `getDashboardStats()` | Get key business metrics |
-| `getQuoteStatusCounts()` | Get quote status distribution |
-| `getInvoiceStatusCounts()` | Get invoice status distribution |
-| `getRevenueData(period)` | Get revenue over time data |
-| `getRecentQuotes(limit)` | Get recent quotes |
-| `getRecentInvoices(limit)` | Get recent invoices |
-| `getRecentActivity(limit)` | Get recent activity feed |
+## React Components
 
-### Settings Actions (`lib/settings/actions.ts`)
+### UI Components (`/apps/web/components/ui/`) - 34 components
 
-| Function | Description |
-|----------|-------------|
-| `getBusinessProfile()` | Get workspace business profile |
-| `updateBusinessProfile(input)` | Update business profile |
-| `getBrandingSettings()` | Get branding configuration |
-| `updateBrandingSettings(input)` | Update branding settings |
-| `getTaxRates()` | Get tax rates |
-| `createTaxRate(input)` | Create a new tax rate |
-| `updateTaxRate(id, input)` | Update tax rate |
-| `deleteTaxRate(id)` | Delete tax rate |
-| `getDefaultTerms()` | Get default quote/invoice terms |
-| `updateDefaultTerms(input)` | Update default terms |
+| Component | File | Description |
+|-----------|------|-------------|
+| `Accordion` | `accordion.tsx` | Collapsible content sections |
+| `Alert` | `alert.tsx` | Alert messages |
+| `AlertDialog` | `alert-dialog.tsx` | Confirmation dialogs |
+| `Avatar` | `avatar.tsx` | User avatars |
+| `Badge` | `badge.tsx` | Status badges |
+| `Breadcrumb` | `breadcrumb.tsx` | Navigation breadcrumbs |
+| `Button` | `button.tsx` | Button variants |
+| `Calendar` | `calendar.tsx` | Date picker calendar |
+| `Card` | `card.tsx` | Card container |
+| `Checkbox` | `checkbox.tsx` | Checkbox input |
+| `ColorPicker` | `color-picker.tsx` | Color selection |
+| `DatePicker` | `date-picker.tsx` | Date picker |
+| `Dialog` | `dialog.tsx` | Modal dialogs |
+| `DropdownMenu` | `dropdown-menu.tsx` | Dropdown menus |
+| `FileUpload` | `file-upload.tsx` | File upload component |
+| `Input` | `input.tsx` | Text input |
+| `Label` | `label.tsx` | Form labels |
+| `Pagination` | `pagination.tsx` | Pagination controls |
+| `Popover` | `popover.tsx` | Popover tooltips |
+| `Progress` | `progress.tsx` | Progress bars |
+| `ScrollArea` | `scroll-area.tsx` | Scrollable containers |
+| `Select` | `select.tsx` | Select dropdowns |
+| `Separator` | `separator.tsx` | Visual separators |
+| `Sheet` | `sheet.tsx` | Side sheets |
+| `Sidebar` | `sidebar.tsx` | Navigation sidebar |
+| `Skeleton` | `skeleton.tsx` | Loading skeletons |
+| `Slider` | `slider.tsx` | Range sliders |
+| `Switch` | `switch.tsx` | Toggle switches |
+| `Table` | `table.tsx` | Data tables |
+| `Tabs` | `tabs.tsx` | Tab navigation |
+| `Textarea` | `textarea.tsx` | Textarea input |
+| `Toast` | `toast.tsx` | Toast notifications |
+| `Toaster` | `toaster.tsx` | Toast container |
+| `Tooltip` | `tooltip.tsx` | Tooltips |
 
-### Email Actions (`lib/email/actions.ts`)
+### Dashboard Components (`/apps/web/components/dashboard/`)
 
-| Function | Description |
-|----------|-------------|
-| `getEmailTemplates(filter)` | Get email templates |
-| `getEmailTemplateById(id)` | Get single template by ID |
-| `getActiveTemplateByType(type)` | Get active template for type |
-| `createEmailTemplate(input)` | Create email template |
-| `updateEmailTemplate(input)` | Update email template |
-| `deleteEmailTemplate(id)` | Delete email template |
-| `sendTemplatedEmail(params)` | Send email using template |
-| `getScheduledEmails(filter)` | Get scheduled emails |
-| `cancelScheduledEmail(id)` | Cancel a scheduled email |
-| `sendContractSentEmail(params)` | Send contract sent notification |
-| `sendContractSignedEmail(params)` | Send contract signed notification |
+| Component | File | Description |
+|-----------|------|-------------|
+| `AppHeader` | `app-header.tsx` | Main app header with user menu |
+| `AppSidebar` | `app-sidebar.tsx` | Main navigation sidebar |
+| `Header` | `header.tsx` | Dashboard header |
+| `Nav` | `nav.tsx` | Navigation menu |
+| `MobileNav` | `mobile-nav.tsx` | Mobile navigation |
+| `StatsCards` | `stats-cards.tsx` | Statistics cards |
+| `RecentActivity` | `recent-activity.tsx` | Activity feed |
+| `RecentItems` | `recent-items.tsx` | Recent quotes/invoices |
+| `AnalyticsSection` | `analytics-section.tsx` | Analytics wrapper |
 
-### Payment Actions (`lib/payments/actions.ts`)
+### Quote Builder Components (`/apps/web/components/quotes/builder/`)
 
-| Function | Description |
-|----------|-------------|
-| `getPaymentSettings()` | Get workspace payment settings |
-| `updatePaymentSettings(data)` | Update payment configuration |
-| `createStripeOnboardingLink()` | Create Stripe Connect onboarding URL |
-| `checkStripeAccountStatus()` | Check Stripe Connect status |
-| `createInvoicePaymentIntent(invoiceId, amount)` | Create Stripe payment intent |
-| `getPayments(filter)` | Get payment records |
-| `getPaymentById(id)` | Get single payment by ID |
-| `processPaymentWebhook(paymentIntentId, status, chargeId, receiptUrl)` | Process Stripe webhook |
+| Component | File | Description |
+|-----------|------|-------------|
+| `BlockRenderer` | `block-renderer.tsx` | Renders quote blocks |
+| `BlocksPanel` | `blocks-panel.tsx` | Block type selector |
+| `BuilderToolbar` | `builder-toolbar.tsx` | Builder toolbar |
+| `DocumentCanvas` | `document-canvas.tsx` | Main canvas area |
+| `PropertiesPanel` | `properties-panel.tsx` | Block properties editor |
+| `RateCardPanel` | `rate-card-panel.tsx` | Rate card picker |
 
-### PDF Actions (`lib/pdf/actions.ts`)
+### Quote Block Components (`/apps/web/components/quotes/blocks/`)
 
-| Function | Description |
-|----------|-------------|
-| `getQuotePdfData(quoteId)` | Get quote data for PDF generation |
-| `getQuotePdfDataByToken(token)` | Get quote PDF data by public token |
-| `getInvoicePdfData(invoiceId)` | Get invoice data for PDF generation |
-| `getInvoicePdfDataByToken(token)` | Get invoice PDF data by public token |
+| Component | File | Description |
+|-----------|------|-------------|
+| `ColumnsBlock` | `columns-block.tsx` | Two-column layout |
+| `DividerBlock` | `divider-block.tsx` | Horizontal divider |
+| `HeaderBlock` | `header-block.tsx` | Header/title block |
+| `ImageBlock` | `image-block.tsx` | Image block |
+| `ServiceGroupBlock` | `service-group-block.tsx` | Grouped services |
+| `ServiceItemBlock` | `service-item-block.tsx` | Service line item |
+| `SignatureBlock` | `signature-block.tsx` | Signature capture |
+| `SpacerBlock` | `spacer-block.tsx` | Vertical spacing |
+| `TableBlock` | `table-block.tsx` | Data table |
+| `TextBlock` | `text-block.tsx` | Rich text |
 
-### Onboarding Actions (`lib/onboarding/actions.ts`)
+### Quote Editor Components (`/apps/web/components/quotes/editor/`)
 
-| Function | Description |
-|----------|-------------|
-| `getOnboardingProgress()` | Get user's onboarding progress |
-| `completeOnboarding()` | Mark onboarding as complete |
-| `skipOnboardingStep(step)` | Skip a specific onboarding step |
-| `needsOnboarding()` | Check if user needs onboarding |
+| Component | File | Description |
+|-----------|------|-------------|
+| `QuoteEditor` | `QuoteEditor.tsx` | Form-based quote editor |
+| `DetailsSection` | `sections/DetailsSection.tsx` | Quote details form |
+| `ItemsSection` | `sections/ItemsSection.tsx` | Line items editor |
+| `NotesSection` | `sections/NotesSection.tsx` | Notes editor |
+| `TermsSection` | `sections/TermsSection.tsx` | Terms editor |
+
+### Client Components (`/apps/web/components/clients/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `ClientList` | `client-list.tsx` | Client list with search/filter |
+| `ClientDetail` | `client-detail.tsx` | Client detail view |
+| `ClientForm` | `client-form.tsx` | Client create/edit form |
+
+### Invoice Components (`/apps/web/components/invoices/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `InvoiceActions` | `invoice-actions.tsx` | Invoice action buttons |
+| `RecordPaymentDialog` | `record-payment-dialog.tsx` | Payment recording |
+
+### Rate Card Components (`/apps/web/components/rate-cards/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `RateCardList` | `rate-card-list.tsx` | Rate card list |
+| `RateCardForm` | `rate-card-form.tsx` | Rate card form |
+| `RateCardPicker` | `rate-card-picker.tsx` | Rate card selector |
+| `CategoryManager` | `category-manager.tsx` | Category management |
+
+### Contract Components (`/apps/web/components/contracts/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `ContractEditor` | `contract-editor.tsx` | Contract content editor |
+| `ContractTemplateList` | `contract-template-list.tsx` | Template list |
+| `ContractTemplateForm` | `contract-template-form.tsx` | Template form |
+| `ContractInstanceList` | `contract-instance-list.tsx` | Instance list |
+| `CreateContractForm` | `create-contract-form.tsx` | Create instance form |
+| `VariableManager` | `variable-manager.tsx` | Template variables |
+| `SignaturePad` | `signature-pad.tsx` | Signature capture |
+
+### Settings Components (`/apps/web/components/settings/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `BusinessProfileForm` | `business-profile-form.tsx` | Business profile |
+| `BrandingSettingsForm` | `branding-settings-form.tsx` | Branding settings |
+| `TaxRatesManager` | `tax-rates-manager.tsx` | Tax rate management |
+| `NumberSequenceForm` | `number-sequence-form.tsx` | Number sequences |
+| `TeamMemberList` | `team-member-list.tsx` | Team members |
+| `InviteMemberButton` | `invite-member-button.tsx` | Invite modal |
+| `WorkspaceSettingsForm` | `workspace-settings-form.tsx` | Workspace settings |
+| `DangerZone` | `danger-zone.tsx` | Destructive actions |
+
+### Client Portal Components (`/apps/web/components/client-portal/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `QuotePortalView` | `quote-portal-view.tsx` | Client quote view |
+| `QuotePortalHeader` | `quote-portal-header.tsx` | Portal header |
+| `QuotePortalSkeleton` | `quote-portal-skeleton.tsx` | Loading state |
+| `QuoteBlockRenderer` | `quote-block-renderer.tsx` | Block rendering |
+| `AcceptQuoteDialog` | `accept-quote-dialog.tsx` | Accept modal |
+| `DeclineQuoteDialog` | `decline-quote-dialog.tsx` | Decline modal |
+| `InvoicePortalView` | `invoice-portal-view.tsx` | Client invoice view |
+| `InvoicePortalHeader` | `invoice-portal-header.tsx` | Portal header |
+| `InvoicePortalSkeleton` | `invoice-portal-skeleton.tsx` | Loading state |
+| `SignaturePad` | `signature-pad.tsx` | Signature capture |
+
+### Landing Page Components (`/apps/web/components/landing/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `HeroSection` | `hero-section.tsx` | Landing hero |
+| `FeaturesSection` | `features-section.tsx` | Features showcase |
+| `ProblemSection` | `problem-section.tsx` | Problem statement |
+| `HowItWorks` | `how-it-works.tsx` | How it works |
+| `PricingSection` | `pricing-section.tsx` | Pricing plans |
+| `TestimonialsSection` | `testimonials-section.tsx` | Testimonials |
+| `OpenSourceSection` | `open-source-section.tsx` | OSS benefits |
+| `FaqSection` | `faq-section.tsx` | FAQ accordion |
+| `FinalCtaSection` | `final-cta-section.tsx` | Final CTA |
+| `MarketingHeader` | `marketing-header.tsx` | Marketing nav |
+| `MarketingFooter` | `marketing-footer.tsx` | Marketing footer |
+
+### Onboarding Components (`/apps/web/components/onboarding/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `OnboardingWizard` | `onboarding-wizard.tsx` | Multi-step wizard |
+| `BusinessStep` | `steps/business-step.tsx` | Business info step |
+| `BrandingStep` | `steps/branding-step.tsx` | Branding step |
+| `PaymentStep` | `steps/payment-step.tsx` | Payment setup |
+| `CompleteStep` | `steps/complete-step.tsx` | Completion step |
+
+### Email Components (`/apps/web/components/email/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `EmailTemplateList` | `email-template-list.tsx` | Template list |
+| `EmailTemplateForm` | `email-template-form.tsx` | Template editor |
+| `ScheduledEmailList` | `scheduled-email-list.tsx` | Scheduled emails |
+
+### Shared Components (`/apps/web/components/shared/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `EmptyState` | `empty-state.tsx` | Empty state display |
+| `ErrorBoundary` | `error-boundary.tsx` | Error boundary |
+| `LoadingSkeletons` | `loading-skeletons.tsx` | Loading states |
+| `PageContainer` | `page-container.tsx` | Page wrapper |
+| `PageHeader` | `page-header.tsx` | Page headers |
+| `SkipToContent` | `skip-to-content.tsx` | Accessibility |
+| `ThemeToggle` | `theme-toggle.tsx` | Dark/light mode |
+
+### Payment Components (`/apps/web/components/payments/`)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `PaymentSettingsForm` | `payment-settings-form.tsx` | Stripe Connect settings |
 
 ---
 
 ## API Routes
 
-### Authentication Routes
+### Authentication (`/apps/web/app/api/auth/`)
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/api/auth/[...nextauth]/route.ts` | GET, POST | NextAuth.js authentication handlers |
-| `/api/auth/register` | POST | User registration endpoint |
+| `/api/auth/[...nextauth]` | GET/POST | NextAuth.js handlers |
+| `/api/auth/register` | POST | User registration |
+| `/api/auth/forgot-password` | POST | Password reset request |
+| `/api/auth/reset-password` | POST | Password reset |
 
-### Webhook Routes
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/api/webhooks/stripe` | POST | Stripe payment webhook handler |
-
-### PDF Routes
+### Resources
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/api/pdf/quote/[quoteId]` | GET | Generate quote PDF HTML |
-| `/api/pdf/invoice/[invoiceId]` | GET | Generate invoice PDF HTML |
+| `/api/quotes` | GET/POST | List/create quotes |
+| `/api/invoices` | GET/POST | List/create invoices |
+| `/api/clients` | GET/POST | List/create clients |
 
-### Checkout Routes
+### PDF Generation
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/api/checkout/invoice/[invoiceId]` | POST | Create invoice payment intent |
+| `/api/pdf/quote/[quoteId]` | GET | Generate quote PDF |
+| `/api/pdf/invoice/[invoiceId]` | GET | Generate invoice PDF |
+
+### Downloads
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/download/quote/[quoteId]` | GET | Download quote PDF |
+| `/api/download/invoice/[invoiceId]` | GET | Download invoice PDF |
+
+### Payments
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/checkout/invoice/[invoiceId]` | POST | Create checkout session |
+| `/api/webhooks/stripe` | POST | Stripe webhook handler |
+
+### System
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/cron/reset-demo` | POST | Reset demo data |
+
+---
+
+## Custom Hooks
+
+### Toast Hook (`/apps/web/hooks/use-toast.ts`)
+
+```typescript
+function useToast(): {
+  toasts: ToasterToast[];
+  toast: (props: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  dismiss: (toastId?: string) => void;
+}
+```
+
+---
+
+## Stores
+
+### Quote Builder Store (`/apps/web/lib/stores/quote-builder-store.ts`)
+
+**State:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `document` | `QuoteDocument \| null` | Current document |
+| `isDirty` | `boolean` | Unsaved changes |
+| `isSaving` | `boolean` | Save in progress |
+| `lastSavedAt` | `string \| null` | Last save timestamp |
+| `selectedBlockId` | `string \| null` | Selected block |
+| `hoveredBlockId` | `string \| null` | Hovered block |
+| `showBlocksPanel` | `boolean` | Panel visibility |
+| `showPropertiesPanel` | `boolean` | Panel visibility |
+| `showRateCardPanel` | `boolean` | Panel visibility |
+| `previewMode` | `boolean` | Preview mode |
+| `zoom` | `number` | Canvas zoom level |
+| `history` | `QuoteBlock[][]` | Undo history |
+| `historyIndex` | `number` | Current history position |
+
+**Actions:**
+
+| Action | Description |
+|--------|-------------|
+| `initDocument` | Initialize document |
+| `resetDocument` | Reset to empty document |
+| `updateTitle` | Update document title |
+| `updateNotes` | Update notes |
+| `updateTerms` | Update terms |
+| `updateSettings` | Update settings |
+| `addBlock` | Add new block |
+| `addBlockAfter` | Add block after specific block |
+| `updateBlock` | Update block content |
+| `removeBlock` | Remove block |
+| `moveBlock` | Reorder block |
+| `duplicateBlock` | Duplicate block |
+| `selectBlock` | Select block |
+| `setHoveredBlock` | Set hovered block |
+| `toggleBlocksPanel` | Toggle blocks panel |
+| `togglePropertiesPanel` | Toggle properties panel |
+| `toggleRateCardPanel` | Toggle rate card panel |
+| `togglePreviewMode` | Toggle preview mode |
+| `setZoom` | Set zoom level |
+| `setSaving` | Set saving state |
+| `markSaved` | Mark as saved |
+| `markDirty` | Mark as dirty |
+| `undo` | Undo last change |
+| `redo` | Redo last change |
+| `pushHistory` | Push to history |
+| `recalculateTotals` | Recalculate totals |
+
+---
+
+## Validation Schemas
+
+### Common (`/apps/web/lib/validations/common.ts`)
+
+| Schema | Description |
+|--------|-------------|
+| `idSchema` | UUID validation |
+| `moneySchema` | Currency amount |
+| `percentageSchema` | Percentage value |
+| `listQuerySchema` | Pagination params |
+
+### Auth (`/apps/web/lib/validations/auth.ts`)
+
+| Schema | Description |
+|--------|-------------|
+| `loginSchema` | Login credentials |
+| `registerSchema` | Registration data |
+| `forgotPasswordSchema` | Password reset request |
+| `resetPasswordSchema` | Password reset |
+
+### Quote (`/apps/web/lib/validations/quote.ts`)
+
+| Schema | Description |
+|--------|-------------|
+| `quoteStatusSchema` | Status enum |
+| `quoteBlockTypeSchema` | Block type enum |
+| `lineItemSchema` | Line item data |
+| `quoteBlockSchema` | Block structure |
+| `createQuoteSchema` | Create input |
+| `updateQuoteSchema` | Update input |
+| `quoteFilterSchema` | Filter params |
+| `sendQuoteSchema` | Send input |
+| `acceptQuoteSchema` | Accept input |
+| `declineQuoteSchema` | Decline input |
+| `convertToInvoiceSchema` | Convert input |
+| `duplicateQuoteSchema` | Duplicate input |
+
+### Invoice (`/apps/web/lib/validations/invoice.ts`)
+
+| Schema | Description |
+|--------|-------------|
+| `invoiceStatusSchema` | Status enum |
+| `createInvoiceSchema` | Create input |
+| `updateInvoiceSchema` | Update input |
+| `invoiceFilterSchema` | Filter params |
+| `recordPaymentSchema` | Payment input |
+
+### Client (`/apps/web/lib/validations/client.ts`)
+
+| Schema | Description |
+|--------|-------------|
+| `addressSchema` | Address data |
+| `createClientSchema` | Create input |
+| `updateClientSchema` | Update input |
+| `clientFilterSchema` | Filter params |
+
+### Rate Card (`/apps/web/lib/validations/rate-card.ts`)
+
+| Schema | Description |
+|--------|-------------|
+| `pricingTypeSchema` | Pricing type enum |
+| `createRateCardSchema` | Create input |
+| `updateRateCardSchema` | Update input |
+| `rateCardFilterSchema` | Filter params |
+
+### Settings (`/apps/web/lib/validations/settings.ts`)
+
+| Schema | Description |
+|--------|-------------|
+| `businessProfileSchema` | Business profile |
+| `brandingSettingsSchema` | Branding settings |
+| `taxRateSchema` | Tax rate data |
+| `numberSequenceSchema` | Number sequence |
+
+---
+
+## Types & Models
+
+### Package Types (`/packages/types/src/models.ts`)
+
+| Type | Description |
+|------|-------------|
+| `BaseModel` | Common fields (id, createdAt, updatedAt) |
+| `SoftDeletable` | Soft delete mixin |
+| `Address` | Address structure |
+| `User` | User model |
+| `Workspace` | Workspace model |
+| `WorkspaceSettings` | Workspace configuration |
+| `WorkspaceMember` | Team member |
+| `BusinessProfile` | Business information |
+| `Client` | Client model |
+| `RateCard` | Rate card model |
+| `Quote` | Quote model |
+| `QuoteStatus` | Quote status enum |
+| `QuoteSettings` | Quote configuration |
+| `QuoteLineItem` | Quote line item |
+| `SignatureData` | E-signature data |
+| `Invoice` | Invoice model |
+| `InvoiceStatus` | Invoice status enum |
+| `InvoiceSettings` | Invoice configuration |
+| `InvoiceLineItem` | Invoice line item |
+| `Payment` | Payment model |
+| `PaymentStatus` | Payment status enum |
+| `TaxRate` | Tax rate model |
+
+### Quote Block Types (`/apps/web/lib/quotes/types.ts`)
+
+| Type | Description |
+|------|-------------|
+| `BlockType` | Block type enum (header, text, service-item, etc.) |
+| `BaseBlock` | Base block structure |
+| `HeaderBlock` | Header/title block |
+| `TextBlock` | Rich text block |
+| `ServiceItemBlock` | Line item block |
+| `ServiceGroupBlock` | Grouped services |
+| `ImageBlock` | Image block |
+| `DividerBlock` | Divider block |
+| `SpacerBlock` | Spacer block |
+| `ColumnsBlock` | Two-column layout |
+| `TableBlock` | Table block |
+| `SignatureBlock` | Signature block |
+| `QuoteBlock` | Union of all blocks |
+| `QuoteDocument` | Document structure |
+| `QuoteSettings` | Quote settings |
+| `QuoteTotals` | Calculated totals |
+| `BlockTemplate` | Block template |
+| `BLOCK_TEMPLATES` | Available templates constant |
+
+---
+
+## Utility Functions
+
+### Package Utils (`/packages/utils/src/`)
+
+#### Format (`format.ts`)
+
+| Function | Description |
+|----------|-------------|
+| `formatCurrency` | Format currency values |
+| `formatDate` | Format dates |
+| `formatNumber` | Format numbers |
+| `formatPercentage` | Format percentages |
+
+#### Validation (`validation.ts`)
+
+| Function | Description |
+|----------|-------------|
+| `isValidEmail` | Validate email |
+| `isValidUrl` | Validate URL |
+| `isValidPhone` | Validate phone |
+
+#### Helpers (`helpers.ts`)
+
+| Function | Description |
+|----------|-------------|
+| `generateSlug` | Generate URL slug |
+| `generateToken` | Generate random token |
+| `truncate` | Truncate string |
+| `debounce` | Debounce function |
+| `groupBy` | Group array by key |
+
+#### Constants (`constants.ts`)
+
+| Constant | Description |
+|----------|-------------|
+| `CURRENCIES` | Supported currencies |
+| `TIMEZONES` | Supported timezones |
+| `DATE_FORMATS` | Date format options |
+
+---
+
+## Services
+
+### Stripe Service (`/apps/web/lib/services/stripe.ts`)
+
+| Function | Description |
+|----------|-------------|
+| `getStripeClient` | Get Stripe instance |
+| `isStripeEnabled` | Check if Stripe configured |
+| `createPaymentIntent` | Create payment intent |
+| `getOrCreateCustomer` | Get/create customer |
+| `retrievePaymentIntent` | Retrieve payment intent |
+| `createRefund` | Create refund |
+| `constructWebhookEvent` | Verify webhook |
+| `getPublicKey` | Get publishable key |
+
+### Auth Service (`/apps/web/lib/auth/`)
+
+| File | Description |
+|------|-------------|
+| `config.ts` | NextAuth configuration |
+| `credentials.ts` | Credentials verification |
+| `index.ts` | Auth exports |
 
 ---
 
 ## Database Models
 
-### User & Authentication
+### Prisma Schema (`/packages/database/prisma/schema.prisma`)
 
-| Model | Description | Key Relationships |
-|-------|-------------|-------------------|
-| `User` | User accounts | has many WorkspaceMembers |
-| `Account` | OAuth accounts (NextAuth) | belongs to User |
-| `Session` | User sessions (NextAuth) | belongs to User |
-| `VerificationToken` | Email verification tokens | - |
-
-### Workspace & Organization
-
-| Model | Description | Key Relationships |
-|-------|-------------|-------------------|
-| `Workspace` | Business workspace/organization | has one BusinessProfile, BrandingSettings, PaymentSettings |
-| `WorkspaceMember` | User-workspace membership | belongs to User, Workspace |
-| `BusinessProfile` | Business details (name, logo, contact) | belongs to Workspace |
-| `BrandingSettings` | Visual branding (colors, logo) | belongs to Workspace |
-| `PaymentSettings` | Stripe Connect configuration | belongs to Workspace |
-
-### Clients
-
-| Model | Description | Key Relationships |
-|-------|-------------|-------------------|
-| `Client` | Client/customer records | belongs to Workspace, has many Quotes, Invoices |
-
-### Rate Cards & Pricing
-
-| Model | Description | Key Relationships |
-|-------|-------------|-------------------|
-| `RateCardCategory` | Rate card categories | belongs to Workspace, has many RateCards |
-| `RateCard` | Reusable pricing items | belongs to Workspace, Category, TaxRate |
-| `TaxRate` | Tax rate definitions | belongs to Workspace |
-
-### Quotes
-
-| Model | Description | Key Relationships |
-|-------|-------------|-------------------|
-| `Quote` | Quote documents | belongs to Client, Workspace, has many QuoteLineItems, QuoteEvents |
-| `QuoteLineItem` | Quote line items/services | belongs to Quote, RateCard |
-| `QuoteEvent` | Quote activity log | belongs to Quote |
-
-### Invoices & Payments
-
-| Model | Description | Key Relationships |
-|-------|-------------|-------------------|
-| `Invoice` | Invoice documents | belongs to Client, Workspace, Quote (optional), has many InvoiceLineItems, Payments, InvoiceEvents |
-| `InvoiceLineItem` | Invoice line items | belongs to Invoice, RateCard |
-| `InvoiceEvent` | Invoice activity log | belongs to Invoice |
-| `Payment` | Payment records | belongs to Invoice |
-
-### Contracts
-
-| Model | Description | Key Relationships |
-|-------|-------------|-------------------|
-| `Contract` | Contract templates | belongs to Workspace, has many ContractInstances |
-| `ContractInstance` | Signed contract instances | belongs to Contract, Client, Workspace, Quote (optional) |
-
-### Email
-
-| Model | Description | Key Relationships |
-|-------|-------------|-------------------|
-| `EmailTemplate` | Customizable email templates | belongs to Workspace |
-| `ScheduledEmail` | Scheduled email queue | belongs to Workspace |
+| Model | Description |
+|-------|-------------|
+| `User` | User accounts |
+| `Account` | OAuth accounts |
+| `Session` | Auth sessions |
+| `Workspace` | Workspaces/organizations |
+| `WorkspaceMember` | Team members |
+| `BusinessProfile` | Business information |
+| `BrandingSettings` | Branding configuration |
+| `PaymentSettings` | Payment configuration |
+| `Client` | Clients/customers |
+| `RateCard` | Service rate cards |
+| `RateCardCategory` | Rate card categories |
+| `TaxRate` | Tax rates |
+| `NumberSequence` | Quote/invoice numbering |
+| `Quote` | Quotes |
+| `QuoteLineItem` | Quote line items |
+| `QuoteBlock` | Quote visual blocks |
+| `QuoteEvent` | Quote audit trail |
+| `Invoice` | Invoices |
+| `InvoiceLineItem` | Invoice line items |
+| `InvoiceEvent` | Invoice audit trail |
+| `Payment` | Payments |
+| `Contract` | Contract templates |
+| `ContractInstance` | Signed contracts |
+| `EmailTemplate` | Email templates |
+| `ScheduledEmail` | Scheduled emails |
 
 ---
 
-## Hooks
+## Page Routes
 
-### Quote Hooks (`lib/quotes/hooks.ts`)
+### Auth Routes (`/apps/web/app/(auth)/`)
 
-| Hook | Description |
-|------|-------------|
-| `useAutoSave(quoteId, debounceMs)` | Auto-saves quote document with debouncing |
-| `useBuilderKeyboardShortcuts()` | Handles keyboard shortcuts in quote builder (undo, redo, delete, duplicate, preview) |
+| Route | Description |
+|-------|-------------|
+| `/login` | Login page |
+| `/register` | Registration page |
+| `/forgot-password` | Password reset request |
+| `/reset-password` | Password reset |
 
-### Toast Hook (`hooks/use-toast.ts`)
+### Dashboard Routes (`/apps/web/app/(dashboard)/`)
 
-| Hook | Description |
-|------|-------------|
-| `useToast()` | Toast notification state and methods (toast, dismiss) |
-| `toast(props)` | Show a toast notification |
+| Route | Description |
+|-------|-------------|
+| `/dashboard` | Main dashboard |
+| `/dashboard/analytics` | Analytics page |
+| `/quotes` | Quotes list |
+| `/quotes/new` | New quote selection |
+| `/quotes/new/builder` | Visual builder |
+| `/quotes/new/editor` | Form editor |
+| `/quotes/[id]` | Quote detail |
+| `/quotes/[id]/builder` | Edit in builder |
+| `/invoices` | Invoices list |
+| `/clients` | Clients list |
+| `/clients/new` | New client |
+| `/clients/[id]` | Client detail |
+| `/clients/[id]/edit` | Edit client |
+| `/rate-cards` | Rate cards list |
+| `/rate-cards/new` | New rate card |
+| `/rate-cards/[id]/edit` | Edit rate card |
+| `/templates` | Contract templates |
+| `/templates/new` | New template |
+| `/templates/[id]` | Template detail |
+| `/templates/[id]/edit` | Edit template |
+| `/settings` | Settings overview |
+| `/settings/business` | Business profile |
+| `/settings/branding` | Branding settings |
+| `/settings/payments` | Payment settings |
+| `/settings/tax-rates` | Tax rates |
+| `/settings/quotes` | Quote settings |
+| `/settings/invoices` | Invoice settings |
+| `/settings/emails` | Email templates |
+| `/settings/emails/new` | New email template |
+| `/settings/emails/[id]` | Edit email template |
+| `/settings/team` | Team members |
+| `/settings/workspace` | Workspace settings |
+| `/settings/billing` | Billing |
+| `/settings/account` | Account settings |
 
----
+### Public Routes
 
-## Utilities
-
-### Core Utilities (`lib/utils.ts`)
-
-| Function | Description |
-|----------|-------------|
-| `cn(...inputs)` | Tailwind class name merger |
-| `formatCurrency(amount, currency, locale)` | Format number as currency |
-| `formatDate(date, formatStr)` | Format date with custom format |
-| `formatDateTime(date)` | Format date with time |
-| `formatRelativeTime(date)` | Format as relative time (e.g., "2 days ago") |
-| `formatNumber(value, options)` | Format number with locale |
-| `formatPercentage(value, decimals)` | Format as percentage |
-| `slugify(text)` | Convert text to URL-safe slug |
-| `truncate(text, maxLength)` | Truncate text with ellipsis |
-| `generateInitials(name)` | Generate initials from name |
-| `isValidEmail(email)` | Validate email format |
-| `delay(ms)` | Promise-based delay |
-| `capitalizeFirst(text)` | Capitalize first letter |
-
-### Package Utilities (`packages/utils/src/format.ts`)
-
-| Function | Description |
-|----------|-------------|
-| `formatCurrency(amount, currency, locale)` | Format number as currency |
-| `formatNumber(value, locale)` | Format with thousand separators |
-| `formatDate(date, formatString)` | Format date string or object |
-| `formatRelativeTime(date)` | Format as relative time |
-| `formatPercentage(value, decimals)` | Format as percentage |
-| `formatFileSize(bytes)` | Format bytes as human-readable size |
-| `formatPhoneNumber(phone)` | Format US phone number |
-| `formatDocumentNumber(value, prefix, suffix, padding)` | Generate padded document number |
-
-### Validation Utilities (`packages/utils/src/validation.ts`)
-
-| Schema/Function | Description |
-|-----------------|-------------|
-| `emailSchema` | Zod email validation schema |
-| `passwordSchema` | Password validation (8+ chars, uppercase, lowercase, number) |
-| `phoneSchema` | Phone number validation |
-| `urlSchema` | URL validation |
-| `slugSchema` | URL-safe slug validation |
-| `currencyCodeSchema` | ISO 4217 currency code validation |
-| `moneySchema` | Positive decimal money amount validation |
-| `percentageSchema` | 0-100 percentage validation |
-| `uuidSchema` | UUID format validation |
-| `addressSchema` | Address object validation |
-| `isValidEmail(email)` | Check if email is valid |
-| `isValidUrl(url)` | Check if URL is valid |
-| `isValidUuid(uuid)` | Check if UUID is valid |
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page |
+| `/q/[token]` | Client quote portal |
+| `/i/[token]` | Client invoice portal |
+| `/c/[token]` | Client contract portal |
+| `/onboarding` | User onboarding |
 
 ---
 
-## Type Definitions
-
-### Core Types (`packages/types/src/models.ts`)
-
-| Type | Description |
-|------|-------------|
-| `BaseModel` | Base interface with id, createdAt, updatedAt |
-| `SoftDeletable` | Interface for soft-deletable models |
-| `Address` | Address structure (line1, line2, city, state, postalCode, country) |
-| `User` | User account type |
-| `Workspace` | Workspace/organization type |
-| `WorkspaceSettings` | Workspace configuration options |
-| `WorkspaceMember` | User-workspace membership |
-| `BusinessProfile` | Business details type |
-| `Client` | Client record type |
-| `RateCard` | Rate card type |
-| `QuoteStatus` | Quote status enum |
-| `Quote` | Quote document type |
-| `QuoteSettings` | Quote configuration options |
-| `QuoteLineItem` | Quote line item type |
-| `SignatureData` | E-signature capture data |
-| `InvoiceStatus` | Invoice status enum |
-| `Invoice` | Invoice document type |
-| `InvoiceSettings` | Invoice configuration options |
-| `InvoiceLineItem` | Invoice line item type |
-| `PaymentStatus` | Payment status enum |
-| `Payment` | Payment record type |
-| `TaxRate` | Tax rate configuration |
-
-### Quote Types (`lib/quotes/types.ts`)
-
-- `QuoteBlock`, `QuoteDocument` - Visual builder block types
-- `QuoteListItem`, `QuoteDetail` - API response types
-- `CreateQuoteInput`, `UpdateQuoteInput` - Form input types
-- `QuoteFilter` - Filter/search parameters
-
-### Invoice Types (`lib/invoices/types.ts`)
-
-- `InvoiceLineItem`, `InvoiceListItem`, `InvoiceDetail`
-- `CreateInvoiceInput`, `UpdateInvoiceInput`
-- `InvoiceFilter`
-
-### Dashboard Types (`lib/dashboard/types.ts`)
-
-- `DashboardStats`, `QuoteStatusCounts`, `InvoiceStatusCounts`
-- `RevenueDataPoint`, `ActivityItem`
-- `RecentQuote`, `RecentInvoice`
-- `DashboardData`, `DashboardPeriod`
-
-### Portal Types
-
-- `PublicQuoteData` - Public-facing quote data
-- `PublicInvoiceData` - Public-facing invoice data
-
----
-
-## File Organization
-
-```
-apps/web/
-├── app/                          # Next.js App Router
-│   ├── (auth)/                   # Authentication routes
-│   ├── (dashboard)/              # Protected dashboard routes
-│   │   ├── clients/              # Client management
-│   │   ├── contracts/            # Contract management
-│   │   ├── invoices/             # Invoice management
-│   │   ├── quotes/               # Quote management
-│   │   ├── rate-cards/           # Rate card management
-│   │   ├── settings/             # Settings pages
-│   │   └── templates/            # Contract templates
-│   ├── api/                      # API routes
-│   ├── c/[token]/                # Public contract view
-│   ├── i/[token]/                # Public invoice view
-│   └── q/[token]/                # Public quote view
-├── components/
-│   ├── ui/                       # Shadcn UI components
-│   ├── quotes/                   # Quote components
-│   ├── invoices/                 # Invoice components
-│   ├── clients/                  # Client components
-│   ├── contracts/                # Contract components
-│   ├── dashboard/                # Dashboard components
-│   ├── settings/                 # Settings components
-│   ├── portal/                   # Client portal components
-│   └── shared/                   # Shared components
-├── hooks/                        # React hooks
-└── lib/
-    ├── auth/                     # Authentication utilities
-    ├── clients/                  # Client actions and types
-    ├── contracts/                # Contract actions and types
-    ├── dashboard/                # Dashboard actions and types
-    ├── email/                    # Email actions and types
-    ├── invoices/                 # Invoice actions and types
-    ├── onboarding/               # Onboarding actions and types
-    ├── payments/                 # Payment actions and types
-    ├── pdf/                      # PDF generation
-    ├── quotes/                   # Quote actions, types, hooks
-    ├── rate-cards/               # Rate card actions and types
-    ├── services/                 # External service integrations
-    ├── settings/                 # Settings actions and types
-    ├── stores/                   # Zustand stores
-    └── utils.ts                  # Core utilities
-
-packages/
-├── database/                     # Prisma schema and client
-├── types/                        # Shared TypeScript types
-├── utils/                        # Shared utilities
-└── email-templates/              # Email templates (React Email)
-```
-
----
-
-*Last updated: 2026-01-30*
+*Last updated: 2026-02-13*

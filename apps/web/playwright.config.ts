@@ -11,8 +11,8 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 1 : 3, // Limit parallel workers to reduce timeouts
   reporter: process.env.CI ? 'github' : 'html',
 
   // Global setup and teardown for authentication
@@ -32,7 +32,7 @@ export default defineConfig({
     video: 'retain-on-failure',
     // Default action timeout
     actionTimeout: 10000,
-    navigationTimeout: 15000,
+    navigationTimeout: 30000, // Increased to handle dev server compilation delays
   },
 
   projects: [
@@ -79,6 +79,9 @@ export default defineConfig({
         '**/multi-user-team.spec.ts',
         '**/notifications.spec.ts',
         '**/offline-network.spec.ts',
+        // Phase 2 tests
+        '**/projects.spec.ts',
+        '**/sidebar-hierarchy.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],

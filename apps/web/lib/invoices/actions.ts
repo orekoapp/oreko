@@ -104,6 +104,7 @@ export async function createInvoice(data: CreateInvoiceData) {
     data: {
       workspaceId: workspace.id,
       clientId: data.clientId,
+      projectId: data.projectId || null,
       invoiceNumber,
       title: data.title,
       status: 'draft',
@@ -124,6 +125,7 @@ export async function createInvoice(data: CreateInvoiceData) {
     include: {
       lineItems: true,
       client: true,
+      project: true,
     },
   });
 
@@ -179,6 +181,7 @@ export async function createInvoiceFromQuote(quoteId: string) {
       data: {
         workspaceId: workspace.id,
         clientId: quote.clientId,
+        projectId: quote.projectId,
         quoteId: quote.id,
         invoiceNumber,
         title: quote.title || 'Invoice',
@@ -211,6 +214,7 @@ export async function createInvoiceFromQuote(quoteId: string) {
       include: {
         lineItems: true,
         client: true,
+        project: true,
       },
     });
 
@@ -288,6 +292,7 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
     return tx.invoice.update({
       where: { id: invoiceId },
       data: {
+        projectId: data.projectId !== undefined ? data.projectId : undefined,
         title: data.title,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         notes: data.notes,
@@ -344,6 +349,7 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
         orderBy: { sortOrder: 'asc' },
       },
       client: true,
+      project: true,
       payments: true,
     },
   });
@@ -358,6 +364,7 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
     id: invoice.id,
     workspaceId: invoice.workspaceId,
     clientId: invoice.clientId,
+    projectId: invoice.projectId,
     quoteId: invoice.quoteId,
     invoiceNumber: invoice.invoiceNumber,
     status: invoice.status as InvoiceStatus,

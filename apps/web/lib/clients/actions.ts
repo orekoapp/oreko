@@ -679,3 +679,27 @@ export async function searchClients(query: string, limit = 10): Promise<Array<{
 
   return clients;
 }
+
+// Get all clients for dropdowns (minimal data)
+export async function getClientsForSelect(): Promise<Array<{
+  id: string;
+  name: string;
+  company: string | null;
+}>> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const clients = await prisma.client.findMany({
+    where: {
+      workspaceId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      company: true,
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  return clients;
+}

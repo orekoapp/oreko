@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Edit, Send, Download, Copy, Trash2, ExternalLink } from 'lucide-react';
+import { FileText, Edit, Send, Download, Copy, Trash2, ExternalLink, Receipt, ArrowRight } from 'lucide-react';
 import { getQuote } from '@/lib/quotes/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -243,6 +243,37 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               </Button>
             </CardContent>
           </Card>
+
+          {/* Linked Invoice */}
+          {quote.linkedInvoice && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Linked Invoice
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="rounded-lg border p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{quote.linkedInvoice.invoiceNumber}</p>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {quote.linkedInvoice.status}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Link href={`/invoices/${quote.linkedInvoice.id}`}>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View Invoice
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Activity */}
           <Card>

@@ -50,6 +50,7 @@ export interface InvoiceDocument {
   id: string;
   workspaceId: string;
   clientId: string;
+  projectId: string | null;
   quoteId: string | null;
   invoiceNumber: string;
   status: InvoiceStatus;
@@ -84,6 +85,7 @@ export interface InvoiceListItem {
 
 export interface CreateInvoiceData {
   clientId: string;
+  projectId?: string | null;
   title: string;
   dueDate: string;
   lineItems: Array<{
@@ -99,6 +101,7 @@ export interface CreateInvoiceData {
 }
 
 export interface UpdateInvoiceData {
+  projectId?: string | null;
   title?: string;
   dueDate?: string;
   lineItems?: Array<{

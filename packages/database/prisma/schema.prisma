@@ -31,7 +31,7 @@ model User {
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
   workspaceMembers    WorkspaceMember[]
-  ownedWorkspaces     Workspace[]          @relation("WorkspaceOwner")
+  ownedWorkspaces     Workspace[]           @relation("WorkspaceOwner")
   workspaceInvites    WorkspaceInvitation[] @relation("InvitedBy")
   quoteEvents         QuoteEvent[]
   invoiceEvents       InvoiceEvent[]
@@ -123,6 +123,7 @@ model Workspace {
   businessProfile    BusinessProfile?
   clients            Client[]
   clientTags         ClientTag[]
+  projects           Project[]
   rateCardCategories RateCardCategory[]
   rateCards          RateCard[]
   quotes             Quote[]
@@ -200,6 +201,35 @@ model BusinessProfile {
 }
 
 // ============================================
+// PROJECTS
+// ============================================
+
+model Project {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  clientId    String    @map("client_id")
+  name        String
+  description String?   @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  // Relations
+  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client            Client             @relation(fields: [clientId], references: [id])
+  quotes            Quote[]
+  invoices          Invoice[]
+  contractInstances ContractInstance[]
+
+  @@index([workspaceId])
+  @@index([clientId])
+  @@index([workspaceId, isActive])
+  @@index([workspaceId, deletedAt])
+  @@map("projects")
+}
+
+// ============================================
 // CLIENTS
 // ============================================
 
@@ -220,8 +250,9 @@ model Client {
   deletedAt      DateTime? @map("deleted_at")
 
   // Relations
-  workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace         Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   tags              ClientTagAssignment[]
+  projects          Project[]
   quotes            Quote[]
   invoices          Invoice[]
   contractInstances ContractInstance[]
@@ -313,6 +344,7 @@ model Quote {
   id                   String    @id @default(uuid())
   workspaceId          String    @map("workspace_id")
   clientId             String    @map("client_id")
+  projectId            String?   @map("project_id")
   quoteNumber          String    @map("quote_number") @db.VarChar(50)
   status               String    @default("draft") @db.VarChar(20)
   title                String?
@@ -345,6 +377,7 @@ model Quote {
   // Relations
   workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   client            Client             @relation(fields: [clientId], references: [id])
+  project           Project?           @relation(fields: [projectId], references: [id])
   lineItems         QuoteLineItem[]
   events            QuoteEvent[]
   invoice           Invoice?
@@ -353,6 +386,7 @@ model Quote {
   @@unique([workspaceId, quoteNumber])
   @@index([workspaceId])
   @@index([clientId])
+  @@index([projectId])
   @@index([status])
   @@index([accessToken])
   @@index([workspaceId, status])
@@ -411,6 +445,7 @@ model Invoice {
   id             String    @id @default(uuid())
   workspaceId    String    @map("workspace_id")
   clientId       String    @map("client_id")
+  projectId      String?   @map("project_id")
   quoteId        String?   @unique @map("quote_id")
   invoiceNumber  String    @map("invoice_number") @db.VarChar(50)
   status         String    @default("draft") @db.VarChar(20)
@@ -443,6 +478,7 @@ model Invoice {
   // Relations
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   client           Client            @relation(fields: [clientId], references: [id])
+  project          Project?          @relation(fields: [projectId], references: [id])
   quote            Quote?            @relation(fields: [quoteId], references: [id])
   lineItems        InvoiceLineItem[]
   events           InvoiceEvent[]
@@ -452,6 +488,7 @@ model Invoice {
   @@unique([workspaceId, invoiceNumber])
   @@index([workspaceId])
   @@index([clientId])
+  @@index([projectId])
   @@index([quoteId])
   @@index([status])
   @@index([accessToken])
@@ -537,17 +574,17 @@ model Payment {
 }
 
 model PaymentSchedule {
-  id          String    @id @default(uuid())
-  invoiceId   String    @map("invoice_id")
-  type        String    @db.VarChar(20)
+  id          String   @id @default(uuid())
+  invoiceId   String   @map("invoice_id")
+  type        String   @db.VarChar(20)
   description String?
-  amount      Decimal?  @db.Decimal(12, 2)
-  percentage  Decimal?  @db.Decimal(5, 2)
-  dueDate     DateTime  @map("due_date") @db.Date
-  status      String    @default("pending") @db.VarChar(20)
-  paymentId   String?   @map("payment_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  amount      Decimal? @db.Decimal(12, 2)
+  percentage  Decimal? @db.Decimal(5, 2)
+  dueDate     DateTime @map("due_date") @db.Date
+  status      String   @default("pending") @db.VarChar(20)
+  paymentId   String?  @map("payment_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   payment Payment? @relation(fields: [paymentId], references: [id])
@@ -585,6 +622,7 @@ model ContractInstance {
   contractId      String    @map("contract_id")
   quoteId         String?   @map("quote_id")
   clientId        String    @map("client_id")
+  projectId       String?   @map("project_id")
   workspaceId     String    @map("workspace_id")
   content         String    @db.Text
   status          String    @default("draft") @db.VarChar(20)
@@ -602,11 +640,13 @@ model ContractInstance {
   contract  Contract  @relation(fields: [contractId], references: [id])
   quote     Quote?    @relation(fields: [quoteId], references: [id])
   client    Client    @relation(fields: [clientId], references: [id])
+  project   Project?  @relation(fields: [projectId], references: [id])
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([contractId])
   @@index([quoteId])
   @@index([clientId])
+  @@index([projectId])
   @@index([accessToken])
   @@map("contract_instances")
 }

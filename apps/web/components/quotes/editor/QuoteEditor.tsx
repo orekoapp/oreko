@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowLeft,
   Save,
@@ -11,6 +12,8 @@ import {
   Mail,
   CreditCard,
   Blocks,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,10 +21,20 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
-import { createQuote, updateQuote } from '@/lib/quotes/actions';
+import { createQuote, updateQuote, sendQuote } from '@/lib/quotes/actions';
 import { getClientById } from '@/lib/clients/actions';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, cn } from '@/lib/utils';
 import type { ServiceItemBlock } from '@/lib/quotes/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 import { DetailsSection } from './sections/DetailsSection';
 import { ItemsSection } from './sections/ItemsSection';
@@ -49,6 +62,7 @@ export function QuoteEditor() {
     isSaving,
     initDocument,
     updateTitle,
+    updateProjectId,
     updateNotes,
     updateTerms,
     addBlock,
@@ -57,12 +71,17 @@ export function QuoteEditor() {
   } = useQuoteBuilderStore();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
   const [activeSection, setActiveSection] = useState<EditorSection>('details');
   const [client, setClient] = useState<ClientInfo | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   // Form state for quote details
   const [title, setTitle] = useState('');
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [expirationDays, setExpirationDays] = useState('30');
   const [taxRate, setTaxRate] = useState('0');
 
@@ -77,6 +96,7 @@ export function QuoteEditor() {
         id: `temp-${Date.now()}`,
         workspaceId: 'default',
         clientId: clientId || '',
+        projectId: null,
         quoteNumber: `Q-${Date.now().toString().slice(-6)}`,
         status: 'draft',
         title: 'New Quote',
@@ -131,12 +151,58 @@ export function QuoteEditor() {
   useEffect(() => {
     if (document) {
       setTitle(document.title);
+      setProjectId(document.projectId);
     }
   }, [document]);
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
     updateTitle(newTitle);
+  };
+
+  const handleProjectChange = (newProjectId: string | null) => {
+    setProjectId(newProjectId);
+    updateProjectId(newProjectId);
+  };
+
+  const handleClientChange = useCallback((newClient: ClientInfo | null) => {
+    setClient(newClient);
+    // Update URL to reflect client change
+    if (newClient) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('clientId', newClient.id);
+      router.replace(url.pathname + url.search);
+    }
+  }, [router]);
+
+  // Logo upload handler (mock - in production this would upload to storage)
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+      toast.error('Only PNG and JPG images are allowed');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be less than 2MB');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      // Create a local preview URL
+      const url = URL.createObjectURL(file);
+      setLogoUrl(url);
+      toast.success('Logo uploaded successfully');
+    } catch {
+      toast.error('Failed to upload logo');
+    } finally {
+      setIsUploadingLogo(false);
+    }
   };
 
   const handleSave = async () => {
@@ -147,13 +213,14 @@ export function QuoteEditor() {
       if (document.id.startsWith('temp-')) {
         // Create new quote
         const result = await createQuote({
-          clientId: document.clientId,
+          clientId: client?.id || document.clientId,
+          projectId: document.projectId,
           title: document.title,
           blocks: document.blocks,
         });
 
         if (result.success && result.quote) {
-          toast.success('Quote created successfully');
+          toast.success('Quote saved as draft');
           router.push(`/quotes/${result.quote.id}`);
         }
       } else {
@@ -169,16 +236,55 @@ export function QuoteEditor() {
           toast.success('Quote saved successfully');
         }
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to save quote');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSendQuote = async () => {
+    if (!document || !client) return;
+
+    setIsSending(true);
+    try {
+      // First save if it's a new quote
+      let quoteId = document.id;
+
+      if (document.id.startsWith('temp-')) {
+        const createResult = await createQuote({
+          clientId: client.id,
+          projectId: document.projectId,
+          title: document.title,
+          blocks: document.blocks,
+        });
+
+        if (!createResult.success || !createResult.quote) {
+          throw new Error('Failed to create quote');
+        }
+        quoteId = createResult.quote.id;
+      }
+
+      // Then send the quote
+      const result = await sendQuote(quoteId);
+
+      if (result.success) {
+        toast.success('Quote sent successfully');
+        router.push(`/quotes/${quoteId}`);
+      } else {
+        throw new Error(result.error || 'Failed to send quote');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send quote');
+    } finally {
+      setIsSending(false);
+      setShowSendConfirm(false);
+    }
+  };
+
   const handleSwitchToBuilder = () => {
-    if (clientId) {
-      router.push(`/quotes/new/builder?clientId=${clientId}`);
+    if (client?.id) {
+      router.push(`/quotes/new/builder?clientId=${client.id}`);
     } else {
       router.push('/quotes/new/builder');
     }
@@ -245,17 +351,20 @@ export function QuoteEditor() {
             <Save className="mr-2 h-4 w-4" />
             {isLoading ? 'Saving...' : 'Save Draft'}
           </Button>
-          <Button disabled={isLoading}>
+          <Button
+            onClick={() => setShowSendConfirm(true)}
+            disabled={isLoading || !client}
+          >
             <Send className="mr-2 h-4 w-4" />
             Send Quote
           </Button>
         </div>
       </div>
 
-      {/* Main Content - Split View */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left - Form */}
-        <div className="space-y-6">
+      {/* Main Content - Split View (~60/40) */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* Left - Form (~60% = 3 columns) */}
+        <div className="space-y-6 lg:col-span-3">
           {/* Section Navigation */}
           <div className="flex gap-2 border-b pb-2">
             {sectionNav.map((section) => (
@@ -280,6 +389,9 @@ export function QuoteEditor() {
               taxRate={taxRate}
               onTaxRateChange={setTaxRate}
               client={client}
+              onClientChange={handleClientChange}
+              projectId={projectId}
+              onProjectChange={handleProjectChange}
             />
           )}
 
@@ -308,8 +420,8 @@ export function QuoteEditor() {
           )}
         </div>
 
-        {/* Right - Preview */}
-        <div className="space-y-4">
+        {/* Right - Preview (~40% = 2 columns) */}
+        <div className="space-y-4 lg:col-span-2">
           {/* Preview Mode Tabs */}
           <Tabs
             value={previewMode}
@@ -318,15 +430,15 @@ export function QuoteEditor() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="payment" className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                Payment Page
+                <span className="hidden sm:inline">Payment</span>
               </TabsTrigger>
               <TabsTrigger value="email" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                Email Preview
+                <span className="hidden sm:inline">Email</span>
               </TabsTrigger>
               <TabsTrigger value="pdf" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Quote PDF
+                <span className="hidden sm:inline">PDF</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -335,6 +447,44 @@ export function QuoteEditor() {
           <Card className="sticky top-4">
             <CardContent className="p-6">
               <div className="rounded-lg border bg-white p-6 shadow-sm min-h-[500px]">
+                {/* Logo Upload Area */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="logo-upload"
+                    className={cn(
+                      'flex items-center justify-center w-full h-16 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
+                      logoUrl
+                        ? 'border-transparent'
+                        : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                    )}
+                  >
+                    {isUploadingLogo ? (
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    ) : logoUrl ? (
+                      <div className="relative h-12 w-32">
+                        <Image
+                          src={logoUrl}
+                          alt="Business logo"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Upload className="h-4 w-4" />
+                        <span>Upload logo (PNG/JPG, max 2MB)</span>
+                      </div>
+                    )}
+                    <input
+                      id="logo-upload"
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
                 {/* Quote Header */}
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-bold">{title || 'Quote'}</h2>
@@ -411,11 +561,66 @@ export function QuoteEditor() {
                     Accept & Pay Deposit
                   </Button>
                 )}
+
+                {previewMode === 'email' && (
+                  <div className="mt-6 p-4 bg-muted/50 rounded-lg text-sm">
+                    <p className="font-medium mb-2">Email Preview</p>
+                    <p className="text-muted-foreground">
+                      Hi {client?.name || 'Client'},
+                    </p>
+                    <p className="text-muted-foreground mt-2">
+                      Please find attached your quote for &quot;{title || 'New Quote'}&quot;
+                      totaling {formatCurrency(total)}.
+                    </p>
+                    <p className="text-muted-foreground mt-2">
+                      This quote is valid for {expirationDays} days.
+                    </p>
+                  </div>
+                )}
+
+                {previewMode === 'pdf' && (
+                  <div className="mt-6 text-center">
+                    <Button variant="outline" disabled>
+                      <FileText className="mr-2 h-4 w-4" />
+                      Download PDF Preview
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Send Confirmation Dialog */}
+      <AlertDialog open={showSendConfirm} onOpenChange={setShowSendConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Quote?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send the quote to {client?.email || 'the client'}. The
+              quote status will be updated to &quot;Sent&quot; and the client will receive
+              an email with a link to view and accept the quote.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendQuote} disabled={isSending}>
+              {isSending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Quote
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -92,6 +92,7 @@ async function generateQuoteNumber(workspaceId: string): Promise<string> {
 export async function createQuote(data: {
   title: string;
   clientId: string;
+  projectId?: string | null;
   blocks?: QuoteBlock[];
 }) {
   await assertNotDemo();
@@ -124,6 +125,7 @@ export async function createQuote(data: {
     data: {
       workspaceId: workspace.id,
       clientId: data.clientId,
+      projectId: data.projectId || null,
       quoteNumber,
       title: data.title,
       status: 'draft',
@@ -140,6 +142,7 @@ export async function createQuote(data: {
     include: {
       lineItems: true,
       client: true,
+      project: true,
     },
   });
 
@@ -155,6 +158,7 @@ export async function updateQuote(
   quoteId: string,
   data: {
     title?: string;
+    projectId?: string | null;
     blocks?: QuoteBlock[];
     notes?: string;
     terms?: string;
@@ -212,6 +216,7 @@ export async function updateQuote(
       where: { id: quoteId },
       data: {
         title: data.title,
+        ...(data.projectId !== undefined && { projectId: data.projectId }),
         notes: data.notes,
         terms: data.terms,
         internalNotes: data.internalNotes,
@@ -258,6 +263,14 @@ export async function getQuote(quoteId: string) {
         orderBy: { sortOrder: 'asc' },
       },
       client: true,
+      project: true,
+      invoice: {
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+        },
+      },
     },
   });
 
@@ -273,6 +286,7 @@ export async function getQuote(quoteId: string) {
     id: quote.id,
     workspaceId: quote.workspaceId,
     clientId: quote.clientId,
+    projectId: quote.projectId,
     quoteNumber: quote.quoteNumber,
     status: quote.status as QuoteDocument['status'],
     title: quote.title || 'Untitled Quote',
@@ -301,6 +315,13 @@ export async function getQuote(quoteId: string) {
     notes: quote.notes || '',
     terms: quote.terms || '',
     internalNotes: quote.internalNotes || '',
+    linkedInvoice: quote.invoice
+      ? {
+          id: quote.invoice.id,
+          invoiceNumber: quote.invoice.invoiceNumber,
+          status: quote.invoice.status,
+        }
+      : null,
   };
 
   return document;
@@ -486,4 +507,67 @@ export async function updateQuoteStatus(
   revalidatePath(`/quotes/${quoteId}`);
 
   return { success: true };
+}
+
+/**
+ * Send quote to client
+ * Updates status to 'sent' and triggers email notification
+ */
+export async function sendQuote(quoteId: string) {
+  await assertNotDemo();
+  const { userId, workspace } = await getActiveWorkspace();
+
+  // Get quote with client details
+  const quote = await prisma.quote.findUnique({
+    where: {
+      id: quoteId,
+      workspaceId: workspace.id,
+    },
+    include: {
+      client: true,
+    },
+  });
+
+  if (!quote) {
+    return { success: false, error: 'Quote not found' };
+  }
+
+  if (!quote.client?.email) {
+    return { success: false, error: 'Client email is required to send quote' };
+  }
+
+  // Update quote status to sent
+  await prisma.quote.update({
+    where: {
+      id: quoteId,
+      workspaceId: workspace.id,
+    },
+    data: {
+      status: 'sent',
+      sentAt: new Date(),
+    },
+  });
+
+  // Log event
+  await prisma.quoteEvent.create({
+    data: {
+      quoteId,
+      eventType: 'quote_sent',
+      actorId: userId,
+      actorType: 'user',
+      metadata: {
+        recipientEmail: quote.client.email,
+        sentAt: new Date().toISOString(),
+      },
+    },
+  });
+
+  // TODO: Integrate email service to actually send the quote email
+  // For now, we just update the status and log the event
+  // Example: await sendQuoteEmail(quote, quote.client);
+
+  revalidatePath('/quotes');
+  revalidatePath(`/quotes/${quoteId}`);
+
+  return { success: true, recipientEmail: quote.client.email };
 }

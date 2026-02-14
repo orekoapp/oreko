@@ -38,6 +38,7 @@ interface QuoteBuilderActions {
   initDocument: (doc: QuoteDocument) => void;
   resetDocument: () => void;
   updateTitle: (title: string) => void;
+  updateProjectId: (projectId: string | null) => void;
   updateNotes: (notes: string) => void;
   updateTerms: (terms: string) => void;
   updateSettings: (settings: Partial<QuoteSettings>) => void;
@@ -102,6 +103,7 @@ const createEmptyDocument = (): QuoteDocument => ({
   id: '',
   workspaceId: '',
   clientId: '',
+  projectId: null,
   quoteNumber: '',
   status: 'draft',
   title: 'Untitled Quote',
@@ -167,6 +169,15 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
           set((state) => {
             if (state.document) {
               state.document.title = title;
+              state.isDirty = true;
+            }
+          });
+        },
+
+        updateProjectId: (projectId) => {
+          set((state) => {
+            if (state.document) {
+              state.document.projectId = projectId;
               state.isDirty = true;
             }
           });

@@ -33,33 +33,43 @@ async function completeOnboardingIfNeeded(page: import('@playwright/test').Page)
   console.log('📝 Completing onboarding...');
 
   // Keep clicking through onboarding steps until we reach dashboard
-  let maxAttempts = 10;
+  let maxAttempts = 15;
   while (page.url().includes('/onboarding') && maxAttempts > 0) {
     maxAttempts--;
 
     // Wait for page to stabilize
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
 
-    // Look for "Skip for now" or "Continue" buttons
-    const skipButton = page.getByRole('button', { name: 'Skip for now' });
-    const continueButton = page.getByRole('button', { name: 'Continue' });
-    const getStartedButton = page.getByRole('button', { name: 'Get Started' });
-    const completeButton = page.getByRole('button', { name: 'Complete Setup' });
-    const goToDashboardButton = page.getByRole('button', { name: 'Go to Dashboard' });
+    // Try different button patterns - be more flexible with name matching
+    const buttonPatterns = [
+      { locator: page.getByRole('button', { name: /go to dashboard/i }), name: 'Go to Dashboard' },
+      { locator: page.getByRole('button', { name: /complete.*setup/i }), name: 'Complete Setup' },
+      { locator: page.getByRole('button', { name: /finish/i }), name: 'Finish' },
+      { locator: page.getByRole('button', { name: /get started/i }), name: 'Get Started' },
+      { locator: page.getByRole('button', { name: /skip.*now/i }), name: 'Skip for now' },
+      { locator: page.getByRole('button', { name: /skip/i }), name: 'Skip' },
+      { locator: page.getByRole('button', { name: /continue/i }), name: 'Continue' },
+      { locator: page.getByRole('button', { name: /next/i }), name: 'Next' },
+    ];
 
-    if (await goToDashboardButton.isVisible()) {
-      await goToDashboardButton.click();
-    } else if (await completeButton.isVisible()) {
-      await completeButton.click();
-    } else if (await getStartedButton.isVisible()) {
-      await getStartedButton.click();
-    } else if (await skipButton.isVisible()) {
-      await skipButton.click();
-    } else if (await continueButton.isVisible()) {
-      await continueButton.click();
-    } else {
-      // No known buttons, wait a bit and try again
-      await page.waitForTimeout(500);
+    let clickedButton = false;
+    for (const { locator, name } of buttonPatterns) {
+      try {
+        if (await locator.first().isVisible({ timeout: 500 })) {
+          console.log(`   Clicking: ${name}`);
+          await locator.first().click();
+          clickedButton = true;
+          break;
+        }
+      } catch {
+        // Button not found or not visible, try next
+      }
+    }
+
+    if (!clickedButton) {
+      // No known buttons found, wait and try again
+      await page.waitForTimeout(1000);
     }
 
     // Wait for any navigation
@@ -70,7 +80,10 @@ async function completeOnboardingIfNeeded(page: import('@playwright/test').Page)
   if (!page.url().includes('/onboarding')) {
     console.log('✓ Onboarding completed');
   } else {
-    console.log('⚠ Could not complete onboarding');
+    console.log('⚠ Could not complete onboarding after max attempts');
+    console.log(`   Current URL: ${page.url()}`);
+    // Take a screenshot for debugging
+    await page.screenshot({ path: path.join(__dirname, '.auth/onboarding-stuck.png') });
   }
 }
 
@@ -144,8 +157,62 @@ async function globalSetup(config: FullConfig) {
       console.log('✓ Login successful');
       console.log(`📍 Current URL: ${page.url()}`);
 
-      // Complete onboarding if we're on the onboarding page
-      await completeOnboardingIfNeeded(page);
+      // Wait for page to fully stabilize including server-side redirects
+      await page.waitForTimeout(3000);
+      await page.waitForLoadState('networkidle');
+
+      console.log(`📍 After stabilization: ${page.url()}`);
+
+      // Check if we're on onboarding by looking at the page content
+      const isOnOnboarding = page.url().includes('/onboarding') ||
+        await page.getByText('Welcome to QuoteCraft').isVisible().catch(() => false) ||
+        await page.getByText('set up your account').isVisible().catch(() => false);
+
+      if (isOnOnboarding) {
+        console.log('📝 On onboarding page, completing flow...');
+        await completeOnboardingIfNeeded(page);
+      }
+
+      // Navigate to dashboard and verify we can access it properly
+      console.log('🏠 Navigating to dashboard...');
+      await page.goto(`${appUrl}/dashboard`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
+
+      // Check again if we got redirected to onboarding
+      const stillOnOnboarding = page.url().includes('/onboarding') ||
+        await page.getByText('Welcome to QuoteCraft').isVisible().catch(() => false);
+
+      if (stillOnOnboarding) {
+        console.log('📝 Still on onboarding after navigation, completing...');
+        await completeOnboardingIfNeeded(page);
+
+        // Try navigating to dashboard again
+        await page.goto(`${appUrl}/dashboard`, { waitUntil: 'networkidle' });
+        await page.waitForTimeout(2000);
+
+        // Final check
+        const finalCheck = page.url().includes('/onboarding') ||
+          await page.getByText('Welcome to QuoteCraft').isVisible().catch(() => false);
+
+        if (finalCheck) {
+          console.log('⚠ Could not complete onboarding, taking screenshot...');
+          await page.screenshot({ path: path.join(__dirname, '.auth/onboarding-final-stuck.png') });
+        }
+      }
+
+      // Verify we're on dashboard by checking for sidebar or dashboard elements
+      const onDashboard = await page.getByRole('navigation').isVisible().catch(() => false) ||
+        await page.locator('[data-sidebar]').isVisible().catch(() => false) ||
+        page.url().includes('/dashboard');
+
+      if (onDashboard && !page.url().includes('/onboarding')) {
+        console.log('✓ Verified on dashboard');
+      } else {
+        console.log(`⚠ May not be on dashboard. URL: ${page.url()}`);
+      }
+
+      console.log(`📍 Final URL: ${page.url()}`);
 
       await context.storageState({ path: AUTH_FILE });
       return;

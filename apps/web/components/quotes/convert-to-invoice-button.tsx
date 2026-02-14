@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Receipt, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +32,8 @@ export function ConvertToInvoiceButton({
   const [open, setOpen] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copyLineItems, setCopyLineItems] = useState(true);
+  const [sendImmediately, setSendImmediately] = useState(false);
 
   const handleConvert = async () => {
     setIsConverting(true);
@@ -84,6 +88,29 @@ export function ConvertToInvoiceButton({
               <span className="font-medium">
                 {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()} (Net 30)
               </span>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="copy-items"
+                checked={copyLineItems}
+                onCheckedChange={(checked) => setCopyLineItems(checked === true)}
+              />
+              <Label htmlFor="copy-items" className="text-sm font-normal">
+                Copy line items
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="send-immediate"
+                checked={sendImmediately}
+                onCheckedChange={(checked) => setSendImmediately(checked === true)}
+              />
+              <Label htmlFor="send-immediate" className="text-sm font-normal">
+                Send immediately after creation
+              </Label>
             </div>
           </div>
 

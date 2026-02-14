@@ -59,6 +59,7 @@ Advanced rate card management for quick quote creation with predefined services 
 
 | Feature | Description |
 |---------|-------------|
+| **Project Management** | Organize quotes, invoices, and contracts by client projects |
 | **E-Signature Capture** | Legally compliant electronic signatures (E-SIGN, UETA) |
 | **Stripe Payment Integration** | Accept credit cards and ACH payments via Stripe Connect |
 | **PDF Generation** | Professional PDF exports for quotes and invoices |
@@ -243,6 +244,7 @@ quote-software/
 │       │   └── api/             # API routes
 │       ├── components/          # React components
 │       │   ├── ui/              # Shadcn UI components (43)
+│       │   ├── projects/        # Project management components
 │       │   ├── quotes/          # Quote-specific components
 │       │   ├── invoices/        # Invoice-specific components
 │       │   ├── clients/         # Client management components
@@ -273,8 +275,10 @@ quote-software/
 | Directory | Purpose |
 |-----------|---------|
 | `apps/web/app` | Next.js 14 App Router pages and layouts |
-| `apps/web/components` | 50+ domain components + 43 Shadcn UI components |
-| `apps/web/lib` | 80+ server actions, hooks, and utilities |
+| `apps/web/components` | 55+ domain components + 43 Shadcn UI components |
+| `apps/web/components/projects` | Project management (list, detail, form, selector) |
+| `apps/web/lib` | 85+ server actions, hooks, and utilities |
+| `apps/web/lib/projects` | Project server actions and types |
 | `packages/database` | Prisma schema with 18 models |
 | `packages/types` | Shared TypeScript type definitions |
 | `packages/utils` | Shared utility functions |

@@ -10,8 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { User, Building2 } from 'lucide-react';
-import Link from 'next/link';
+import { ClientSelector } from '@/components/clients';
+import { ProjectSelector } from '@/components/projects';
 
 interface ClientInfo {
   id: string;
@@ -28,6 +28,9 @@ interface DetailsSectionProps {
   taxRate: string;
   onTaxRateChange: (rate: string) => void;
   client: ClientInfo | null;
+  onClientChange?: (client: ClientInfo | null) => void;
+  projectId: string | null;
+  onProjectChange: (projectId: string | null) => void;
 }
 
 export function DetailsSection({
@@ -38,49 +41,47 @@ export function DetailsSection({
   taxRate,
   onTaxRateChange,
   client,
+  onClientChange,
+  projectId,
+  onProjectChange,
 }: DetailsSectionProps) {
   return (
     <div className="space-y-6">
-      {/* Client Info */}
+      {/* Client Selection with Typeahead */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-base">Client</CardTitle>
           <CardDescription>
-            The client this quote is for
+            Search and select a client for this quote
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {client ? (
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                {client.company ? (
-                  <Building2 className="h-5 w-5 text-primary" />
-                ) : (
-                  <User className="h-5 w-5 text-primary" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">{client.company || client.name}</p>
-                <p className="text-sm text-muted-foreground">{client.email}</p>
-              </div>
-              <Link
-                href={`/quotes/new?change=true`}
-                className="text-sm text-primary hover:underline"
-              >
-                Change
-              </Link>
-            </div>
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              <p>No client selected</p>
-              <Link
-                href="/quotes/new"
-                className="text-sm text-primary hover:underline"
-              >
-                Select a client
-              </Link>
-            </div>
-          )}
+          <ClientSelector
+            value={client}
+            onChange={(newClient) => {
+              if (onClientChange) {
+                onClientChange(newClient);
+              }
+            }}
+            placeholder="Search clients by name, email, or company..."
+          />
+        </CardContent>
+      </Card>
+
+      {/* Project Selection */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">Project</CardTitle>
+          <CardDescription>
+            Optionally associate this quote with a project
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProjectSelector
+            clientId={client?.id || null}
+            value={projectId}
+            onChange={onProjectChange}
+          />
         </CardContent>
       </Card>
 

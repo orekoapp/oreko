@@ -20,6 +20,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { createInvoice } from '@/lib/invoices/actions';
+import { ProjectSelector } from '@/components/projects';
 
 interface LineItem {
   id: string;
@@ -39,6 +40,7 @@ export default function NewInvoicePage() {
 
   // Form state
   const [clientId, setClientId] = useState('');
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState(() => {
     const date = new Date();
@@ -92,6 +94,7 @@ export default function NewInvoicePage() {
     try {
       const result = await createInvoice({
         clientId,
+        projectId,
         title: title || 'Invoice',
         dueDate,
         lineItems: lineItems.map(item => ({
@@ -154,7 +157,10 @@ export default function NewInvoicePage() {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="client">Customer</Label>
-                <Select value={clientId} onValueChange={setClientId}>
+                <Select value={clientId} onValueChange={(value) => {
+                  setClientId(value);
+                  setProjectId(null); // Reset project when client changes
+                }}>
                   <SelectTrigger id="client">
                     <SelectValue placeholder="Select a client" />
                   </SelectTrigger>
@@ -167,6 +173,15 @@ export default function NewInvoicePage() {
                     + Add new client
                   </Link>
                 </p>
+              </div>
+
+              <div>
+                <Label>Project (Optional)</Label>
+                <ProjectSelector
+                  clientId={clientId || null}
+                  value={projectId}
+                  onChange={setProjectId}
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-4">

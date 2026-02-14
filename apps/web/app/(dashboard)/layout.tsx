@@ -23,7 +23,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <>
       <SkipToContent />
       <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar
+          user={{
+            name: session.user.name,
+            email: session.user.email,
+            image: session.user.avatarUrl,
+          }}
+        />
         <SidebarInset>
           <AppHeader user={session.user} />
           <main id="main-content" className="flex-1 overflow-auto bg-muted/30 p-4 md:p-6 lg:p-8" tabIndex={-1}>
