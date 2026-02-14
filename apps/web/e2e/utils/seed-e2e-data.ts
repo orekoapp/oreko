@@ -383,10 +383,239 @@ async function cleanupE2ETestData() {
   console.log('E2E test data cleanup completed!');
 }
 
-// Run seeding by default, or cleanup if CLEANUP env var is set
-const isCleanup = process.env.CLEANUP === 'true';
+/**
+ * Seeds edge case data for data integrity testing
+ *
+ * This creates records that test null/deleted client handling:
+ * 1. Soft-deleted client with referencing quotes/invoices
+ * 2. These records should display gracefully in the UI (not crash)
+ */
+async function seedEdgeCaseData() {
+  console.log('\n=== Seeding Edge Case Data for Data Integrity Tests ===');
 
-(isCleanup ? cleanupE2ETestData() : seedE2ETestData())
+  // Get E2E workspace
+  const workspace = await prisma.workspace.findFirst({
+    where: { slug: 'e2e-test-workspace' },
+  });
+
+  if (!workspace) {
+    console.warn('E2E workspace not found. Run normal seeding first.');
+    return;
+  }
+
+  const now = new Date();
+
+  // 1. Create a soft-deleted client (deleted but referenced by records)
+  const deletedClient = await prisma.client.upsert({
+    where: { id: 'e2e-deleted-client' },
+    update: {
+      deletedAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), // Deleted 7 days ago
+    },
+    create: {
+      id: 'e2e-deleted-client',
+      workspaceId: workspace.id,
+      name: 'Deleted Client Corp',
+      email: 'deleted-client@e2e-test.dev',
+      company: 'Deleted Corp LLC',
+      deletedAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), // Soft deleted
+    },
+  });
+  console.log('Created soft-deleted client:', deletedClient.id);
+
+  // 2. Create a client with no company field (null company)
+  const clientNoCompany = await prisma.client.upsert({
+    where: { id: 'e2e-client-no-company' },
+    update: {},
+    create: {
+      id: 'e2e-client-no-company',
+      workspaceId: workspace.id,
+      name: 'Individual Freelancer',
+      email: 'freelancer@e2e-test.dev',
+      company: null, // No company - tests company fallback
+    },
+  });
+  console.log('Created client with no company:', clientNoCompany.id);
+
+  // 3. Create quote referencing deleted client
+  const quoteDeletedClient = await prisma.quote.upsert({
+    where: {
+      workspaceId_quoteNumber: {
+        workspaceId: workspace.id,
+        quoteNumber: 'Q-EDGE-001',
+      },
+    },
+    update: { clientId: deletedClient.id },
+    create: {
+      id: 'e2e-quote-deleted-client',
+      workspaceId: workspace.id,
+      clientId: deletedClient.id,
+      quoteNumber: 'Q-EDGE-001',
+      status: 'sent',
+      title: 'Quote with Deleted Client',
+      issueDate: now,
+      expirationDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+      subtotal: 2500,
+      total: 2500,
+      sentAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+    },
+  });
+  console.log('Created quote with deleted client:', quoteDeletedClient.quoteNumber);
+
+  // 4. Create quote with client that has no company
+  const quoteNoCompanyClient = await prisma.quote.upsert({
+    where: {
+      workspaceId_quoteNumber: {
+        workspaceId: workspace.id,
+        quoteNumber: 'Q-EDGE-002',
+      },
+    },
+    update: { clientId: clientNoCompany.id },
+    create: {
+      id: 'e2e-quote-no-company',
+      workspaceId: workspace.id,
+      clientId: clientNoCompany.id,
+      quoteNumber: 'Q-EDGE-002',
+      status: 'draft',
+      title: 'Quote for Individual (No Company)',
+      issueDate: now,
+      expirationDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+      subtotal: 1500,
+      total: 1500,
+    },
+  });
+  console.log('Created quote with no-company client:', quoteNoCompanyClient.quoteNumber);
+
+  // 5. Create invoice referencing deleted client
+  const invoiceDeletedClient = await prisma.invoice.upsert({
+    where: {
+      workspaceId_invoiceNumber: {
+        workspaceId: workspace.id,
+        invoiceNumber: 'INV-EDGE-001',
+      },
+    },
+    update: { clientId: deletedClient.id },
+    create: {
+      id: 'e2e-invoice-deleted-client',
+      workspaceId: workspace.id,
+      clientId: deletedClient.id,
+      invoiceNumber: 'INV-EDGE-001',
+      status: 'overdue',
+      title: 'Invoice with Deleted Client',
+      issueDate: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
+      dueDate: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
+      subtotal: 3000,
+      total: 3000,
+      amountPaid: 0,
+      amountDue: 3000,
+      sentAt: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
+    },
+  });
+  console.log('Created invoice with deleted client:', invoiceDeletedClient.invoiceNumber);
+
+  // 6. Create invoice with client that has no company
+  const invoiceNoCompanyClient = await prisma.invoice.upsert({
+    where: {
+      workspaceId_invoiceNumber: {
+        workspaceId: workspace.id,
+        invoiceNumber: 'INV-EDGE-002',
+      },
+    },
+    update: { clientId: clientNoCompany.id },
+    create: {
+      id: 'e2e-invoice-no-company',
+      workspaceId: workspace.id,
+      clientId: clientNoCompany.id,
+      invoiceNumber: 'INV-EDGE-002',
+      status: 'sent',
+      title: 'Invoice for Individual (No Company)',
+      issueDate: now,
+      dueDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+      subtotal: 800,
+      total: 800,
+      amountPaid: 0,
+      amountDue: 800,
+      sentAt: now,
+    },
+  });
+  console.log('Created invoice with no-company client:', invoiceNoCompanyClient.invoiceNumber);
+
+  // 7. Create line items for edge case records
+  await prisma.quoteLineItem.upsert({
+    where: { id: 'e2e-edge-quote-item-1' },
+    update: {},
+    create: {
+      id: 'e2e-edge-quote-item-1',
+      quoteId: quoteDeletedClient.id,
+      name: 'Consulting Services',
+      quantity: 25,
+      rate: 100,
+      amount: 2500,
+    },
+  });
+
+  await prisma.quoteLineItem.upsert({
+    where: { id: 'e2e-edge-quote-item-2' },
+    update: {},
+    create: {
+      id: 'e2e-edge-quote-item-2',
+      quoteId: quoteNoCompanyClient.id,
+      name: 'Freelance Work',
+      quantity: 15,
+      rate: 100,
+      amount: 1500,
+    },
+  });
+
+  await prisma.invoiceLineItem.upsert({
+    where: { id: 'e2e-edge-invoice-item-1' },
+    update: {},
+    create: {
+      id: 'e2e-edge-invoice-item-1',
+      invoiceId: invoiceDeletedClient.id,
+      name: 'Project Completion',
+      quantity: 30,
+      rate: 100,
+      amount: 3000,
+    },
+  });
+
+  await prisma.invoiceLineItem.upsert({
+    where: { id: 'e2e-edge-invoice-item-2' },
+    update: {},
+    create: {
+      id: 'e2e-edge-invoice-item-2',
+      invoiceId: invoiceNoCompanyClient.id,
+      name: 'Design Services',
+      quantity: 8,
+      rate: 100,
+      amount: 800,
+    },
+  });
+
+  console.log('\nEdge case data seeding completed!');
+  console.log('Created:');
+  console.log('  - 1 soft-deleted client with referencing quote/invoice');
+  console.log('  - 1 client with no company field');
+  console.log('  - 2 quotes (one with deleted client, one with no-company client)');
+  console.log('  - 2 invoices (one with deleted client, one with no-company client)');
+}
+
+// Run seeding by default, or cleanup if CLEANUP env var is set, or edge cases if EDGE_CASES is set
+const isCleanup = process.env.CLEANUP === 'true';
+const seedEdgeCases = process.env.SEED_EDGE_CASES === 'true';
+
+async function main() {
+  if (isCleanup) {
+    await cleanupE2ETestData();
+  } else {
+    await seedE2ETestData();
+    if (seedEdgeCases) {
+      await seedEdgeCaseData();
+    }
+  }
+}
+
+main()
   .catch((e) => {
     console.error('Error:', e);
     process.exit(1);

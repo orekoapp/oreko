@@ -11,8 +11,12 @@
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:e2e": "playwright test",
-    "e2e:seed": "npx ts-node e2e/utils/seed-e2e-data.ts",
-    "e2e:cleanup": "CLEANUP=true npx ts-node e2e/utils/seed-e2e-data.ts"
+    "e2e:seed": "npx tsx e2e/utils/seed-e2e-data.ts",
+    "e2e:cleanup": "CLEANUP=true npx tsx e2e/utils/seed-e2e-data.ts",
+    "e2e:seed:edge-cases": "SEED_EDGE_CASES=true npx tsx e2e/utils/seed-e2e-data.ts",
+    "e2e:data-integrity": "playwright test --project=data-integrity",
+    "e2e:regression": "playwright test --project=regression",
+    "e2e:full": "pnpm e2e:seed:edge-cases && pnpm test:e2e"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.0",

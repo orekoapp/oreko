@@ -103,6 +103,17 @@ export default defineConfig({
       },
     },
 
+    // Data integrity tests - specifically test edge cases with null relations
+    // Requires edge case data to be seeded: SEED_EDGE_CASES=true npx tsx e2e/utils/seed-e2e-data.ts
+    {
+      name: 'data-integrity',
+      testDir: './e2e/regression/data-integrity',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authFile,
+      },
+    },
+
     // Cross-browser tests (run subset on other browsers)
     {
       name: 'firefox',

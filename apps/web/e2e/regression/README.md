@@ -17,8 +17,10 @@ regression/
 │   └── api-compatibility.spec.ts
 ├── historical/            # Tests for previously fixed bugs
 │   └── critical-bugs.spec.ts
-└── data-driven/           # Parameterized test scenarios
-    └── quote-scenarios.spec.ts
+├── data-driven/           # Parameterized test scenarios
+│   └── quote-scenarios.spec.ts
+└── data-integrity/        # Edge case and null reference tests
+    └── null-relations.spec.ts
 ```
 
 ## Test Categories
