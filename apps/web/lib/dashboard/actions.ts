@@ -344,26 +344,30 @@ export async function getRecentActivity(limit = 10): Promise<ActivityItem[]> {
   });
 
   const activities: ActivityItem[] = [
-    ...quoteEvents.map((e) => ({
-      id: e.id,
-      type: mapQuoteEventType(e.eventType),
-      title: getEventTitle(e.eventType, e.quote.title || 'Untitled'),
-      clientName: e.quote.client?.company || e.quote.client?.name || 'Unknown Client',
-      amount: toNumber(e.quote.total),
-      date: e.createdAt,
-      relatedId: e.quoteId,
-      relatedType: 'quote' as const,
-    })),
-    ...invoiceEvents.map((e) => ({
-      id: e.id,
-      type: mapInvoiceEventType(e.eventType),
-      title: getEventTitle(e.eventType, e.invoice.invoiceNumber),
-      clientName: e.invoice.client?.company || e.invoice.client?.name || 'Unknown Client',
-      amount: toNumber(e.invoice.total),
-      date: e.createdAt,
-      relatedId: e.invoiceId,
-      relatedType: 'invoice' as const,
-    })),
+    ...quoteEvents
+      .filter((e) => e.quote !== null) // Filter out events with deleted quotes
+      .map((e) => ({
+        id: e.id,
+        type: mapQuoteEventType(e.eventType),
+        title: getEventTitle(e.eventType, e.quote?.title || 'Untitled'),
+        clientName: e.quote?.client?.company || e.quote?.client?.name || 'Unknown Client',
+        amount: toNumber(e.quote?.total),
+        date: e.createdAt,
+        relatedId: e.quoteId,
+        relatedType: 'quote' as const,
+      })),
+    ...invoiceEvents
+      .filter((e) => e.invoice !== null) // Filter out events with deleted invoices
+      .map((e) => ({
+        id: e.id,
+        type: mapInvoiceEventType(e.eventType),
+        title: getEventTitle(e.eventType, e.invoice?.invoiceNumber || 'Unknown'),
+        clientName: e.invoice?.client?.company || e.invoice?.client?.name || 'Unknown Client',
+        amount: toNumber(e.invoice?.total),
+        date: e.createdAt,
+        relatedId: e.invoiceId,
+        relatedType: 'invoice' as const,
+      })),
   ];
 
   // Sort by date and limit
