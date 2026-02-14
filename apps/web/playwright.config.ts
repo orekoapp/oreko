@@ -1,7 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
 
-const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+// Support multiple environment variable names for flexibility
+const baseURL = process.env.BASE_URL || process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+
+// Skip local webServer when testing against external URLs (production/staging)
+const isExternalUrl = !baseURL.includes('localhost');
 
 // Authentication storage state paths
 const authFile = path.join(__dirname, 'e2e/.auth/user.json');
@@ -124,10 +128,13 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'pnpm run dev',
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  // Only start local dev server when testing localhost
+  ...(isExternalUrl ? {} : {
+    webServer: {
+      command: 'pnpm run dev',
+      url: baseURL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+  }),
 });

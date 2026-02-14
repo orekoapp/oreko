@@ -132,7 +132,7 @@ test.describe('Backward Compatibility - Data Format', () => {
       expect(hasError).toBeFalsy();
 
       // Quote content should be visible - main content area works
-      const mainContent = page.locator('main');
+      const mainContent = page.locator('#main-content');
       await expect(mainContent).toBeVisible();
     }
   });
@@ -153,7 +153,7 @@ test.describe('Backward Compatibility - Data Format', () => {
       expect(hasError).toBeFalsy();
 
       // Client details page should be visible - main content area works
-      const mainContent = page.locator('main');
+      const mainContent = page.locator('#main-content');
       await expect(mainContent).toBeVisible();
     }
   });

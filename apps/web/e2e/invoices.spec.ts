@@ -97,7 +97,7 @@ test.describe('Invoices Module', () => {
         await page.waitForLoadState('networkidle');
 
         // Should show invoice content
-        const mainContent = page.locator('main');
+        const mainContent = page.locator('#main-content');
         await expect(mainContent).toBeVisible();
       }
     });

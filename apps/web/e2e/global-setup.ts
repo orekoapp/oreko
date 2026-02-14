@@ -96,7 +96,7 @@ async function completeOnboardingIfNeeded(page: import('@playwright/test').Page)
  */
 async function globalSetup(config: FullConfig) {
   const { baseURL } = config.projects[0]?.use || {};
-  const appUrl = baseURL || process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+  const appUrl = baseURL || process.env.BASE_URL || process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 
   console.log(`\n🔧 Global Setup - Target: ${appUrl}`);
   console.log(`📧 Test user: ${TEST_USER.email}`);
@@ -410,7 +410,7 @@ async function mainGlobalSetup(config: FullConfig) {
 
   // Also setup the onboarding user
   const { baseURL } = config.projects[0]?.use || {};
-  const appUrl = baseURL || process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+  const appUrl = baseURL || process.env.BASE_URL || process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
   const authDir = path.dirname(AUTH_FILE);
 
   await setupOnboardingUser(appUrl, authDir);

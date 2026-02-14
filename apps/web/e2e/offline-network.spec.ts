@@ -118,7 +118,7 @@ test.describe('Offline & Network', () => {
       // Should recover and load data
       await page.waitForTimeout(2000);
 
-      const content = page.locator('main');
+      const content = page.locator('#main-content');
       await expect(content).toBeVisible();
     });
 

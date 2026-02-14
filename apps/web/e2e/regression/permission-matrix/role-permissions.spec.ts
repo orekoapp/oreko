@@ -268,7 +268,7 @@ test.describe('Permission Matrix - Viewer Role', () => {
     // Check if create button exists (may be shown/hidden based on role)
     const createButton = page.getByRole('link', { name: /new quote/i });
     // Just verify the page structure is correct
-    const pageContent = page.locator('main');
+    const pageContent = page.locator('#main-content');
     await expect(pageContent).toBeVisible();
   });
 
@@ -285,7 +285,7 @@ test.describe('Permission Matrix - Viewer Role', () => {
       await page.waitForLoadState('networkidle');
 
       // Quote detail page should load
-      const pageContent = page.locator('main');
+      const pageContent = page.locator('#main-content');
       await expect(pageContent).toBeVisible();
 
       // Edit button behavior depends on role
@@ -322,7 +322,7 @@ test.describe('Permission Matrix - Viewer Role', () => {
       await page.waitForLoadState('networkidle');
 
       // Quote page should load
-      const pageContent = page.locator('main');
+      const pageContent = page.locator('#main-content');
       await expect(pageContent).toBeVisible();
 
       // Financial data visibility depends on role implementation

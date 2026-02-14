@@ -121,7 +121,7 @@ test.describe('Quotes Module', () => {
         await page.waitForLoadState('networkidle');
 
         // Should see some action buttons or main content
-        const mainContent = page.locator('main');
+        const mainContent = page.locator('#main-content');
         await expect(mainContent).toBeVisible();
       }
     });
@@ -136,7 +136,7 @@ test.describe('Quotes Module', () => {
         await page.waitForLoadState('networkidle');
 
         // Should show quote content
-        const mainContent = page.locator('main');
+        const mainContent = page.locator('#main-content');
         await expect(mainContent).toBeVisible();
       }
     });
@@ -151,7 +151,7 @@ test.describe('Quotes Module', () => {
         await page.waitForLoadState('networkidle');
 
         // Should show quote page content
-        const mainContent = page.locator('main');
+        const mainContent = page.locator('#main-content');
         await expect(mainContent).toBeVisible();
       }
     });
@@ -167,7 +167,7 @@ test.describe('Quotes Module', () => {
         await page.waitForLoadState('networkidle');
 
         // Should show quote detail page
-        const mainContent = page.locator('main');
+        const mainContent = page.locator('#main-content');
         await expect(mainContent).toBeVisible();
       }
     });

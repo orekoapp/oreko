@@ -438,7 +438,7 @@ test.describe('Critical Journey: Help and Support', () => {
       // Should have some content (heading or help-related text)
       const hasContent =
         await page.getByRole('heading').first().isVisible().catch(() => false) ||
-        await page.locator('main').isVisible().catch(() => false);
+        await page.locator('#main-content').isVisible().catch(() => false);
 
       expect(hasContent, 'Help page should have visible content').toBe(true);
     }

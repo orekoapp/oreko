@@ -313,7 +313,7 @@ test.describe('Data-Driven: Currency Formatting', () => {
       await page.waitForLoadState('networkidle');
 
       // Verify dashboard loads
-      const dashboardContent = page.locator('main');
+      const dashboardContent = page.locator('#main-content');
       await expect(dashboardContent).toBeVisible();
     });
   }
@@ -334,7 +334,7 @@ test.describe('Data-Driven: Date Formatting', () => {
       await page.waitForLoadState('networkidle');
 
       // Verify dashboard loads
-      const dashboardContent = page.locator('main');
+      const dashboardContent = page.locator('#main-content');
       await expect(dashboardContent).toBeVisible();
     });
   }

@@ -89,7 +89,7 @@ test.describe('Settings Module', () => {
       // Check for payment-related content or heading
       const paymentHeading = page.getByRole('heading', { name: /payment/i }).first();
       const stripeText = page.getByText(/stripe|payment|connect/i).first();
-      const pageContent = page.locator('main');
+      const pageContent = page.locator('#main-content');
 
       const hasHeading = await paymentHeading.isVisible().catch(() => false);
       const hasStripe = await stripeText.isVisible().catch(() => false);
@@ -107,7 +107,7 @@ test.describe('Settings Module', () => {
       // Check for email-related content or heading
       const emailHeading = page.getByRole('heading', { name: /email/i }).first();
       const templatesText = page.getByText(/email|template/i).first();
-      const pageContent = page.locator('main');
+      const pageContent = page.locator('#main-content');
 
       const hasHeading = await emailHeading.isVisible().catch(() => false);
       const hasTemplates = await templatesText.isVisible().catch(() => false);

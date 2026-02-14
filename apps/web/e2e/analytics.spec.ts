@@ -863,7 +863,7 @@ test.describe('Analytics Dashboard', () => {
       await page.waitForLoadState('networkidle');
 
       // After loading, content should be visible
-      await expect(page.locator('main').first()).toBeVisible();
+      await expect(page.locator('#main-content')).toBeVisible();
     });
 
     test('should handle slow network gracefully', async ({ page }) => {
@@ -876,7 +876,7 @@ test.describe('Analytics Dashboard', () => {
       await page.goto('/dashboard', { timeout: 30000 });
 
       // Page should eventually load
-      await expect(page.locator('main').first()).toBeVisible({ timeout: 30000 });
+      await expect(page.locator('#main-content')).toBeVisible({ timeout: 30000 });
     });
   });
 
