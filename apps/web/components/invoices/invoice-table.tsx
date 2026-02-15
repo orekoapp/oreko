@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Receipt } from 'lucide-react';
+import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table';
 import { createInvoiceColumns } from './invoice-columns';
+import { duplicateInvoice, deleteInvoice } from '@/lib/invoices/actions';
 import type { InvoiceListItem } from '@/lib/invoices/types';
 
 interface InvoiceTableProps {
@@ -23,6 +26,7 @@ const statusOptions = [
 
 export function InvoiceTable({ invoices, isLoading = false }: InvoiceTableProps) {
   const router = useRouter();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleView = (invoice: InvoiceListItem) => {
     router.push(`/invoices/${invoice.id}`);
@@ -32,19 +36,45 @@ export function InvoiceTable({ invoices, isLoading = false }: InvoiceTableProps)
     router.push(`/invoices/${invoice.id}/edit`);
   };
 
-  const handleDuplicate = (invoice: InvoiceListItem) => {
-    // TODO: Implement duplicate functionality
-    console.log('Duplicate invoice:', invoice.id);
+  const handleDuplicate = async (invoice: InvoiceListItem) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await duplicateInvoice(invoice.id);
+      if (result.success && result.invoiceId) {
+        toast.success('Invoice duplicated successfully');
+        router.push(`/invoices/${result.invoiceId}`);
+      } else {
+        toast.error(result.error || 'Failed to duplicate invoice');
+      }
+    } catch (error) {
+      toast.error('Failed to duplicate invoice');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleDelete = (invoice: InvoiceListItem) => {
-    // TODO: Implement delete functionality with confirmation
-    console.log('Delete invoice:', invoice.id);
+  const handleDelete = async (invoice: InvoiceListItem) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await deleteInvoice(invoice.id);
+      if (result.success) {
+        toast.success('Invoice deleted successfully');
+        router.refresh();
+      } else {
+        toast.error(result.error || 'Failed to delete invoice');
+      }
+    } catch (error) {
+      toast.error('Failed to delete invoice');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDownload = (invoice: InvoiceListItem) => {
-    // TODO: Implement PDF download
-    console.log('Download invoice:', invoice.id);
+    // Open PDF in new tab
+    window.open(`/api/pdf/invoice/${invoice.id}`, '_blank');
   };
 
   const columns = createInvoiceColumns({

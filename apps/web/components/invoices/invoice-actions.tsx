@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Edit,
   Send,
@@ -31,7 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { InvoiceDocument } from '@/lib/invoices/types';
-import { sendInvoice, deleteInvoice, updateInvoiceStatus } from '@/lib/invoices/actions';
+import { sendInvoice, deleteInvoice, updateInvoiceStatus, duplicateInvoice } from '@/lib/invoices/actions';
 
 interface InvoiceActionsProps {
   invoice: InvoiceDocument;
@@ -43,6 +44,7 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
   const [isSending, setIsSending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isVoiding, setIsVoiding] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showVoidDialog, setShowVoidDialog] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
@@ -52,11 +54,11 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
     try {
       const result = await sendInvoice(invoice.id);
       if (result.success) {
+        toast.success('Invoice sent successfully');
         router.refresh();
         setShowSendDialog(false);
       } else {
-        // TODO: Show error toast
-        console.error(result.error);
+        toast.error(result.error || 'Failed to send invoice');
       }
     } finally {
       setIsSending(false);
@@ -68,10 +70,10 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
     try {
       const result = await deleteInvoice(invoice.id);
       if (result.success) {
+        toast.success('Invoice deleted successfully');
         router.push('/invoices');
       } else {
-        // TODO: Show error toast
-        console.error(result.error);
+        toast.error(result.error || 'Failed to delete invoice');
       }
     } finally {
       setIsDeleting(false);
@@ -83,15 +85,34 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
     try {
       const result = await updateInvoiceStatus(invoice.id, 'voided');
       if (result.success) {
+        toast.success('Invoice voided successfully');
         router.refresh();
         setShowVoidDialog(false);
       } else {
-        // TODO: Show error toast
-        console.error(result.error);
+        toast.error(result.error || 'Failed to void invoice');
       }
     } finally {
       setIsVoiding(false);
     }
+  };
+
+  const handleDuplicate = async () => {
+    setIsDuplicating(true);
+    try {
+      const result = await duplicateInvoice(invoice.id);
+      if (result.success && result.invoiceId) {
+        toast.success('Invoice duplicated successfully');
+        router.push(`/invoices/${result.invoiceId}`);
+      } else {
+        toast.error(result.error || 'Failed to duplicate invoice');
+      }
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
+  const handleDownload = () => {
+    window.open(`/api/pdf/invoice/${invoice.id}`, '_blank');
   };
 
   const canEdit = invoice.status === 'draft';
@@ -102,11 +123,11 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm">
-          <Copy className="mr-2 h-4 w-4" />
+        <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={isDuplicating}>
+          {isDuplicating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Copy className="mr-2 h-4 w-4" />}
           Duplicate
         </Button>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={handleDownload}>
           <Download className="mr-2 h-4 w-4" />
           Download PDF
         </Button>

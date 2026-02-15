@@ -1,12 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table/data-table';
 import { getInvoiceColumns, invoiceStatusOptions } from './invoices-columns';
 import { InvoiceListItem } from '@/lib/invoices/types';
 import { Receipt, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { deleteInvoice, duplicateInvoice } from '@/lib/invoices/actions';
 
 interface InvoicesDataTableProps {
   data: InvoiceListItem[];
@@ -14,6 +17,43 @@ interface InvoicesDataTableProps {
 
 export function InvoicesDataTable({ data }: InvoicesDataTableProps) {
   const router = useRouter();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleDelete = async (invoice: InvoiceListItem) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await deleteInvoice(invoice.id);
+      if (result.success) {
+        toast.success('Invoice deleted successfully');
+        router.refresh();
+      } else {
+        toast.error(result.error || 'Failed to delete invoice');
+      }
+    } catch (error) {
+      toast.error('Failed to delete invoice');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDuplicate = async (invoice: InvoiceListItem) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await duplicateInvoice(invoice.id);
+      if (result.success && result.invoiceId) {
+        toast.success('Invoice duplicated successfully');
+        router.push(`/invoices/${result.invoiceId}`);
+      } else {
+        toast.error(result.error || 'Failed to duplicate invoice');
+      }
+    } catch (error) {
+      toast.error('Failed to duplicate invoice');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const columns = getInvoiceColumns({
     onView: (invoice) => {
@@ -22,13 +62,10 @@ export function InvoicesDataTable({ data }: InvoicesDataTableProps) {
     onEdit: (invoice) => {
       router.push(`/invoices/${invoice.id}/edit`);
     },
-    onDelete: (invoice) => {
-      // TODO: Implement delete with confirmation modal
-      console.log('Delete invoice:', invoice.id);
-    },
+    onDelete: handleDelete,
+    onDuplicate: handleDuplicate,
     onDownload: (invoice) => {
-      // TODO: Implement PDF download
-      console.log('Download invoice:', invoice.id);
+      window.open(`/api/pdf/invoice/${invoice.id}`, '_blank');
     },
   });
 

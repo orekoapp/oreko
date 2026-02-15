@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table';
 import { createQuoteColumns } from './quote-columns';
+import { duplicateQuote, deleteQuote } from '@/lib/quotes/actions';
 import type { QuoteListItem } from '@/lib/quotes/types';
 
 interface QuoteTableProps {
@@ -23,6 +26,7 @@ const statusOptions = [
 
 export function QuoteTable({ quotes, isLoading = false }: QuoteTableProps) {
   const router = useRouter();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleView = (quote: QuoteListItem) => {
     router.push(`/quotes/${quote.id}`);
@@ -32,19 +36,45 @@ export function QuoteTable({ quotes, isLoading = false }: QuoteTableProps) {
     router.push(`/quotes/${quote.id}/builder`);
   };
 
-  const handleDuplicate = (quote: QuoteListItem) => {
-    // TODO: Implement duplicate functionality
-    console.log('Duplicate quote:', quote.id);
+  const handleDuplicate = async (quote: QuoteListItem) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await duplicateQuote(quote.id);
+      if (result.success && result.quoteId) {
+        toast.success('Quote duplicated successfully');
+        router.push(`/quotes/${result.quoteId}`);
+      } else {
+        toast.error('Failed to duplicate quote');
+      }
+    } catch (error) {
+      toast.error('Failed to duplicate quote');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleDelete = (quote: QuoteListItem) => {
-    // TODO: Implement delete functionality with confirmation
-    console.log('Delete quote:', quote.id);
+  const handleDelete = async (quote: QuoteListItem) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await deleteQuote(quote.id);
+      if (result.success) {
+        toast.success('Quote deleted successfully');
+        router.refresh();
+      } else {
+        toast.error('Failed to delete quote');
+      }
+    } catch (error) {
+      toast.error('Failed to delete quote');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDownload = (quote: QuoteListItem) => {
-    // TODO: Implement PDF download
-    console.log('Download quote:', quote.id);
+    // Open PDF in new tab
+    window.open(`/api/pdf/quote/${quote.id}`, '_blank');
   };
 
   const columns = createQuoteColumns({

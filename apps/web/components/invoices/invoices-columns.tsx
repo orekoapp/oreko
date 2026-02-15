@@ -37,11 +37,12 @@ interface InvoiceColumnsOptions {
   onView?: (invoice: InvoiceListItem) => void;
   onEdit?: (invoice: InvoiceListItem) => void;
   onDelete?: (invoice: InvoiceListItem) => void;
+  onDuplicate?: (invoice: InvoiceListItem) => void;
   onDownload?: (invoice: InvoiceListItem) => void;
 }
 
 export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDef<InvoiceListItem>[] {
-  const { onView, onEdit, onDelete, onDownload } = options;
+  const { onView, onEdit, onDelete, onDuplicate, onDownload } = options;
 
   return [
     {
@@ -202,6 +203,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
             row={row.original}
             onView={onView}
             onEdit={onEdit}
+            onDuplicate={onDuplicate}
             onDelete={onDelete}
             onDownload={onDownload}
           />

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma, type Prisma } from '@quotecraft/database';
-import { auth } from '@/lib/auth';
 import { assertNotDemo } from '@/lib/demo/guard';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
   InvoiceDocument,
   InvoiceListItem,
@@ -14,26 +14,22 @@ import type {
 } from './types';
 
 /**
- * Get the current user's active workspace
+ * Get the current user's active workspace with full workspace data
  */
 async function getActiveWorkspace() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
 
-  const membership = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    include: { workspace: true },
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
   });
 
-  if (!membership) {
-    throw new Error('No workspace found');
+  if (!workspace) {
+    throw new Error('Workspace not found');
   }
 
   return {
-    userId: session.user.id,
-    workspace: membership.workspace,
+    userId,
+    workspace,
   };
 }
 
@@ -680,4 +676,75 @@ export async function recordPayment(
   revalidatePath(`/invoices/${invoiceId}`);
 
   return { success: true };
+}
+
+/**
+ * Duplicate an invoice
+ */
+export async function duplicateInvoice(invoiceId: string) {
+  await assertNotDemo();
+  const { userId, workspace } = await getActiveWorkspace();
+
+  const original = await prisma.invoice.findFirst({
+    where: {
+      id: invoiceId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+    include: {
+      lineItems: {
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
+  });
+
+  if (!original) {
+    return { success: false, error: 'Invoice not found' };
+  }
+
+  const invoiceNumber = await generateInvoiceNumber(workspace.id);
+
+  // Set new due date 30 days from now
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 30);
+
+  const duplicate = await prisma.invoice.create({
+    data: {
+      workspaceId: workspace.id,
+      clientId: original.clientId,
+      projectId: original.projectId,
+      invoiceNumber,
+      title: `${original.title || 'Invoice'} (Copy)`,
+      status: 'draft',
+      issueDate: new Date(),
+      dueDate,
+      subtotal: original.subtotal,
+      discountType: original.discountType,
+      discountValue: original.discountValue,
+      discountAmount: original.discountAmount,
+      taxTotal: original.taxTotal,
+      total: original.total,
+      amountDue: original.total,
+      amountPaid: 0,
+      notes: original.notes,
+      terms: original.terms,
+      settings: original.settings as Prisma.InputJsonValue,
+      lineItems: {
+        create: original.lineItems.map((item: typeof original.lineItems[number]) => ({
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          rate: item.rate,
+          amount: item.amount,
+          taxRate: item.taxRate,
+          taxAmount: item.taxAmount,
+          sortOrder: item.sortOrder,
+        })),
+      },
+    },
+  });
+
+  revalidatePath('/invoices');
+
+  return { success: true, invoiceId: duplicate.id };
 }

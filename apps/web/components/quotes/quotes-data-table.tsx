@@ -1,12 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table/data-table';
 import { getQuoteColumns, quoteStatusOptions } from './quotes-columns';
 import { QuoteListItem } from '@/lib/quotes/types';
 import { FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { duplicateQuote, deleteQuote } from '@/lib/quotes/actions';
 
 interface QuotesDataTableProps {
   data: QuoteListItem[];
@@ -14,6 +17,43 @@ interface QuotesDataTableProps {
 
 export function QuotesDataTable({ data }: QuotesDataTableProps) {
   const router = useRouter();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleDuplicate = async (quote: QuoteListItem) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await duplicateQuote(quote.id);
+      if (result.success && result.quoteId) {
+        toast.success('Quote duplicated successfully');
+        router.push(`/quotes/${result.quoteId}`);
+      } else {
+        toast.error('Failed to duplicate quote');
+      }
+    } catch (error) {
+      toast.error('Failed to duplicate quote');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDelete = async (quote: QuoteListItem) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await deleteQuote(quote.id);
+      if (result.success) {
+        toast.success('Quote deleted successfully');
+        router.refresh();
+      } else {
+        toast.error('Failed to delete quote');
+      }
+    } catch (error) {
+      toast.error('Failed to delete quote');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const columns = getQuoteColumns({
     onView: (quote) => {
@@ -22,17 +62,10 @@ export function QuotesDataTable({ data }: QuotesDataTableProps) {
     onEdit: (quote) => {
       router.push(`/quotes/${quote.id}/edit`);
     },
-    onDuplicate: (quote) => {
-      // TODO: Implement duplicate functionality
-      console.log('Duplicate quote:', quote.id);
-    },
-    onDelete: (quote) => {
-      // TODO: Implement delete with confirmation modal
-      console.log('Delete quote:', quote.id);
-    },
+    onDuplicate: handleDuplicate,
+    onDelete: handleDelete,
     onDownload: (quote) => {
-      // TODO: Implement PDF download
-      console.log('Download quote:', quote.id);
+      window.open(`/api/pdf/quote/${quote.id}`, '_blank');
     },
   });
 
