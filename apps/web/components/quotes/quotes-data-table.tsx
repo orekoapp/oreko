@@ -57,7 +57,7 @@ export function QuotesDataTable({ data }: QuotesDataTableProps) {
       columns={columns}
       data={data}
       filterKey="client"
-      filterPlaceholder="Search clients..."
+      filterPlaceholder="Search quotes..."
       statusOptions={quoteStatusOptions}
       statusFilterKey="status"
       pageSizes={[10, 25, 50, 100]}

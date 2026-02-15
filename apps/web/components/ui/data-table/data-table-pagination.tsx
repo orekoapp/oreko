@@ -93,8 +93,13 @@ export function DataTablePagination<TData>({
         </Select>
       </div>
       <div className="flex items-center space-x-6 lg:space-x-8">
-        <div className="flex w-[100px] items-center justify-center text-sm text-muted-foreground">
-          Page {pageIndex + 1} of {pageCount || 1}
+        <div className="flex items-center justify-center text-sm text-muted-foreground whitespace-nowrap">
+          Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
+          {Math.min(
+            (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+            table.getFilteredRowModel().rows.length
+          )}{' '}
+          of {table.getFilteredRowModel().rows.length} entries
         </div>
         <div className="flex items-center space-x-1">
           <Button

@@ -58,7 +58,7 @@ export function InvoicesDataTable({ data }: InvoicesDataTableProps) {
       columns={columns}
       data={data}
       filterKey="client"
-      filterPlaceholder="Search clients..."
+      filterPlaceholder="Search invoices..."
       statusOptions={invoiceStatusOptions}
       statusFilterKey="status"
       pageSizes={[10, 25, 50, 100]}

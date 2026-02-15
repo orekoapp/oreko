@@ -28,6 +28,7 @@ interface DataTableRowActionsProps<TData> {
   onDuplicate?: (data: TData) => void;
   onDelete?: (data: TData) => void;
   onDownload?: (data: TData) => void;
+  showQuickActions?: boolean;
 }
 
 export function DataTableRowActions<TData>({
@@ -38,6 +39,7 @@ export function DataTableRowActions<TData>({
   onDuplicate,
   onDelete,
   onDownload,
+  showQuickActions = true,
 }: DataTableRowActionsProps<TData>) {
   // Build default actions if not provided
   const defaultActions: RowAction<TData>[] = React.useMemo(() => {
@@ -96,34 +98,65 @@ export function DataTableRowActions<TData>({
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-        >
-          <MoreHorizontal className="h-4 w-4" />
-          <span className="sr-only">Open menu</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[160px]">
-        {allActions.map((action, index) => (
-          <React.Fragment key={action.label}>
-            {action.separator && index > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuItem
-              onClick={() => action.onClick(row)}
-              className={
-                action.variant === 'destructive'
-                  ? 'text-destructive focus:text-destructive'
-                  : undefined
-              }
+    <div className="flex items-center justify-end gap-1">
+      {/* Quick action icons (visible) */}
+      {showQuickActions && (
+        <>
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              onClick={() => onDelete(row)}
             >
-              {action.icon}
-              {action.label}
-            </DropdownMenuItem>
-          </React.Fragment>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete</span>
+            </Button>
+          )}
+          {onView && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={() => onView(row)}
+            >
+              <Eye className="h-4 w-4" />
+              <span className="sr-only">View</span>
+            </Button>
+          )}
+        </>
+      )}
+
+      {/* Dropdown menu for all actions */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[160px]">
+          {allActions.map((action, index) => (
+            <React.Fragment key={action.label}>
+              {action.separator && index > 0 && <DropdownMenuSeparator />}
+              <DropdownMenuItem
+                onClick={() => action.onClick(row)}
+                className={
+                  action.variant === 'destructive'
+                    ? 'text-destructive focus:text-destructive'
+                    : undefined
+                }
+              >
+                {action.icon}
+                {action.label}
+              </DropdownMenuItem>
+            </React.Fragment>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
