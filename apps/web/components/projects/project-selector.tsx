@@ -70,8 +70,8 @@ export function ProjectSelector({
   return (
     <div className="space-y-2">
       <Select
-        value={value || ''}
-        onValueChange={(val) => onChange(val === '' ? null : val)}
+        value={value || '__none__'}
+        onValueChange={(val) => onChange(val === '__none__' ? null : val)}
         disabled={disabled || isLoading}
       >
         <SelectTrigger className="w-full">
@@ -81,7 +81,7 @@ export function ProjectSelector({
           </div>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">
+          <SelectItem value="__none__">
             <span className="text-muted-foreground">No project</span>
           </SelectItem>
           {projects.map((project) => (
