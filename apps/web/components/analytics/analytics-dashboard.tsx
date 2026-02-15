@@ -108,13 +108,14 @@ function StatCard({ title, value, description, icon: Icon, trend }: StatCardProp
   );
 }
 
-function formatCurrency(amount: number): string {
+// Convert cents to dollars and format as currency
+function formatCurrency(amountInCents: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amountInCents / 100);
 }
 
 interface AnalyticsDashboardProps {

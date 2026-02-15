@@ -17,13 +17,14 @@ interface FinancialHealthSectionProps {
   paymentAging: PaymentAgingData;
 }
 
-function formatCurrency(amount: number): string {
+// Convert cents to dollars and format as currency
+function formatCurrency(amountInCents: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amountInCents / 100);
 }
 
 export function FinancialHealthSection({
@@ -131,7 +132,7 @@ export function FinancialHealthSection({
                     <span>{bucket.bucket}</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground">{bucket.percentage}%</span>
+                    <span className="text-muted-foreground">{bucket.percentage.toFixed(1)}%</span>
                     <span className="w-20 text-right font-medium">
                       {formatCurrency(bucket.amount)}
                     </span>
