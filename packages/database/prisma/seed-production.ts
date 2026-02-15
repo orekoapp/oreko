@@ -425,6 +425,94 @@ async function seedProductionDemo() {
   }
   console.log(`✓ Created/updated ${demoInvoices.length} demo invoices`);
 
+  // Create demo projects
+  const demoProjects = [
+    {
+      id: 'demo-project-1',
+      clientId: 'demo-client-1',
+      name: 'Website Redesign 2024',
+      description: 'Complete overhaul of the company website including new branding, UX improvements, and mobile responsiveness.',
+      isActive: true,
+    },
+    {
+      id: 'demo-project-2',
+      clientId: 'demo-client-2',
+      name: 'E-commerce Platform',
+      description: 'Building a new e-commerce platform with inventory management, payment processing, and customer portal.',
+      isActive: true,
+    },
+    {
+      id: 'demo-project-3',
+      clientId: 'demo-client-3',
+      name: 'Brand Identity Package',
+      description: 'Logo design, brand guidelines, and marketing collateral for Johnson Consulting.',
+      isActive: true,
+    },
+    {
+      id: 'demo-project-4',
+      clientId: 'demo-client-4',
+      name: 'Mobile App MVP',
+      description: 'Design and development of a mobile app MVP for Chen Ventures startup.',
+      isActive: true,
+    },
+    {
+      id: 'demo-project-5',
+      clientId: 'demo-client-5',
+      name: 'Annual Retainer 2023',
+      description: 'Ongoing design and development support for Creative Agency LLC.',
+      isActive: false,
+    },
+  ];
+
+  for (const projectData of demoProjects) {
+    await prisma.project.upsert({
+      where: { id: projectData.id },
+      update: {},
+      create: {
+        id: projectData.id,
+        workspaceId: demoWorkspace.id,
+        clientId: projectData.clientId,
+        name: projectData.name,
+        description: projectData.description,
+        isActive: projectData.isActive,
+      },
+    });
+  }
+  console.log(`✓ Created/updated ${demoProjects.length} demo projects`);
+
+  // Link quotes to projects
+  const quoteProjectLinks = [
+    { quoteId: 'demo-quote-1', projectId: 'demo-project-1' },
+    { quoteId: 'demo-quote-2', projectId: 'demo-project-2' },
+    { quoteId: 'demo-quote-3', projectId: 'demo-project-3' },
+    { quoteId: 'demo-quote-4', projectId: 'demo-project-4' },
+    { quoteId: 'demo-quote-5', projectId: 'demo-project-5' },
+  ];
+
+  for (const link of quoteProjectLinks) {
+    await prisma.quote.update({
+      where: { id: link.quoteId },
+      data: { projectId: link.projectId },
+    });
+  }
+  console.log('✓ Linked quotes to projects');
+
+  // Link invoices to projects
+  const invoiceProjectLinks = [
+    { invoiceId: 'demo-invoice-1', projectId: 'demo-project-1' },
+    { invoiceId: 'demo-invoice-2', projectId: 'demo-project-3' },
+    { invoiceId: 'demo-invoice-3', projectId: 'demo-project-2' },
+    { invoiceId: 'demo-invoice-4', projectId: 'demo-project-4' },
+  ];
+
+  for (const link of invoiceProjectLinks) {
+    await prisma.invoice.update({
+      where: { id: link.invoiceId },
+      data: { projectId: link.projectId },
+    });
+  }
+  console.log('✓ Linked invoices to projects');
+
   console.log('\n✅ Production demo data seeding completed!');
   console.log(`\n📋 Demo Account Credentials:`);
   console.log(`   Email: ${DEMO_CONFIG.email}`);
