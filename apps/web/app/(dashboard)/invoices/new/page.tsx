@@ -21,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { createInvoice } from '@/lib/invoices/actions';
 import { ProjectSelector } from '@/components/projects';
+import { LogoUpload } from '@/components/shared/logo-upload';
 
 interface LineItem {
   id: string;
@@ -39,6 +40,7 @@ export default function NewInvoicePage() {
   const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
 
   // Form state
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [clientId, setClientId] = useState('');
   const [projectId, setProjectId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
@@ -147,6 +149,16 @@ export default function NewInvoicePage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left - Form */}
         <div className="space-y-6">
+          {/* Logo Upload */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base">Business Logo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LogoUpload value={logoUrl} onChange={setLogoUrl} />
+            </CardContent>
+          </Card>
+
           {/* Invoice Details */}
           <Card>
             <CardHeader className="pb-4">
@@ -366,6 +378,17 @@ export default function NewInvoicePage() {
           <Card className="sticky top-4">
             <CardContent className="p-6">
               <div className="rounded-lg border bg-white p-6 shadow-sm">
+                {/* Logo */}
+                {logoUrl && (
+                  <div className="flex justify-center mb-4">
+                    <img
+                      src={logoUrl}
+                      alt="Business Logo"
+                      className="h-12 w-auto object-contain"
+                    />
+                  </div>
+                )}
+
                 {/* Invoice Header */}
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-bold">{title || 'Invoice'}</h2>
