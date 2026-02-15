@@ -19,63 +19,89 @@ const config: Config = {
   	},
   	extend: {
   		colors: {
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
+  			border: 'var(--border)',
+  			input: 'var(--input)',
+  			ring: 'var(--ring)',
+  			background: 'var(--background)',
+  			foreground: 'var(--foreground)',
   			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
+  				DEFAULT: 'var(--primary)',
+  				foreground: 'var(--primary-foreground)',
+  				50: 'var(--primary-50)',
+  				100: 'var(--primary-100)',
+  				200: 'var(--primary-200)',
+  				300: 'var(--primary-300)',
+  				400: 'var(--primary-400)',
+  				500: 'var(--primary-500)',
+  				600: 'var(--primary-600)',
+  				700: 'var(--primary-700)',
+  				800: 'var(--primary-800)',
+  				900: 'var(--primary-900)',
+  				950: 'var(--primary-950)',
+  				1000: 'var(--primary-1000)'
   			},
   			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
+  				DEFAULT: 'var(--secondary)',
+  				foreground: 'var(--secondary-foreground)'
   			},
   			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
+  				DEFAULT: 'var(--destructive)',
+  				foreground: 'var(--destructive-foreground)'
   			},
   			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
+  				DEFAULT: 'var(--muted)',
+  				foreground: 'var(--muted-foreground)'
   			},
   			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
+  				DEFAULT: 'var(--accent)',
+  				foreground: 'var(--accent-foreground)'
   			},
   			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
+  				DEFAULT: 'var(--popover)',
+  				foreground: 'var(--popover-foreground)'
   			},
   			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
+  				DEFAULT: 'var(--card)',
+  				foreground: 'var(--card-foreground)'
   			},
   			success: {
-  				DEFAULT: 'rgb(var(--success))',
-  				foreground: 'rgb(var(--success-foreground))'
+  				DEFAULT: 'var(--success)',
+  				foreground: 'var(--success-foreground)'
   			},
   			warning: {
-  				DEFAULT: 'rgb(var(--warning))',
-  				foreground: 'rgb(var(--warning-foreground))'
+  				DEFAULT: 'var(--warning)',
+  				foreground: 'var(--warning-foreground)'
   			},
   			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))',
-  				foreground: 'hsl(var(--sidebar-foreground))',
-  				primary: 'hsl(var(--sidebar-primary))',
-  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-  				accent: 'hsl(var(--sidebar-accent))',
-  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-  				border: 'hsl(var(--sidebar-border))',
-  				ring: 'hsl(var(--sidebar-ring))'
+  				DEFAULT: 'var(--sidebar-background)',
+  				foreground: 'var(--sidebar-foreground)',
+  				primary: 'var(--sidebar-primary)',
+  				'primary-foreground': 'var(--sidebar-primary-foreground)',
+  				accent: 'var(--sidebar-accent)',
+  				'accent-foreground': 'var(--sidebar-accent-foreground)',
+  				border: 'var(--sidebar-border)',
+  				ring: 'var(--sidebar-ring)'
   			},
   			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
+  				'1': 'var(--chart-1)',
+  				'2': 'var(--chart-2)',
+  				'3': 'var(--chart-3)',
+  				'4': 'var(--chart-4)',
+  				'5': 'var(--chart-5)'
+  			},
+  			base: {
+  				50: 'var(--base-50)',
+  				100: 'var(--base-100)',
+  				200: 'var(--base-200)',
+  				300: 'var(--base-300)',
+  				400: 'var(--base-400)',
+  				500: 'var(--base-500)',
+  				600: 'var(--base-600)',
+  				700: 'var(--base-700)',
+  				800: 'var(--base-800)',
+  				900: 'var(--base-900)',
+  				950: 'var(--base-950)',
+  				1000: 'var(--base-1000)'
   			}
   		},
   		borderRadius: {
@@ -86,12 +112,16 @@ const config: Config = {
   		},
   		fontFamily: {
   			sans: [
-  				'var(--font-geist-sans)',
-  				'Inter',
+  				'var(--text-family)',
+  				'Funnel Sans',
+  				'sans-serif'
+  			],
+  			display: [
+  				'var(--display-family)',
+  				'Lexend',
   				'sans-serif'
   			],
   			mono: [
-  				'var(--font-geist-mono)',
   				'JetBrains Mono',
   				'monospace'
   			],
