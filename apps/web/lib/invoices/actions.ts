@@ -448,6 +448,7 @@ export async function getInvoices(filters?: {
         select: {
           id: true,
           name: true,
+          email: true,
           company: true,
         },
       },
@@ -476,6 +477,7 @@ export async function getInvoices(filters?: {
       client: {
         id: invoice.client?.id ?? '',
         name: invoice.client?.name ?? 'Unknown Client',
+        email: invoice.client?.email ?? null,
         company: invoice.client?.company ?? null,
       },
       isOverdue,

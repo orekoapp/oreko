@@ -131,8 +131,8 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
             </div>
             <div>
               <div className="font-medium">{client.name}</div>
-              {client.company && (
-                <div className="text-sm text-muted-foreground">{client.company}</div>
+              {client.email && (
+                <div className="text-sm text-muted-foreground">{client.email}</div>
               )}
             </div>
           </div>
@@ -143,7 +143,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const searchValue = value.toLowerCase();
         return (
           client.name.toLowerCase().includes(searchValue) ||
-          (client.company?.toLowerCase().includes(searchValue) ?? false)
+          (client.email?.toLowerCase().includes(searchValue) ?? false)
         );
       },
     },

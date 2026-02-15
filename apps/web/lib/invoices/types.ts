@@ -86,6 +86,7 @@ export interface InvoiceListItem {
   client: {
     id: string;
     name: string;
+    email: string | null;
     company: string | null;
   };
   isOverdue: boolean;

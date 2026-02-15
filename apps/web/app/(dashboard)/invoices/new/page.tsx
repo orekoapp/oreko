@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, FileText, Mail, CreditCard } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, FileText, Mail, CreditCard, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,12 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { createInvoice } from '@/lib/invoices/actions';
 import { ProjectSelector } from '@/components/projects';
@@ -164,6 +170,19 @@ export default function NewInvoicePage() {
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Invoice Details</CardTitle>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8">
+                      Options
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>Add custom field</DropdownMenuItem>
+                    <DropdownMenuItem>Set default values</DropdownMenuItem>
+                    <DropdownMenuItem>Import from template</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -329,7 +348,22 @@ export default function NewInvoicePage() {
           {/* Memo/Notes */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-base">Memo</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Memo</CardTitle>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8">
+                      Options
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>Configure payment methods</DropdownMenuItem>
+                    <DropdownMenuItem>Set default notes</DropdownMenuItem>
+                    <DropdownMenuItem>Save as template</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
