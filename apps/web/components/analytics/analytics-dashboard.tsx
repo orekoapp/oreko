@@ -27,6 +27,9 @@ import { FinancialHealthSection } from './financial-health-section';
 import { ConversionRateCard } from './conversion-rate-card';
 import { QuotesByStatusChart } from './quotes-by-status-chart';
 import { RevenueComparisonChart } from './revenue-comparison-chart';
+import { RevenueForecastChart } from './revenue-forecast-chart';
+import { TopClientsChart } from './top-clients-chart';
+import { ClientLifetimeValueCard } from './client-lifetime-value';
 
 // Mock data - will be replaced with server actions
 const mockStats = {
@@ -242,6 +245,15 @@ export function AnalyticsDashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         <SalesPipelineSection dateRange={dateRange} />
         <FinancialHealthSection dateRange={dateRange} />
+      </div>
+
+      {/* Revenue Forecast - Full Width */}
+      <RevenueForecastChart dateRange={dateRange} />
+
+      {/* Client Insights */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <TopClientsChart />
+        <ClientLifetimeValueCard />
       </div>
 
       {/* Secondary Charts */}
