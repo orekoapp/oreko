@@ -132,27 +132,12 @@ const settingsNavItems: NavItem[] = [
   },
 ];
 
-// Workspace type
-interface Workspace {
+// Workspace prop type
+interface WorkspaceInfo {
   id: string;
   name: string;
-  logo: string | null;
-  tier: 'Enterprise' | 'Pro' | 'Free';
+  slug: string;
 }
-
-// Workspace data (will be replaced with actual data from auth context)
-const workspaces: Workspace[] = [
-  { id: '1', name: 'Quote Craft', logo: null, tier: 'Enterprise' },
-  { id: '2', name: 'Side Project', logo: null, tier: 'Free' },
-];
-
-const defaultWorkspace: Workspace = { id: '1', name: 'Quote Craft', logo: null, tier: 'Enterprise' };
-
-const tierColors: Record<string, string> = {
-  Enterprise: 'bg-purple-100 text-purple-700',
-  Pro: 'bg-blue-100 text-blue-700',
-  Free: 'bg-gray-100 text-gray-600',
-};
 
 interface AppSidebarProps {
   user?: {
@@ -160,13 +145,16 @@ interface AppSidebarProps {
     email?: string | null;
     image?: string | null;
   };
+  workspace?: WorkspaceInfo;
 }
 
-export function AppSidebar({ user }: AppSidebarProps) {
+export function AppSidebar({ user, workspace }: AppSidebarProps) {
   const pathname = usePathname();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
-  const [activeWorkspace, setActiveWorkspace] = React.useState<Workspace>(defaultWorkspace);
+
+  // Use workspace name or fallback
+  const workspaceName = workspace?.name || 'My Workspace';
 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -188,70 +176,23 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon">
-      {/* Workspace Switcher */}
+      {/* Workspace Header */}
       <SidebarHeader className="border-b">
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    {activeWorkspace.logo ? (
-                      <img
-                        src={activeWorkspace.logo}
-                        alt={activeWorkspace.name}
-                        className="size-4"
-                      />
-                    ) : (
-                      <Building2 className="size-4" />
-                    )}
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-semibold">
-                        {activeWorkspace.name}
-                      </span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${tierColors[activeWorkspace.tier]}`}>
-                        {activeWorkspace.tier}
-                      </span>
-                    </div>
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
-                align="start"
-                side={isCollapsed ? 'right' : 'bottom'}
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Workspaces
-                </DropdownMenuLabel>
-                {workspaces.map((workspace) => (
-                  <DropdownMenuItem
-                    key={workspace.id}
-                    onClick={() => setActiveWorkspace(workspace)}
-                    className="cursor-pointer gap-2 p-2"
-                  >
-                    <div className="flex size-6 items-center justify-center rounded-sm border">
-                      <Building2 className="size-4 shrink-0" />
-                    </div>
-                    {workspace.name}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer gap-2 p-2">
-                  <div className="flex size-6 items-center justify-center rounded-md border bg-background">
-                    <Plus className="size-4" />
-                  </div>
-                  <span className="text-muted-foreground">Add workspace</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <SidebarMenuButton
+              size="lg"
+              className="cursor-default"
+            >
+              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                <Building2 className="size-4" />
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">
+                  {workspaceName}
+                </span>
+              </div>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
