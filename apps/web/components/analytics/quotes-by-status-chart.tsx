@@ -1,21 +1,55 @@
 'use client';
 
+import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { QuoteStatusCounts } from '@/lib/dashboard/types';
 
-// Mock data - will be replaced with server actions
-const mockQuotesData = [
-  { status: 'Draft', count: 12, color: '#94A3B8' },
-  { status: 'Sent', count: 24, color: '#3B82F6' },
-  { status: 'Viewed', count: 18, color: '#FACC15' },
-  { status: 'Accepted', count: 34, color: '#22C55E' },
-  { status: 'Declined', count: 8, color: '#EF4444' },
-  { status: 'Expired', count: 6, color: '#F97316' },
-];
+const statusColors: Record<string, string> = {
+  Draft: '#94A3B8',
+  Sent: '#3B82F6',
+  Viewed: '#FACC15',
+  Accepted: '#22C55E',
+  Declined: '#EF4444',
+  Expired: '#F97316',
+};
 
-export function QuotesByStatusChart() {
-  const total = mockQuotesData.reduce((acc, item) => acc + item.count, 0);
+interface QuotesByStatusChartProps {
+  data?: QuoteStatusCounts;
+}
+
+export function QuotesByStatusChart({ data }: QuotesByStatusChartProps) {
+  const chartData = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+    return [
+      { status: 'Draft', count: data.draft, color: statusColors.Draft },
+      { status: 'Sent', count: data.sent, color: statusColors.Sent },
+      { status: 'Viewed', count: data.viewed, color: statusColors.Viewed },
+      { status: 'Accepted', count: data.accepted, color: statusColors.Accepted },
+      { status: 'Declined', count: data.declined, color: statusColors.Declined },
+      { status: 'Expired', count: data.expired, color: statusColors.Expired },
+    ].filter(item => item.count > 0);
+  }, [data]);
+
+  const total = chartData.reduce((acc, item) => acc + item.count, 0);
+
+  if (chartData.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Quotes by Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+            No quote data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -27,7 +61,7 @@ export function QuotesByStatusChart() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={mockQuotesData}
+                data={chartData}
                 cx="50%"
                 cy="50%"
                 innerRadius={40}
@@ -36,7 +70,7 @@ export function QuotesByStatusChart() {
                 dataKey="count"
                 nameKey="status"
               >
-                {mockQuotesData.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>

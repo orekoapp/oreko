@@ -36,7 +36,23 @@ import type {
   QuoteStatusCounts,
   ConversionFunnelData,
   PaymentAgingData,
+  ForecastDataPoint,
+  MonthlyComparisonData,
 } from '@/lib/dashboard/types';
+
+interface TopClient {
+  name: string;
+  revenue: number;
+}
+
+interface ClientLTV {
+  id: string;
+  name: string;
+  email?: string;
+  ltv: number;
+  growth?: number;
+  isGrowing?: boolean;
+}
 
 const presets = [
   { label: 'Last 7 days', value: '7d' },
@@ -123,6 +139,10 @@ interface AnalyticsDashboardProps {
   quoteStatusCounts: QuoteStatusCounts;
   conversionFunnel: ConversionFunnelData;
   paymentAging: PaymentAgingData;
+  topClients?: TopClient[];
+  clientLTV?: ClientLTV[];
+  revenueForecast?: ForecastDataPoint[];
+  monthlyComparison?: MonthlyComparisonData[];
 }
 
 export function AnalyticsDashboard({
@@ -130,6 +150,10 @@ export function AnalyticsDashboard({
   quoteStatusCounts,
   conversionFunnel,
   paymentAging,
+  topClients,
+  clientLTV,
+  revenueForecast,
+  monthlyComparison,
 }: AnalyticsDashboardProps) {
   const [selectedPreset, setSelectedPreset] = useState('30d');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(
@@ -262,19 +286,26 @@ export function AnalyticsDashboard({
       </div>
 
       {/* Revenue Forecast - Full Width */}
-      <RevenueForecastChart dateRange={dateRange} />
+      <RevenueForecastChart dateRange={dateRange} forecastData={revenueForecast} />
 
       {/* Client Insights */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <TopClientsChart />
-        <ClientLifetimeValueCard />
+        <TopClientsChart data={topClients} />
+        <ClientLifetimeValueCard data={clientLTV} />
       </div>
 
       {/* Secondary Charts */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <ConversionRateCard />
-        <QuotesByStatusChart />
-        <RevenueComparisonChart />
+        <ConversionRateCard
+          data={{
+            conversionRate: stats.conversionRate,
+            acceptedCount: quoteStatusCounts.accepted,
+            totalSentCount: quoteStatusCounts.sent + quoteStatusCounts.viewed + quoteStatusCounts.accepted + quoteStatusCounts.declined,
+          }}
+          conversionFunnel={conversionFunnel}
+        />
+        <QuotesByStatusChart data={quoteStatusCounts} />
+        <RevenueComparisonChart data={monthlyComparison} />
       </div>
     </div>
   );

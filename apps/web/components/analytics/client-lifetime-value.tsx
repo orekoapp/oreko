@@ -1,51 +1,21 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-// Mock data - will be replaced with server actions
-const mockClientLTV = [
-  {
-    id: '1',
-    name: 'TechFlow Inc.',
-    email: 'billing@techflow.com',
-    ltv: 125400,
-    growth: 12.5,
-    isGrowing: true,
-  },
-  {
-    id: '2',
-    name: 'Acme Corp',
-    email: 'finance@acme.com',
-    ltv: 98200,
-    growth: 8.3,
-    isGrowing: true,
-  },
-  {
-    id: '3',
-    name: 'GlobalTech',
-    email: 'accounts@globaltech.io',
-    ltv: 87500,
-    growth: -2.1,
-    isGrowing: false,
-  },
-  {
-    id: '4',
-    name: 'StartupXYZ',
-    email: 'hello@startupxyz.com',
-    ltv: 72800,
-    growth: 15.7,
-    isGrowing: true,
-  },
-  {
-    id: '5',
-    name: 'Digital Agency',
-    email: 'billing@digitalagency.co',
-    ltv: 65300,
-    growth: 5.2,
-    isGrowing: true,
-  },
-];
+interface ClientLTV {
+  id: string;
+  name: string;
+  email?: string;
+  ltv: number;
+  growth?: number;
+  isGrowing?: boolean;
+}
+
+interface ClientLifetimeValueCardProps {
+  data?: ClientLTV[];
+}
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -56,9 +26,34 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function ClientLifetimeValueCard() {
-  const data = mockClientLTV;
-  const averageLTV = data.reduce((sum, c) => sum + c.ltv, 0) / data.length;
+export function ClientLifetimeValueCard({ data: propData }: ClientLifetimeValueCardProps) {
+  const { clientData, averageLTV } = useMemo(() => {
+    if (!propData || propData.length === 0) {
+      return { clientData: [], averageLTV: 0 };
+    }
+    const avg = propData.reduce((sum, c) => sum + c.ltv, 0) / propData.length;
+    return { clientData: propData, averageLTV: avg };
+  }, [propData]);
+
+  if (clientData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>Client Lifetime Value</CardTitle>
+              <CardDescription>Total revenue per client over time</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+            No client LTV data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -78,7 +73,7 @@ export function ClientLifetimeValueCard() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {data.map((client) => {
+          {clientData.map((client) => {
             const initials = client.name
               .split(' ')
               .map((n) => n[0])
@@ -97,18 +92,20 @@ export function ClientLifetimeValueCard() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-green-600">
-                    +{formatCurrency(client.ltv)}
+                    {formatCurrency(client.ltv)}
                   </p>
-                  <div className="flex items-center justify-end gap-1 text-xs">
-                    {client.isGrowing ? (
-                      <TrendingUp className="h-3 w-3 text-green-500" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 text-red-500" />
-                    )}
-                    <span className={client.isGrowing ? 'text-green-500' : 'text-red-500'}>
-                      {client.isGrowing ? '+' : ''}{client.growth}%
-                    </span>
-                  </div>
+                  {client.growth !== undefined && (
+                    <div className="flex items-center justify-end gap-1 text-xs">
+                      {client.isGrowing !== false ? (
+                        <TrendingUp className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3 text-red-500" />
+                      )}
+                      <span className={client.isGrowing !== false ? 'text-green-500' : 'text-red-500'}>
+                        {client.growth >= 0 ? '+' : ''}{client.growth}%
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             );

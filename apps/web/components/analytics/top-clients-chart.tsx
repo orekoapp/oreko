@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -13,14 +14,16 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-// Mock data - will be replaced with server actions
-const mockTopClients = [
-  { name: 'TechFlow Inc.', revenue: 45200, color: '#3B82F6' },
-  { name: 'Acme Corp', revenue: 38500, color: '#8B5CF6' },
-  { name: 'GlobalTech', revenue: 32100, color: '#EC4899' },
-  { name: 'StartupXYZ', revenue: 28400, color: '#F59E0B' },
-  { name: 'Digital Agency', revenue: 21800, color: '#10B981' },
-];
+const COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
+
+interface TopClient {
+  name: string;
+  revenue: number;
+}
+
+interface TopClientsChartProps {
+  data?: TopClient[];
+}
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -31,9 +34,34 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function TopClientsChart() {
-  const data = mockTopClients;
-  const totalRevenue = data.reduce((sum, client) => sum + client.revenue, 0);
+export function TopClientsChart({ data: propData }: TopClientsChartProps) {
+  const chartData = useMemo(() => {
+    if (!propData || propData.length === 0) {
+      return [];
+    }
+    return propData.map((client, index) => ({
+      ...client,
+      color: COLORS[index % COLORS.length],
+    }));
+  }, [propData]);
+
+  const totalRevenue = chartData.reduce((sum, client) => sum + client.revenue, 0);
+
+  if (chartData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Clients by Revenue</CardTitle>
+          <CardDescription>Your highest-value clients this period</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+            No client revenue data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -47,7 +75,7 @@ export function TopClientsChart() {
         <div className="h-[250px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={data}
+              data={chartData}
               layout="vertical"
               margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
             >
@@ -70,12 +98,12 @@ export function TopClientsChart() {
               <Tooltip
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload[0]) return null;
-                  const data = payload[0].payload;
-                  const percentage = ((data.revenue / totalRevenue) * 100).toFixed(1);
+                  const item = payload[0].payload;
+                  const percentage = totalRevenue > 0 ? ((item.revenue / totalRevenue) * 100).toFixed(1) : '0';
                   return (
                     <div className="rounded-lg border bg-background px-3 py-2 shadow-md">
-                      <p className="font-medium">{data.name}</p>
-                      <p className="text-sm text-primary">{formatCurrency(data.revenue)}</p>
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-sm text-primary">{formatCurrency(item.revenue)}</p>
                       <p className="text-xs text-muted-foreground">{percentage}% of total</p>
                     </div>
                   );
@@ -87,7 +115,7 @@ export function TopClientsChart() {
                 radius={[0, 4, 4, 0]}
                 barSize={24}
               >
-                {data.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Bar>
@@ -96,7 +124,7 @@ export function TopClientsChart() {
         </div>
         <div className="mt-4 pt-4 border-t">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Total from top 5</span>
+            <span className="text-muted-foreground">Total from top {chartData.length}</span>
             <span className="font-semibold">{formatCurrency(totalRevenue)}</span>
           </div>
         </div>

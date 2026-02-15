@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   AreaChart,
   Area,
@@ -10,24 +11,14 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-
-// Mock data - will be replaced with server actions
-const mockForecastData = [
-  { month: 'Jan', projected: 32000, actual: 28500 },
-  { month: 'Feb', projected: 35000, actual: 33200 },
-  { month: 'Mar', projected: 38000, actual: 41000 },
-  { month: 'Apr', projected: 42000, actual: 39500 },
-  { month: 'May', projected: 45000, actual: 48200 },
-  { month: 'Jun', projected: 48000, actual: 45800 },
-  { month: 'Jul', projected: 52000, actual: null },
-  { month: 'Aug', projected: 55000, actual: null },
-  { month: 'Sep', projected: 58000, actual: null },
-];
+import type { ForecastDataPoint } from '@/lib/dashboard/types';
 
 interface RevenueForecastChartProps {
   dateRange?: DateRange;
+  forecastData?: ForecastDataPoint[];
 }
 
 function formatCurrency(amount: number): string {
@@ -39,13 +30,38 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function RevenueForecastChart({ dateRange }: RevenueForecastChartProps) {
-  const data = mockForecastData;
+export function RevenueForecastChart({ dateRange, forecastData }: RevenueForecastChartProps) {
+  const data = useMemo(() => {
+    if (!forecastData || forecastData.length === 0) {
+      return [];
+    }
+    return forecastData.map((point) => ({
+      month: format(new Date(point.date + '-01'), 'MMM'),
+      projected: point.forecast ?? point.actual ?? 0,
+      actual: point.isProjection ? null : point.actual,
+    }));
+  }, [forecastData]);
 
   // Calculate variance
   const totalProjected = data.reduce((sum, d) => sum + d.projected, 0);
   const totalActual = data.reduce((sum, d) => sum + (d.actual || 0), 0);
-  const variance = totalActual > 0 ? ((totalActual - totalProjected) / totalProjected) * 100 : 0;
+  const variance = totalProjected > 0 ? ((totalActual - totalProjected) / totalProjected) * 100 : 0;
+
+  if (data.length === 0) {
+    return (
+      <Card className="col-span-full">
+        <CardHeader>
+          <CardTitle>Revenue Forecast</CardTitle>
+          <CardDescription>Projected quotes vs actual revenue collected</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+            No forecast data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="col-span-full">

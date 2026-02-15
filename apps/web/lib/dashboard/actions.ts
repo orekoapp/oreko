@@ -771,6 +771,85 @@ export async function getMonthlyComparisonData(
   return result;
 }
 
+// Get top clients by revenue
+export async function getTopClientsByRevenue(
+  limit: number = 5
+): Promise<{ name: string; revenue: number }[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const clients = await prisma.client.findMany({
+    where: {
+      workspaceId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      company: true,
+      invoices: {
+        where: {
+          status: 'paid',
+          deletedAt: null,
+        },
+        select: {
+          amountPaid: true,
+        },
+      },
+    },
+  });
+
+  const clientRevenues = clients.map((client) => ({
+    name: client.company || client.name,
+    revenue: client.invoices.reduce((sum, inv) => sum + toNumber(inv.amountPaid), 0),
+  }));
+
+  return clientRevenues
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, limit)
+    .filter((c) => c.revenue > 0);
+}
+
+// Get client lifetime values
+export async function getClientLTVData(
+  limit: number = 5
+): Promise<{ id: string; name: string; email?: string; ltv: number }[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const clients = await prisma.client.findMany({
+    where: {
+      workspaceId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      company: true,
+      email: true,
+      invoices: {
+        where: {
+          status: 'paid',
+          deletedAt: null,
+        },
+        select: {
+          amountPaid: true,
+        },
+      },
+    },
+  });
+
+  const clientLTVs = clients.map((client) => ({
+    id: client.id,
+    name: client.company || client.name,
+    email: client.email,
+    ltv: client.invoices.reduce((sum, inv) => sum + toNumber(inv.amountPaid), 0),
+  }));
+
+  return clientLTVs
+    .sort((a, b) => b.ltv - a.ltv)
+    .slice(0, limit)
+    .filter((c) => c.ltv > 0);
+}
+
 // Get revenue forecast
 export async function getRevenueForecast(
   historicalMonths: number = 6,

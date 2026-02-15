@@ -5,17 +5,46 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { ConversionFunnelData } from '@/lib/dashboard/types';
 
-// Mock data - will be replaced with server actions
-const mockConversionData = {
-  currentRate: 62.8,
-  previousRate: 58.2,
-  acceptedCount: 34,
-  totalSentCount: 54,
-};
+interface ConversionRateCardProps {
+  data?: {
+    conversionRate: number;
+    acceptedCount: number;
+    totalSentCount: number;
+    prevConversionRate?: number;
+  };
+  conversionFunnel?: ConversionFunnelData;
+}
 
-export function ConversionRateCard() {
-  const data = mockConversionData;
+export function ConversionRateCard({ data: propData, conversionFunnel }: ConversionRateCardProps) {
+  const data = useMemo(() => {
+    if (propData) {
+      return {
+        currentRate: propData.conversionRate,
+        previousRate: propData.prevConversionRate ?? propData.conversionRate,
+        acceptedCount: propData.acceptedCount,
+        totalSentCount: propData.totalSentCount,
+      };
+    }
+    if (conversionFunnel) {
+      const totalSent = conversionFunnel.quotesSent || 1;
+      const accepted = conversionFunnel.quotesAccepted;
+      const rate = (accepted / totalSent) * 100;
+      return {
+        currentRate: rate,
+        previousRate: rate,
+        acceptedCount: accepted,
+        totalSentCount: totalSent,
+      };
+    }
+    return {
+      currentRate: 0,
+      previousRate: 0,
+      acceptedCount: 0,
+      totalSentCount: 0,
+    };
+  }, [propData, conversionFunnel]);
 
   const trend = useMemo(() => {
     const change = data.currentRate - data.previousRate;

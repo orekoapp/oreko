@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -11,16 +12,11 @@ import {
 } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { MonthlyComparisonData } from '@/lib/dashboard/types';
 
-// Mock data - will be replaced with server actions
-const mockRevenueData = [
-  { month: 'Jan', thisYear: 32000, lastYear: 28000 },
-  { month: 'Feb', thisYear: 28000, lastYear: 31000 },
-  { month: 'Mar', thisYear: 35000, lastYear: 29000 },
-  { month: 'Apr', thisYear: 41000, lastYear: 33000 },
-  { month: 'May', thisYear: 38000, lastYear: 36000 },
-  { month: 'Jun', thisYear: 45000, lastYear: 38000 },
-];
+interface RevenueComparisonChartProps {
+  data?: MonthlyComparisonData[];
+}
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -31,7 +27,32 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function RevenueComparisonChart() {
+export function RevenueComparisonChart({ data: propData }: RevenueComparisonChartProps) {
+  const chartData = useMemo(() => {
+    if (!propData || propData.length === 0) {
+      return [];
+    }
+    return propData.slice(-6).map((item) => ({
+      month: item.month.slice(0, 3),
+      thisYear: item.revenue,
+      lastYear: item.prevYearRevenue ?? 0,
+    }));
+  }, [propData]);
+  if (chartData.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Revenue Comparison</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+            No revenue comparison data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -41,7 +62,7 @@ export function RevenueComparisonChart() {
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={mockRevenueData}
+              data={chartData}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />

@@ -9,6 +9,10 @@ import {
   getQuoteStatusCounts,
   getConversionFunnelData,
   getPaymentAgingData,
+  getTopClientsByRevenue,
+  getClientLTVData,
+  getRevenueForecast,
+  getMonthlyComparisonData,
 } from '@/lib/dashboard/actions';
 
 export const metadata: Metadata = {
@@ -18,11 +22,24 @@ export const metadata: Metadata = {
 
 async function AnalyticsContent() {
   // Fetch all analytics data in parallel
-  const [stats, quoteStatusCounts, conversionFunnel, paymentAging] = await Promise.all([
+  const [
+    stats,
+    quoteStatusCounts,
+    conversionFunnel,
+    paymentAging,
+    topClients,
+    clientLTV,
+    revenueForecast,
+    monthlyComparison,
+  ] = await Promise.all([
     getAnalyticsStats(),
     getQuoteStatusCounts(),
     getConversionFunnelData(),
     getPaymentAgingData(),
+    getTopClientsByRevenue(5),
+    getClientLTVData(5),
+    getRevenueForecast(6, 3),
+    getMonthlyComparisonData(12),
   ]);
 
   return (
@@ -31,6 +48,10 @@ async function AnalyticsContent() {
       quoteStatusCounts={quoteStatusCounts}
       conversionFunnel={conversionFunnel}
       paymentAging={paymentAging}
+      topClients={topClients}
+      clientLTV={clientLTV}
+      revenueForecast={revenueForecast}
+      monthlyComparison={monthlyComparison}
     />
   );
 }
