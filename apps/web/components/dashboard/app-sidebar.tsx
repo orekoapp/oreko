@@ -17,7 +17,6 @@ import {
   ChevronRight,
   BarChart3,
   ScrollText,
-  Building2,
   ChevronsUpDown,
   LogOut,
   User,
@@ -55,6 +54,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { WorkspaceSwitcher } from '@/components/workspace/workspace-switcher';
+import type { WorkspaceWithRole } from '@/lib/workspace/actions';
 
 interface NavItem {
   title: string;
@@ -132,29 +133,20 @@ const settingsNavItems: NavItem[] = [
   },
 ];
 
-// Workspace prop type
-interface WorkspaceInfo {
-  id: string;
-  name: string;
-  slug: string;
-}
-
 interface AppSidebarProps {
   user?: {
     name?: string | null;
     email?: string | null;
     image?: string | null;
   };
-  workspace?: WorkspaceInfo;
+  workspaces: WorkspaceWithRole[];
+  activeWorkspace: WorkspaceWithRole;
 }
 
-export function AppSidebar({ user, workspace }: AppSidebarProps) {
+export function AppSidebar({ user, workspaces, activeWorkspace }: AppSidebarProps) {
   const pathname = usePathname();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
-
-  // Use workspace name or fallback
-  const workspaceName = workspace?.name || 'My Workspace';
 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -176,23 +168,15 @@ export function AppSidebar({ user, workspace }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon">
-      {/* Workspace Header */}
+      {/* Workspace Switcher */}
       <SidebarHeader className="border-b">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              className="cursor-default"
-            >
-              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <Building2 className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">
-                  {workspaceName}
-                </span>
-              </div>
-            </SidebarMenuButton>
+            <WorkspaceSwitcher
+              workspaces={workspaces}
+              activeWorkspace={activeWorkspace}
+              isCollapsed={isCollapsed}
+            />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

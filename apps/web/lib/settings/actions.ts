@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma, Prisma } from '@quotecraft/database';
-import { auth } from '@/lib/auth';
 import { assertNotDemo } from '@/lib/demo/guard';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
   BusinessProfileData,
   BrandingSettingsData,
@@ -20,28 +20,6 @@ import type {
   UpdateNumberSequenceInput,
   Address,
 } from './types';
-
-// Helper to get current user's workspace
-async function getCurrentUserWorkspace(): Promise<{ workspaceId: string; userId: string }> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  const workspaceMember = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    select: { workspaceId: true },
-  });
-
-  if (!workspaceMember) {
-    throw new Error('No workspace found');
-  }
-
-  return {
-    workspaceId: workspaceMember.workspaceId,
-    userId: session.user.id,
-  };
-}
 
 // Helper to convert Prisma Decimal to number
 function toNumber(value: Prisma.Decimal | number | null | undefined): number {

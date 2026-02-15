@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma, Prisma } from '@quotecraft/database';
-import { auth } from '@/lib/auth';
 import { assertNotDemo } from '@/lib/demo/guard';
 import { NotFoundError, UnauthorizedError } from '@/lib/api/errors';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
   ClientListItem,
   ClientDetail,
@@ -29,29 +29,6 @@ function toNumber(value: unknown): number {
     return (value as { toNumber: () => number }).toNumber();
   }
   return Number(value) || 0;
-}
-
-// Helper to get current user and their workspace
-async function getCurrentUserWorkspace() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new UnauthorizedError();
-  }
-
-  // Get user's first workspace (for now, single workspace support)
-  const workspaceMember = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    select: { workspaceId: true },
-  });
-
-  if (!workspaceMember) {
-    throw new UnauthorizedError('No workspace found');
-  }
-
-  return {
-    userId: session.user.id,
-    workspaceId: workspaceMember.workspaceId,
-  };
 }
 
 // Get paginated clients

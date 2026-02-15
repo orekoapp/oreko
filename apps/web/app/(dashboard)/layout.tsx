@@ -5,7 +5,7 @@ import { AppHeader } from '@/components/dashboard/app-header';
 import { SkipToContent } from '@/components/shared/skip-to-content';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { needsOnboarding } from '@/lib/onboarding/actions';
-import { getWorkspace } from '@/lib/settings/actions';
+import { getUserWorkspaces, getActiveWorkspace } from '@/lib/workspace/actions';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -20,8 +20,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/onboarding');
   }
 
-  // Fetch current workspace data
-  const workspace = await getWorkspace();
+  // Fetch workspaces data
+  const [workspaces, activeWorkspace] = await Promise.all([
+    getUserWorkspaces(),
+    getActiveWorkspace(),
+  ]);
 
   return (
     <>
@@ -33,11 +36,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             email: session.user.email,
             image: session.user.avatarUrl,
           }}
-          workspace={{
-            id: workspace.id,
-            name: workspace.name,
-            slug: workspace.slug,
-          }}
+          workspaces={workspaces}
+          activeWorkspace={activeWorkspace}
         />
         <SidebarInset>
           <AppHeader user={session.user} />
