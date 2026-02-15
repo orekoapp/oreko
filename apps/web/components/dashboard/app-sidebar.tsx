@@ -88,28 +88,21 @@ const mainNavItems: NavItemWithSub[] = [
     title: 'Projects',
     href: '/projects',
     icon: FolderKanban,
-    items: [
-      {
-        title: 'All Projects',
-        href: '/projects',
-        icon: FolderKanban,
-      },
-      {
-        title: 'Quotes',
-        href: '/quotes',
-        icon: FileText,
-      },
-      {
-        title: 'Invoices',
-        href: '/invoices',
-        icon: Receipt,
-      },
-      {
-        title: 'Contracts',
-        href: '/contracts',
-        icon: ScrollText,
-      },
-    ],
+  },
+  {
+    title: 'Quotes',
+    href: '/quotes',
+    icon: FileText,
+  },
+  {
+    title: 'Invoices',
+    href: '/invoices',
+    icon: Receipt,
+  },
+  {
+    title: 'Contracts',
+    href: '/contracts',
+    icon: ScrollText,
   },
 ];
 
