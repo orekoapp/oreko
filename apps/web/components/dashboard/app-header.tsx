@@ -60,7 +60,31 @@ const pathNameMap: Record<string, string> = {
   new: 'New',
   edit: 'Edit',
   builder: 'Builder',
+  analytics: 'Analytics',
+  projects: 'Projects',
+  contracts: 'Contracts',
+  account: 'Account',
+  business: 'Business Profile',
+  branding: 'Branding',
+  team: 'Team Members',
+  workspace: 'Workspace',
+  billing: 'Billing & Subscription',
+  'tax-rates': 'Tax Rates',
+  emails: 'Email Templates',
+  payments: 'Payment Settings',
+  editor: 'Editor',
 };
+
+// Check if a string looks like a UUID
+function isUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
+// Check if a string looks like a demo ID (e.g., demo-client-1)
+function isDemoId(str: string): boolean {
+  return str.startsWith('demo-');
+}
 
 function generateBreadcrumbs(pathname: string) {
   const segments = pathname.split('/').filter(Boolean);
@@ -69,7 +93,21 @@ function generateBreadcrumbs(pathname: string) {
   let currentPath = '';
   segments.forEach((segment, index) => {
     currentPath += `/${segment}`;
-    const label = pathNameMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+
+    let label: string;
+    if (pathNameMap[segment]) {
+      label = pathNameMap[segment];
+    } else if (isUUID(segment) || isDemoId(segment)) {
+      // For UUIDs and demo IDs, show "Details" as the label
+      label = 'Details';
+    } else {
+      // Capitalize first letter of each word
+      label = segment
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+
     breadcrumbs.push({
       label,
       href: currentPath,
