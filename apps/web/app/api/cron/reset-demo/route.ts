@@ -458,7 +458,7 @@ async function createQuoteWithLineItems(
       quantity: item.quantity,
       rate: item.rate,
       amount: item.quantity * item.rate,
-      position: index,
+      sortOrder: index,
     })),
   });
 
@@ -513,7 +513,7 @@ async function createInvoiceWithLineItems(
       quantity: item.quantity,
       rate: item.rate,
       amount: item.quantity * item.rate,
-      position: index,
+      sortOrder: index,
     })),
   });
 
