@@ -405,6 +405,14 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
     notes: invoice.notes || '',
     terms: invoice.terms || '',
     internalNotes: invoice.internalNotes || '',
+    client: invoice.client
+      ? {
+          id: invoice.client.id,
+          name: invoice.client.name,
+          email: invoice.client.email,
+          company: invoice.client.company,
+        }
+      : null,
   };
 }
 

@@ -46,6 +46,13 @@ export interface InvoiceTotals {
   amountDue: number;
 }
 
+export interface InvoiceClient {
+  id: string;
+  name: string;
+  email: string | null;
+  company: string | null;
+}
+
 export interface InvoiceDocument {
   id: string;
   workspaceId: string;
@@ -63,6 +70,7 @@ export interface InvoiceDocument {
   notes: string;
   terms: string;
   internalNotes: string;
+  client?: InvoiceClient | null;
 }
 
 export interface InvoiceListItem {
