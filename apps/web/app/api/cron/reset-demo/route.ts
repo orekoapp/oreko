@@ -66,6 +66,14 @@ export async function GET(request: Request) {
       where: { workspaceId: demoWorkspace.id },
     });
 
+    // Delete contracts and contract instances (before clients due to FK)
+    await prisma.contractInstance.deleteMany({
+      where: { workspaceId: demoWorkspace.id },
+    });
+    await prisma.contract.deleteMany({
+      where: { workspaceId: demoWorkspace.id },
+    });
+
     // Delete projects
     await prisma.project.deleteMany({
       where: { workspaceId: demoWorkspace.id },
@@ -81,14 +89,6 @@ export async function GET(request: Request) {
       where: { workspaceId: demoWorkspace.id },
     });
     await prisma.rateCardCategory.deleteMany({
-      where: { workspaceId: demoWorkspace.id },
-    });
-
-    // Delete contracts and contract instances
-    await prisma.contractInstance.deleteMany({
-      where: { workspaceId: demoWorkspace.id },
-    });
-    await prisma.contract.deleteMany({
       where: { workspaceId: demoWorkspace.id },
     });
 
