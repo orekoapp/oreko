@@ -31,7 +31,7 @@ import type { ContractVariable } from '@/lib/contracts/types';
 
 interface ContractEditorProps {
   content: string;
-  onChange: (content: string) => void;
+  onChange?: (content: string) => void;
   variables?: ContractVariable[];
   placeholder?: string;
   editable?: boolean;
@@ -56,7 +56,7 @@ export function ContractEditor({
     content,
     editable,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChange?.(editor.getHTML());
     },
     editorProps: {
       attributes: {

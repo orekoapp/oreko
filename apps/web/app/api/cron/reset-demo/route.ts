@@ -659,11 +659,12 @@ Email: {{client_email}}</p>
       sentAt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
       viewedAt: new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000),
       signedAt: new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000),
-      signatureData: JSON.stringify({
-        signedBy: 'John Smith',
-        signedAt: new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString(),
-        signature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-      }),
+      signatureData: {
+        type: 'drawn',
+        name: 'John Smith',
+        date: new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString(),
+        value: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      },
       signerIpAddress: '192.168.1.100',
     },
   });

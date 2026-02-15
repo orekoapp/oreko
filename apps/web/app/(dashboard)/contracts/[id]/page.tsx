@@ -214,7 +214,6 @@ export default async function ContractDetailPage({ params }: PageProps) {
           <CardContent>
             <ContractEditor
               content={instance.content}
-              onChange={() => {}}
               editable={false}
             />
           </CardContent>
