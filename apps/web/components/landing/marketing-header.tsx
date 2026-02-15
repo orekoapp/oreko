@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, Github, Star } from 'lucide-react';
+import { Menu, X, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/shared';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
@@ -45,14 +46,7 @@ export function MarketingHeader() {
     >
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">Q</span>
-          </div>
-          <span className="font-bold text-xl text-slate-900 dark:text-white">
-            QuoteCraft
-          </span>
-        </Link>
+        <Logo href="/" />
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">

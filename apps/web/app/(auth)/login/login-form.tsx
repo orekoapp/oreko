@@ -221,7 +221,7 @@ export function LoginForm() {
 
         <Button
           variant="secondary"
-          className="w-full bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-900/20 dark:text-amber-100 dark:hover:bg-amber-900/30"
+          className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-100 dark:hover:bg-blue-900/30 dark:border-blue-800"
           onClick={onDemoSignIn}
           disabled={isLoading || isOAuthLoading !== null || isDemoLoading}
         >
