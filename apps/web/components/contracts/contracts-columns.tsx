@@ -136,7 +136,11 @@ export function getContractColumns(
       ),
       cell: ({ row }) => {
         const status = row.getValue('status') as string;
-        const config = statusConfig[status] ?? statusConfig.draft;
+        const config = statusConfig[status] || statusConfig.draft || {
+          label: 'Unknown',
+          className: 'border-gray-300 text-gray-600 bg-gray-50',
+          icon: <FileText className="h-3 w-3" />,
+        };
 
         return (
           <Badge variant="outline" className={`gap-1 ${config.className}`}>

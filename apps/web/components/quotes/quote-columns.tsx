@@ -95,6 +95,11 @@ export function createQuoteColumns({
       ),
       cell: ({ row }) => {
         const client = row.original.client;
+        if (!client) {
+          return (
+            <div className="text-muted-foreground italic">No client</div>
+          );
+        }
         return (
           <div>
             <p className="text-sm">{client.name}</p>
@@ -106,6 +111,7 @@ export function createQuoteColumns({
       },
       filterFn: (row, id, value) => {
         const client = row.original.client;
+        if (!client) return false;
         const searchValue = value.toLowerCase();
         return (
           client.name.toLowerCase().includes(searchValue) ||

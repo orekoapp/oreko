@@ -384,7 +384,7 @@ export interface QuoteListItem {
     id: string;
     name: string;
     email: string | null;
-  };
+  } | null;
   createdAt: string;
 }
 

@@ -109,6 +109,13 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
       ),
       cell: ({ row }) => {
         const client = row.original.client;
+
+        if (!client) {
+          return (
+            <div className="text-muted-foreground italic">No client</div>
+          );
+        }
+
         const initials = client.name
           .split(' ')
           .map((n) => n[0])
@@ -132,6 +139,7 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
       },
       filterFn: (row, id, value) => {
         const client = row.original.client;
+        if (!client) return false;
         const searchValue = value.toLowerCase();
         return (
           client.name.toLowerCase().includes(searchValue) ||
