@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { SearchCommand } from '@/components/shared/search-command';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -82,7 +83,21 @@ function generateBreadcrumbs(pathname: string) {
 export function AppHeader({ user }: AppHeaderProps) {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const breadcrumbs = generateBreadcrumbs(pathname);
+
+  // Register Cmd+K / Ctrl+K keyboard shortcut
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setCommandOpen((open) => !open);
+      }
+    };
+
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
 
   const initials = user.name
     ? user.name
@@ -151,13 +166,21 @@ export function AppHeader({ user }: AppHeaderProps) {
           )}
 
           {/* Desktop Search */}
-          <Button variant="ghost" size="sm" className="hidden md:flex">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden md:flex"
+            onClick={() => setCommandOpen(true)}
+          >
             <Search className="h-4 w-4 mr-2" />
             <span>Search</span>
             <kbd className="ml-4 rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               ⌘K
             </kbd>
           </Button>
+
+          {/* Search Command Palette */}
+          <SearchCommand open={commandOpen} onOpenChange={setCommandOpen} />
 
           {/* Theme Toggle */}
           <ThemeToggle />
