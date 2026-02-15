@@ -4,11 +4,36 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard';
 import { AnalyticsSkeleton } from '@/components/analytics/analytics-skeleton';
+import {
+  getAnalyticsStats,
+  getQuoteStatusCounts,
+  getConversionFunnelData,
+  getPaymentAgingData,
+} from '@/lib/dashboard/actions';
 
 export const metadata: Metadata = {
   title: 'Analytics | QuoteCraft',
   description: 'View your business analytics and insights',
 };
+
+async function AnalyticsContent() {
+  // Fetch all analytics data in parallel
+  const [stats, quoteStatusCounts, conversionFunnel, paymentAging] = await Promise.all([
+    getAnalyticsStats(),
+    getQuoteStatusCounts(),
+    getConversionFunnelData(),
+    getPaymentAgingData(),
+  ]);
+
+  return (
+    <AnalyticsDashboard
+      stats={stats}
+      quoteStatusCounts={quoteStatusCounts}
+      conversionFunnel={conversionFunnel}
+      paymentAging={paymentAging}
+    />
+  );
+}
 
 export default async function AnalyticsPage() {
   const session = await auth();
@@ -27,7 +52,7 @@ export default async function AnalyticsPage() {
       </div>
 
       <Suspense fallback={<AnalyticsSkeleton />}>
-        <AnalyticsDashboard />
+        <AnalyticsContent />
       </Suspense>
     </div>
   );

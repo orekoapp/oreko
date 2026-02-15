@@ -31,21 +31,12 @@ import { RevenueForecastChart } from './revenue-forecast-chart';
 import { TopClientsChart } from './top-clients-chart';
 import { ClientLifetimeValueCard } from './client-lifetime-value';
 
-// Mock data - will be replaced with server actions
-const mockStats = {
-  totalQuotes: 156,
-  totalInvoices: 98,
-  totalRevenue: 245680,
-  conversionRate: 62.8,
-  avgDealValue: 2506,
-  outstandingAmount: 34500,
-  overdueAmount: 12300,
-  quotesThisMonth: 24,
-  invoicesThisMonth: 18,
-  revenueThisMonth: 45200,
-  prevMonthRevenue: 38400,
-  prevMonthQuotes: 21,
-};
+import type {
+  AnalyticsStats,
+  QuoteStatusCounts,
+  ConversionFunnelData,
+  PaymentAgingData,
+} from '@/lib/dashboard/types';
 
 const presets = [
   { label: 'Last 7 days', value: '7d' },
@@ -126,7 +117,19 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function AnalyticsDashboard() {
+interface AnalyticsDashboardProps {
+  stats: AnalyticsStats;
+  quoteStatusCounts: QuoteStatusCounts;
+  conversionFunnel: ConversionFunnelData;
+  paymentAging: PaymentAgingData;
+}
+
+export function AnalyticsDashboard({
+  stats,
+  quoteStatusCounts,
+  conversionFunnel,
+  paymentAging,
+}: AnalyticsDashboardProps) {
   const [selectedPreset, setSelectedPreset] = useState('30d');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(
     getDateRangeFromPreset('30d')
@@ -138,8 +141,6 @@ export function AnalyticsDashboard() {
       setDateRange(getDateRangeFromPreset(value));
     }
   };
-
-  const stats = mockStats;
 
   // Calculate trends
   const revenueTrend = useMemo(() => {
@@ -243,8 +244,20 @@ export function AnalyticsDashboard() {
 
       {/* Sales Pipeline & Financial Health (P0 Features) */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <SalesPipelineSection dateRange={dateRange} />
-        <FinancialHealthSection dateRange={dateRange} />
+        <SalesPipelineSection
+          dateRange={dateRange}
+          conversionRate={stats.conversionRate}
+          avgDealValue={stats.avgDealValue}
+          quoteStatusCounts={quoteStatusCounts}
+          conversionFunnel={conversionFunnel}
+        />
+        <FinancialHealthSection
+          dateRange={dateRange}
+          outstandingAmount={stats.outstandingAmount}
+          overdueAmount={stats.overdueAmount}
+          revenueThisMonth={stats.revenueThisMonth}
+          paymentAging={paymentAging}
+        />
       </div>
 
       {/* Revenue Forecast - Full Width */}

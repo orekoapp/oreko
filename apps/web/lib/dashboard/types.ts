@@ -175,6 +175,13 @@ export interface AnalyticsData {
   forecast: ForecastDataPoint[];
 }
 
+// Analytics stats (extends DashboardStats with additional metrics)
+export interface AnalyticsStats extends DashboardStats {
+  avgDealValue: number;
+  prevMonthRevenue: number;
+  prevMonthQuotes: number;
+}
+
 // Export options
 export interface ExportOptions {
   format: 'csv' | 'pdf';

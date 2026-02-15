@@ -471,7 +471,62 @@ import type {
   MonthlyComparisonData,
   ForecastDataPoint,
   AnalyticsDateRange,
+  AnalyticsStats,
 } from './types';
+
+// Get analytics stats (extended dashboard stats with previous month comparison)
+export async function getAnalyticsStats(): Promise<AnalyticsStats> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+  const now = new Date();
+  const startOfCurrentMonth = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+  const startOfPrevMonth = startOfDay(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const endOfPrevMonth = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+
+  // Get base dashboard stats
+  const baseStats = await getDashboardStats();
+
+  // Get additional analytics-specific data
+  const [
+    avgDealResult,
+    prevMonthRevenueResult,
+    prevMonthQuotesResult,
+  ] = await Promise.all([
+    // Average deal value (from accepted quotes)
+    prisma.quote.aggregate({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        status: 'accepted',
+      },
+      _avg: { total: true },
+    }),
+    // Previous month revenue
+    prisma.invoice.aggregate({
+      where: {
+        workspaceId,
+        status: 'paid',
+        deletedAt: null,
+        paidAt: { gte: startOfPrevMonth, lt: endOfPrevMonth },
+      },
+      _sum: { amountPaid: true },
+    }),
+    // Previous month quotes
+    prisma.quote.count({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        createdAt: { gte: startOfPrevMonth, lt: endOfPrevMonth },
+      },
+    }),
+  ]);
+
+  return {
+    ...baseStats,
+    avgDealValue: toNumber(avgDealResult._avg.total),
+    prevMonthRevenue: toNumber(prevMonthRevenueResult._sum.amountPaid),
+    prevMonthQuotes: prevMonthQuotesResult,
+  };
+}
 
 // Get conversion funnel data
 export async function getConversionFunnelData(
