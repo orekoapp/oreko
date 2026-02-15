@@ -139,15 +139,22 @@ interface Workspace {
   id: string;
   name: string;
   logo: string | null;
+  tier: 'Enterprise' | 'Pro' | 'Free';
 }
 
 // Workspace data (will be replaced with actual data from auth context)
 const workspaces: Workspace[] = [
-  { id: '1', name: 'My Business', logo: null },
-  { id: '2', name: 'Side Project', logo: null },
+  { id: '1', name: 'Quote Craft', logo: null, tier: 'Enterprise' },
+  { id: '2', name: 'Side Project', logo: null, tier: 'Free' },
 ];
 
-const defaultWorkspace: Workspace = { id: '1', name: 'My Business', logo: null };
+const defaultWorkspace: Workspace = { id: '1', name: 'Quote Craft', logo: null, tier: 'Enterprise' };
+
+const tierColors: Record<string, string> = {
+  Enterprise: 'bg-purple-100 text-purple-700',
+  Pro: 'bg-blue-100 text-blue-700',
+  Free: 'bg-gray-100 text-gray-600',
+};
 
 interface AppSidebarProps {
   user?: {
@@ -205,12 +212,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
                     )}
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {activeWorkspace.name}
-                    </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      QuoteCraft
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-semibold">
+                        {activeWorkspace.name}
+                      </span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${tierColors[activeWorkspace.tier]}`}>
+                        {activeWorkspace.tier}
+                      </span>
+                    </div>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />
                 </SidebarMenuButton>
@@ -262,9 +271,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Main Navigation with Hierarchical Items */}
+        {/* Platform Navigation with Hierarchical Items */}
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>Platform</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) =>
