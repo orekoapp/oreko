@@ -66,6 +66,11 @@ export async function GET(request: Request) {
       where: { workspaceId: demoWorkspace.id },
     });
 
+    // Delete projects
+    await prisma.project.deleteMany({
+      where: { workspaceId: demoWorkspace.id },
+    });
+
     // Delete clients
     await prisma.client.deleteMany({
       where: { workspaceId: demoWorkspace.id },
@@ -249,6 +254,52 @@ async function seedDemoData(workspaceId: string) {
 
   await prisma.client.createMany({ data: clients });
 
+  // Create demo projects
+  const projects = [
+    {
+      id: 'demo-project-1',
+      workspaceId,
+      clientId: 'demo-client-1',
+      name: 'Website Redesign 2024',
+      description: 'Complete overhaul of the company website including new branding, UX improvements, and mobile responsiveness.',
+      isActive: true,
+    },
+    {
+      id: 'demo-project-2',
+      workspaceId,
+      clientId: 'demo-client-2',
+      name: 'E-commerce Platform',
+      description: 'Building a new e-commerce platform with inventory management, payment processing, and customer portal.',
+      isActive: true,
+    },
+    {
+      id: 'demo-project-3',
+      workspaceId,
+      clientId: 'demo-client-3',
+      name: 'Brand Identity Package',
+      description: 'Logo design, brand guidelines, and marketing collateral for Johnson Consulting.',
+      isActive: true,
+    },
+    {
+      id: 'demo-project-4',
+      workspaceId,
+      clientId: 'demo-client-4',
+      name: 'Mobile App MVP',
+      description: 'Design and development of a mobile app MVP for Chen Ventures startup.',
+      isActive: true,
+    },
+    {
+      id: 'demo-project-5',
+      workspaceId,
+      clientId: 'demo-client-5',
+      name: 'Annual Retainer 2023',
+      description: 'Ongoing design and development support for Creative Agency LLC.',
+      isActive: false,
+    },
+  ];
+
+  await prisma.project.createMany({ data: projects });
+
   // Create rate card categories and items
   const category = await prisma.rateCardCategory.create({
     data: {
@@ -276,6 +327,7 @@ async function seedDemoData(workspaceId: string) {
   await createQuoteWithLineItems(workspaceId, {
     quoteNumber: 'Q-0001',
     clientId: 'demo-client-1',
+    projectId: 'demo-project-1',
     title: 'Website Redesign Proposal',
     status: 'draft',
     issueDate: now,
@@ -291,6 +343,7 @@ async function seedDemoData(workspaceId: string) {
   await createQuoteWithLineItems(workspaceId, {
     quoteNumber: 'Q-0002',
     clientId: 'demo-client-2',
+    projectId: 'demo-project-2',
     title: 'E-commerce Platform Design',
     status: 'sent',
     issueDate: sevenDaysAgo,
@@ -307,6 +360,7 @@ async function seedDemoData(workspaceId: string) {
   await createQuoteWithLineItems(workspaceId, {
     quoteNumber: 'Q-0003',
     clientId: 'demo-client-3',
+    projectId: 'demo-project-3',
     title: 'Brand Identity Package',
     status: 'viewed',
     issueDate: sevenDaysAgo,
@@ -324,6 +378,7 @@ async function seedDemoData(workspaceId: string) {
   await createQuoteWithLineItems(workspaceId, {
     quoteNumber: 'Q-0004',
     clientId: 'demo-client-4',
+    projectId: 'demo-project-4',
     title: 'Mobile App UI Design',
     status: 'accepted',
     issueDate: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
@@ -342,6 +397,7 @@ async function seedDemoData(workspaceId: string) {
   await createQuoteWithLineItems(workspaceId, {
     quoteNumber: 'Q-0005',
     clientId: 'demo-client-5',
+    projectId: 'demo-project-5',
     title: 'Annual Retainer Package',
     status: 'declined',
     issueDate: new Date(now.getTime() - 21 * 24 * 60 * 60 * 1000),
@@ -359,6 +415,7 @@ async function seedDemoData(workspaceId: string) {
   await createInvoiceWithLineItems(workspaceId, {
     invoiceNumber: 'INV-0001',
     clientId: 'demo-client-1',
+    projectId: 'demo-project-1',
     title: 'Previous Project - Final Payment',
     status: 'paid',
     issueDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
@@ -374,6 +431,7 @@ async function seedDemoData(workspaceId: string) {
   await createInvoiceWithLineItems(workspaceId, {
     invoiceNumber: 'INV-0002',
     clientId: 'demo-client-3',
+    projectId: 'demo-project-3',
     title: 'Consulting Services - January',
     status: 'sent',
     issueDate: sevenDaysAgo,
@@ -389,6 +447,7 @@ async function seedDemoData(workspaceId: string) {
   await createInvoiceWithLineItems(workspaceId, {
     invoiceNumber: 'INV-0003',
     clientId: 'demo-client-2',
+    projectId: 'demo-project-2',
     title: 'Phase 1 Design Delivery',
     status: 'overdue',
     issueDate: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
@@ -404,6 +463,7 @@ async function seedDemoData(workspaceId: string) {
   await createInvoiceWithLineItems(workspaceId, {
     invoiceNumber: 'INV-0004',
     clientId: 'demo-client-4',
+    projectId: 'demo-project-4',
     title: 'Mobile App Design - Milestone 1',
     status: 'draft',
     issueDate: now,
@@ -798,6 +858,7 @@ async function createQuoteWithLineItems(
   data: {
     quoteNumber: string;
     clientId: string;
+    projectId?: string;
     title: string;
     status: string;
     issueDate: Date;
@@ -815,6 +876,7 @@ async function createQuoteWithLineItems(
     data: {
       workspaceId,
       clientId: data.clientId,
+      projectId: data.projectId,
       quoteNumber: data.quoteNumber,
       title: data.title,
       status: data.status,
@@ -851,6 +913,7 @@ async function createInvoiceWithLineItems(
   data: {
     invoiceNumber: string;
     clientId: string;
+    projectId?: string;
     title: string;
     status: string;
     issueDate: Date;
@@ -869,6 +932,7 @@ async function createInvoiceWithLineItems(
     data: {
       workspaceId,
       clientId: data.clientId,
+      projectId: data.projectId,
       invoiceNumber: data.invoiceNumber,
       title: data.title,
       status: data.status,
