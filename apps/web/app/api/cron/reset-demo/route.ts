@@ -79,6 +79,19 @@ export async function GET(request: Request) {
       where: { workspaceId: demoWorkspace.id },
     });
 
+    // Delete contracts and contract instances
+    await prisma.contractInstance.deleteMany({
+      where: { workspaceId: demoWorkspace.id },
+    });
+    await prisma.contract.deleteMany({
+      where: { workspaceId: demoWorkspace.id },
+    });
+
+    // Delete email templates
+    await prisma.emailTemplate.deleteMany({
+      where: { workspaceId: demoWorkspace.id },
+    });
+
     // Reset number sequences
     await prisma.numberSequence.updateMany({
       where: { workspaceId: demoWorkspace.id },
@@ -409,6 +422,371 @@ async function seedDemoData(workspaceId: string) {
   await prisma.numberSequence.updateMany({
     where: { workspaceId, type: 'invoice' },
     data: { currentValue: 4 },
+  });
+
+  // Create contract templates
+  const serviceAgreement = await prisma.contract.create({
+    data: {
+      id: 'demo-contract-1',
+      workspaceId,
+      name: 'Service Agreement',
+      isTemplate: true,
+      content: `<h1>Service Agreement</h1>
+<p>This Service Agreement ("Agreement") is entered into as of <strong>{{date}}</strong> between:</p>
+
+<h2>Parties</h2>
+<p><strong>Service Provider:</strong> Acme Design Studio<br/>
+Address: 123 Creative Street, San Francisco, CA 94102</p>
+
+<p><strong>Client:</strong> {{client_name}}<br/>
+Company: {{client_company}}<br/>
+Email: {{client_email}}</p>
+
+<h2>Scope of Services</h2>
+<p>The Service Provider agrees to provide the following services:</p>
+<ul>
+<li>{{service_description}}</li>
+</ul>
+
+<h2>Payment Terms</h2>
+<p>Total project value: <strong>{{project_value}}</strong></p>
+<p>Payment schedule:</p>
+<ul>
+<li>50% upon signing this agreement</li>
+<li>50% upon project completion</li>
+</ul>
+
+<h2>Project Timeline</h2>
+<p>Estimated completion: {{timeline}}</p>
+
+<h2>Terms & Conditions</h2>
+<ol>
+<li><strong>Revisions:</strong> This agreement includes up to 2 rounds of revisions.</li>
+<li><strong>Intellectual Property:</strong> Upon full payment, all deliverables become the property of the Client.</li>
+<li><strong>Confidentiality:</strong> Both parties agree to maintain confidentiality of proprietary information.</li>
+<li><strong>Termination:</strong> Either party may terminate with 14 days written notice.</li>
+</ol>
+
+<h2>Signatures</h2>
+<p>By signing below, both parties agree to the terms outlined in this Agreement.</p>`,
+      variables: JSON.stringify([
+        { name: 'date', label: 'Agreement Date', type: 'date' },
+        { name: 'client_name', label: 'Client Name', type: 'text' },
+        { name: 'client_company', label: 'Client Company', type: 'text' },
+        { name: 'client_email', label: 'Client Email', type: 'email' },
+        { name: 'service_description', label: 'Service Description', type: 'textarea' },
+        { name: 'project_value', label: 'Project Value', type: 'text' },
+        { name: 'timeline', label: 'Project Timeline', type: 'text' },
+      ]),
+    },
+  });
+
+  const ndaTemplate = await prisma.contract.create({
+    data: {
+      id: 'demo-contract-2',
+      workspaceId,
+      name: 'Non-Disclosure Agreement (NDA)',
+      isTemplate: true,
+      content: `<h1>Non-Disclosure Agreement</h1>
+<p>This Non-Disclosure Agreement ("Agreement") is effective as of <strong>{{effective_date}}</strong>.</p>
+
+<h2>Parties</h2>
+<p><strong>Disclosing Party:</strong> {{disclosing_party}}</p>
+<p><strong>Receiving Party:</strong> {{receiving_party}}</p>
+
+<h2>Purpose</h2>
+<p>The parties wish to explore a potential business relationship ("Purpose") during which Confidential Information may be disclosed.</p>
+
+<h2>Definition of Confidential Information</h2>
+<p>Confidential Information includes:</p>
+<ul>
+<li>Business plans, strategies, and financial information</li>
+<li>Customer and client data</li>
+<li>Technical data, trade secrets, and know-how</li>
+<li>Software, designs, and prototypes</li>
+<li>Any other proprietary information</li>
+</ul>
+
+<h2>Obligations</h2>
+<p>The Receiving Party agrees to:</p>
+<ol>
+<li>Hold all Confidential Information in strict confidence</li>
+<li>Not disclose Confidential Information to third parties without prior written consent</li>
+<li>Use Confidential Information solely for the Purpose</li>
+<li>Return or destroy all Confidential Information upon request</li>
+</ol>
+
+<h2>Term</h2>
+<p>This Agreement shall remain in effect for <strong>{{term_years}}</strong> from the Effective Date.</p>
+
+<h2>Signatures</h2>
+<p>By signing below, both parties acknowledge and agree to the terms of this NDA.</p>`,
+      variables: JSON.stringify([
+        { name: 'effective_date', label: 'Effective Date', type: 'date' },
+        { name: 'disclosing_party', label: 'Disclosing Party', type: 'text' },
+        { name: 'receiving_party', label: 'Receiving Party', type: 'text' },
+        { name: 'term_years', label: 'Term (e.g., "2 years")', type: 'text' },
+      ]),
+    },
+  });
+
+  const projectContract = await prisma.contract.create({
+    data: {
+      id: 'demo-contract-3',
+      workspaceId,
+      name: 'Project Contract',
+      isTemplate: true,
+      content: `<h1>Project Contract</h1>
+<p>This Project Contract outlines the terms for <strong>{{project_name}}</strong>.</p>
+
+<h2>Project Overview</h2>
+<p><strong>Project Name:</strong> {{project_name}}</p>
+<p><strong>Client:</strong> {{client_name}}</p>
+<p><strong>Start Date:</strong> {{start_date}}</p>
+<p><strong>Estimated End Date:</strong> {{end_date}}</p>
+
+<h2>Deliverables</h2>
+<p>{{deliverables}}</p>
+
+<h2>Milestones & Payment Schedule</h2>
+<table>
+<tr><th>Milestone</th><th>Due Date</th><th>Amount</th></tr>
+<tr><td>Project Kickoff</td><td>{{milestone_1_date}}</td><td>{{milestone_1_amount}}</td></tr>
+<tr><td>Design Approval</td><td>{{milestone_2_date}}</td><td>{{milestone_2_amount}}</td></tr>
+<tr><td>Final Delivery</td><td>{{milestone_3_date}}</td><td>{{milestone_3_amount}}</td></tr>
+</table>
+
+<h2>Communication</h2>
+<p>Weekly status updates will be provided via email. The primary contact for this project is:</p>
+<p><strong>Provider Contact:</strong> Acme Design Studio<br/>
+<strong>Client Contact:</strong> {{client_contact}}</p>
+
+<h2>Acceptance</h2>
+<p>By signing below, both parties agree to proceed with the project under these terms.</p>`,
+      variables: JSON.stringify([
+        { name: 'project_name', label: 'Project Name', type: 'text' },
+        { name: 'client_name', label: 'Client Name', type: 'text' },
+        { name: 'client_contact', label: 'Client Contact', type: 'text' },
+        { name: 'start_date', label: 'Start Date', type: 'date' },
+        { name: 'end_date', label: 'End Date', type: 'date' },
+        { name: 'deliverables', label: 'Deliverables', type: 'textarea' },
+        { name: 'milestone_1_date', label: 'Milestone 1 Date', type: 'date' },
+        { name: 'milestone_1_amount', label: 'Milestone 1 Amount', type: 'text' },
+        { name: 'milestone_2_date', label: 'Milestone 2 Date', type: 'date' },
+        { name: 'milestone_2_amount', label: 'Milestone 2 Amount', type: 'text' },
+        { name: 'milestone_3_date', label: 'Milestone 3 Date', type: 'date' },
+        { name: 'milestone_3_amount', label: 'Milestone 3 Amount', type: 'text' },
+      ]),
+    },
+  });
+
+  // Create sample contract instances (sent to clients)
+  await prisma.contractInstance.create({
+    data: {
+      id: 'demo-contract-instance-1',
+      workspaceId,
+      contractId: serviceAgreement.id,
+      clientId: 'demo-client-1',
+      status: 'signed',
+      content: serviceAgreement.content
+        .replace('{{date}}', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString())
+        .replace('{{client_name}}', 'TechStart Inc.')
+        .replace('{{client_company}}', 'TechStart Inc.')
+        .replace('{{client_email}}', 'projects@techstart.demo')
+        .replace('{{service_description}}', 'Website Redesign and Development')
+        .replace('{{project_value}}', '$15,000')
+        .replace('{{timeline}}', '6 weeks'),
+      sentAt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+      viewedAt: new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000),
+      signedAt: new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000),
+      signatureData: JSON.stringify({
+        signedBy: 'John Smith',
+        signedAt: new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString(),
+        signature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      }),
+      signerIpAddress: '192.168.1.100',
+    },
+  });
+
+  await prisma.contractInstance.create({
+    data: {
+      id: 'demo-contract-instance-2',
+      workspaceId,
+      contractId: ndaTemplate.id,
+      clientId: 'demo-client-2',
+      status: 'sent',
+      content: ndaTemplate.content
+        .replace('{{effective_date}}', new Date().toLocaleDateString())
+        .replace('{{disclosing_party}}', 'Global Retail Co.')
+        .replace('{{receiving_party}}', 'Acme Design Studio')
+        .replace('{{term_years}}', '3 years'),
+      sentAt: sevenDaysAgo,
+      viewedAt: new Date(sevenDaysAgo.getTime() + 1 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  await prisma.contractInstance.create({
+    data: {
+      id: 'demo-contract-instance-3',
+      workspaceId,
+      contractId: projectContract.id,
+      clientId: 'demo-client-4',
+      status: 'draft',
+      content: projectContract.content
+        .replace('{{project_name}}', 'Mobile App UI Design')
+        .replace('{{client_name}}', 'Marcus Chen')
+        .replace('{{client_contact}}', 'Marcus Chen')
+        .replace('{{start_date}}', now.toLocaleDateString())
+        .replace('{{end_date}}', thirtyDaysFromNow.toLocaleDateString())
+        .replace('{{deliverables}}', 'App wireframes, high-fidelity mockups, design system documentation')
+        .replace('{{milestone_1_date}}', now.toLocaleDateString())
+        .replace('{{milestone_1_amount}}', '$3,600')
+        .replace('{{milestone_2_date}}', new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString())
+        .replace('{{milestone_2_amount}}', '$6,000')
+        .replace('{{milestone_3_date}}', thirtyDaysFromNow.toLocaleDateString())
+        .replace('{{milestone_3_amount}}', '$2,400'),
+    },
+  });
+
+  // Create email templates
+  await prisma.emailTemplate.createMany({
+    data: [
+      {
+        id: 'demo-email-template-1',
+        workspaceId,
+        type: 'quote_sent',
+        name: 'Quote Sent',
+        subject: 'Your Quote from Acme Design Studio - {{quote_number}}',
+        body: `<p>Hi {{client_name}},</p>
+
+<p>Thank you for considering Acme Design Studio for your project!</p>
+
+<p>We've prepared a detailed quote for <strong>{{quote_title}}</strong>. You can review the full proposal, including pricing and deliverables, using the link below:</p>
+
+<p><a href="{{quote_link}}">View Your Quote</a></p>
+
+<p>This quote is valid until {{expiration_date}}.</p>
+
+<p>If you have any questions or would like to discuss the proposal, please don't hesitate to reach out.</p>
+
+<p>Best regards,<br/>
+Acme Design Studio</p>`,
+        isActive: true,
+        isDefault: true,
+      },
+      {
+        id: 'demo-email-template-2',
+        workspaceId,
+        type: 'quote_reminder',
+        name: 'Quote Reminder',
+        subject: 'Reminder: Your Quote Expires Soon - {{quote_number}}',
+        body: `<p>Hi {{client_name}},</p>
+
+<p>Just a friendly reminder that your quote for <strong>{{quote_title}}</strong> will expire on {{expiration_date}}.</p>
+
+<p>If you're still interested, you can review and accept the proposal here:</p>
+
+<p><a href="{{quote_link}}">View Your Quote</a></p>
+
+<p>If you have any questions or need any adjustments to the proposal, please let us know!</p>
+
+<p>Best regards,<br/>
+Acme Design Studio</p>`,
+        isActive: true,
+        isDefault: true,
+      },
+      {
+        id: 'demo-email-template-3',
+        workspaceId,
+        type: 'invoice_sent',
+        name: 'Invoice Sent',
+        subject: 'Invoice {{invoice_number}} from Acme Design Studio',
+        body: `<p>Hi {{client_name}},</p>
+
+<p>Please find attached your invoice for <strong>{{invoice_title}}</strong>.</p>
+
+<p><strong>Invoice Details:</strong></p>
+<ul>
+<li>Invoice Number: {{invoice_number}}</li>
+<li>Amount Due: {{amount_due}}</li>
+<li>Due Date: {{due_date}}</li>
+</ul>
+
+<p>You can view and pay your invoice online:</p>
+
+<p><a href="{{invoice_link}}">View & Pay Invoice</a></p>
+
+<p>Thank you for your business!</p>
+
+<p>Best regards,<br/>
+Acme Design Studio</p>`,
+        isActive: true,
+        isDefault: true,
+      },
+      {
+        id: 'demo-email-template-4',
+        workspaceId,
+        type: 'payment_reminder',
+        name: 'Payment Reminder',
+        subject: 'Payment Reminder: Invoice {{invoice_number}}',
+        body: `<p>Hi {{client_name}},</p>
+
+<p>This is a friendly reminder that invoice <strong>{{invoice_number}}</strong> for {{amount_due}} is due on {{due_date}}.</p>
+
+<p>If you've already sent payment, please disregard this message.</p>
+
+<p>You can view and pay your invoice here:</p>
+
+<p><a href="{{invoice_link}}">View & Pay Invoice</a></p>
+
+<p>If you have any questions about this invoice, please don't hesitate to contact us.</p>
+
+<p>Best regards,<br/>
+Acme Design Studio</p>`,
+        isActive: true,
+        isDefault: true,
+      },
+      {
+        id: 'demo-email-template-5',
+        workspaceId,
+        type: 'payment_received',
+        name: 'Payment Confirmation',
+        subject: 'Payment Received - Thank You!',
+        body: `<p>Hi {{client_name}},</p>
+
+<p>We've received your payment of <strong>{{payment_amount}}</strong> for invoice {{invoice_number}}.</p>
+
+<p>Thank you for your prompt payment! We truly appreciate your business.</p>
+
+<p>If you need a receipt or have any questions, please let us know.</p>
+
+<p>Best regards,<br/>
+Acme Design Studio</p>`,
+        isActive: true,
+        isDefault: true,
+      },
+      {
+        id: 'demo-email-template-6',
+        workspaceId,
+        type: 'contract_sent',
+        name: 'Contract for Signature',
+        subject: 'Contract Ready for Your Signature - {{contract_name}}',
+        body: `<p>Hi {{client_name}},</p>
+
+<p>Your contract for <strong>{{contract_name}}</strong> is ready for review and signature.</p>
+
+<p>Please review the terms carefully and sign electronically using the secure link below:</p>
+
+<p><a href="{{contract_link}}">Review & Sign Contract</a></p>
+
+<p>If you have any questions about the contract terms, please don't hesitate to reach out.</p>
+
+<p>Best regards,<br/>
+Acme Design Studio</p>`,
+        isActive: true,
+        isDefault: true,
+      },
+    ],
   });
 }
 
