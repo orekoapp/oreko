@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Table } from '@tanstack/react-table';
-import { Search, X } from 'lucide-react';
+import { Search, X, SlidersHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,8 @@ interface DataTableToolbarProps<TData> {
   filterPlaceholder?: string;
   statusOptions?: { value: string; label: string }[];
   statusFilterKey?: string;
+  pageSizes?: number[];
+  showPageSizeSelector?: boolean;
 }
 
 export function DataTableToolbar<TData>({
@@ -28,6 +30,8 @@ export function DataTableToolbar<TData>({
   filterPlaceholder = 'Search...',
   statusOptions,
   statusFilterKey = 'status',
+  pageSizes = [10, 25, 50, 100],
+  showPageSizeSelector = true,
 }: DataTableToolbarProps<TData>) {
   const [searchValue, setSearchValue] = React.useState('');
   const debouncedSearchRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -68,6 +72,27 @@ export function DataTableToolbar<TData>({
   return (
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
+        {/* Show dropdown - page size selector */}
+        {showPageSizeSelector && (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Show</span>
+            <Select
+              value={`${table.getState().pagination.pageSize}`}
+              onValueChange={(value) => table.setPageSize(Number(value))}
+            >
+              <SelectTrigger className="h-9 w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent side="bottom">
+                {pageSizes.map((size) => (
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {filterKey && (
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -103,6 +128,11 @@ export function DataTableToolbar<TData>({
             </SelectContent>
           </Select>
         )}
+        {/* Filter/settings icon */}
+        <Button variant="outline" size="icon" className="h-9 w-9">
+          <SlidersHorizontal className="h-4 w-4" />
+          <span className="sr-only">Column settings</span>
+        </Button>
         {isFiltered && (
           <Button
             variant="ghost"

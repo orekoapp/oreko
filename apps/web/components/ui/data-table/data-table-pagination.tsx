@@ -9,22 +9,13 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
-  pageSizes?: number[];
 }
 
 export function DataTablePagination<TData>({
   table,
-  pageSizes = [10, 25, 50, 100],
 }: DataTablePaginationProps<TData>) {
   const pageIndex = table.getState().pagination.pageIndex;
   const pageCount = table.getPageCount();
@@ -72,26 +63,6 @@ export function DataTablePagination<TData>({
 
   return (
     <div className="flex items-center justify-between px-2">
-      <div className="flex items-center space-x-2">
-        <p className="text-sm text-muted-foreground">Rows per page</p>
-        <Select
-          value={`${table.getState().pagination.pageSize}`}
-          onValueChange={(value) => {
-            table.setPageSize(Number(value));
-          }}
-        >
-          <SelectTrigger className="h-8 w-[70px]">
-            <SelectValue placeholder={table.getState().pagination.pageSize} />
-          </SelectTrigger>
-          <SelectContent side="top">
-            {pageSizes.map((pageSize) => (
-              <SelectItem key={pageSize} value={`${pageSize}`}>
-                {pageSize}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center justify-center text-sm text-muted-foreground whitespace-nowrap">
           Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}

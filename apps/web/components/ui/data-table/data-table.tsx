@@ -91,6 +91,7 @@ export function DataTable<TData, TValue>({
         filterPlaceholder={filterPlaceholder}
         statusOptions={statusOptions}
         statusFilterKey={statusFilterKey}
+        pageSizes={pageSizes}
       />
       <div className="rounded-md border">
         <Table>
@@ -136,7 +137,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} pageSizes={pageSizes} />
+      <DataTablePagination table={table} />
     </div>
   );
 }
