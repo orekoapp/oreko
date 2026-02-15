@@ -234,12 +234,24 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <CardTitle className="text-base">Client</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Client ID: {quote.clientId}
-              </p>
-              <Button variant="outline" size="sm" className="mt-4 w-full">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                View Client
+              {quote.client ? (
+                <>
+                  <p className="font-medium">{quote.client.name}</p>
+                  {quote.client.company && quote.client.company !== quote.client.name && (
+                    <p className="text-sm text-muted-foreground">{quote.client.company}</p>
+                  )}
+                  {quote.client.email && (
+                    <p className="text-sm text-muted-foreground">{quote.client.email}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted-foreground text-sm">No client assigned</p>
+              )}
+              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+                <Link href={`/clients/${quote.clientId}`}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View Client
+                </Link>
               </Button>
             </CardContent>
           </Card>

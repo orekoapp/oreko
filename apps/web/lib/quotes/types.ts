@@ -177,6 +177,13 @@ export interface LinkedInvoice {
   status: string;
 }
 
+export interface QuoteClient {
+  id: string;
+  name: string;
+  email: string | null;
+  company: string | null;
+}
+
 export interface QuoteDocument {
   id: string;
   workspaceId: string;
@@ -194,6 +201,7 @@ export interface QuoteDocument {
   terms: string;
   internalNotes: string;
   linkedInvoice?: LinkedInvoice | null;
+  client?: QuoteClient | null;
 }
 
 export type QuoteStatus =

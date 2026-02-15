@@ -322,6 +322,14 @@ export async function getQuote(quoteId: string) {
           status: quote.invoice.status,
         }
       : null,
+    client: quote.client
+      ? {
+          id: quote.client.id,
+          name: quote.client.name,
+          email: quote.client.email,
+          company: quote.client.company,
+        }
+      : null,
   };
 
   return document;
