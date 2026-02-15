@@ -4,7 +4,7 @@ import { Plus, Users, Building2, User, FileText, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ClientList } from '@/components/clients';
+import { ClientsDataTable } from '@/components/clients';
 import { getClients, getClientStats } from '@/lib/clients/actions';
 
 interface ClientsPageProps {
@@ -123,7 +123,7 @@ async function ClientListWrapper({
     sortOrder: (searchParams.sortOrder as 'asc' | 'desc') || 'desc',
   });
 
-  return <ClientList clients={clients} />;
+  return <ClientsDataTable data={clients} />;
 }
 
 function StatsLoading() {

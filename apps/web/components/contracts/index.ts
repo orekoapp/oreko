@@ -5,3 +5,5 @@ export { ContractEditor } from './contract-editor';
 export { SignaturePad } from './signature-pad';
 export { VariableManager } from './variable-manager';
 export { CreateContractForm } from './create-contract-form';
+export { ContractsDataTable } from './contracts-data-table';
+export { getContractColumns, contractStatusOptions } from './contracts-columns';

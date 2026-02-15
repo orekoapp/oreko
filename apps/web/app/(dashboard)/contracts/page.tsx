@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ContractInstanceList } from '@/components/contracts/contract-instance-list';
+import { ContractsDataTable } from '@/components/contracts';
 import { getContractInstances } from '@/lib/contracts/actions';
 
 export const metadata = {
@@ -26,13 +26,7 @@ async function ContractListContent({
     page: searchParams.page ? parseInt(searchParams.page, 10) : 1,
   });
 
-  return (
-    <ContractInstanceList
-      instances={instances}
-      searchQuery={searchParams.search}
-      statusFilter={searchParams.status}
-    />
-  );
+  return <ContractsDataTable data={instances} />;
 }
 
 function ContractListSkeleton() {
