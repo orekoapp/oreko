@@ -90,6 +90,11 @@ const mainNavItems: NavItemWithSub[] = [
     icon: FolderKanban,
     items: [
       {
+        title: 'All Projects',
+        href: '/projects',
+        icon: FolderKanban,
+      },
+      {
         title: 'Quotes',
         href: '/quotes',
         icon: FileText,
