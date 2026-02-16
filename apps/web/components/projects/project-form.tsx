@@ -73,7 +73,7 @@ export function ProjectForm({
             <Label htmlFor="clientId">Client *</Label>
             <Select
               value={form.watch('clientId')}
-              onValueChange={(value) => form.setValue('clientId', value)}
+              onValueChange={(value) => form.setValue('clientId', value, { shouldValidate: true })}
             >
               <SelectTrigger id="clientId">
                 <SelectValue placeholder="Select a client" />
