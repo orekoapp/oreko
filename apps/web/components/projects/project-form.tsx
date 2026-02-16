@@ -21,7 +21,7 @@ import { z } from 'zod';
 const projectFormSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(255),
   description: z.string().optional(),
-  clientId: z.string().uuid('Please select a client'),
+  clientId: z.string().min(1, 'Please select a client'),
 });
 
 type ProjectFormInput = z.infer<typeof projectFormSchema>;
