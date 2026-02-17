@@ -95,7 +95,7 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
       email: client.email,
       phone: client.phone,
       company: client.company,
-      type: metadata.type || 'individual',
+      type: metadata.type || (client.company ? 'company' : 'individual'),
       totalQuotes: client._count.quotes,
       totalInvoices: client._count.invoices,
       totalRevenue: client.invoices.reduce((sum, inv) => sum + toNumber(inv.total), 0),

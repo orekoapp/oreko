@@ -65,7 +65,7 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
             </div>
             <div>
               <div className="font-medium">{client.company || client.name}</div>
-              {client.company && (
+              {client.company && client.company !== client.name && (
                 <div className="text-sm text-muted-foreground">{client.name}</div>
               )}
             </div>
@@ -146,7 +146,7 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
       cell: ({ row }) => {
         const revenue = row.getValue('totalRevenue') as number;
         return (
-          <div className="font-medium">{formatCurrency(revenue / 100)}</div>
+          <div className="font-medium">{formatCurrency(revenue)}</div>
         );
       },
     },

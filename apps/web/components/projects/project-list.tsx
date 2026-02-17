@@ -279,7 +279,7 @@ export function ProjectList({ projects }: ProjectListProps) {
                   <TableCell>
                     <Link href={`/clients/${project.client.id}`} className="hover:underline">
                       <p className="text-sm">{project.client.company || project.client.name}</p>
-                      {project.client.company && (
+                      {project.client.company && project.client.company !== project.client.name && (
                         <p className="text-xs text-muted-foreground">{project.client.name}</p>
                       )}
                     </Link>

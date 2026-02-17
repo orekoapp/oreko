@@ -43,7 +43,7 @@ export function AnalyticsSection({
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Analytics</h2>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/dashboard/analytics">
+          <Link href="/analytics">
             <BarChart3 className="mr-2 h-4 w-4" />
             View All
           </Link>

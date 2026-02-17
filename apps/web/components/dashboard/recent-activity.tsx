@@ -95,7 +95,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                     {activity.amount && activity.amount > 0 && (
                       <>
                         <span>•</span>
-                        <span>{formatCurrency(activity.amount / 100)}</span>
+                        <span>{formatCurrency(activity.amount)}</span>
                       </>
                     )}
                   </div>

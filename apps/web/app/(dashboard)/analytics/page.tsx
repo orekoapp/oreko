@@ -16,7 +16,7 @@ import {
 } from '@/lib/dashboard/actions';
 
 export const metadata: Metadata = {
-  title: 'Analytics | QuoteCraft',
+  title: 'Analytics',
   description: 'View your business analytics and insights',
 };
 

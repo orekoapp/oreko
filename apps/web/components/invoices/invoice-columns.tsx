@@ -151,7 +151,7 @@ export function createInvoiceColumns({
         const hasPartialPayment = amountDue > 0 && amountDue !== total;
 
         return (
-          <div className="text-right">
+          <div className="text-right whitespace-nowrap">
             <p className="font-medium">{formatCurrency(total)}</p>
             {hasPartialPayment && (
               <p className="text-xs text-orange-600">

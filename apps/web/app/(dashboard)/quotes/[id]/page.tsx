@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { FileText, Edit, Send, Download, Copy, Trash2, ExternalLink, Receipt, ArrowRight } from 'lucide-react';
 import { getQuote } from '@/lib/quotes/actions';
+import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConvertToInvoiceButton } from '@/components/quotes/convert-to-invoice-button';
@@ -54,9 +55,11 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             <Copy className="mr-2 h-4 w-4" />
             Duplicate
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Download PDF
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/pdf/quote/${id}`} target="_blank" rel="noopener noreferrer">
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF
+            </a>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href={`/quotes/${id}/builder`}>
@@ -138,11 +141,10 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                             </div>
                             <div className="text-right">
                               <p className="text-sm text-muted-foreground">
-                                {block.content.quantity} x $
-                                {block.content.rate.toFixed(2)}
+                                {block.content.quantity} x {formatCurrency(block.content.rate)}
                               </p>
                               <p className="font-semibold">
-                                ${lineTotal.toFixed(2)}
+                                {formatCurrency(lineTotal)}
                               </p>
                             </div>
                           </div>
@@ -156,23 +158,23 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                   <div className="ml-auto w-64 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>${quote.totals.subtotal.toFixed(2)}</span>
+                      <span>{formatCurrency(quote.totals.subtotal)}</span>
                     </div>
                     {quote.totals.discountAmount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
-                        <span>-${quote.totals.discountAmount.toFixed(2)}</span>
+                        <span>-{formatCurrency(quote.totals.discountAmount)}</span>
                       </div>
                     )}
                     {quote.totals.taxTotal > 0 && (
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>${quote.totals.taxTotal.toFixed(2)}</span>
+                        <span>{formatCurrency(quote.totals.taxTotal)}</span>
                       </div>
                     )}
                     <div className="flex justify-between border-t pt-2 text-lg font-bold">
                       <span>Total</span>
-                      <span>${quote.totals.total.toFixed(2)}</span>
+                      <span>{formatCurrency(quote.totals.total)}</span>
                     </div>
                   </div>
                 </div>
@@ -208,7 +210,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
                 <p className="text-2xl font-bold">
-                  ${quote.totals.total.toFixed(2)}
+                  {formatCurrency(quote.totals.total)}
                 </p>
               </div>
               <div>

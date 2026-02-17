@@ -165,7 +165,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">{formatCurrency(client.totalRevenue / 100)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(client.totalRevenue)}</p>
               </div>
             </div>
           </CardContent>
@@ -178,7 +178,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Outstanding</p>
-                <p className="text-2xl font-bold">{formatCurrency(client.outstandingAmount / 100)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(client.outstandingAmount)}</p>
               </div>
             </div>
           </CardContent>
@@ -350,7 +350,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">{formatCurrency(Number(quote.total) / 100)}</p>
+                            <p className="font-medium">{formatCurrency(Number(quote.total))}</p>
                             <Badge variant={getQuoteStatusVariant(quote.status)}>
                               {quote.status}
                             </Badge>
@@ -381,7 +381,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">{formatCurrency(Number(invoice.total) / 100)}</p>
+                            <p className="font-medium">{formatCurrency(Number(invoice.total))}</p>
                             <Badge variant={getInvoiceStatusVariant(invoice.status)}>
                               {invoice.status}
                             </Badge>
@@ -458,7 +458,7 @@ function ActivityItem({ activity }: { activity: ClientActivity }) {
         )}
         <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
           <span>{formatDate(activity.date)}</span>
-          {activity.amount && <span>• {formatCurrency(activity.amount / 100)}</span>}
+          {activity.amount && <span>• {formatCurrency(activity.amount)}</span>}
         </div>
       </div>
     </div>

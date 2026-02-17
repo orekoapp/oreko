@@ -20,17 +20,17 @@ export function StatsCards({ stats }: StatsCardsProps) {
   const cards = [
     {
       title: 'Total Revenue',
-      value: formatCurrency(stats.totalRevenue / 100),
-      description: `${formatCurrency(stats.revenueThisMonth / 100)} this month`,
+      value: formatCurrency(stats.totalRevenue),
+      description: `${formatCurrency(stats.revenueThisMonth)} this month`,
       icon: DollarSign,
       iconColor: 'text-green-500',
       bgColor: 'bg-green-500/10',
     },
     {
       title: 'Outstanding',
-      value: formatCurrency(stats.outstandingAmount / 100),
+      value: formatCurrency(stats.outstandingAmount),
       description: stats.overdueAmount > 0
-        ? `${formatCurrency(stats.overdueAmount / 100)} overdue`
+        ? `${formatCurrency(stats.overdueAmount)} overdue`
         : 'No overdue invoices',
       icon: AlertCircle,
       iconColor: stats.overdueAmount > 0 ? 'text-red-500' : 'text-yellow-500',

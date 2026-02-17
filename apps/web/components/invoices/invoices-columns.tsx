@@ -158,7 +158,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const amountDue = row.original.amountDue;
 
         return (
-          <div>
+          <div className="whitespace-nowrap">
             <div className="font-medium">{formatCurrency(total)}</div>
             {amountDue > 0 && amountDue !== total && (
               <div className="text-sm text-orange-600">

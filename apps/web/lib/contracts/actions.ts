@@ -63,7 +63,7 @@ export async function getContractTemplates(
       id: c.id,
       name: c.name,
       isTemplate: c.isTemplate,
-      variables: (c.variables as unknown) as ContractVariable[],
+      variables: (typeof c.variables === 'string' ? JSON.parse(c.variables) : c.variables) as ContractVariable[],
       instanceCount: c._count.instances,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
@@ -102,7 +102,7 @@ export async function getContractTemplateById(id: string): Promise<ContractTempl
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (contract.variables as unknown) as ContractVariable[],
+    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -140,7 +140,7 @@ export async function createContractTemplate(
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (contract.variables as unknown) as ContractVariable[],
+    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -188,7 +188,7 @@ export async function updateContractTemplate(
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (contract.variables as unknown) as ContractVariable[],
+    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -411,7 +411,7 @@ export async function createContractInstance(
   // Process template content with variable values
   let content = input.content || template.content;
   if (input.variableValues) {
-    const variables = (template.variables as unknown) as ContractVariable[];
+    const variables = (typeof template.variables === 'string' ? JSON.parse(template.variables) : template.variables) as ContractVariable[];
     for (const variable of variables) {
       const value = input.variableValues[variable.key] || variable.defaultValue || '';
       content = content.replace(new RegExp(`{{${variable.key}}}`, 'g'), value);
@@ -573,7 +573,7 @@ export async function duplicateContractTemplate(id: string): Promise<ContractTem
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (contract.variables as unknown) as ContractVariable[],
+    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,

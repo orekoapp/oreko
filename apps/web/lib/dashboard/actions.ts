@@ -557,6 +557,7 @@ export async function getConversionFunnelData(
       where: {
         workspaceId,
         deletedAt: null,
+        quoteId: { not: null },
         createdAt: dateFilter,
       },
     }),
@@ -564,6 +565,7 @@ export async function getConversionFunnelData(
       where: {
         workspaceId,
         deletedAt: null,
+        quoteId: { not: null },
         status: 'paid',
         ...(dateFilter && { paidAt: dateFilter }),
       },

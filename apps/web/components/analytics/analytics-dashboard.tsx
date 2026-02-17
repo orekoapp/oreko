@@ -169,12 +169,16 @@ export function AnalyticsDashboard({
 
   // Calculate trends
   const revenueTrend = useMemo(() => {
-    const change = ((stats.revenueThisMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100;
+    const change = stats.prevMonthRevenue > 0
+      ? ((stats.revenueThisMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100
+      : stats.revenueThisMonth > 0 ? 100 : 0;
     return { value: Math.abs(Math.round(change)), isPositive: change >= 0 };
   }, [stats]);
 
   const quotesTrend = useMemo(() => {
-    const change = ((stats.quotesThisMonth - stats.prevMonthQuotes) / stats.prevMonthQuotes) * 100;
+    const change = stats.prevMonthQuotes > 0
+      ? ((stats.quotesThisMonth - stats.prevMonthQuotes) / stats.prevMonthQuotes) * 100
+      : stats.quotesThisMonth > 0 ? 100 : 0;
     return { value: Math.abs(Math.round(change)), isPositive: change >= 0 };
   }, [stats]);
 

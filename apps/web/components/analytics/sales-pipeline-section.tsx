@@ -27,14 +27,14 @@ interface SalesPipelineSectionProps {
   conversionFunnel: ConversionFunnelData;
 }
 
-// Convert cents to dollars and format as currency
-function formatCurrency(amountInCents: number): string {
+// Format as currency (values are already in dollars)
+function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amountInCents / 100);
+  }).format(amount);
 }
 
 export function SalesPipelineSection({

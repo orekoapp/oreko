@@ -279,7 +279,7 @@ export function ClientList({ clients }: ClientListProps) {
                     <Badge variant="secondary">{client.totalInvoices}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatCurrency(client.totalRevenue / 100)}
+                    {formatCurrency(client.totalRevenue)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

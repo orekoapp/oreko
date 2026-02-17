@@ -156,7 +156,7 @@ export function ProjectDetail({ project, stats }: ProjectDetailProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Accepted Value</p>
-                <p className="text-2xl font-bold">{formatCurrency(stats.quotes.acceptedValue / 100)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.quotes.acceptedValue)}</p>
               </div>
             </div>
           </CardContent>
@@ -169,7 +169,7 @@ export function ProjectDetail({ project, stats }: ProjectDetailProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Invoiced</p>
-                <p className="text-2xl font-bold">{formatCurrency(stats.invoices.totalValue / 100)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.invoices.totalValue)}</p>
               </div>
             </div>
           </CardContent>
@@ -182,7 +182,7 @@ export function ProjectDetail({ project, stats }: ProjectDetailProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Outstanding</p>
-                <p className="text-2xl font-bold">{formatCurrency(stats.invoices.totalDue / 100)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.invoices.totalDue)}</p>
               </div>
             </div>
           </CardContent>
@@ -336,7 +336,7 @@ export function ProjectDetail({ project, stats }: ProjectDetailProps) {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">{formatCurrency(Number(quote.total) / 100)}</p>
+                            <p className="font-medium">{formatCurrency(Number(quote.total))}</p>
                             <Badge variant={quote.status as 'draft' | 'sent' | 'accepted' | 'expired'}>
                               {quote.status}
                             </Badge>
@@ -373,7 +373,7 @@ export function ProjectDetail({ project, stats }: ProjectDetailProps) {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">{formatCurrency(Number(invoice.total) / 100)}</p>
+                            <p className="font-medium">{formatCurrency(Number(invoice.total))}</p>
                             <Badge variant={getInvoiceStatusVariant(invoice.status)}>
                               {invoice.status}
                             </Badge>

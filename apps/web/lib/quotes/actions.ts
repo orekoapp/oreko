@@ -274,7 +274,27 @@ export async function getQuote(quoteId: string) {
 
   // Convert to QuoteDocument format for the builder
   const settings = quote.settings as Record<string, unknown>;
-  const blocks = (settings.blocks as QuoteBlock[]) || [];
+  let blocks = (settings.blocks as QuoteBlock[]) || [];
+
+  // If blocks are empty but lineItems exist, construct blocks from lineItems
+  if (blocks.length === 0 && quote.lineItems.length > 0) {
+    const now = new Date().toISOString();
+    blocks = quote.lineItems.map((item) => ({
+      id: item.id,
+      type: 'service-item' as const,
+      createdAt: item.createdAt?.toISOString?.() ?? now,
+      updatedAt: item.updatedAt?.toISOString?.() ?? now,
+      content: {
+        name: item.name,
+        description: item.description || '',
+        quantity: Number(item.quantity),
+        rate: Number(item.rate),
+        unit: 'hour',
+        taxRate: item.taxRate ? Number(item.taxRate) : null,
+        rateCardId: item.rateCardId || null,
+      },
+    }));
+  }
 
   const document: QuoteDocument = {
     id: quote.id,

@@ -83,7 +83,7 @@ export function RecentQuotes({ quotes }: RecentQuotesProps) {
                 </div>
                 <div className="ml-4 flex items-center gap-3">
                   <span className="font-semibold">
-                    {formatCurrency(quote.total / 100)}
+                    {formatCurrency(quote.total)}
                   </span>
                   <Badge className={quoteStatusColors[quote.status] || ''}>
                     {quote.status}
@@ -129,11 +129,11 @@ export function RecentInvoices({ invoices }: RecentInvoicesProps) {
                 <div className="ml-4 flex items-center gap-3">
                   <div className="text-right">
                     <span className="font-semibold">
-                      {formatCurrency(invoice.total / 100)}
+                      {formatCurrency(invoice.total)}
                     </span>
                     {invoice.amountPaid > 0 && invoice.amountPaid < invoice.total && (
                       <p className="text-xs text-muted-foreground">
-                        Paid: {formatCurrency(invoice.amountPaid / 100)}
+                        Paid: {formatCurrency(invoice.amountPaid)}
                       </p>
                     )}
                   </div>
