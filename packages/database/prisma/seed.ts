@@ -670,8 +670,9 @@ async function seedDemoWorkspace() {
     },
   ];
 
+  const demoQuoteIds: Record<string, string> = {};
   for (const quoteData of demoQuotes) {
-    await prisma.quote.upsert({
+    const quote = await prisma.quote.upsert({
       where: {
         workspaceId_quoteNumber: {
           workspaceId: demoWorkspace.id,
@@ -705,21 +706,27 @@ async function seedDemoWorkspace() {
         total: quoteData.total,
       },
     });
+    demoQuoteIds[quoteData.id] = quote.id;
 
-    // Add line items for each quote
-    await prisma.quoteLineItem.upsert({
-      where: { id: `${quoteData.id}-item-1` },
-      update: { name: 'Design Services', quantity: 1, rate: quoteData.subtotal, amount: quoteData.subtotal },
-      create: {
-        id: `${quoteData.id}-item-1`,
-        quoteId: quoteData.id,
-        name: 'Design Services',
-        quantity: 1,
-        rate: quoteData.subtotal,
-        amount: quoteData.subtotal,
-        sortOrder: 0,
-      },
-    });
+    // Ensure at least one line item exists for this quote
+    const existingItems = await prisma.quoteLineItem.findMany({ where: { quoteId: quote.id }, take: 1 });
+    if (existingItems.length > 0) {
+      await prisma.quoteLineItem.update({
+        where: { id: existingItems[0]!.id },
+        data: { name: 'Design Services', quantity: 1, rate: quoteData.subtotal, amount: quoteData.subtotal },
+      });
+    } else {
+      await prisma.quoteLineItem.create({
+        data: {
+          quoteId: quote.id,
+          name: 'Design Services',
+          quantity: 1,
+          rate: quoteData.subtotal,
+          amount: quoteData.subtotal,
+          sortOrder: 0,
+        },
+      });
+    }
   }
   console.log('Created/Updated demo quotes');
 
@@ -783,8 +790,9 @@ async function seedDemoWorkspace() {
     },
   ];
 
+  const demoInvoiceIds: Record<string, string> = {};
   for (const invoiceData of demoInvoices) {
-    await prisma.invoice.upsert({
+    const invoice = await prisma.invoice.upsert({
       where: {
         workspaceId_invoiceNumber: {
           workspaceId: demoWorkspace.id,
@@ -820,21 +828,27 @@ async function seedDemoWorkspace() {
         amountDue: invoiceData.amountDue,
       },
     });
+    demoInvoiceIds[invoiceData.id] = invoice.id;
 
-    // Add line items for each invoice
-    await prisma.invoiceLineItem.upsert({
-      where: { id: `${invoiceData.id}-item-1` },
-      update: { name: 'Services', quantity: 1, rate: invoiceData.subtotal, amount: invoiceData.subtotal },
-      create: {
-        id: `${invoiceData.id}-item-1`,
-        invoiceId: invoiceData.id,
-        name: 'Services',
-        quantity: 1,
-        rate: invoiceData.subtotal,
-        amount: invoiceData.subtotal,
-        sortOrder: 0,
-      },
-    });
+    // Ensure at least one line item exists for this invoice
+    const existingItems = await prisma.invoiceLineItem.findMany({ where: { invoiceId: invoice.id }, take: 1 });
+    if (existingItems.length > 0) {
+      await prisma.invoiceLineItem.update({
+        where: { id: existingItems[0]!.id },
+        data: { name: 'Services', quantity: 1, rate: invoiceData.subtotal, amount: invoiceData.subtotal },
+      });
+    } else {
+      await prisma.invoiceLineItem.create({
+        data: {
+          invoiceId: invoice.id,
+          name: 'Services',
+          quantity: 1,
+          rate: invoiceData.subtotal,
+          amount: invoiceData.subtotal,
+          sortOrder: 0,
+        },
+      });
+    }
   }
   console.log('Created/Updated demo invoices');
 
@@ -893,46 +907,41 @@ async function seedDemoWorkspace() {
   }
   console.log('Created/Updated demo projects');
 
-  // Link existing quotes to projects
-  await prisma.quote.update({
-    where: { id: 'demo-quote-1' },
-    data: { projectId: 'demo-project-1' },
-  });
-  await prisma.quote.update({
-    where: { id: 'demo-quote-2' },
-    data: { projectId: 'demo-project-2' },
-  });
-  await prisma.quote.update({
-    where: { id: 'demo-quote-3' },
-    data: { projectId: 'demo-project-3' },
-  });
-  await prisma.quote.update({
-    where: { id: 'demo-quote-4' },
-    data: { projectId: 'demo-project-4' },
-  });
-  await prisma.quote.update({
-    where: { id: 'demo-quote-5' },
-    data: { projectId: 'demo-project-5' },
-  });
+  // Link existing quotes to projects (use actual IDs from upsert results)
+  const quoteProjectLinks = [
+    { quoteKey: 'demo-quote-1', projectId: 'demo-project-1' },
+    { quoteKey: 'demo-quote-2', projectId: 'demo-project-2' },
+    { quoteKey: 'demo-quote-3', projectId: 'demo-project-3' },
+    { quoteKey: 'demo-quote-4', projectId: 'demo-project-4' },
+    { quoteKey: 'demo-quote-5', projectId: 'demo-project-5' },
+  ];
+  for (const link of quoteProjectLinks) {
+    const actualId = demoQuoteIds[link.quoteKey];
+    if (actualId) {
+      await prisma.quote.update({
+        where: { id: actualId },
+        data: { projectId: link.projectId },
+      });
+    }
+  }
   console.log('Linked quotes to projects');
 
-  // Link existing invoices to projects
-  await prisma.invoice.update({
-    where: { id: 'demo-invoice-1' },
-    data: { projectId: 'demo-project-1' },
-  });
-  await prisma.invoice.update({
-    where: { id: 'demo-invoice-2' },
-    data: { projectId: 'demo-project-3' },
-  });
-  await prisma.invoice.update({
-    where: { id: 'demo-invoice-3' },
-    data: { projectId: 'demo-project-2' },
-  });
-  await prisma.invoice.update({
-    where: { id: 'demo-invoice-4' },
-    data: { projectId: 'demo-project-4' },
-  });
+  // Link existing invoices to projects (use actual IDs from upsert results)
+  const invoiceProjectLinks = [
+    { invoiceKey: 'demo-invoice-1', projectId: 'demo-project-1' },
+    { invoiceKey: 'demo-invoice-2', projectId: 'demo-project-3' },
+    { invoiceKey: 'demo-invoice-3', projectId: 'demo-project-2' },
+    { invoiceKey: 'demo-invoice-4', projectId: 'demo-project-4' },
+  ];
+  for (const link of invoiceProjectLinks) {
+    const actualId = demoInvoiceIds[link.invoiceKey];
+    if (actualId) {
+      await prisma.invoice.update({
+        where: { id: actualId },
+        data: { projectId: link.projectId },
+      });
+    }
+  }
   console.log('Linked invoices to projects');
 
   // Clean up stale test data (manually created during testing)
@@ -944,7 +953,7 @@ async function seedDemoWorkspace() {
         { title: { contains: 'Untitled' } },
         { total: 0 },
       ],
-      id: { notIn: demoQuotes.map((q) => q.id) },
+      id: { notIn: Object.values(demoQuoteIds) },
     },
     select: { id: true, quoteNumber: true },
   });
@@ -962,7 +971,7 @@ async function seedDemoWorkspace() {
         { title: { contains: 'Untitled' } },
         { total: 0 },
       ],
-      id: { notIn: demoInvoices.map((i) => i.id) },
+      id: { notIn: Object.values(demoInvoiceIds) },
     },
     select: { id: true, invoiceNumber: true },
   });
