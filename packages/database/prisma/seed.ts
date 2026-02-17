@@ -48,7 +48,7 @@ async function main() {
   // Create a test workspace
   const workspace = await prisma.workspace.upsert({
     where: { slug: 'test-workspace' },
-    update: {},
+    update: { name: 'Test Workspace' },
     create: {
       name: 'Test Workspace',
       slug: 'test-workspace',
@@ -89,7 +89,13 @@ async function main() {
   // Create business profile
   await prisma.businessProfile.upsert({
     where: { workspaceId: workspace.id },
-    update: {},
+    update: {
+      businessName: 'Test Business',
+      email: 'contact@testbusiness.com',
+      phone: '+1-555-123-4567',
+      currency: 'USD',
+      timezone: 'America/New_York',
+    },
     create: {
       workspaceId: workspace.id,
       businessName: 'Test Business',
@@ -205,11 +211,18 @@ async function main() {
   });
   console.log('Created/Updated number sequences');
 
-  // Create sample quotes with different statuses
-  const quoteStatuses = ['draft', 'sent', 'viewed', 'accepted', 'declined', 'converted'];
+  // Create sample quotes with different statuses and varied amounts
+  const testQuotes = [
+    { status: 'draft', title: 'Website Revamp', subtotal: 2500, itemName: 'Frontend Development', qty: 25, rate: 100 },
+    { status: 'sent', title: 'API Integration Project', subtotal: 5750, itemName: 'Backend Development', qty: 23, rate: 250 },
+    { status: 'viewed', title: 'Mobile App Design', subtotal: 8400, itemName: 'UI/UX Design', qty: 56, rate: 150 },
+    { status: 'accepted', title: 'E-commerce Platform', subtotal: 15000, itemName: 'Full-Stack Development', qty: 100, rate: 150 },
+    { status: 'declined', title: 'Data Migration Service', subtotal: 3200, itemName: 'Data Engineering', qty: 16, rate: 200 },
+    { status: 'converted', title: 'SaaS Dashboard Build', subtotal: 12800, itemName: 'Product Development', qty: 64, rate: 200 },
+  ];
 
-  for (let i = 0; i < quoteStatuses.length; i++) {
-    const status = quoteStatuses[i]!;
+  for (let i = 0; i < testQuotes.length; i++) {
+    const q = testQuotes[i]!;
     const client = createdClients[i % createdClients.length]!;
 
     const quote = await prisma.quote.upsert({
@@ -219,42 +232,51 @@ async function main() {
           quoteNumber: `Q-${String(i + 1).padStart(4, '0')}`,
         },
       },
-      update: { status },
+      update: {
+        status: q.status,
+        title: q.title,
+        subtotal: q.subtotal,
+        total: q.subtotal,
+        sentAt: q.status !== 'draft' ? new Date() : null,
+        viewedAt: ['viewed', 'accepted', 'declined', 'converted'].includes(q.status) ? new Date() : null,
+        acceptedAt: ['accepted', 'converted'].includes(q.status) ? new Date() : null,
+        declinedAt: q.status === 'declined' ? new Date() : null,
+      },
       create: {
         workspaceId: workspace.id,
         clientId: client.id,
         quoteNumber: `Q-${String(i + 1).padStart(4, '0')}`,
-        status,
-        title: `Sample Quote - ${status}`,
+        status: q.status,
+        title: q.title,
         issueDate: new Date(),
         expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        subtotal: 1000,
-        total: 1000,
-        sentAt: status !== 'draft' ? new Date() : null,
-        viewedAt: ['viewed', 'accepted', 'declined', 'converted'].includes(status) ? new Date() : null,
-        acceptedAt: ['accepted', 'converted'].includes(status) ? new Date() : null,
-        declinedAt: status === 'declined' ? new Date() : null,
+        subtotal: q.subtotal,
+        total: q.subtotal,
+        sentAt: q.status !== 'draft' ? new Date() : null,
+        viewedAt: ['viewed', 'accepted', 'declined', 'converted'].includes(q.status) ? new Date() : null,
+        acceptedAt: ['accepted', 'converted'].includes(q.status) ? new Date() : null,
+        declinedAt: q.status === 'declined' ? new Date() : null,
       },
     });
 
     // Add line items
     await prisma.quoteLineItem.upsert({
       where: { id: `quote-item-${quote.id}` },
-      update: {},
+      update: { name: q.itemName, quantity: q.qty, rate: q.rate, amount: q.subtotal },
       create: {
         id: `quote-item-${quote.id}`,
         quoteId: quote.id,
-        name: 'Development Services',
-        quantity: 10,
-        rate: 100,
-        amount: 1000,
+        name: q.itemName,
+        quantity: q.qty,
+        rate: q.rate,
+        amount: q.subtotal,
       },
     });
 
-    console.log(`Created/Updated quote: ${quote.quoteNumber} (${status})`);
+    console.log(`Created/Updated quote: ${quote.quoteNumber} (${q.status})`);
 
     // Create invoice for converted quote
-    if (status === 'converted') {
+    if (q.status === 'converted') {
       const invoice = await prisma.invoice.upsert({
         where: {
           workspaceId_invoiceNumber: {
@@ -262,32 +284,38 @@ async function main() {
             invoiceNumber: `INV-${String(i + 1).padStart(4, '0')}`,
           },
         },
-        update: {},
+        update: {
+          status: 'sent',
+          title: `Invoice from ${q.title}`,
+          subtotal: q.subtotal,
+          total: q.subtotal,
+          amountDue: q.subtotal,
+        },
         create: {
           workspaceId: workspace.id,
           clientId: client.id,
           quoteId: quote.id,
           invoiceNumber: `INV-${String(i + 1).padStart(4, '0')}`,
           status: 'sent',
-          title: `Invoice from ${quote.title}`,
+          title: `Invoice from ${q.title}`,
           issueDate: new Date(),
           dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          subtotal: 1000,
-          total: 1000,
-          amountDue: 1000,
+          subtotal: q.subtotal,
+          total: q.subtotal,
+          amountDue: q.subtotal,
         },
       });
 
       await prisma.invoiceLineItem.upsert({
         where: { id: `invoice-item-${invoice.id}` },
-        update: {},
+        update: { name: q.itemName, quantity: q.qty, rate: q.rate, amount: q.subtotal },
         create: {
           id: `invoice-item-${invoice.id}`,
           invoiceId: invoice.id,
-          name: 'Development Services',
-          quantity: 10,
-          rate: 100,
-          amount: 1000,
+          name: q.itemName,
+          quantity: q.qty,
+          rate: q.rate,
+          amount: q.subtotal,
         },
       });
 
@@ -295,11 +323,18 @@ async function main() {
     }
   }
 
-  // Create some additional invoices with different statuses
-  const invoiceStatuses = ['draft', 'sent', 'viewed', 'paid', 'overdue', 'voided'];
+  // Create some additional invoices with different statuses and varied amounts
+  const testInvoices = [
+    { status: 'draft', title: 'Server Setup & Config', subtotal: 1200, itemName: 'DevOps Services', qty: 8, rate: 150 },
+    { status: 'sent', title: 'Q1 Consulting Retainer', subtotal: 3800, itemName: 'Consulting', qty: 38, rate: 100 },
+    { status: 'viewed', title: 'Design System Delivery', subtotal: 6500, itemName: 'Design Services', qty: 52, rate: 125 },
+    { status: 'paid', title: 'Landing Page Build', subtotal: 4200, itemName: 'Web Development', qty: 24, rate: 175 },
+    { status: 'overdue', title: 'Database Optimization', subtotal: 2750, itemName: 'Performance Tuning', qty: 11, rate: 250 },
+    { status: 'voided', title: 'Cancelled Project Deposit', subtotal: 950, itemName: 'Project Deposit', qty: 1, rate: 950 },
+  ];
 
-  for (let i = 0; i < invoiceStatuses.length; i++) {
-    const status = invoiceStatuses[i]!;
+  for (let i = 0; i < testInvoices.length; i++) {
+    const inv = testInvoices[i]!;
     const client = createdClients[i % createdClients.length]!;
     const invoiceNumber = `INV-${String(100 + i).padStart(4, '0')}`;
 
@@ -310,42 +345,56 @@ async function main() {
           invoiceNumber,
         },
       },
-      update: { status },
+      update: {
+        status: inv.status,
+        title: inv.title,
+        subtotal: inv.subtotal,
+        total: inv.subtotal,
+        amountPaid: inv.status === 'paid' ? inv.subtotal : 0,
+        amountDue: inv.status === 'paid' ? 0 : inv.subtotal,
+        dueDate: inv.status === 'overdue'
+          ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        sentAt: inv.status !== 'draft' ? new Date() : null,
+        viewedAt: ['viewed', 'paid', 'overdue'].includes(inv.status) ? new Date() : null,
+        paidAt: inv.status === 'paid' ? new Date() : null,
+        voidedAt: inv.status === 'voided' ? new Date() : null,
+      },
       create: {
         workspaceId: workspace.id,
         clientId: client.id,
         invoiceNumber,
-        status,
-        title: `Sample Invoice - ${status}`,
+        status: inv.status,
+        title: inv.title,
         issueDate: new Date(),
-        dueDate: status === 'overdue'
+        dueDate: inv.status === 'overdue'
           ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        subtotal: 500,
-        total: 500,
-        amountPaid: status === 'paid' ? 500 : 0,
-        amountDue: status === 'paid' ? 0 : 500,
-        sentAt: status !== 'draft' ? new Date() : null,
-        viewedAt: ['viewed', 'paid', 'overdue'].includes(status) ? new Date() : null,
-        paidAt: status === 'paid' ? new Date() : null,
-        voidedAt: status === 'voided' ? new Date() : null,
+        subtotal: inv.subtotal,
+        total: inv.subtotal,
+        amountPaid: inv.status === 'paid' ? inv.subtotal : 0,
+        amountDue: inv.status === 'paid' ? 0 : inv.subtotal,
+        sentAt: inv.status !== 'draft' ? new Date() : null,
+        viewedAt: ['viewed', 'paid', 'overdue'].includes(inv.status) ? new Date() : null,
+        paidAt: inv.status === 'paid' ? new Date() : null,
+        voidedAt: inv.status === 'voided' ? new Date() : null,
       },
     });
 
     await prisma.invoiceLineItem.upsert({
       where: { id: `invoice-item-standalone-${invoice.id}` },
-      update: {},
+      update: { name: inv.itemName, quantity: inv.qty, rate: inv.rate, amount: inv.subtotal },
       create: {
         id: `invoice-item-standalone-${invoice.id}`,
         invoiceId: invoice.id,
-        name: 'Consulting Services',
-        quantity: 5,
-        rate: 100,
-        amount: 500,
+        name: inv.itemName,
+        quantity: inv.qty,
+        rate: inv.rate,
+        amount: inv.subtotal,
       },
     });
 
-    console.log(`Created/Updated invoice: ${invoice.invoiceNumber} (${status})`);
+    console.log(`Created/Updated invoice: ${invoice.invoiceNumber} (${inv.status})`);
   }
 
   console.log('Database seeding completed!');
@@ -378,7 +427,15 @@ async function seedDemoWorkspace() {
   // Create demo workspace
   const demoWorkspace = await prisma.workspace.upsert({
     where: { slug: DEMO_CONFIG.workspaceSlug },
-    update: {},
+    update: {
+      name: 'Demo Workspace',
+      settings: {
+        isDemo: true,
+        onboardingCompleted: true,
+        currency: 'USD',
+        timezone: 'America/New_York',
+      },
+    },
     create: {
       name: 'Demo Workspace',
       slug: DEMO_CONFIG.workspaceSlug,
@@ -413,7 +470,14 @@ async function seedDemoWorkspace() {
   // Create business profile for demo
   await prisma.businessProfile.upsert({
     where: { workspaceId: demoWorkspace.id },
-    update: {},
+    update: {
+      businessName: 'Acme Design Studio',
+      email: 'hello@acmedesign.demo',
+      phone: '+1 (555) 123-4567',
+      website: 'https://acmedesign.demo',
+      currency: 'USD',
+      timezone: 'America/New_York',
+    },
     create: {
       workspaceId: demoWorkspace.id,
       businessName: 'Acme Design Studio',
@@ -480,7 +544,7 @@ async function seedDemoWorkspace() {
   for (const clientData of demoClients) {
     await prisma.client.upsert({
       where: { id: clientData.id },
-      update: {},
+      update: { name: clientData.name, email: clientData.email, company: clientData.company },
       create: {
         id: clientData.id,
         workspaceId: demoWorkspace.id,
@@ -614,7 +678,16 @@ async function seedDemoWorkspace() {
           quoteNumber: quoteData.quoteNumber,
         },
       },
-      update: { status: quoteData.status },
+      update: {
+        status: quoteData.status,
+        title: quoteData.title,
+        subtotal: quoteData.subtotal,
+        total: quoteData.total,
+        sentAt: quoteData.sentAt ?? null,
+        viewedAt: quoteData.viewedAt ?? null,
+        acceptedAt: quoteData.acceptedAt ?? null,
+        declinedAt: quoteData.declinedAt ?? null,
+      },
       create: {
         id: quoteData.id,
         workspaceId: demoWorkspace.id,
@@ -636,7 +709,7 @@ async function seedDemoWorkspace() {
     // Add line items for each quote
     await prisma.quoteLineItem.upsert({
       where: { id: `${quoteData.id}-item-1` },
-      update: {},
+      update: { name: 'Design Services', quantity: 1, rate: quoteData.subtotal, amount: quoteData.subtotal },
       create: {
         id: `${quoteData.id}-item-1`,
         quoteId: quoteData.id,
@@ -718,7 +791,17 @@ async function seedDemoWorkspace() {
           invoiceNumber: invoiceData.invoiceNumber,
         },
       },
-      update: { status: invoiceData.status },
+      update: {
+        status: invoiceData.status,
+        title: invoiceData.title,
+        subtotal: invoiceData.subtotal,
+        total: invoiceData.total,
+        amountPaid: invoiceData.amountPaid,
+        amountDue: invoiceData.amountDue,
+        sentAt: invoiceData.sentAt ?? null,
+        viewedAt: invoiceData.viewedAt ?? null,
+        paidAt: invoiceData.paidAt ?? null,
+      },
       create: {
         id: invoiceData.id,
         workspaceId: demoWorkspace.id,
@@ -741,7 +824,7 @@ async function seedDemoWorkspace() {
     // Add line items for each invoice
     await prisma.invoiceLineItem.upsert({
       where: { id: `${invoiceData.id}-item-1` },
-      update: {},
+      update: { name: 'Services', quantity: 1, rate: invoiceData.subtotal, amount: invoiceData.subtotal },
       create: {
         id: `${invoiceData.id}-item-1`,
         invoiceId: invoiceData.id,
@@ -851,6 +934,44 @@ async function seedDemoWorkspace() {
     data: { projectId: 'demo-project-4' },
   });
   console.log('Linked invoices to projects');
+
+  // Clean up stale test data (manually created during testing)
+  // Remove any quotes/invoices with "Untitled" titles or $0 amounts
+  const staleQuotes = await prisma.quote.findMany({
+    where: {
+      workspaceId: demoWorkspace.id,
+      OR: [
+        { title: { contains: 'Untitled' } },
+        { total: 0 },
+      ],
+      id: { notIn: demoQuotes.map((q) => q.id) },
+    },
+    select: { id: true, quoteNumber: true },
+  });
+
+  for (const sq of staleQuotes) {
+    await prisma.quoteLineItem.deleteMany({ where: { quoteId: sq.id } });
+    await prisma.quote.delete({ where: { id: sq.id } });
+    console.log(`Cleaned up stale quote: ${sq.quoteNumber}`);
+  }
+
+  const staleInvoices = await prisma.invoice.findMany({
+    where: {
+      workspaceId: demoWorkspace.id,
+      OR: [
+        { title: { contains: 'Untitled' } },
+        { total: 0 },
+      ],
+      id: { notIn: demoInvoices.map((i) => i.id) },
+    },
+    select: { id: true, invoiceNumber: true },
+  });
+
+  for (const si of staleInvoices) {
+    await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: si.id } });
+    await prisma.invoice.delete({ where: { id: si.id } });
+    console.log(`Cleaned up stale invoice: ${si.invoiceNumber}`);
+  }
 
   console.log('Demo workspace seeding completed!');
 }
