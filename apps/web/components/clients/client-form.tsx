@@ -158,9 +158,9 @@ export function ClientForm({
             <Label htmlFor="website">Website</Label>
             <Input
               id="website"
-              type="url"
+              type="text"
               {...form.register('website')}
-              placeholder="https://example.com"
+              placeholder="example.com"
             />
           </div>
         </CardContent>

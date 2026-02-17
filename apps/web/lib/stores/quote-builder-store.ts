@@ -41,6 +41,7 @@ interface QuoteBuilderActions {
   updateProjectId: (projectId: string | null) => void;
   updateNotes: (notes: string) => void;
   updateTerms: (terms: string) => void;
+  updateInternalNotes: (internalNotes: string) => void;
   updateSettings: (settings: Partial<QuoteSettings>) => void;
 
   // Block actions
@@ -196,6 +197,15 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
           set((state) => {
             if (state.document) {
               state.document.terms = terms;
+              state.isDirty = true;
+            }
+          });
+        },
+
+        updateInternalNotes: (internalNotes) => {
+          set((state) => {
+            if (state.document) {
+              state.document.internalNotes = internalNotes;
               state.isDirty = true;
             }
           });

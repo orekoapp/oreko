@@ -46,10 +46,16 @@ export const phoneSchema = z
   .optional()
   .or(z.literal(''));
 
-// URL schema
+// URL schema - accepts full URLs or plain domains (auto-prepends https://)
 export const urlSchema = z
   .string()
-  .url('Please enter a valid URL')
+  .transform((val) => {
+    if (val && !val.startsWith('http://') && !val.startsWith('https://')) {
+      return `https://${val}`;
+    }
+    return val;
+  })
+  .pipe(z.string().url('Please enter a valid URL'))
   .optional()
   .or(z.literal(''));
 

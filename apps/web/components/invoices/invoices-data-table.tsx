@@ -100,6 +100,7 @@ export function InvoicesDataTable({ data }: InvoicesDataTableProps) {
       statusFilterKey="status"
       pageSizes={[10, 25, 50, 100]}
       emptyState={emptyState}
+      onRowClick={(invoice) => router.push(`/invoices/${invoice.id}`)}
     />
   );
 }

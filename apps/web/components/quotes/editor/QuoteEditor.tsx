@@ -65,6 +65,7 @@ export function QuoteEditor() {
     updateProjectId,
     updateNotes,
     updateTerms,
+    updateInternalNotes,
     addBlock,
     updateBlock,
     removeBlock,
@@ -416,6 +417,7 @@ export function QuoteEditor() {
               notes={document?.notes || ''}
               onNotesChange={(notes) => updateNotes(notes)}
               internalNotes={document?.internalNotes || ''}
+              onInternalNotesChange={(notes) => updateInternalNotes(notes)}
             />
           )}
         </div>

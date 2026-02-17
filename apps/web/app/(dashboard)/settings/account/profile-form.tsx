@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ initialName, initialEmail }: ProfileFormProps) {
   const [isLoading, setIsLoading] = React.useState(false);
+  const { update: updateSession } = useSession();
 
   const {
     register,
@@ -50,6 +52,9 @@ export function ProfileForm({ initialName, initialEmail }: ProfileFormProps) {
         toast.error(result.error || 'Failed to update profile');
         return;
       }
+
+      // Update the NextAuth session so the UI reflects the new name
+      await updateSession({ name: data.name });
 
       toast.success('Profile updated successfully');
     } catch {

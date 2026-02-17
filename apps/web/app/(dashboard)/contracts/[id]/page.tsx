@@ -186,7 +186,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
             </CardHeader>
             <CardContent>
               {instance.signatureData.type === 'drawn' ? (
-                <div className="border rounded-lg p-4 bg-white">
+                <div className="border rounded-lg p-4 bg-card">
                   <img
                     src={instance.signatureData.value}
                     alt="Signature"
@@ -194,7 +194,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
                   />
                 </div>
               ) : (
-                <div className="border rounded-lg p-4 bg-white">
+                <div className="border rounded-lg p-4 bg-card">
                   <p
                     className="text-3xl"
                     style={{ fontFamily: "'Brush Script MT', cursive" }}

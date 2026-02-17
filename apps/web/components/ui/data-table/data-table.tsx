@@ -34,6 +34,7 @@ export interface DataTableProps<TData, TValue> {
   statusOptions?: { value: string; label: string }[];
   statusFilterKey?: string;
   onRowSelect?: (rows: TData[]) => void;
+  onRowClick?: (row: TData) => void;
   pageSizes?: number[];
   emptyState?: React.ReactNode;
   isLoading?: boolean;
@@ -47,6 +48,7 @@ export function DataTable<TData, TValue>({
   statusOptions,
   statusFilterKey = 'status',
   onRowSelect,
+  onRowClick,
   pageSizes = [10, 25, 50, 100],
   emptyState,
   isLoading = false,
@@ -119,9 +121,23 @@ export function DataTable<TData, TValue>({
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className={onRowClick ? 'cursor-pointer' : ''}
+                  onClick={() => onRowClick?.(row.original)}
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      onClick={(e) => {
+                        // Don't trigger row click for checkbox and actions columns
+                        const columnId = cell.column.id;
+                        if (columnId === 'select' || columnId === 'actions') {
+                          e.stopPropagation();
+                        }
+                      }}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

@@ -95,6 +95,7 @@ export function ContractsDataTable({ data }: ContractsDataTableProps) {
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
         isLoading={isPending}
+        onRowClick={(contract) => router.push(`/contracts/${contract.id}`)}
       />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

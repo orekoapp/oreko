@@ -88,7 +88,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               <CardTitle>Invoice Preview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border bg-white p-8">
+              <div className="rounded-lg border bg-card p-8">
                 {/* Header */}
                 <div className="mb-8 flex justify-between">
                   <div>
@@ -115,7 +115,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   <h3 className="mb-4 font-semibold">Line Items</h3>
                   <div className="overflow-hidden rounded-lg border">
                     <table className="w-full">
-                      <thead className="bg-gray-50 text-sm">
+                      <thead className="bg-muted text-sm">
                         <tr>
                           <th className="px-4 py-3 text-left font-medium">Description</th>
                           <th className="px-4 py-3 text-right font-medium">Qty</th>

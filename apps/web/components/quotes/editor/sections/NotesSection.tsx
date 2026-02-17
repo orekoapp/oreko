@@ -8,9 +8,10 @@ interface NotesSectionProps {
   notes: string;
   onNotesChange: (notes: string) => void;
   internalNotes: string;
+  onInternalNotesChange?: (internalNotes: string) => void;
 }
 
-export function NotesSection({ notes, onNotesChange, internalNotes }: NotesSectionProps) {
+export function NotesSection({ notes, onNotesChange, internalNotes, onInternalNotesChange }: NotesSectionProps) {
   return (
     <div className="space-y-6">
       {/* Client-facing Notes */}
@@ -51,13 +52,10 @@ export function NotesSection({ notes, onNotesChange, internalNotes }: NotesSecti
               id="internalNotes"
               placeholder="Add any internal notes about this quote..."
               value={internalNotes}
+              onChange={(e) => onInternalNotesChange?.(e.target.value)}
               rows={4}
               className="resize-none"
-              disabled
             />
-            <p className="text-xs text-muted-foreground mt-2">
-              Internal notes editing coming soon
-            </p>
           </div>
         </CardContent>
       </Card>

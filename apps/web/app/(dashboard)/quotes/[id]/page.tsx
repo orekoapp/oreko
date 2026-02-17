@@ -88,7 +88,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <CardTitle>Quote Preview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border bg-white p-8">
+              <div className="rounded-lg border bg-card p-8">
                 {/* Header */}
                 <div className="mb-8 flex justify-between">
                   <div>

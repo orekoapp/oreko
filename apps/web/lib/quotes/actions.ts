@@ -524,7 +524,7 @@ export async function sendQuote(quoteId: string) {
   const { userId, workspace } = await getActiveWorkspace();
 
   // Get quote with client details
-  const quote = await prisma.quote.findUnique({
+  const quote = await prisma.quote.findFirst({
     where: {
       id: quoteId,
       workspaceId: workspace.id,

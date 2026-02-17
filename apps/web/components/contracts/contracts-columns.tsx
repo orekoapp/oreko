@@ -15,27 +15,27 @@ const statusConfig: Record<
 > = {
   draft: {
     label: 'Draft',
-    className: 'border-gray-300 text-gray-600 bg-gray-50',
+    className: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
     icon: <FileText className="h-3 w-3" />,
   },
   sent: {
     label: 'Sent',
-    className: 'border-blue-300 text-blue-600 bg-blue-50',
+    className: 'border-blue-300 text-blue-600 bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:bg-blue-950',
     icon: <Mail className="h-3 w-3" />,
   },
   viewed: {
     label: 'Viewed',
-    className: 'border-yellow-300 text-yellow-700 bg-yellow-50',
+    className: 'border-yellow-300 text-yellow-700 bg-yellow-50 dark:border-yellow-600 dark:text-yellow-400 dark:bg-yellow-950',
     icon: <Eye className="h-3 w-3" />,
   },
   signed: {
     label: 'Signed',
-    className: 'bg-green-500 text-white border-green-500',
+    className: 'border-green-300 text-green-600 bg-green-50 dark:border-green-600 dark:text-green-400 dark:bg-green-950',
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
   expired: {
     label: 'Expired',
-    className: 'bg-red-500 text-white border-red-500',
+    className: 'border-red-300 text-red-600 bg-red-50 dark:border-red-600 dark:text-red-400 dark:bg-red-950',
     icon: <Clock className="h-3 w-3" />,
   },
 };
