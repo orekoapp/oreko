@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Check, ChevronsUpDown, User, Building2, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -51,8 +52,8 @@ export function ClientSelector({
     try {
       const results = await searchClients(query, 10);
       setClients(results);
-    } catch (error) {
-      console.error('Failed to search clients:', error);
+    } catch {
+      toast.error('Failed to search clients');
       setClients([]);
     } finally {
       setIsLoading(false);

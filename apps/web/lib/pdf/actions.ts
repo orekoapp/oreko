@@ -97,7 +97,7 @@ export async function getQuotePdfData(quoteId: string): Promise<QuotePdfData | n
  * Get quote data for PDF generation by access token (public)
  */
 export async function getQuotePdfDataByToken(accessToken: string): Promise<QuotePdfData | null> {
-  const quote = await prisma.quote.findUnique({
+  const quote = await prisma.quote.findFirst({
     where: {
       accessToken,
       deletedAt: null,
@@ -277,7 +277,7 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
  * Get invoice data for PDF generation by access token (public)
  */
 export async function getInvoicePdfDataByToken(accessToken: string): Promise<InvoicePdfData | null> {
-  const invoice = await prisma.invoice.findUnique({
+  const invoice = await prisma.invoice.findFirst({
     where: {
       accessToken,
       deletedAt: null,

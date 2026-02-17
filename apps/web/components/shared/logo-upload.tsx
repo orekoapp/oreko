@@ -75,7 +75,7 @@ export function LogoUpload({ value, onChange, className }: LogoUploadProps) {
       <div className={cn('relative', className)}>
         <div className="relative rounded-lg border bg-muted/50 p-4">
           <div className="flex items-center gap-4">
-            <div className="relative h-16 w-16 overflow-hidden rounded-lg border bg-white">
+            <div className="relative h-16 w-16 overflow-hidden rounded-lg border bg-card">
               <img
                 src={value}
                 alt="Logo"

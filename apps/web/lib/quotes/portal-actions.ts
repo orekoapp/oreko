@@ -85,7 +85,7 @@ export async function getQuoteByAccessToken(
   accessToken: string
 ): Promise<{ success: true; quote: PublicQuoteData } | { success: false; error: string }> {
   try {
-    const quote = await prisma.quote.findUnique({
+    const quote = await prisma.quote.findFirst({
       where: {
         accessToken,
         deletedAt: null,

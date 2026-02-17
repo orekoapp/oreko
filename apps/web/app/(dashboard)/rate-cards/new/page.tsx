@@ -1,65 +1,15 @@
-'use client';
-
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { RateCardForm } from '@/components/rate-cards';
-import { createRateCard, getCategories } from '@/lib/rate-cards/actions';
-import type { CreateRateCardInput, CategoryListItem } from '@/lib/rate-cards/types';
-import { toast } from 'sonner';
+import { getCategories } from '@/lib/rate-cards/actions';
+import { getTaxRates } from '@/lib/settings/actions';
+import { NewRateCardFormWrapper } from './new-rate-card-form-wrapper';
 
-export default function NewRateCardPage() {
-  const router = useRouter();
-  const [categories, setCategories] = React.useState<CategoryListItem[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isSaving, setIsSaving] = React.useState(false);
-
-  React.useEffect(() => {
-    async function loadData() {
-      try {
-        const cats = await getCategories();
-        setCategories(cats);
-      } catch {
-        toast.error('Failed to load categories');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  const handleSubmit = async (data: CreateRateCardInput) => {
-    setIsSaving(true);
-    try {
-      const result = await createRateCard(data);
-      toast.success('Rate card created successfully');
-      router.push('/rate-cards');
-    } catch {
-      toast.error('Failed to create rate card');
-      setIsSaving(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container max-w-3xl py-6">
-        <div className="mb-6 flex items-center gap-4">
-          <Skeleton className="h-10 w-10" />
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </div>
-        <div className="space-y-6">
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </div>
-    );
-  }
+export default async function NewRateCardPage() {
+  const [categories, taxRates] = await Promise.all([
+    getCategories(),
+    getTaxRates(),
+  ]);
 
   return (
     <div className="container max-w-3xl py-6">
@@ -75,13 +25,7 @@ export default function NewRateCardPage() {
         </div>
       </div>
 
-      <RateCardForm
-        categories={categories}
-        taxRates={[]} // TODO: Load tax rates
-        onSubmit={handleSubmit}
-        isLoading={isSaving}
-        submitLabel="Create Rate Card"
-      />
+      <NewRateCardFormWrapper categories={categories} taxRates={taxRates} />
     </div>
   );
 }

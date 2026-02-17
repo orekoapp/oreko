@@ -89,7 +89,7 @@ export async function getInvoiceByAccessToken(
   accessToken: string
 ): Promise<{ success: true; invoice: PublicInvoiceData } | { success: false; error: string }> {
   try {
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await prisma.invoice.findFirst({
       where: {
         accessToken,
         deletedAt: null,

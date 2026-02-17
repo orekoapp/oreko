@@ -138,7 +138,7 @@ export function getContractColumns(
         const status = row.getValue('status') as string;
         const config = statusConfig[status] || statusConfig.draft || {
           label: 'Unknown',
-          className: 'border-gray-300 text-gray-600 bg-gray-50',
+          className: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
           icon: <FileText className="h-3 w-3" />,
         };
 

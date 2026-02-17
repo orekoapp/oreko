@@ -54,8 +54,8 @@ const statusConfig: Record<string, { bg: string; text: string; icon: React.React
     description: 'This invoice is past due. Please pay as soon as possible.',
   },
   voided: {
-    bg: 'bg-gray-50',
-    text: 'text-gray-700',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
     icon: <AlertCircle className="h-5 w-5" />,
     label: 'Voided',
     description: 'This invoice has been voided and is no longer valid.',
@@ -122,7 +122,7 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
           {/* Line Items */}
           <div className="overflow-hidden rounded-lg border mb-6">
             <table className="w-full">
-              <thead className="bg-gray-50 text-sm">
+              <thead className="bg-muted text-sm">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Description</th>
                   {invoice.settings.showLineItemPrices && (

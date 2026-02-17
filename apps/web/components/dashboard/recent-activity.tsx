@@ -37,7 +37,7 @@ const activityColors: Record<ActivityItem['type'], string> = {
   quote_sent: 'text-yellow-500 bg-yellow-500/10',
   quote_accepted: 'text-green-500 bg-green-500/10',
   quote_declined: 'text-red-500 bg-red-500/10',
-  quote_expired: 'text-gray-500 bg-gray-500/10',
+  quote_expired: 'text-muted-foreground bg-muted',
   invoice_created: 'text-violet-500 bg-violet-500/10',
   invoice_sent: 'text-yellow-500 bg-yellow-500/10',
   invoice_paid: 'text-green-500 bg-green-500/10',

@@ -104,15 +104,17 @@ export default function HelpPage() {
         <h2 className="text-lg font-semibold mb-4">Help Topics</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {helpTopics.map((topic) => (
-            <Card key={topic.title} className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="pb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-2">
-                  <topic.icon className="h-5 w-5 text-primary" />
-                </div>
-                <CardTitle className="text-base">{topic.title}</CardTitle>
-                <CardDescription>{topic.description}</CardDescription>
-              </CardHeader>
-            </Card>
+            <Link key={topic.title} href={topic.href}>
+              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+                <CardHeader className="pb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-2">
+                    <topic.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-base">{topic.title}</CardTitle>
+                  <CardDescription>{topic.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           ))}
         </div>
       </section>

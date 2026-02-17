@@ -63,7 +63,7 @@ export function ContractSigningView({
                 sent to you with a copy of the signed document.
               </p>
               {contract.signatureData && (
-                <div className="border rounded-lg p-4 bg-white inline-block">
+                <div className="border rounded-lg p-4 bg-card inline-block">
                   <p className="text-sm text-muted-foreground mb-2">Signed by</p>
                   {contract.signatureData.type === 'drawn' ? (
                     <img

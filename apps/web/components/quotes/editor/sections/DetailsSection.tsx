@@ -120,20 +120,17 @@ export function DetailsSection({
             </div>
 
             <div>
-              <Label htmlFor="taxRate">Tax Rate</Label>
-              <Select value={taxRate} onValueChange={onTaxRateChange}>
-                <SelectTrigger id="taxRate">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">0% - No Tax</SelectItem>
-                  <SelectItem value="5">5%</SelectItem>
-                  <SelectItem value="7.5">7.5%</SelectItem>
-                  <SelectItem value="10">10%</SelectItem>
-                  <SelectItem value="15">15%</SelectItem>
-                  <SelectItem value="20">20%</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="taxRate">Tax Rate (%)</Label>
+              <Input
+                id="taxRate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="0"
+                value={taxRate}
+                onChange={(e) => onTaxRateChange(e.target.value)}
+              />
             </div>
           </div>
         </CardContent>

@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import { deleteContractTemplate, duplicateContractTemplate } from '@/lib/contracts/actions';
 import type { ContractTemplateListItem } from '@/lib/contracts/types';
@@ -72,7 +73,7 @@ export function ContractTemplateList({
         await duplicateContractTemplate(id);
         router.refresh();
       } catch (error) {
-        console.error('Failed to duplicate template:', error);
+        toast.error('Failed to duplicate template');
       }
     });
   };
@@ -85,7 +86,7 @@ export function ContractTemplateList({
         setDeleteId(null);
         router.refresh();
       } catch (error) {
-        console.error('Failed to delete template:', error);
+        toast.error('Failed to delete template');
       }
     });
   };

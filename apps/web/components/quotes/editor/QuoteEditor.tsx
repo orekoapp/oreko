@@ -448,7 +448,7 @@ export function QuoteEditor() {
           {/* Preview Card */}
           <Card className="sticky top-4">
             <CardContent className="p-6">
-              <div className="rounded-lg border bg-white p-6 shadow-sm min-h-[500px]">
+              <div className="rounded-lg border bg-card p-6 shadow-sm min-h-[500px]">
                 {/* Logo Upload Area */}
                 <div className="mb-4">
                   <label
@@ -559,9 +559,14 @@ export function QuoteEditor() {
                 </div>
 
                 {previewMode === 'payment' && (
-                  <Button className="w-full mt-6" disabled>
-                    Accept & Pay Deposit
-                  </Button>
+                  <div className="mt-6 space-y-2">
+                    <Button className="w-full" disabled>
+                      Accept & Pay Deposit
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Preview only — clients will see this button in the portal
+                    </p>
+                  </div>
                 )}
 
                 {previewMode === 'email' && (
@@ -581,11 +586,14 @@ export function QuoteEditor() {
                 )}
 
                 {previewMode === 'pdf' && (
-                  <div className="mt-6 text-center">
+                  <div className="mt-6 text-center space-y-2">
                     <Button variant="outline" disabled>
                       <FileText className="mr-2 h-4 w-4" />
                       Download PDF Preview
                     </Button>
+                    <p className="text-xs text-muted-foreground">
+                      PDF generation available after saving the quote
+                    </p>
                   </div>
                 )}
               </div>

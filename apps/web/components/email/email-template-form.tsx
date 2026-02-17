@@ -224,7 +224,7 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
                       Preview with sample data
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="border rounded-lg p-4 bg-white">
+                  <div className="border rounded-lg p-4 bg-card">
                     <p className="text-sm text-muted-foreground mb-2">
                       <strong>Subject:</strong> {subject
                         .replace(/{{businessName}}/g, 'Acme Corp')
