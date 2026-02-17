@@ -32,6 +32,7 @@ export const QUOTE_STATUS_COLORS: Record<string, string> = {
   declined: '#EF4444',  // Red-500
   expired: '#9CA3AF',   // Gray-400
   signed: '#8B5CF6',    // Violet-500
+  converted: '#A855F7', // Purple-500
 };
 
 // Status-specific colors for invoices
@@ -42,7 +43,7 @@ export const INVOICE_STATUS_COLORS: Record<string, string> = {
   paid: '#22C55E',      // Green-500
   partial: '#F97316',   // Orange-500
   overdue: '#EF4444',   // Red-500
-  void: '#9CA3AF',      // Gray-400
+  voided: '#9CA3AF',    // Gray-400
 };
 
 // Payment aging bucket colors (gradient from green to red)
@@ -300,10 +301,11 @@ export function getStatusLabel(status: string): string {
     declined: 'Declined',
     expired: 'Expired',
     signed: 'Signed',
+    converted: 'Converted',
     paid: 'Paid',
     partial: 'Partially Paid',
     overdue: 'Overdue',
-    void: 'Voided',
+    voided: 'Voided',
   };
   return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
 }

@@ -186,7 +186,7 @@ export async function getClientById(id: string): Promise<ClientDetail> {
     // Computed fields from metadata
     contacts: metadata.contacts || [],
     tags: metadata.tags || [],
-    type: metadata.type || 'individual',
+    type: metadata.type || (client.company ? 'company' : 'individual'),
     website: metadata.website || null,
     totalRevenue,
     outstandingAmount,
@@ -493,6 +493,7 @@ export async function getClientStats(): Promise<ClientStats> {
     where: { workspaceId, deletedAt: null },
     select: {
       metadata: true,
+      company: true,
       _count: {
         select: {
           quotes: {
@@ -513,7 +514,8 @@ export async function getClientStats(): Promise<ClientStats> {
 
   for (const client of clients) {
     const metadata = (client.metadata as ClientMetadata) || {};
-    if (metadata.type === 'company') {
+    const clientType = metadata.type || (client.company ? 'company' : 'individual');
+    if (clientType === 'company') {
       companies++;
     } else {
       individuals++;

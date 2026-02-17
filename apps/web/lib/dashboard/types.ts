@@ -20,6 +20,7 @@ export interface QuoteStatusCounts {
   accepted: number;
   declined: number;
   expired: number;
+  converted: number;
 }
 
 // Invoice status counts
@@ -30,7 +31,7 @@ export interface InvoiceStatusCounts {
   paid: number;
   partial: number;
   overdue: number;
-  void: number;
+  voided: number;
 }
 
 // Revenue over time data point

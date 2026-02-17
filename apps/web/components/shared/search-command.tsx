@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Plus,
   FolderKanban,
+  Loader2,
 } from 'lucide-react';
 
 import {
@@ -25,6 +26,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command';
+import { globalSearch, type SearchResult } from '@/lib/search/actions';
 
 interface SearchCommandProps {
   open: boolean;
@@ -33,6 +35,39 @@ interface SearchCommandProps {
 
 export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   const router = useRouter();
+  const [query, setQuery] = React.useState('');
+  const [results, setResults] = React.useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = React.useState(false);
+
+  // Debounced search
+  React.useEffect(() => {
+    if (!query || query.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const data = await globalSearch(query);
+        setResults(data);
+      } catch {
+        setResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // Reset state when dialog closes
+  React.useEffect(() => {
+    if (!open) {
+      setQuery('');
+      setResults([]);
+    }
+  }, [open]);
 
   const runCommand = React.useCallback(
     (command: () => void) => {
@@ -42,11 +77,95 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
     [onOpenChange]
   );
 
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'quote': return <FileText className="mr-2 h-4 w-4" />;
+      case 'invoice': return <Receipt className="mr-2 h-4 w-4" />;
+      case 'client': return <Users className="mr-2 h-4 w-4" />;
+      default: return null;
+    }
+  };
+
+  const quoteResults = results.filter((r) => r.type === 'quote');
+  const invoiceResults = results.filter((r) => r.type === 'invoice');
+  const clientResults = results.filter((r) => r.type === 'client');
+
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput
+        placeholder="Type a command or search..."
+        value={query}
+        onValueChange={setQuery}
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>
+          {isSearching ? (
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Searching...</span>
+            </div>
+          ) : (
+            'No results found.'
+          )}
+        </CommandEmpty>
+
+        {/* Search Results */}
+        {quoteResults.length > 0 && (
+          <CommandGroup heading="Quotes">
+            {quoteResults.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={`quote-${result.title}-${result.subtitle}`}
+                onSelect={() => runCommand(() => router.push(result.href))}
+              >
+                {getIcon(result.type)}
+                <div className="flex flex-col">
+                  <span>{result.title}</span>
+                  <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {invoiceResults.length > 0 && (
+          <CommandGroup heading="Invoices">
+            {invoiceResults.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={`invoice-${result.title}-${result.subtitle}`}
+                onSelect={() => runCommand(() => router.push(result.href))}
+              >
+                {getIcon(result.type)}
+                <div className="flex flex-col">
+                  <span>{result.title}</span>
+                  <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {clientResults.length > 0 && (
+          <CommandGroup heading="Clients">
+            {clientResults.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={`client-${result.title}-${result.subtitle}`}
+                onSelect={() => runCommand(() => router.push(result.href))}
+              >
+                {getIcon(result.type)}
+                <div className="flex flex-col">
+                  <span>{result.title}</span>
+                  <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {results.length > 0 && <CommandSeparator />}
+
         <CommandGroup heading="Quick Actions">
           <CommandItem onSelect={() => runCommand(() => router.push('/quotes/new'))}>
             <Plus className="mr-2 h-4 w-4" />

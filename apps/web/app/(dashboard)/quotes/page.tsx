@@ -4,6 +4,10 @@ import { Button } from '@/components/ui/button';
 import { getQuotes } from '@/lib/quotes/actions';
 import { QuotesDataTable } from '@/components/quotes/quotes-data-table';
 
+export const metadata = {
+  title: 'Quotes',
+};
+
 export default async function QuotesPage() {
   const { quotes } = await getQuotes();
 

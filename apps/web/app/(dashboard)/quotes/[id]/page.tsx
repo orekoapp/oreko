@@ -1,11 +1,17 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Edit, Send, Download, Copy, Trash2, ExternalLink, Receipt, ArrowRight } from 'lucide-react';
+import { FileText, Edit, Send, Download, Copy, Trash2, ExternalLink, Receipt, ArrowRight, Clock, CheckCircle, XCircle, Eye, Mail } from 'lucide-react';
 import { getQuote } from '@/lib/quotes/actions';
+import { prisma } from '@quotecraft/database';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConvertToInvoiceButton } from '@/components/quotes/convert-to-invoice-button';
+
+export const metadata = {
+  title: 'Quote Details',
+};
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   draft: { bg: 'bg-gray-100', text: 'text-gray-700' },
@@ -290,18 +296,75 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           )}
 
           {/* Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                No activity yet.
-              </p>
-            </CardContent>
-          </Card>
+          <QuoteActivity quoteId={quote.id} />
         </div>
       </div>
     </div>
+  );
+}
+
+async function QuoteActivity({ quoteId }: { quoteId: string }) {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const events = await prisma.quoteEvent.findMany({
+    where: {
+      quoteId,
+      quote: { workspaceId },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+
+  const getEventIcon = (eventType: string) => {
+    if (eventType.includes('sent') || eventType.includes('quote_sent')) return <Mail className="h-4 w-4 text-blue-500" />;
+    if (eventType.includes('accepted')) return <CheckCircle className="h-4 w-4 text-green-500" />;
+    if (eventType.includes('declined')) return <XCircle className="h-4 w-4 text-red-500" />;
+    if (eventType.includes('viewed')) return <Eye className="h-4 w-4 text-yellow-500" />;
+    return <Clock className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  const getEventLabel = (eventType: string) => {
+    if (eventType.includes('sent') || eventType === 'quote_sent') return 'Quote sent';
+    if (eventType.includes('accepted')) return 'Quote accepted';
+    if (eventType.includes('declined')) return 'Quote declined';
+    if (eventType.includes('viewed')) return 'Quote viewed';
+    if (eventType.includes('created')) return 'Quote created';
+    if (eventType.includes('expired')) return 'Quote expired';
+    return eventType.replace(/_/g, ' ').replace(/status changed to /i, 'Status changed to ');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Activity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {events.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No activity yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {events.map((event) => (
+              <div key={event.id} className="flex items-start gap-3">
+                <div className="mt-0.5">{getEventIcon(event.eventType)}</div>
+                <div className="flex-1">
+                  <p className="text-sm">{getEventLabel(event.eventType)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(event.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

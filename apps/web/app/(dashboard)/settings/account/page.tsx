@@ -46,6 +46,10 @@ async function getUserProfile() {
   };
 }
 
+export const metadata = {
+  title: 'Account Settings',
+};
+
 export default async function AccountSettingsPage() {
   const user = await getUserProfile();
 

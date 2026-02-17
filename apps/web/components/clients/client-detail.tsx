@@ -98,7 +98,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
             </div>
             <div>
               <h1 className="text-2xl font-bold">{client.company || client.name}</h1>
-              {client.company && (
+              {client.company && client.company !== client.name && (
                 <p className="text-muted-foreground">{client.name}</p>
               )}
               <div className="mt-1 flex items-center gap-2">

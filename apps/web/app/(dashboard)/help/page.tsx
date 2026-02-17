@@ -18,25 +18,21 @@ const helpTopics = [
     icon: FileText,
     title: 'Getting Started',
     description: 'Learn the basics of creating quotes and invoices',
-    href: '#getting-started',
   },
   {
     icon: BookOpen,
     title: 'Documentation',
     description: 'Comprehensive guides and API references',
-    href: '#documentation',
   },
   {
     icon: Video,
     title: 'Video Tutorials',
     description: 'Watch step-by-step tutorials',
-    href: '#tutorials',
   },
   {
     icon: Lightbulb,
     title: 'Tips & Tricks',
     description: 'Get the most out of QuoteCraft',
-    href: '#tips',
   },
 ];
 
@@ -61,7 +57,7 @@ const supportOptions = [
     title: 'Report a Bug',
     description: 'Found an issue? Let us know',
     action: 'Report Bug',
-    href: 'https://github.com/quotecraft/quotecraft/issues',
+    href: 'mailto:support@quotecraft.app?subject=Bug%20Report',
     available: true,
   },
 ];
@@ -89,6 +85,10 @@ const faqs = [
   },
 ];
 
+export const metadata = {
+  title: 'Help & Support',
+};
+
 export default function HelpPage() {
   return (
     <div className="space-y-8">
@@ -104,17 +104,15 @@ export default function HelpPage() {
         <h2 className="text-lg font-semibold mb-4">Help Topics</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {helpTopics.map((topic) => (
-            <Link key={topic.title} href={topic.href}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardHeader className="pb-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-2">
-                    <topic.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <CardTitle className="text-base">{topic.title}</CardTitle>
-                  <CardDescription>{topic.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+            <Card key={topic.title} className="hover:shadow-md transition-shadow h-full">
+              <CardHeader className="pb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-2">
+                  <topic.icon className="h-5 w-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">{topic.title}</CardTitle>
+                <CardDescription>{topic.description}</CardDescription>
+              </CardHeader>
+            </Card>
           ))}
         </div>
       </section>
@@ -186,9 +184,9 @@ export default function HelpPage() {
           </CardHeader>
           <CardContent className="flex gap-4">
             <Button variant="outline" asChild>
-              <a href="https://github.com/quotecraft/quotecraft" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                GitHub Community
+              <a href="mailto:support@quotecraft.app" target="_blank" rel="noopener noreferrer">
+                <Mail className="mr-2 h-4 w-4" />
+                Contact Support
               </a>
             </Button>
             <Button variant="outline" asChild>

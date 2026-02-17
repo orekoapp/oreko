@@ -77,7 +77,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       where: {
         workspaceId,
         deletedAt: null,
-        status: { in: ['sent', 'viewed', 'partial'] },
+        status: { in: ['sent', 'viewed', 'partial', 'overdue'] },
       },
       _sum: { total: true, amountPaid: true },
     }),
@@ -171,6 +171,7 @@ export async function getQuoteStatusCounts(): Promise<QuoteStatusCounts> {
     accepted: statusMap.get('accepted') || 0,
     declined: statusMap.get('declined') || 0,
     expired: statusMap.get('expired') || 0,
+    converted: statusMap.get('converted') || 0,
   };
 }
 
@@ -193,7 +194,7 @@ export async function getInvoiceStatusCounts(): Promise<InvoiceStatusCounts> {
     paid: statusMap.get('paid') || 0,
     partial: statusMap.get('partial') || 0,
     overdue: statusMap.get('overdue') || 0,
-    void: statusMap.get('void') || 0,
+    voided: statusMap.get('voided') || 0,
   };
 }
 
@@ -347,6 +348,47 @@ export async function getRecentActivity(limit = 10): Promise<ActivityItem[]> {
         relatedType: 'invoice' as const,
       })),
   ];
+
+  // If no events found, generate synthetic activity from recent quotes and invoices
+  if (activities.length === 0) {
+    const [recentQuotes, recentInvoices] = await Promise.all([
+      prisma.quote.findMany({
+        where: { workspaceId, deletedAt: null },
+        include: { client: { select: { name: true, company: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      }),
+      prisma.invoice.findMany({
+        where: { workspaceId, deletedAt: null },
+        include: { client: { select: { name: true, company: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      }),
+    ]);
+
+    activities.push(
+      ...recentQuotes.map((q) => ({
+        id: `quote-${q.id}`,
+        type: 'quote_created' as const,
+        title: `${q.title || 'Untitled Quote'} was created`,
+        clientName: q.client?.company || q.client?.name || 'Unknown Client',
+        amount: toNumber(q.total),
+        date: q.createdAt,
+        relatedId: q.id,
+        relatedType: 'quote' as const,
+      })),
+      ...recentInvoices.map((i) => ({
+        id: `invoice-${i.id}`,
+        type: 'invoice_created' as const,
+        title: `${i.invoiceNumber} was created`,
+        clientName: i.client?.company || i.client?.name || 'Unknown Client',
+        amount: toNumber(i.total),
+        date: i.createdAt,
+        relatedId: i.id,
+        relatedType: 'invoice' as const,
+      })),
+    );
+  }
 
   // Sort by date and limit
   return activities
@@ -557,7 +599,6 @@ export async function getConversionFunnelData(
       where: {
         workspaceId,
         deletedAt: null,
-        quoteId: { not: null },
         createdAt: dateFilter,
       },
     }),
@@ -565,7 +606,6 @@ export async function getConversionFunnelData(
       where: {
         workspaceId,
         deletedAt: null,
-        quoteId: { not: null },
         status: 'paid',
         ...(dateFilter && { paidAt: dateFilter }),
       },
