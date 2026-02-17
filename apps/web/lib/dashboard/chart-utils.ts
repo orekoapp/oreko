@@ -72,30 +72,28 @@ export const CHART_PALETTE = [
 
 /**
  * Format number as currency for chart display
+ * Values are already in dollars (not cents)
  */
 export function formatChartCurrency(value: number): string {
-  // Convert from cents to dollars
-  const dollars = value / 100;
-
-  if (dollars >= 1000000) {
-    return `$${(dollars / 1000000).toFixed(1)}M`;
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
   }
-  if (dollars >= 1000) {
-    return `$${(dollars / 1000).toFixed(1)}K`;
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`;
   }
-  return `$${dollars.toFixed(0)}`;
+  return `$${value.toFixed(0)}`;
 }
 
 /**
  * Format number as full currency for tooltips
+ * Values are already in dollars (not cents)
  */
 export function formatFullCurrency(value: number): string {
-  const dollars = value / 100;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-  }).format(dollars);
+  }).format(value);
 }
 
 /**

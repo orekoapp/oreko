@@ -187,7 +187,7 @@ function generateCSV(data: Record<string, unknown>): string {
     Object.entries(stats).forEach(([key, value]) => {
       const formattedKey = key.replace(/([A-Z])/g, ' $1').trim();
       const formattedValue = typeof value === 'number' && key.toLowerCase().includes('revenue')
-        ? `$${(value / 100).toFixed(2)}`
+        ? `$${value.toFixed(2)}`
         : value;
       lines.push(`${formattedKey},${formattedValue}`);
     });
