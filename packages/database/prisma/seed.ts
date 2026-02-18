@@ -114,15 +114,31 @@ async function main() {
     { name: 'Jane Smith', email: 'jane@example.com', company: 'Smith LLC' },
   ];
 
+  const clientIds = ['client-acme', 'client-john', 'client-jane'];
   const createdClients: { id: string }[] = [];
-  for (const clientData of clients) {
+  for (let ci = 0; ci < clients.length; ci++) {
+    const clientData = clients[ci]!;
+    const clientId = clientIds[ci]!;
+
+    // Clean up old pattern-based IDs (e.g. client-jane@example.com)
+    const oldId = `client-${clientData.email}`;
+    const oldClient = await prisma.client.findUnique({ where: { id: oldId } });
+    if (oldClient) {
+      // Delete old client's references first, then the client
+      await prisma.quoteLineItem.deleteMany({ where: { quote: { clientId: oldId } } });
+      await prisma.invoiceLineItem.deleteMany({ where: { invoice: { clientId: oldId } } });
+      await prisma.quote.deleteMany({ where: { clientId: oldId } });
+      await prisma.invoice.deleteMany({ where: { clientId: oldId } });
+      await prisma.project.deleteMany({ where: { clientId: oldId } });
+      await prisma.client.delete({ where: { id: oldId } });
+      console.log(`Cleaned up old client ID: ${oldId}`);
+    }
+
     const client = await prisma.client.upsert({
-      where: {
-        id: `client-${clientData.email}`,
-      },
-      update: {},
+      where: { id: clientId },
+      update: { name: clientData.name, email: clientData.email, company: clientData.company },
       create: {
-        id: `client-${clientData.email}`,
+        id: clientId,
         workspaceId: workspace.id,
         name: clientData.name,
         email: clientData.email,
@@ -149,23 +165,38 @@ async function main() {
     },
   });
 
+  // Create second rate card category (M10 fix)
+  const consultingCategory = await prisma.rateCardCategory.upsert({
+    where: {
+      workspaceId_name: {
+        workspaceId: workspace.id,
+        name: 'Consulting Services',
+      },
+    },
+    update: {},
+    create: {
+      workspaceId: workspace.id,
+      name: 'Consulting Services',
+      color: '#8B5CF6',
+    },
+  });
+
   const rateCards = [
-    { name: 'Senior Developer', rate: 150, unit: 'hour' },
-    { name: 'Junior Developer', rate: 75, unit: 'hour' },
-    { name: 'Project Management', rate: 100, unit: 'hour' },
-    { name: 'Design Services', rate: 125, unit: 'hour' },
+    { name: 'Senior Developer', rate: 150, unit: 'hour', categoryId: rateCardCategory.id },
+    { name: 'Junior Developer', rate: 75, unit: 'hour', categoryId: rateCardCategory.id },
+    { name: 'Project Management', rate: 100, unit: 'hour', categoryId: consultingCategory.id },
+    { name: 'Design Services', rate: 125, unit: 'hour', categoryId: consultingCategory.id },
   ];
 
   for (const rateCardData of rateCards) {
+    const rcId = `ratecard-${rateCardData.name.toLowerCase().replace(/ /g, '-')}`;
     await prisma.rateCard.upsert({
-      where: {
-        id: `ratecard-${rateCardData.name.toLowerCase().replace(/ /g, '-')}`,
-      },
-      update: {},
+      where: { id: rcId },
+      update: { categoryId: rateCardData.categoryId },
       create: {
-        id: `ratecard-${rateCardData.name.toLowerCase().replace(/ /g, '-')}`,
+        id: rcId,
         workspaceId: workspace.id,
-        categoryId: rateCardCategory.id,
+        categoryId: rateCardData.categoryId,
         name: rateCardData.name,
         rate: rateCardData.rate,
         unit: rateCardData.unit,
@@ -237,6 +268,7 @@ async function main() {
         title: q.title,
         subtotal: q.subtotal,
         total: q.subtotal,
+        settings: {}, // C03 fix: clear stale blocks so fallback reconstructs from lineItems
         sentAt: q.status !== 'draft' ? new Date() : null,
         viewedAt: ['viewed', 'accepted', 'declined', 'converted'].includes(q.status) ? new Date() : null,
         acceptedAt: ['accepted', 'converted'].includes(q.status) ? new Date() : null,
@@ -259,19 +291,50 @@ async function main() {
       },
     });
 
-    // Add line items
+    // Add line items (C03 fix: add multiple items per quote for realistic preview)
+    // Split the total into primary (70%) and secondary (30%) line items
+    const primaryAmount = Math.round(q.subtotal * 0.7);
+    const secondaryAmount = q.subtotal - primaryAmount;
+    const primaryQty = Math.max(1, Math.round(q.qty * 0.7));
+    const secondaryQty = Math.max(1, q.qty - primaryQty);
+    const primaryRate = Math.round(primaryAmount / primaryQty);
+    const secondaryRate = Math.round(secondaryAmount / secondaryQty);
+
     await prisma.quoteLineItem.upsert({
       where: { id: `quote-item-${quote.id}` },
-      update: { name: q.itemName, quantity: q.qty, rate: q.rate, amount: q.subtotal },
+      update: { name: q.itemName, quantity: primaryQty, rate: primaryRate, amount: primaryQty * primaryRate, sortOrder: 0 },
       create: {
         id: `quote-item-${quote.id}`,
         quoteId: quote.id,
         name: q.itemName,
-        quantity: q.qty,
-        rate: q.rate,
-        amount: q.subtotal,
+        quantity: primaryQty,
+        rate: primaryRate,
+        amount: primaryQty * primaryRate,
+        sortOrder: 0,
       },
     });
+    await prisma.quoteLineItem.upsert({
+      where: { id: `quote-item-2-${quote.id}` },
+      update: { name: 'Project Management', quantity: secondaryQty, rate: secondaryRate, amount: secondaryQty * secondaryRate, sortOrder: 1 },
+      create: {
+        id: `quote-item-2-${quote.id}`,
+        quoteId: quote.id,
+        name: 'Project Management',
+        quantity: secondaryQty,
+        rate: secondaryRate,
+        amount: secondaryQty * secondaryRate,
+        sortOrder: 1,
+      },
+    });
+
+    // Update totals to match actual line item sums
+    const actualTotal = (primaryQty * primaryRate) + (secondaryQty * secondaryRate);
+    if (actualTotal !== q.subtotal) {
+      await prisma.quote.update({
+        where: { id: quote.id },
+        data: { subtotal: actualTotal, total: actualTotal },
+      });
+    }
 
     console.log(`Created/Updated quote: ${quote.quoteNumber} (${q.status})`);
 
@@ -324,19 +387,42 @@ async function main() {
   }
 
   // Create some additional invoices with different statuses and varied amounts
+  // Note: amounts are derived from qty * rate to ensure math correctness (C01 fix)
   const testInvoices = [
-    { status: 'draft', title: 'Server Setup & Config', subtotal: 1200, itemName: 'DevOps Services', qty: 8, rate: 150 },
-    { status: 'sent', title: 'Q1 Consulting Retainer', subtotal: 3800, itemName: 'Consulting', qty: 38, rate: 100 },
-    { status: 'viewed', title: 'Design System Delivery', subtotal: 6500, itemName: 'Design Services', qty: 52, rate: 125 },
-    { status: 'paid', title: 'Landing Page Build', subtotal: 4200, itemName: 'Web Development', qty: 24, rate: 175 },
-    { status: 'overdue', title: 'Database Optimization', subtotal: 2750, itemName: 'Performance Tuning', qty: 11, rate: 250 },
-    { status: 'voided', title: 'Cancelled Project Deposit', subtotal: 950, itemName: 'Project Deposit', qty: 1, rate: 950 },
+    { status: 'draft', title: 'Server Setup & Config', itemName: 'DevOps Services', qty: 8, rate: 150 },
+    { status: 'sent', title: 'Q1 Consulting Retainer', itemName: 'Consulting', qty: 38, rate: 100 },
+    { status: 'viewed', title: 'Design System Delivery', itemName: 'Design Services', qty: 52, rate: 125 },
+    { status: 'paid', title: 'Landing Page Build', itemName: 'Web Development', qty: 24, rate: 175 },
+    { status: 'overdue', title: 'Database Optimization', itemName: 'Performance Tuning', qty: 11, rate: 250 },
+    { status: 'voided', title: 'Cancelled Project Deposit', itemName: 'Project Deposit', qty: 1, rate: 950 },
+    { status: 'paid', title: 'SEO Audit & Report', itemName: 'SEO Consulting', qty: 10, rate: 200 },
+    { status: 'paid', title: 'Logo & Branding Package', itemName: 'Brand Design', qty: 1, rate: 3500 },
   ];
+
+  // Clean up old INV-01xx invoices from previous seed format (M02 fix)
+  for (let old = 100; old < 110; old++) {
+    const oldNum = `INV-${String(old).padStart(4, '0')}`;
+    const oldInv = await prisma.invoice.findUnique({
+      where: { workspaceId_invoiceNumber: { workspaceId: workspace.id, invoiceNumber: oldNum } },
+      select: { id: true },
+    });
+    if (oldInv) {
+      await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: oldInv.id } });
+      await prisma.invoiceEvent.deleteMany({ where: { invoiceId: oldInv.id } });
+      await prisma.invoice.delete({ where: { id: oldInv.id } });
+      console.log(`Cleaned up old invoice: ${oldNum}`);
+    }
+  }
 
   for (let i = 0; i < testInvoices.length; i++) {
     const inv = testInvoices[i]!;
     const client = createdClients[i % createdClients.length]!;
-    const invoiceNumber = `INV-${String(100 + i).padStart(4, '0')}`;
+    const subtotal = inv.qty * inv.rate;
+    const invoiceNumber = `INV-${String(7 + i).padStart(4, '0')}`;
+
+    // C04 fix: For overdue invoices, issue date must be before due date
+    const overdueIssueDate = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000);
+    const overdueDueDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     const invoice = await prisma.invoice.upsert({
       where: {
@@ -348,12 +434,13 @@ async function main() {
       update: {
         status: inv.status,
         title: inv.title,
-        subtotal: inv.subtotal,
-        total: inv.subtotal,
-        amountPaid: inv.status === 'paid' ? inv.subtotal : 0,
-        amountDue: inv.status === 'paid' ? 0 : inv.subtotal,
+        subtotal,
+        total: subtotal,
+        amountPaid: inv.status === 'paid' ? subtotal : 0,
+        amountDue: inv.status === 'paid' ? 0 : subtotal,
+        issueDate: inv.status === 'overdue' ? overdueIssueDate : new Date(),
         dueDate: inv.status === 'overdue'
-          ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          ? overdueDueDate
           : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         sentAt: inv.status !== 'draft' ? new Date() : null,
         viewedAt: ['viewed', 'paid', 'overdue'].includes(inv.status) ? new Date() : null,
@@ -366,14 +453,14 @@ async function main() {
         invoiceNumber,
         status: inv.status,
         title: inv.title,
-        issueDate: new Date(),
+        issueDate: inv.status === 'overdue' ? overdueIssueDate : new Date(),
         dueDate: inv.status === 'overdue'
-          ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          ? overdueDueDate
           : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        subtotal: inv.subtotal,
-        total: inv.subtotal,
-        amountPaid: inv.status === 'paid' ? inv.subtotal : 0,
-        amountDue: inv.status === 'paid' ? 0 : inv.subtotal,
+        subtotal,
+        total: subtotal,
+        amountPaid: inv.status === 'paid' ? subtotal : 0,
+        amountDue: inv.status === 'paid' ? 0 : subtotal,
         sentAt: inv.status !== 'draft' ? new Date() : null,
         viewedAt: ['viewed', 'paid', 'overdue'].includes(inv.status) ? new Date() : null,
         paidAt: inv.status === 'paid' ? new Date() : null,
@@ -381,26 +468,135 @@ async function main() {
       },
     });
 
+    // C01 fix: amount is always qty * rate
     await prisma.invoiceLineItem.upsert({
       where: { id: `invoice-item-standalone-${invoice.id}` },
-      update: { name: inv.itemName, quantity: inv.qty, rate: inv.rate, amount: inv.subtotal },
+      update: { name: inv.itemName, quantity: inv.qty, rate: inv.rate, amount: subtotal },
       create: {
         id: `invoice-item-standalone-${invoice.id}`,
         invoiceId: invoice.id,
         name: inv.itemName,
         quantity: inv.qty,
         rate: inv.rate,
-        amount: inv.subtotal,
+        amount: subtotal,
       },
     });
 
+    // Seed activity events for this invoice (H01 fix)
+    const invoiceEvents: { eventType: string; createdAt: Date }[] = [];
+    invoiceEvents.push({ eventType: 'created', createdAt: new Date(Date.now() - (30 - i) * 24 * 60 * 60 * 1000) });
+    if (inv.status !== 'draft') {
+      invoiceEvents.push({ eventType: 'sent', createdAt: new Date(Date.now() - (28 - i) * 24 * 60 * 60 * 1000) });
+    }
+    if (['viewed', 'paid', 'overdue'].includes(inv.status)) {
+      invoiceEvents.push({ eventType: 'viewed', createdAt: new Date(Date.now() - (25 - i) * 24 * 60 * 60 * 1000) });
+    }
+    if (inv.status === 'paid') {
+      invoiceEvents.push({ eventType: 'paid', createdAt: new Date(Date.now() - (20 - i) * 24 * 60 * 60 * 1000) });
+    }
+
+    // Clear existing events and re-create
+    await prisma.invoiceEvent.deleteMany({ where: { invoiceId: invoice.id } });
+    for (const evt of invoiceEvents) {
+      await prisma.invoiceEvent.create({
+        data: {
+          invoiceId: invoice.id,
+          eventType: evt.eventType,
+          actorId: users['test@quotecraft.dev']!.id,
+          actorType: 'user',
+          metadata: {},
+          createdAt: evt.createdAt,
+        },
+      });
+    }
+
     console.log(`Created/Updated invoice: ${invoice.invoiceNumber} (${inv.status})`);
   }
+
+  // Seed activity events for quotes (H01 fix)
+  const allQuotes = await prisma.quote.findMany({ where: { workspaceId: workspace.id } });
+  for (const quote of allQuotes) {
+    const existingEvents = await prisma.quoteEvent.count({ where: { quoteId: quote.id } });
+    if (existingEvents > 0) continue; // Don't re-seed if events exist
+
+    const quoteEvents: { eventType: string; createdAt: Date }[] = [];
+    quoteEvents.push({ eventType: 'created', createdAt: quote.createdAt });
+    if (quote.sentAt) quoteEvents.push({ eventType: 'sent', createdAt: quote.sentAt });
+    if (quote.viewedAt) quoteEvents.push({ eventType: 'viewed', createdAt: quote.viewedAt });
+    if (quote.acceptedAt) quoteEvents.push({ eventType: 'accepted', createdAt: quote.acceptedAt });
+    if (quote.declinedAt) quoteEvents.push({ eventType: 'declined', createdAt: quote.declinedAt });
+
+    for (const evt of quoteEvents) {
+      await prisma.quoteEvent.create({
+        data: {
+          quoteId: quote.id,
+          eventType: evt.eventType,
+          actorId: users['test@quotecraft.dev']!.id,
+          actorType: 'user',
+          metadata: {},
+          createdAt: evt.createdAt,
+        },
+      });
+    }
+  }
+  console.log('Seeded activity events for quotes and invoices');
+
+  // Update number sequences to match seeded data
+  await prisma.numberSequence.update({
+    where: { workspaceId_type: { workspaceId: workspace.id, type: 'quote' } },
+    data: { currentValue: 6 },
+  });
+  await prisma.numberSequence.update({
+    where: { workspaceId_type: { workspaceId: workspace.id, type: 'invoice' } },
+    data: { currentValue: 14 },
+  });
 
   console.log('Database seeding completed!');
 
   // Seed demo workspace
   await seedDemoWorkspace();
+}
+
+/** Helper: Generate realistic multi-item line items for demo quotes */
+function getDemoQuoteLineItems(title: string, subtotal: number) {
+  const itemSets: Record<string, { name: string; description: string; qty: number; rate: number }[]> = {
+    'Website Redesign Proposal': [
+      { name: 'UI/UX Design', description: 'Homepage and key page wireframes & visual design', qty: 40, rate: 150 },
+      { name: 'Frontend Development', description: 'React/Next.js implementation with responsive layouts', qty: 60, rate: 175 },
+      { name: 'Content Migration', description: 'Migrating existing content to new design', qty: 12, rate: 100 },
+    ],
+    'E-commerce Platform Design': [
+      { name: 'Product Page Design', description: 'Full product listing and detail page design', qty: 48, rate: 150 },
+      { name: 'Checkout Flow Design', description: 'Cart, checkout, and payment page UX', qty: 32, rate: 175 },
+      { name: 'Admin Dashboard Design', description: 'Inventory and order management interface', qty: 56, rate: 150 },
+    ],
+    'Brand Identity Package': [
+      { name: 'Logo Design', description: 'Primary logo with 3 concepts and revisions', qty: 1, rate: 3500 },
+      { name: 'Brand Guidelines', description: 'Typography, color palette, usage rules document', qty: 1, rate: 2000 },
+      { name: 'Collateral Design', description: 'Business card, letterhead, and email signature', qty: 1, rate: 1500 },
+    ],
+    'Mobile App UI Design': [
+      { name: 'App UI Design', description: 'Screen designs for 20+ views', qty: 48, rate: 150 },
+      { name: 'Prototype & Testing', description: 'Interactive prototype with usability testing', qty: 24, rate: 125 },
+    ],
+    'Annual Retainer Package': [
+      { name: 'Monthly Design Support', description: '40 hours/month of on-demand design work', qty: 480, rate: 100 },
+      { name: 'Dedicated Project Manager', description: 'Coordination and communication', qty: 120, rate: 50 },
+    ],
+  };
+
+  const items = itemSets[title];
+  if (items) return items;
+
+  // Fallback: split into two items
+  const primaryRate = 150;
+  const primaryQty = Math.max(1, Math.round((subtotal * 0.7) / primaryRate));
+  const secondaryRate = 100;
+  const secondaryQty = Math.max(1, Math.round((subtotal * 0.3) / secondaryRate));
+  return [
+    { name: 'Design Services', description: 'Visual design and prototyping', qty: primaryQty, rate: primaryRate },
+    { name: 'Project Management', description: 'Coordination and delivery', qty: secondaryQty, rate: secondaryRate },
+  ];
 }
 
 /**
@@ -522,12 +718,12 @@ async function seedDemoWorkspace() {
         type: 'invoice',
       },
     },
-    update: {},
+    update: { currentValue: 7 },
     create: {
       workspaceId: demoWorkspace.id,
       type: 'invoice',
       prefix: 'INV-',
-      currentValue: 4,
+      currentValue: 7,
       padding: 4,
     },
   });
@@ -557,8 +753,8 @@ async function seedDemoWorkspace() {
   }
   console.log('Created/Updated demo clients');
 
-  // Create demo rate card category
-  const demoCategory = await prisma.rateCardCategory.upsert({
+  // Create demo rate card categories (M10 fix: multiple categories)
+  const demoDesignCategory = await prisma.rateCardCategory.upsert({
     where: {
       workspaceId_name: {
         workspaceId: demoWorkspace.id,
@@ -573,22 +769,39 @@ async function seedDemoWorkspace() {
     },
   });
 
+  const demoDevCategory = await prisma.rateCardCategory.upsert({
+    where: {
+      workspaceId_name: {
+        workspaceId: demoWorkspace.id,
+        name: 'Development Services',
+      },
+    },
+    update: {},
+    create: {
+      workspaceId: demoWorkspace.id,
+      name: 'Development Services',
+      color: '#10B981',
+    },
+  });
+
   // Create demo rate cards
   const demoRateCards = [
-    { id: 'demo-rate-1', name: 'UI/UX Design', rate: 150, unit: 'hour', pricingType: 'hourly' },
-    { id: 'demo-rate-2', name: 'Brand Identity', rate: 125, unit: 'hour', pricingType: 'hourly' },
-    { id: 'demo-rate-3', name: 'Web Development', rate: 175, unit: 'hour', pricingType: 'hourly' },
-    { id: 'demo-rate-4', name: 'Logo Design Package', rate: 2500, unit: 'project', pricingType: 'fixed' },
+    { id: 'demo-rate-1', name: 'UI/UX Design', rate: 150, unit: 'hour', pricingType: 'hourly', categoryId: demoDesignCategory.id },
+    { id: 'demo-rate-2', name: 'Brand Identity', rate: 125, unit: 'hour', pricingType: 'hourly', categoryId: demoDesignCategory.id },
+    { id: 'demo-rate-3', name: 'Web Development', rate: 175, unit: 'hour', pricingType: 'hourly', categoryId: demoDevCategory.id },
+    { id: 'demo-rate-4', name: 'Logo Design Package', rate: 2500, unit: 'project', pricingType: 'fixed', categoryId: demoDesignCategory.id },
+    { id: 'demo-rate-5', name: 'Backend API Development', rate: 200, unit: 'hour', pricingType: 'hourly', categoryId: demoDevCategory.id },
+    { id: 'demo-rate-6', name: 'DevOps & Deployment', rate: 175, unit: 'hour', pricingType: 'hourly', categoryId: demoDevCategory.id },
   ];
 
   for (const rateCardData of demoRateCards) {
     await prisma.rateCard.upsert({
       where: { id: rateCardData.id },
-      update: {},
+      update: { categoryId: rateCardData.categoryId },
       create: {
         id: rateCardData.id,
         workspaceId: demoWorkspace.id,
-        categoryId: demoCategory.id,
+        categoryId: rateCardData.categoryId,
         name: rateCardData.name,
         rate: rateCardData.rate,
         unit: rateCardData.unit,
@@ -684,6 +897,7 @@ async function seedDemoWorkspace() {
         title: quoteData.title,
         subtotal: quoteData.subtotal,
         total: quoteData.total,
+        settings: {}, // C03 fix: clear stale blocks
         sentAt: quoteData.sentAt ?? null,
         viewedAt: quoteData.viewedAt ?? null,
         acceptedAt: quoteData.acceptedAt ?? null,
@@ -708,23 +922,32 @@ async function seedDemoWorkspace() {
     });
     demoQuoteIds[quoteData.id] = quote.id;
 
-    // Ensure at least one line item exists for this quote
-    const existingItems = await prisma.quoteLineItem.findMany({ where: { quoteId: quote.id }, take: 1 });
-    if (existingItems.length > 0) {
-      await prisma.quoteLineItem.update({
-        where: { id: existingItems[0]!.id },
-        data: { name: 'Design Services', quantity: 1, rate: quoteData.subtotal, amount: quoteData.subtotal },
-      });
-    } else {
+    // C03 fix: Add multiple realistic line items per quote
+    // Clear existing line items and recreate with proper math
+    await prisma.quoteLineItem.deleteMany({ where: { quoteId: quote.id } });
+    const demoLineItems = getDemoQuoteLineItems(quoteData.title, quoteData.subtotal);
+    let lineItemTotal = 0;
+    for (let li = 0; li < demoLineItems.length; li++) {
+      const item = demoLineItems[li]!;
+      const amount = item.qty * item.rate;
+      lineItemTotal += amount;
       await prisma.quoteLineItem.create({
         data: {
           quoteId: quote.id,
-          name: 'Design Services',
-          quantity: 1,
-          rate: quoteData.subtotal,
-          amount: quoteData.subtotal,
-          sortOrder: 0,
+          name: item.name,
+          description: item.description,
+          quantity: item.qty,
+          rate: item.rate,
+          amount,
+          sortOrder: li,
         },
+      });
+    }
+    // Update quote totals to match actual line items
+    if (lineItemTotal !== quoteData.subtotal) {
+      await prisma.quote.update({
+        where: { id: quote.id },
+        data: { subtotal: lineItemTotal, total: lineItemTotal },
       });
     }
   }
@@ -788,6 +1011,49 @@ async function seedDemoWorkspace() {
       amountPaid: 0,
       amountDue: 3600,
     },
+    // H02 fix: Add more paid invoices for different clients to show revenue
+    {
+      id: 'demo-invoice-5',
+      invoiceNumber: 'INV-0005',
+      clientId: 'demo-client-2',
+      title: 'E-commerce Design Phase 1',
+      status: 'paid',
+      issueDate: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
+      dueDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+      paidAt: new Date(now.getTime() - 35 * 24 * 60 * 60 * 1000),
+      subtotal: 12500,
+      total: 12500,
+      amountPaid: 12500,
+      amountDue: 0,
+    },
+    {
+      id: 'demo-invoice-6',
+      invoiceNumber: 'INV-0006',
+      clientId: 'demo-client-3',
+      title: 'Brand Guidelines Document',
+      status: 'paid',
+      issueDate: new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000),
+      dueDate: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+      paidAt: new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000),
+      subtotal: 3500,
+      total: 3500,
+      amountPaid: 3500,
+      amountDue: 0,
+    },
+    {
+      id: 'demo-invoice-7',
+      invoiceNumber: 'INV-0007',
+      clientId: 'demo-client-5',
+      title: 'Monthly Design Retainer - Dec',
+      status: 'paid',
+      issueDate: new Date(now.getTime() - 50 * 24 * 60 * 60 * 1000),
+      dueDate: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000),
+      paidAt: new Date(now.getTime() - 22 * 24 * 60 * 60 * 1000),
+      subtotal: 5000,
+      total: 5000,
+      amountPaid: 5000,
+      amountDue: 0,
+    },
   ];
 
   const demoInvoiceIds: Record<string, string> = {};
@@ -830,22 +1096,49 @@ async function seedDemoWorkspace() {
     });
     demoInvoiceIds[invoiceData.id] = invoice.id;
 
-    // Ensure at least one line item exists for this invoice
-    const existingItems = await prisma.invoiceLineItem.findMany({ where: { invoiceId: invoice.id }, take: 1 });
-    if (existingItems.length > 0) {
-      await prisma.invoiceLineItem.update({
-        where: { id: existingItems[0]!.id },
-        data: { name: 'Services', quantity: 1, rate: invoiceData.subtotal, amount: invoiceData.subtotal },
-      });
-    } else {
+    // C01 fix: recreate line items with correct math
+    await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: invoice.id } });
+    // Split into 2 items for realism
+    const invPrimaryRate = 150;
+    const invPrimaryQty = Math.max(1, Math.round((invoiceData.subtotal * 0.65) / invPrimaryRate));
+    const invPrimaryAmt = invPrimaryQty * invPrimaryRate;
+    const invSecondaryAmt = invoiceData.subtotal - invPrimaryAmt;
+    const invSecondaryRate = 100;
+    const invSecondaryQty = Math.max(1, Math.round(invSecondaryAmt / invSecondaryRate));
+    const invActualSecondaryAmt = invSecondaryQty * invSecondaryRate;
+
+    await prisma.invoiceLineItem.create({
+      data: {
+        invoiceId: invoice.id,
+        name: invoiceData.title.includes('Design') ? 'Design Services' : 'Professional Services',
+        quantity: invPrimaryQty,
+        rate: invPrimaryRate,
+        amount: invPrimaryAmt,
+        sortOrder: 0,
+      },
+    });
+    if (invActualSecondaryAmt > 0) {
       await prisma.invoiceLineItem.create({
         data: {
           invoiceId: invoice.id,
-          name: 'Services',
-          quantity: 1,
-          rate: invoiceData.subtotal,
-          amount: invoiceData.subtotal,
-          sortOrder: 0,
+          name: 'Project Coordination',
+          quantity: invSecondaryQty,
+          rate: invSecondaryRate,
+          amount: invActualSecondaryAmt,
+          sortOrder: 1,
+        },
+      });
+    }
+    // Update totals to match actual line items
+    const invActualTotal = invPrimaryAmt + invActualSecondaryAmt;
+    if (invActualTotal !== invoiceData.subtotal) {
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          subtotal: invActualTotal,
+          total: invActualTotal,
+          amountPaid: invoiceData.status === 'paid' ? invActualTotal : invoiceData.amountPaid,
+          amountDue: invoiceData.status === 'paid' ? 0 : invActualTotal,
         },
       });
     }
@@ -943,6 +1236,60 @@ async function seedDemoWorkspace() {
     }
   }
   console.log('Linked invoices to projects');
+
+  // Seed activity events for demo quotes (H01 fix)
+  const allDemoQuotes = await prisma.quote.findMany({ where: { workspaceId: demoWorkspace.id } });
+  for (const quote of allDemoQuotes) {
+    const existingEvents = await prisma.quoteEvent.count({ where: { quoteId: quote.id } });
+    if (existingEvents > 0) continue;
+
+    const events: { eventType: string; createdAt: Date }[] = [];
+    events.push({ eventType: 'created', createdAt: quote.createdAt });
+    if (quote.sentAt) events.push({ eventType: 'sent', createdAt: quote.sentAt });
+    if (quote.viewedAt) events.push({ eventType: 'viewed', createdAt: quote.viewedAt });
+    if (quote.acceptedAt) events.push({ eventType: 'accepted', createdAt: quote.acceptedAt });
+    if (quote.declinedAt) events.push({ eventType: 'declined', createdAt: quote.declinedAt });
+
+    for (const evt of events) {
+      await prisma.quoteEvent.create({
+        data: {
+          quoteId: quote.id,
+          eventType: evt.eventType,
+          actorId: demoUser.id,
+          actorType: 'user',
+          metadata: {},
+          createdAt: evt.createdAt,
+        },
+      });
+    }
+  }
+
+  // Seed activity events for demo invoices (H01 fix)
+  const allDemoInvoices = await prisma.invoice.findMany({ where: { workspaceId: demoWorkspace.id } });
+  for (const invoice of allDemoInvoices) {
+    const existingEvents = await prisma.invoiceEvent.count({ where: { invoiceId: invoice.id } });
+    if (existingEvents > 0) continue;
+
+    const events: { eventType: string; createdAt: Date }[] = [];
+    events.push({ eventType: 'created', createdAt: invoice.createdAt });
+    if (invoice.sentAt) events.push({ eventType: 'sent', createdAt: invoice.sentAt });
+    if (invoice.viewedAt) events.push({ eventType: 'viewed', createdAt: invoice.viewedAt });
+    if (invoice.paidAt) events.push({ eventType: 'paid', createdAt: invoice.paidAt });
+
+    for (const evt of events) {
+      await prisma.invoiceEvent.create({
+        data: {
+          invoiceId: invoice.id,
+          eventType: evt.eventType,
+          actorId: demoUser.id,
+          actorType: 'user',
+          metadata: {},
+          createdAt: evt.createdAt,
+        },
+      });
+    }
+  }
+  console.log('Seeded demo activity events');
 
   // Clean up stale test data (manually created during testing)
   // Remove any quotes/invoices with "Untitled" titles or $0 amounts

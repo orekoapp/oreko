@@ -187,16 +187,20 @@ export function createQuoteColumns({
     },
     {
       id: 'actions',
-      cell: ({ row }) => (
-        <DataTableRowActions
-          row={row.original}
-          onView={onView}
-          onEdit={onEdit}
-          onDuplicate={onDuplicate}
-          onDelete={onDelete}
-          onDownload={onDownload}
-        />
-      ),
+      cell: ({ row }) => {
+        const status = row.original.status;
+        const canDelete = status === 'draft';
+        return (
+          <DataTableRowActions
+            row={row.original}
+            onView={onView}
+            onEdit={onEdit}
+            onDuplicate={onDuplicate}
+            onDelete={canDelete ? onDelete : undefined}
+            onDownload={onDownload}
+          />
+        );
+      },
     },
   ];
 }

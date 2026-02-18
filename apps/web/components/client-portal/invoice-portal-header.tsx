@@ -17,11 +17,11 @@ export function InvoicePortalHeader({ invoice }: InvoicePortalHeaderProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Business Logo or Icon */}
-            {invoice.branding?.logoUrl || invoice.business.logoUrl ? (
+            {(invoice.branding?.logoUrl || invoice.business.logoUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={invoice.branding?.logoUrl || invoice.business.logoUrl || ''}
-                alt={invoice.business.name}
+                src={(invoice.branding?.logoUrl || invoice.business.logoUrl)!}
+                alt={invoice.business.name || 'Business'}
                 className="h-10 w-auto max-w-[120px] object-contain"
               />
             ) : (

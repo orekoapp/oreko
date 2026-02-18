@@ -126,6 +126,7 @@ export function ClientsDataTable({ data }: ClientsDataTableProps) {
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
         onRowSelect={setSelectedRows}
+        onRowClick={(row) => router.push(`/clients/${row.id}`)}
       />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

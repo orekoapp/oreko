@@ -184,11 +184,17 @@ export function AppSidebar({ user, workspaces, activeWorkspace }: AppSidebarProp
       <SidebarContent>
         {/* Quick Action */}
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-          <SidebarGroupContent>
+          <SidebarGroupContent className="space-y-1">
             <Button className="w-full justify-start gap-2" size="sm" asChild>
               <Link href="/quotes/new">
                 <Plus className="size-4" />
                 New Quote
+              </Link>
+            </Button>
+            <Button className="w-full justify-start gap-2" size="sm" variant="outline" asChild>
+              <Link href="/invoices/new">
+                <Plus className="size-4" />
+                New Invoice
               </Link>
             </Button>
           </SidebarGroupContent>

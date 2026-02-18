@@ -158,6 +158,17 @@ export async function createInvoice(data: CreateInvoiceData) {
     },
   });
 
+  // H01 fix: Create activity event on invoice creation
+  await prisma.invoiceEvent.create({
+    data: {
+      invoiceId: invoice.id,
+      eventType: 'created',
+      actorId: userId,
+      actorType: 'user',
+      metadata: {},
+    },
+  });
+
   revalidatePath('/invoices');
 
   return { success: true, invoice };
@@ -253,7 +264,7 @@ export async function createInvoiceFromQuote(quoteId: string) {
       data: { status: 'converted' },
     });
 
-    // Log the conversion event
+    // Log the conversion event on the quote
     await tx.quoteEvent.create({
       data: {
         quoteId: quote.id,
@@ -261,6 +272,17 @@ export async function createInvoiceFromQuote(quoteId: string) {
         actorId: userId,
         actorType: 'user',
         metadata: { invoiceId: newInvoice.id },
+      },
+    });
+
+    // H01 fix: Create activity event on the new invoice
+    await tx.invoiceEvent.create({
+      data: {
+        invoiceId: newInvoice.id,
+        eventType: 'created',
+        actorId: userId,
+        actorType: 'user',
+        metadata: { fromQuoteId: quote.id },
       },
     });
 

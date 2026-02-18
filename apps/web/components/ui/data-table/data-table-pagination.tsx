@@ -61,16 +61,18 @@ export function DataTablePagination<TData>({
     return pages;
   };
 
+  const totalRows = table.getFilteredRowModel().rows.length;
+
   return (
     <div className="flex items-center justify-between px-2">
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center justify-center text-sm text-muted-foreground whitespace-nowrap">
-          Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-          {Math.min(
-            (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-            table.getFilteredRowModel().rows.length
-          )}{' '}
-          of {table.getFilteredRowModel().rows.length} entries
+          {totalRows === 0
+            ? 'No entries'
+            : `Showing ${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to ${Math.min(
+                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                totalRows
+              )} of ${totalRows} entries`}
         </div>
         <div className="flex items-center space-x-1">
           <Button

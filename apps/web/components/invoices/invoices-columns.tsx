@@ -198,13 +198,15 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
     {
       id: 'actions',
       cell: ({ row }) => {
+        const status = row.original.status;
+        const canDelete = status === 'draft' || status === 'voided';
         return (
           <DataTableRowActions
             row={row.original}
             onView={onView}
             onEdit={onEdit}
             onDuplicate={onDuplicate}
-            onDelete={onDelete}
+            onDelete={canDelete ? onDelete : undefined}
             onDownload={onDownload}
           />
         );

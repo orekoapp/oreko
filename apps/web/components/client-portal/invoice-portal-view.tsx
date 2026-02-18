@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { CreditCard, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,9 +74,10 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
   };
   const config = statusConfig[invoice.status] ?? defaultConfig;
 
+  const [paymentMessage, setPaymentMessage] = React.useState<string | null>(null);
+
   const handlePayment = () => {
-    // Payment integration not yet configured
-    alert('Online payment is not yet available for this invoice. Please contact the business directly for payment options.');
+    setPaymentMessage('Online payment is not yet available for this invoice. Please contact the business directly for payment options.');
   };
 
   return (
@@ -255,7 +257,7 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
 
       {/* Pay Button */}
       {invoice.canPay && (
-        <div className="flex justify-center pt-4">
+        <div className="flex flex-col items-center gap-3 pt-4">
           <Button
             size="lg"
             onClick={handlePayment}
@@ -265,6 +267,11 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
             <CreditCard className="mr-2 h-5 w-5" />
             Pay {formatCurrency(invoice.totals.amountDue, invoice.settings.currency)}
           </Button>
+          {paymentMessage && (
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+              {paymentMessage}
+            </p>
+          )}
         </div>
       )}
 

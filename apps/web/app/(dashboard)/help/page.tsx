@@ -124,7 +124,7 @@ export default function HelpPage() {
       </section>
 
       {/* FAQs */}
-      <section>
+      <section id="getting-started">
         <h2 className="text-lg font-semibold mb-4">Frequently Asked Questions</h2>
         <div className="grid gap-4">
           {faqs.map((faq, index) => (
@@ -144,7 +144,7 @@ export default function HelpPage() {
       </section>
 
       {/* Support Options */}
-      <section>
+      <section id="docs">
         <h2 className="text-lg font-semibold mb-4">Get Support</h2>
         <div className="grid gap-4 md:grid-cols-3">
           {supportOptions.map((option) => (
@@ -171,10 +171,10 @@ export default function HelpPage() {
                 ) : (
                   <div className="space-y-2">
                     <Button className="w-full" disabled>
-                      Coming Soon
+                      Coming Soon (Q2 2026)
                     </Button>
                     <p className="text-xs text-muted-foreground text-center">
-                      In the meantime, reach us at{' '}
+                      Live chat is planned for Q2 2026. In the meantime, email us at{' '}
                       <a href="mailto:support@quotecraft.app" className="text-primary hover:underline">
                         support@quotecraft.app
                       </a>
@@ -188,7 +188,7 @@ export default function HelpPage() {
       </section>
 
       {/* Additional Resources */}
-      <section>
+      <section id="tips">
         <Card>
           <CardHeader>
             <CardTitle>Need more help?</CardTitle>

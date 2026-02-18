@@ -33,9 +33,11 @@ export function ContractSigningView({
   const [isPending, startTransition] = useTransition();
   const [signature, setSignature] = useState<SignatureData | null>(null);
   const [isSigned, setIsSigned] = useState(contract.status === 'signed');
+  const [signError, setSignError] = useState<string | null>(null);
 
   const handleSign = () => {
     if (!signature) return;
+    setSignError(null);
 
     startTransition(async () => {
       try {
@@ -44,6 +46,7 @@ export function ContractSigningView({
         router.refresh();
       } catch (error) {
         console.error('Failed to sign contract:', error);
+        setSignError('Failed to sign the contract. Please try again or contact the business directly.');
       }
     });
   };
@@ -166,6 +169,11 @@ export function ContractSigningView({
           />
 
           {/* Sign Button */}
+          {signError && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+              <p className="text-sm text-destructive">{signError}</p>
+            </div>
+          )}
           <div className="flex justify-end">
             <Button
               size="lg"

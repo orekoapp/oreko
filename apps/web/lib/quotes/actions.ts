@@ -142,6 +142,17 @@ export async function createQuote(data: {
     },
   });
 
+  // H01 fix: Create activity event on quote creation
+  await prisma.quoteEvent.create({
+    data: {
+      quoteId: quote.id,
+      eventType: 'created',
+      actorId: userId,
+      actorType: 'user',
+      metadata: {},
+    },
+  });
+
   revalidatePath('/quotes');
 
   return { success: true, quote };

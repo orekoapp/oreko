@@ -17,11 +17,11 @@ export function QuotePortalHeader({ quote }: QuotePortalHeaderProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Business Logo or Icon */}
-            {quote.branding?.logoUrl || quote.business.logoUrl ? (
+            {(quote.branding?.logoUrl || quote.business.logoUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={quote.branding?.logoUrl || quote.business.logoUrl || ''}
-                alt={quote.business.name}
+                src={(quote.branding?.logoUrl || quote.business.logoUrl)!}
+                alt={quote.business.name || 'Business'}
                 className="h-10 w-auto max-w-[120px] object-contain"
               />
             ) : (
@@ -37,7 +37,11 @@ export function QuotePortalHeader({ quote }: QuotePortalHeaderProps) {
               <h1 className="font-semibold">{quote.title}</h1>
             </div>
           </div>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+          >
             <Download className="mr-2 h-4 w-4" />
             Download PDF
           </Button>
