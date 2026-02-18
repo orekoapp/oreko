@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -81,6 +81,15 @@ export function WorkspaceSettingsForm({ initialData }: WorkspaceSettingsFormProp
         <p className="text-xs text-muted-foreground">
           This is your workspace's unique identifier in URLs
         </p>
+        {initialData?.slug && slug !== initialData.slug && slug.length > 0 && (
+          <div className="flex items-start gap-2 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              Changing your workspace URL may break existing bookmarks and shared links.
+              The old URL will be saved for redirect purposes.
+            </p>
+          </div>
+        )}
       </div>
 
       {error && (

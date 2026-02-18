@@ -7,6 +7,7 @@ import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 import { sendQuoteSentEmail } from '@/lib/services/email';
+import { createNotification } from '@/lib/notifications/actions';
 
 /**
  * Get the current user's active workspace with full workspace data
@@ -603,6 +604,18 @@ export async function sendQuote(quoteId: string) {
   }).catch((err) => {
     console.error('Failed to send quote email:', err);
   });
+
+  // Create notification for sender
+  createNotification({
+    userId,
+    workspaceId: workspace.id,
+    type: 'quote_sent',
+    title: `Quote ${quote.quoteNumber} sent`,
+    message: `Sent to ${quote.client.email}`,
+    entityType: 'quote',
+    entityId: quoteId,
+    link: `/quotes/${quoteId}`,
+  }).catch(() => {});
 
   revalidatePath('/quotes');
   revalidatePath(`/quotes/${quoteId}`);

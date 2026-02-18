@@ -56,11 +56,35 @@ export function LogoUpload({ value, onChange, className }: LogoUploadProps) {
 
     setIsLoading(true);
 
-    // For demo purposes, create a local object URL
-    // In production, this would upload to a storage service
-    const url = URL.createObjectURL(file);
-    onChange(url);
-    setIsLoading(false);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('purpose', 'logo');
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('Upload failed:', data.error);
+        // Fall back to object URL for preview
+        const url = URL.createObjectURL(file);
+        onChange(url);
+        return;
+      }
+
+      const data = await response.json();
+      onChange(data.url);
+    } catch (error) {
+      console.error('Upload error:', error);
+      // Fall back to object URL for preview
+      const url = URL.createObjectURL(file);
+      onChange(url);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRemove = useCallback(() => {

@@ -3,6 +3,7 @@
 import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { InvoiceLineItem } from './types';
+import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
 
 /**
  * Public invoice data for client portal (subset of full invoice)
@@ -221,10 +222,12 @@ export async function trackInvoiceView(accessToken: string): Promise<void> {
 
     const invoice = await prisma.invoice.findUnique({
       where: { accessToken },
-      select: { id: true, status: true, viewedAt: true },
+      select: { id: true, status: true, viewedAt: true, workspaceId: true, invoiceNumber: true },
     });
 
     if (!invoice) return;
+
+    const isFirstView = invoice.viewedAt === null;
 
     // Update view count and first view timestamp
     await prisma.$transaction([
@@ -232,7 +235,7 @@ export async function trackInvoiceView(accessToken: string): Promise<void> {
         where: { accessToken },
         data: {
           viewCount: { increment: 1 },
-          ...(invoice.viewedAt === null && { viewedAt: new Date() }),
+          ...(isFirstView && { viewedAt: new Date() }),
           ...(invoice.status === 'sent' && { status: 'viewed' }),
         },
       }),
@@ -247,6 +250,19 @@ export async function trackInvoiceView(accessToken: string): Promise<void> {
         },
       }),
     ]);
+
+    // Notify workspace members on first view
+    if (isFirstView) {
+      await notifyWorkspaceMembers({
+        workspaceId: invoice.workspaceId,
+        type: 'invoice_viewed',
+        title: `Invoice ${invoice.invoiceNumber} was viewed`,
+        message: 'Your client has opened the invoice.',
+        entityType: 'invoice',
+        entityId: invoice.id,
+        link: `/invoices/${invoice.id}`,
+      }).catch(() => {});
+    }
   } catch (error) {
     console.error('Error tracking invoice view:', error);
     // Don't throw - view tracking should not break the page

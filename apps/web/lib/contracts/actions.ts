@@ -21,6 +21,7 @@ import type {
   SignatureData,
 } from './types';
 import { sendEmail } from '@/lib/services/email';
+import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
 
 // Get all contract templates
 export async function getContractTemplates(
@@ -533,6 +534,18 @@ export async function sendContractInstance(id: string): Promise<void> {
     });
   }
 
+  // Create notification for sender
+  createNotification({
+    userId: (await getCurrentUserWorkspace()).userId,
+    workspaceId,
+    type: 'contract_sent',
+    title: `Contract sent to ${instance.client?.name || 'client'}`,
+    message: instance.contract?.name || 'Contract',
+    entityType: 'contract',
+    entityId: id,
+    link: `/contracts/${id}`,
+  }).catch(() => {});
+
   revalidatePath('/contracts');
   revalidatePath(`/contracts/${id}`);
 }
@@ -561,8 +574,16 @@ export async function signContract(input: SignContractInput, ipAddress?: string)
     },
   });
 
-  // Email sending not yet configured - signature recorded successfully
-  console.warn('[QuoteCraft] Email sending is not configured. Contract signed but no confirmation email was sent.');
+  // Notify workspace members
+  notifyWorkspaceMembers({
+    workspaceId: instance.workspaceId,
+    type: 'contract_signed',
+    title: 'Contract signed',
+    message: 'Your client has signed the contract.',
+    entityType: 'contract',
+    entityId: instance.id,
+    link: `/contracts/${instance.id}`,
+  }).catch(() => {});
 }
 
 // Delete a contract instance

@@ -3,6 +3,7 @@
 import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { QuoteBlock, QuoteDocument } from './types';
+import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
 
 /**
  * Public quote data for client portal (subset of full quote)
@@ -205,10 +206,12 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
 
     const quote = await prisma.quote.findUnique({
       where: { accessToken },
-      select: { id: true, status: true, viewedAt: true },
+      select: { id: true, status: true, viewedAt: true, workspaceId: true, quoteNumber: true },
     });
 
     if (!quote) return;
+
+    const isFirstView = quote.viewedAt === null;
 
     // Update view count and first view timestamp
     await prisma.$transaction([
@@ -216,7 +219,7 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
         where: { accessToken },
         data: {
           viewCount: { increment: 1 },
-          ...(quote.viewedAt === null && { viewedAt: new Date() }),
+          ...(isFirstView && { viewedAt: new Date() }),
           ...(quote.status === 'sent' && { status: 'viewed' }),
         },
       }),
@@ -231,6 +234,19 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
         },
       }),
     ]);
+
+    // Notify workspace members on first view
+    if (isFirstView) {
+      await notifyWorkspaceMembers({
+        workspaceId: quote.workspaceId,
+        type: 'quote_viewed',
+        title: `Quote ${quote.quoteNumber} was viewed`,
+        message: 'Your client has opened the quote.',
+        entityType: 'quote',
+        entityId: quote.id,
+        link: `/quotes/${quote.id}`,
+      }).catch(() => {}); // Don't fail if notification fails
+    }
   } catch (error) {
     console.error('Error tracking quote view:', error);
     // Don't throw - view tracking should not break the page
@@ -316,8 +332,17 @@ export async function acceptQuote(data: {
       }),
     ]);
 
-    // Email sending not yet configured - acceptance recorded successfully
-    console.warn('[QuoteCraft] Email sending is not configured. Quote acceptance recorded but no confirmation email was sent.');
+    // Notify workspace members
+    await notifyWorkspaceMembers({
+      workspaceId: quote.workspaceId,
+      type: 'quote_accepted',
+      title: `Quote accepted by ${data.signerName}`,
+      message: 'Your client has accepted and signed the quote.',
+      entityType: 'quote',
+      entityId: quote.id,
+      link: `/quotes/${quote.id}`,
+    }).catch(() => {});
+
     // TODO: Auto-create invoice if setting enabled
     // TODO: Process deposit payment if required
 
@@ -345,6 +370,8 @@ export async function declineQuote(data: {
       select: {
         id: true,
         status: true,
+        workspaceId: true,
+        quoteNumber: true,
       },
     });
 
@@ -381,7 +408,16 @@ export async function declineQuote(data: {
       }),
     ]);
 
-    // TODO: Send notification to business owner
+    // Notify workspace members
+    await notifyWorkspaceMembers({
+      workspaceId: quote.workspaceId,
+      type: 'quote_declined',
+      title: `Quote ${quote.quoteNumber} was declined`,
+      message: data.reason ? `Reason: ${data.reason}` : 'Your client has declined the quote.',
+      entityType: 'quote',
+      entityId: quote.id,
+      link: `/quotes/${quote.id}`,
+    }).catch(() => {});
 
     return { success: true };
   } catch (error) {

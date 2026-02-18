@@ -12,7 +12,14 @@ import {
   Settings,
   HelpCircle,
   CreditCard,
+  FileText,
+  Receipt,
+  Eye,
+  CheckCircle,
+  DollarSign,
+  XCircle,
 } from 'lucide-react';
+import { markAllNotificationsRead, markNotificationRead, type NotificationData } from '@/lib/notifications/actions';
 
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { SearchCommand } from '@/components/shared/search-command';
@@ -46,6 +53,34 @@ interface AppHeaderProps {
     name: string | null;
     avatarUrl: string | null;
   };
+  unreadCount?: number;
+  notifications?: NotificationData[];
+}
+
+const notificationIcons: Record<string, typeof Bell> = {
+  quote_sent: FileText,
+  quote_viewed: Eye,
+  quote_accepted: CheckCircle,
+  quote_declined: XCircle,
+  invoice_sent: Receipt,
+  invoice_viewed: Eye,
+  invoice_paid: DollarSign,
+  invoice_overdue: XCircle,
+  contract_sent: FileText,
+  contract_signed: CheckCircle,
+};
+
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diff = now.getTime() - new Date(date).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(date).toLocaleDateString();
 }
 
 const pathNameMap: Record<string, string> = {
@@ -118,7 +153,7 @@ function generateBreadcrumbs(pathname: string) {
   return breadcrumbs;
 }
 
-export function AppHeader({ user }: AppHeaderProps) {
+export function AppHeader({ user, unreadCount = 0, notifications = [] }: AppHeaderProps) {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -228,28 +263,74 @@ export function AppHeader({ user }: AppHeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-80" align="end" forceMount>
               <DropdownMenuLabel className="flex items-center justify-between">
                 <span>Notifications</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Mark all as read
-                </Button>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => markAllNotificationsRead()}
+                  >
+                    Mark all as read
+                  </Button>
+                )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <div className="max-h-80 overflow-y-auto">
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Bell className="h-8 w-8 text-muted-foreground mb-2" />
-                  <p className="text-sm font-medium">No new notifications</p>
-                  <p className="text-xs text-muted-foreground">
-                    We&apos;ll notify you when something arrives
-                  </p>
-                </div>
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Bell className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium">No new notifications</p>
+                    <p className="text-xs text-muted-foreground">
+                      We&apos;ll notify you when something arrives
+                    </p>
+                  </div>
+                ) : (
+                  notifications.map((notification) => {
+                    const IconComponent = notificationIcons[notification.type] || Bell;
+                    return (
+                      <DropdownMenuItem
+                        key={notification.id}
+                        className="flex items-start gap-3 p-3 cursor-pointer"
+                        onClick={() => {
+                          if (!notification.isRead) {
+                            markNotificationRead(notification.id);
+                          }
+                          if (notification.link) {
+                            window.location.href = notification.link;
+                          }
+                        }}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          <IconComponent className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm truncate ${!notification.isRead ? 'font-semibold' : ''}`}>
+                            {notification.title}
+                          </p>
+                          {notification.message && (
+                            <p className="text-xs text-muted-foreground truncate">{notification.message}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatTimeAgo(notification.createdAt)}
+                          </p>
+                        </div>
+                        {!notification.isRead && (
+                          <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })
+                )}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>

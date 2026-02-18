@@ -6,6 +6,7 @@ import { SkipToContent } from '@/components/shared/skip-to-content';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { needsOnboarding } from '@/lib/onboarding/actions';
 import { getUserWorkspaces, getActiveWorkspace } from '@/lib/workspace/actions';
+import { getUnreadNotificationCount, getNotifications } from '@/lib/notifications/actions';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -20,10 +21,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/onboarding');
   }
 
-  // Fetch workspaces data
-  const [workspaces, activeWorkspace] = await Promise.all([
+  // Fetch workspaces data and notifications
+  const [workspaces, activeWorkspace, unreadCount, notifications] = await Promise.all([
     getUserWorkspaces(),
     getActiveWorkspace(),
+    getUnreadNotificationCount(),
+    getNotifications(10),
   ]);
 
   return (
@@ -40,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           activeWorkspace={activeWorkspace}
         />
         <SidebarInset>
-          <AppHeader user={session.user} />
+          <AppHeader user={session.user} unreadCount={unreadCount} notifications={notifications} />
           <main id="main-content" className="flex-1 overflow-auto bg-muted/30 p-4 md:p-6 lg:p-8" tabIndex={-1}>
             <div className="mx-auto max-w-7xl">
               {children}

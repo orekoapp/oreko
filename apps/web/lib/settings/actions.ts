@@ -846,6 +846,23 @@ export async function updateWorkspaceSettings(
     }
   }
 
+  // If slug is changing, record the old slug in history
+  if (input.slug) {
+    const currentWorkspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { slug: true },
+    });
+
+    if (currentWorkspace && currentWorkspace.slug !== input.slug) {
+      await prisma.workspaceSlugHistory.create({
+        data: {
+          workspaceId,
+          oldSlug: currentWorkspace.slug,
+        },
+      });
+    }
+  }
+
   await prisma.workspace.update({
     where: { id: workspaceId },
     data: {

@@ -13,6 +13,7 @@ import type {
   DEFAULT_INVOICE_SETTINGS,
 } from './types';
 import { sendInvoiceSentEmail } from '@/lib/services/email';
+import { createNotification } from '@/lib/notifications/actions';
 import { formatCurrency } from '@/lib/utils';
 
 /**
@@ -604,6 +605,21 @@ export async function sendInvoice(invoiceId: string) {
     }).catch((err) => {
       console.error('Failed to send invoice email:', err);
     });
+  }
+
+  // Create notification for sender
+  if (invoice) {
+    const { userId } = await getCurrentUserWorkspace();
+    createNotification({
+      userId,
+      workspaceId: workspace.id,
+      type: 'invoice_sent',
+      title: `Invoice ${invoice.invoiceNumber} sent`,
+      message: invoice.client?.email ? `Sent to ${invoice.client.email}` : undefined,
+      entityType: 'invoice',
+      entityId: invoiceId,
+      link: `/invoices/${invoiceId}`,
+    }).catch(() => {});
   }
 
   return { success: true };

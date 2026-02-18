@@ -36,6 +36,7 @@ model User {
   quoteEvents         QuoteEvent[]
   invoiceEvents       InvoiceEvent[]
   attachments         Attachment[]
+  notifications       Notification[]
 
   @@index([email])
   @@index([deletedAt])
@@ -137,6 +138,8 @@ model Workspace {
   brandingSettings   BrandingSettings?
   numberSequences    NumberSequence[]
   attachments        Attachment[]
+  notifications      Notification[]
+  slugHistory        WorkspaceSlugHistory[]
 
   @@index([slug])
   @@index([ownerId])
@@ -798,4 +801,48 @@ model Attachment {
   @@index([entityType, entityId])
   @@index([workspaceId])
   @@map("attachments")
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  workspaceId String    @map("workspace_id")
+  type        String    @db.VarChar(50) // quote_viewed, quote_accepted, invoice_paid, etc.
+  title       String
+  message     String?
+  entityType  String?   @map("entity_type") @db.VarChar(20) // quote, invoice, contract
+  entityId    String?   @map("entity_id")
+  link        String?   // URL to navigate to
+  isRead      Boolean   @default(false) @map("is_read")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([workspaceId])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================
+// WORKSPACE SLUG HISTORY
+// ============================================
+
+model WorkspaceSlugHistory {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  oldSlug     String   @map("old_slug")
+  changedAt   DateTime @default(now()) @map("changed_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([oldSlug])
+  @@index([workspaceId])
+  @@map("workspace_slug_histories")
 }
