@@ -15,6 +15,8 @@ import {
   getMonthlyComparisonData,
 } from '@/lib/dashboard/actions';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Analytics',
   description: 'View your business analytics and insights',

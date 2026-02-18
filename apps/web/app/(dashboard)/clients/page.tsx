@@ -17,6 +17,8 @@ interface ClientsPageProps {
   }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Clients',
 };

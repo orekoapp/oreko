@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { getQuotes } from '@/lib/quotes/actions';
 import { QuotesDataTable } from '@/components/quotes/quotes-data-table';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Quotes',
 };

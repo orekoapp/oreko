@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { getInvoices } from '@/lib/invoices/actions';
 import { InvoicesDataTable } from '@/components/invoices/invoices-data-table';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Invoices',
 };

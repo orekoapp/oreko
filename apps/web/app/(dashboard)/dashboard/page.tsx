@@ -9,6 +9,8 @@ import { RecentQuotes, RecentInvoices } from '@/components/dashboard/recent-item
 import { AnalyticsSection } from '@/components/dashboard/analytics-section';
 import { getDashboardData, getConversionFunnelData, getPaymentAgingData } from '@/lib/dashboard/actions';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Dashboard',
   description: 'Your QuoteCraft dashboard',
