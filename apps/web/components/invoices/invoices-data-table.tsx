@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table/data-table';
+import { BulkAction } from '@/components/ui/data-table/data-table-toolbar';
 import { getInvoiceColumns, invoiceStatusOptions } from './invoices-columns';
 import { InvoiceListItem } from '@/lib/invoices/types';
-import { Receipt, Plus } from 'lucide-react';
+import { Receipt, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { deleteInvoice, duplicateInvoice } from '@/lib/invoices/actions';
@@ -69,6 +70,35 @@ export function InvoicesDataTable({ data }: InvoicesDataTableProps) {
     },
   });
 
+  const bulkActions: BulkAction<InvoiceListItem>[] = [
+    {
+      label: 'Delete',
+      icon: <Trash2 className="mr-2 h-4 w-4" />,
+      variant: 'destructive',
+      onClick: async (rows) => {
+        const drafts = rows.filter((r) => r.status === 'draft');
+        if (drafts.length === 0) {
+          toast.error('Only draft invoices can be deleted');
+          return;
+        }
+        setIsProcessing(true);
+        try {
+          let deleted = 0;
+          for (const invoice of drafts) {
+            const result = await deleteInvoice(invoice.id);
+            if (result.success) deleted++;
+          }
+          toast.success(`${deleted} invoice(s) deleted`);
+          router.refresh();
+        } catch {
+          toast.error('Failed to delete invoices');
+        } finally {
+          setIsProcessing(false);
+        }
+      },
+    },
+  ];
+
   const emptyState = (
     <div className="flex flex-col items-center justify-center py-16">
       <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
@@ -101,6 +131,7 @@ export function InvoicesDataTable({ data }: InvoicesDataTableProps) {
       pageSizes={[10, 25, 50, 100]}
       emptyState={emptyState}
       onRowClick={(invoice) => router.push(`/invoices/${invoice.id}`)}
+      bulkActions={bulkActions}
     />
   );
 }

@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table/data-table';
+import { BulkAction } from '@/components/ui/data-table/data-table-toolbar';
 import { getQuoteColumns, quoteStatusOptions } from './quotes-columns';
 import { QuoteListItem } from '@/lib/quotes/types';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { duplicateQuote, deleteQuote } from '@/lib/quotes/actions';
@@ -69,6 +70,35 @@ export function QuotesDataTable({ data }: QuotesDataTableProps) {
     },
   });
 
+  const bulkActions: BulkAction<QuoteListItem>[] = [
+    {
+      label: 'Delete',
+      icon: <Trash2 className="mr-2 h-4 w-4" />,
+      variant: 'destructive',
+      onClick: async (rows) => {
+        const drafts = rows.filter((r) => r.status === 'draft');
+        if (drafts.length === 0) {
+          toast.error('Only draft quotes can be deleted');
+          return;
+        }
+        setIsProcessing(true);
+        try {
+          let deleted = 0;
+          for (const quote of drafts) {
+            const result = await deleteQuote(quote.id);
+            if (result.success) deleted++;
+          }
+          toast.success(`${deleted} quote(s) deleted`);
+          router.refresh();
+        } catch {
+          toast.error('Failed to delete quotes');
+        } finally {
+          setIsProcessing(false);
+        }
+      },
+    },
+  ];
+
   const emptyState = (
     <div className="flex flex-col items-center justify-center py-16">
       <FileText className="h-12 w-12 text-muted-foreground mb-4" />
@@ -96,6 +126,7 @@ export function QuotesDataTable({ data }: QuotesDataTableProps) {
       pageSizes={[10, 25, 50, 100]}
       emptyState={emptyState}
       onRowClick={(quote) => router.push(`/quotes/${quote.id}`)}
+      bulkActions={bulkActions}
     />
   );
 }

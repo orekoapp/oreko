@@ -80,6 +80,7 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
   const [taxRate, setTaxRate] = useState('0');
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('');
+  const [internalNotes, setInternalNotes] = useState('');
 
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { id: '1', name: '', description: '', quantity: 1, rate: 0 }
@@ -140,6 +141,7 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
         })),
         notes: notes || undefined,
         terms: terms || undefined,
+        internalNotes: internalNotes || undefined,
       });
 
       if (result.success) {
@@ -400,6 +402,16 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
                   placeholder="Payment terms, conditions, etc..."
                   value={terms}
                   onChange={(e) => setTerms(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="internalNotes">Internal Notes</Label>
+                <p className="text-xs text-muted-foreground mb-1">(Not visible to client)</p>
+                <Textarea
+                  id="internalNotes"
+                  placeholder="Internal notes, reminders, etc..."
+                  value={internalNotes}
+                  onChange={(e) => setInternalNotes(e.target.value)}
                 />
               </div>
             </CardContent>

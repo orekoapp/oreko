@@ -98,7 +98,7 @@ export function QuoteEditor() {
         workspaceId: 'default',
         clientId: clientId || '',
         projectId: null,
-        quoteNumber: `Q-${Date.now().toString().slice(-6)}`,
+        quoteNumber: 'DRAFT',
         status: 'draft',
         title: 'New Quote',
         issueDate: now,
@@ -492,7 +492,7 @@ export function QuoteEditor() {
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-bold">{title || 'Quote'}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {document?.quoteNumber || 'Q-000000'}
+                    {document?.quoteNumber || 'DRAFT'}
                   </p>
                   <p className="text-2xl font-bold mt-2">
                     {formatCurrency(total)}

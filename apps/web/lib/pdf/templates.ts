@@ -354,6 +354,52 @@ function getBaseStyles(primaryColor: string = '#3B82F6'): string {
       font-weight: 600;
       color: #047857;
     }
+
+    .print-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #1f2937;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .print-bar span {
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .print-btn {
+      background: ${primaryColor};
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .print-btn:hover {
+      opacity: 0.9;
+    }
+
+    body {
+      padding-top: 50px;
+    }
+
+    @media print {
+      .print-bar {
+        display: none !important;
+      }
+      body {
+        padding-top: 0 !important;
+      }
+    }
   `;
 }
 
@@ -402,6 +448,10 @@ export function generateQuotePdfHtml(data: QuotePdfData): string {
         <style>${getBaseStyles(primaryColor)}</style>
       </head>
       <body>
+        <div class="print-bar">
+          <span>Quote ${data.quoteNumber}</span>
+          <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+        </div>
         <div class="container">
           <div class="header">
             <div class="business-info">
@@ -580,6 +630,10 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
         <style>${getBaseStyles(primaryColor)}</style>
       </head>
       <body>
+        <div class="print-bar">
+          <span>Invoice ${data.invoiceNumber}</span>
+          <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+        </div>
         <div class="container">
           <div class="header">
             <div class="business-info">

@@ -116,16 +116,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       },
       _sum: { amountPaid: true },
     }),
-    // Accepted quotes (for conversion rate)
+    // Accepted quotes (for conversion rate) - include converted since they were accepted first
     prisma.quote.count({
-      where: { workspaceId, status: 'accepted', deletedAt: null },
+      where: { workspaceId, status: { in: ['accepted', 'converted'] }, deletedAt: null },
     }),
     // Sent quotes (for conversion rate)
     prisma.quote.count({
       where: {
         workspaceId,
         deletedAt: null,
-        status: { in: ['sent', 'viewed', 'accepted', 'declined', 'expired'] },
+        status: { in: ['sent', 'viewed', 'accepted', 'declined', 'expired', 'converted'] },
       },
     }),
   ]);
@@ -591,14 +591,16 @@ export async function getConversionFunnelData(
       where: {
         workspaceId,
         deletedAt: null,
-        status: 'accepted',
+        status: { in: ['accepted', 'converted'] },
         ...(dateFilter && { acceptedAt: dateFilter }),
       },
     }),
+    // Invoices created FROM quotes (part of the quote->invoice pipeline)
     prisma.invoice.count({
       where: {
         workspaceId,
         deletedAt: null,
+        quoteId: { not: null },
         createdAt: dateFilter,
       },
     }),

@@ -74,13 +74,18 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
     include: {
       _count: {
         select: {
-          quotes: true,
-          invoices: true,
+          quotes: {
+            where: { deletedAt: null },
+          },
+          invoices: {
+            where: { deletedAt: null },
+          },
         },
       },
       invoices: {
         where: {
           status: 'paid',
+          deletedAt: null,
         },
         select: {
           total: true,

@@ -22,6 +22,20 @@ import { isInvoiceOverdue, getDaysUntilDue } from '@/lib/invoices/types';
 import { InvoiceActions } from '@/components/invoices/invoice-actions';
 import { RecordPaymentDialog } from '@/components/invoices/record-payment-dialog';
 
+interface InvoiceDetailPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: InvoiceDetailPageProps) {
+  const { id } = await params;
+  try {
+    const invoice = await getInvoice(id);
+    return { title: invoice ? `${invoice.title} - ${invoice.invoiceNumber}` : 'Invoice Details' };
+  } catch {
+    return { title: 'Invoice Not Found' };
+  }
+}
+
 const statusColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
   draft: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300', icon: <Edit className="h-4 w-4" /> },
   sent: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-700 dark:text-blue-300', icon: <Send className="h-4 w-4" /> },
@@ -37,10 +51,6 @@ function formatCurrency(amount: number, currency: string = 'USD'): string {
     style: 'currency',
     currency,
   }).format(amount);
-}
-
-interface InvoiceDetailPageProps {
-  params: Promise<{ id: string }>;
 }
 
 export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {

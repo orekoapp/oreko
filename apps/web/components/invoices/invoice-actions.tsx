@@ -112,7 +112,7 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
   };
 
   const handleDownload = () => {
-    window.open(`/api/download/invoice/${invoice.id}`, '_blank');
+    window.open(`/api/pdf/invoice/${invoice.id}`, '_blank');
   };
 
   const canEdit = invoice.status === 'draft';

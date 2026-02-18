@@ -10,9 +10,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConvertToInvoiceButton } from '@/components/quotes/convert-to-invoice-button';
 import { SendQuoteButton, DuplicateQuoteButton } from '@/components/quotes/quote-detail-actions';
 
-export const metadata = {
-  title: 'Quote Details',
-};
+interface QuoteDetailPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: QuoteDetailPageProps) {
+  const { id } = await params;
+  try {
+    const quote = await getQuote(id);
+    return { title: quote ? `${quote.title} - ${quote.quoteNumber}` : 'Quote Details' };
+  } catch {
+    return { title: 'Quote Not Found' };
+  }
+}
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   draft: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300' },
@@ -23,10 +33,6 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   expired: { bg: 'bg-orange-100 dark:bg-orange-900', text: 'text-orange-700 dark:text-orange-300' },
   converted: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-700 dark:text-purple-300' },
 };
-
-interface QuoteDetailPageProps {
-  params: Promise<{ id: string }>;
-}
 
 export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) {
   const { id } = await params;
@@ -60,17 +66,19 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
         <div className="flex items-center gap-2">
           <DuplicateQuoteButton quoteId={id} />
           <Button variant="outline" size="sm" asChild>
-            <a href={`/api/download/quote/${id}`} target="_blank" rel="noopener noreferrer">
+            <a href={`/api/pdf/quote/${id}`} target="_blank" rel="noopener noreferrer">
               <Download className="mr-2 h-4 w-4" />
               Download PDF
             </a>
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/quotes/${id}/builder`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
+          {!['converted', 'declined'].includes(quote.status) && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/quotes/${id}/builder`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+          )}
           {quote.status === 'draft' && (
             <SendQuoteButton quoteId={id} />
           )}

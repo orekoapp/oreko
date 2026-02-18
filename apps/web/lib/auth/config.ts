@@ -43,9 +43,11 @@ export const authConfig: NextAuthConfig = {
         return true;
       }
 
-      // Redirect logged-in users away from auth pages
-      if (isOnAuth && isLoggedIn) {
-        return Response.redirect(new URL('/dashboard', nextUrl));
+      // Allow auth pages (login/register) even for logged-in users.
+      // This is necessary so that signOut (which redirects to /login) works properly.
+      // The login page itself can redirect logged-in users if needed.
+      if (isOnAuth) {
+        return true;
       }
 
       // Protect dashboard routes

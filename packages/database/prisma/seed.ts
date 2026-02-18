@@ -206,6 +206,69 @@ async function main() {
     console.log(`Created/Updated rate card: ${rateCardData.name}`);
   }
 
+  // Create test projects (BUG-017 fix)
+  const testProjects = [
+    { id: 'test-project-1', clientId: createdClients[0]!.id, name: 'Acme Website Redesign', description: 'Full website overhaul for Acme Corp', isActive: true },
+    { id: 'test-project-2', clientId: createdClients[1]!.id, name: 'Doe Industries API', description: 'REST API development for backend services', isActive: true },
+    { id: 'test-project-3', clientId: createdClients[2]!.id, name: 'Smith LLC Dashboard', description: 'Analytics dashboard project', isActive: false },
+  ];
+  for (const proj of testProjects) {
+    await prisma.project.upsert({
+      where: { id: proj.id },
+      update: {},
+      create: {
+        id: proj.id,
+        workspaceId: workspace.id,
+        clientId: proj.clientId,
+        name: proj.name,
+        description: proj.description,
+        isActive: proj.isActive,
+      },
+    });
+  }
+  console.log('Created/Updated test projects');
+
+  // Create test contracts (BUG-016 fix)
+  const testContracts = [
+    {
+      id: 'test-contract-1',
+      name: 'Standard Service Agreement',
+      content: 'This Standard Service Agreement ("Agreement") is entered into between Test Business ("Provider") and the Client...\n\n1. SCOPE OF SERVICES\nProvider agrees to perform the services as described in the associated quote or proposal.\n\n2. PAYMENT TERMS\nClient agrees to pay Provider according to the payment schedule specified in the invoice.\n\n3. TERM AND TERMINATION\nThis Agreement begins on the effective date and continues until all services are completed.\n\n4. CONFIDENTIALITY\nBoth parties agree to maintain confidentiality of proprietary information.',
+      isTemplate: true,
+      variables: JSON.stringify([
+        { name: 'clientName', label: 'Client Name', type: 'text' },
+        { name: 'projectName', label: 'Project Name', type: 'text' },
+        { name: 'startDate', label: 'Start Date', type: 'date' },
+      ]),
+    },
+    {
+      id: 'test-contract-2',
+      name: 'Non-Disclosure Agreement',
+      content: 'This Non-Disclosure Agreement ("NDA") is entered into between Test Business and the receiving party...\n\n1. DEFINITION OF CONFIDENTIAL INFORMATION\nAll non-public information disclosed by either party.\n\n2. OBLIGATIONS\nThe receiving party shall protect confidential information with reasonable care.\n\n3. DURATION\nThis NDA remains in effect for two (2) years from the date of signing.',
+      isTemplate: true,
+      variables: JSON.stringify([
+        { name: 'partyName', label: 'Party Name', type: 'text' },
+        { name: 'effectiveDate', label: 'Effective Date', type: 'date' },
+      ]),
+    },
+  ];
+
+  for (const contract of testContracts) {
+    await prisma.contract.upsert({
+      where: { id: contract.id },
+      update: { name: contract.name, content: contract.content },
+      create: {
+        id: contract.id,
+        workspaceId: workspace.id,
+        name: contract.name,
+        content: contract.content,
+        isTemplate: contract.isTemplate,
+        variables: contract.variables,
+      },
+    });
+  }
+  console.log('Created/Updated test contracts');
+
   // Create number sequences
   await prisma.numberSequence.upsert({
     where: {
@@ -252,9 +315,28 @@ async function main() {
     { status: 'converted', title: 'SaaS Dashboard Build', subtotal: 12800, itemName: 'Product Development', qty: 64, rate: 200 },
   ];
 
+  // BUG-024/025/026 fix: Varied dates per quote status spread across 60 days
+  const quoteDateConfigs: Record<number, { issueDaysAgo: number; sentDaysAgo?: number; viewedDaysAgo?: number; acceptedDaysAgo?: number; declinedDaysAgo?: number }> = {
+    0: { issueDaysAgo: 3 },                                                              // Q-0001 draft
+    1: { issueDaysAgo: 10, sentDaysAgo: 8 },                                             // Q-0002 sent
+    2: { issueDaysAgo: 14, sentDaysAgo: 12, viewedDaysAgo: 7 },                          // Q-0003 viewed
+    3: { issueDaysAgo: 21, sentDaysAgo: 19, viewedDaysAgo: 15, acceptedDaysAgo: 10 },    // Q-0004 accepted
+    4: { issueDaysAgo: 25, sentDaysAgo: 23, viewedDaysAgo: 20, declinedDaysAgo: 18 },    // Q-0005 declined
+    5: { issueDaysAgo: 30, sentDaysAgo: 28, viewedDaysAgo: 25, acceptedDaysAgo: 22 },    // Q-0006 converted
+  };
+
   for (let i = 0; i < testQuotes.length; i++) {
     const q = testQuotes[i]!;
     const client = createdClients[i % createdClients.length]!;
+    const dateCfg = quoteDateConfigs[i]!;
+    const daysMs = 24 * 60 * 60 * 1000;
+
+    const issueDate = new Date(Date.now() - dateCfg.issueDaysAgo * daysMs);
+    const expirationDate = new Date(issueDate.getTime() + 30 * daysMs);
+    const sentAt = dateCfg.sentDaysAgo ? new Date(Date.now() - dateCfg.sentDaysAgo * daysMs) : null;
+    const viewedAt = dateCfg.viewedDaysAgo ? new Date(Date.now() - dateCfg.viewedDaysAgo * daysMs) : null;
+    const acceptedAt = dateCfg.acceptedDaysAgo ? new Date(Date.now() - dateCfg.acceptedDaysAgo * daysMs) : null;
+    const declinedAt = dateCfg.declinedDaysAgo ? new Date(Date.now() - dateCfg.declinedDaysAgo * daysMs) : null;
 
     const quote = await prisma.quote.upsert({
       where: {
@@ -269,10 +351,12 @@ async function main() {
         subtotal: q.subtotal,
         total: q.subtotal,
         settings: {}, // C03 fix: clear stale blocks so fallback reconstructs from lineItems
-        sentAt: q.status !== 'draft' ? new Date() : null,
-        viewedAt: ['viewed', 'accepted', 'declined', 'converted'].includes(q.status) ? new Date() : null,
-        acceptedAt: ['accepted', 'converted'].includes(q.status) ? new Date() : null,
-        declinedAt: q.status === 'declined' ? new Date() : null,
+        issueDate,
+        expirationDate,
+        sentAt,
+        viewedAt,
+        acceptedAt,
+        declinedAt,
       },
       create: {
         workspaceId: workspace.id,
@@ -280,14 +364,14 @@ async function main() {
         quoteNumber: `Q-${String(i + 1).padStart(4, '0')}`,
         status: q.status,
         title: q.title,
-        issueDate: new Date(),
-        expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        issueDate,
+        expirationDate,
         subtotal: q.subtotal,
         total: q.subtotal,
-        sentAt: q.status !== 'draft' ? new Date() : null,
-        viewedAt: ['viewed', 'accepted', 'declined', 'converted'].includes(q.status) ? new Date() : null,
-        acceptedAt: ['accepted', 'converted'].includes(q.status) ? new Date() : null,
-        declinedAt: q.status === 'declined' ? new Date() : null,
+        sentAt,
+        viewedAt,
+        acceptedAt,
+        declinedAt,
       },
     });
 
@@ -340,6 +424,11 @@ async function main() {
 
     // Create invoice for converted quote
     if (q.status === 'converted') {
+      // BUG-024/026 fix: logical dates for converted invoice (issued after acceptance)
+      const convertedInvIssueDate = new Date(Date.now() - 20 * daysMs);
+      const convertedInvDueDate = new Date(Date.now() + 10 * daysMs);
+      const convertedInvSentAt = new Date(Date.now() - 18 * daysMs);
+
       const invoice = await prisma.invoice.upsert({
         where: {
           workspaceId_invoiceNumber: {
@@ -353,6 +442,9 @@ async function main() {
           subtotal: q.subtotal,
           total: q.subtotal,
           amountDue: q.subtotal,
+          issueDate: convertedInvIssueDate,
+          dueDate: convertedInvDueDate,
+          sentAt: convertedInvSentAt,
         },
         create: {
           workspaceId: workspace.id,
@@ -361,8 +453,9 @@ async function main() {
           invoiceNumber: `INV-${String(i + 1).padStart(4, '0')}`,
           status: 'sent',
           title: `Invoice from ${q.title}`,
-          issueDate: new Date(),
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          issueDate: convertedInvIssueDate,
+          dueDate: convertedInvDueDate,
+          sentAt: convertedInvSentAt,
           subtotal: q.subtotal,
           total: q.subtotal,
           amountDue: q.subtotal,
@@ -414,15 +507,34 @@ async function main() {
     }
   }
 
+  // BUG-024/025/026 fix: Varied dates per standalone invoice spread across 60 days
+  const invDateConfigs: Record<number, { issueDaysAgo: number; sentDaysAgo?: number; viewedDaysAgo?: number; paidDaysAgo?: number; voidedDaysAgo?: number; dueDaysFromNow?: number; dueDaysAgo?: number }> = {
+    0: { issueDaysAgo: 0, dueDaysFromNow: 30 },                                                                  // INV-0007 draft
+    1: { issueDaysAgo: 5, sentDaysAgo: 3, dueDaysFromNow: 25 },                                                  // INV-0008 sent
+    2: { issueDaysAgo: 12, sentDaysAgo: 10, viewedDaysAgo: 5, dueDaysFromNow: 18 },                              // INV-0009 viewed
+    3: { issueDaysAgo: 35, sentDaysAgo: 33, viewedDaysAgo: 28, paidDaysAgo: 20, dueDaysAgo: 5 },                 // INV-0010 paid
+    4: { issueDaysAgo: 45, sentDaysAgo: 43, viewedDaysAgo: 30, dueDaysAgo: 7 },                                  // INV-0011 overdue
+    5: { issueDaysAgo: 40, voidedDaysAgo: 30, dueDaysAgo: 10 },                                                  // INV-0012 voided
+    6: { issueDaysAgo: 50, sentDaysAgo: 48, viewedDaysAgo: 42, paidDaysAgo: 38, dueDaysAgo: 20 },                // INV-0013 paid
+    7: { issueDaysAgo: 55, sentDaysAgo: 53, viewedDaysAgo: 48, paidDaysAgo: 44, dueDaysAgo: 25 },                // INV-0014 paid
+  };
+
   for (let i = 0; i < testInvoices.length; i++) {
     const inv = testInvoices[i]!;
     const client = createdClients[i % createdClients.length]!;
     const subtotal = inv.qty * inv.rate;
     const invoiceNumber = `INV-${String(7 + i).padStart(4, '0')}`;
+    const invDates = invDateConfigs[i]!;
+    const daysMs = 24 * 60 * 60 * 1000;
 
-    // C04 fix: For overdue invoices, issue date must be before due date
-    const overdueIssueDate = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000);
-    const overdueDueDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const invIssueDate = new Date(Date.now() - invDates.issueDaysAgo * daysMs);
+    const invDueDate = invDates.dueDaysFromNow
+      ? new Date(Date.now() + invDates.dueDaysFromNow * daysMs)
+      : new Date(Date.now() - (invDates.dueDaysAgo ?? 0) * daysMs);
+    const invSentAt = invDates.sentDaysAgo ? new Date(Date.now() - invDates.sentDaysAgo * daysMs) : null;
+    const invViewedAt = invDates.viewedDaysAgo ? new Date(Date.now() - invDates.viewedDaysAgo * daysMs) : null;
+    const invPaidAt = invDates.paidDaysAgo ? new Date(Date.now() - invDates.paidDaysAgo * daysMs) : null;
+    const invVoidedAt = invDates.voidedDaysAgo ? new Date(Date.now() - invDates.voidedDaysAgo * daysMs) : null;
 
     const invoice = await prisma.invoice.upsert({
       where: {
@@ -438,14 +550,12 @@ async function main() {
         total: subtotal,
         amountPaid: inv.status === 'paid' ? subtotal : 0,
         amountDue: inv.status === 'paid' ? 0 : subtotal,
-        issueDate: inv.status === 'overdue' ? overdueIssueDate : new Date(),
-        dueDate: inv.status === 'overdue'
-          ? overdueDueDate
-          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        sentAt: inv.status !== 'draft' ? new Date() : null,
-        viewedAt: ['viewed', 'paid', 'overdue'].includes(inv.status) ? new Date() : null,
-        paidAt: inv.status === 'paid' ? new Date() : null,
-        voidedAt: inv.status === 'voided' ? new Date() : null,
+        issueDate: invIssueDate,
+        dueDate: invDueDate,
+        sentAt: invSentAt,
+        viewedAt: invViewedAt,
+        paidAt: invPaidAt,
+        voidedAt: invVoidedAt,
       },
       create: {
         workspaceId: workspace.id,
@@ -453,18 +563,16 @@ async function main() {
         invoiceNumber,
         status: inv.status,
         title: inv.title,
-        issueDate: inv.status === 'overdue' ? overdueIssueDate : new Date(),
-        dueDate: inv.status === 'overdue'
-          ? overdueDueDate
-          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        issueDate: invIssueDate,
+        dueDate: invDueDate,
         subtotal,
         total: subtotal,
         amountPaid: inv.status === 'paid' ? subtotal : 0,
         amountDue: inv.status === 'paid' ? 0 : subtotal,
-        sentAt: inv.status !== 'draft' ? new Date() : null,
-        viewedAt: ['viewed', 'paid', 'overdue'].includes(inv.status) ? new Date() : null,
-        paidAt: inv.status === 'paid' ? new Date() : null,
-        voidedAt: inv.status === 'voided' ? new Date() : null,
+        sentAt: invSentAt,
+        viewedAt: invViewedAt,
+        paidAt: invPaidAt,
+        voidedAt: invVoidedAt,
       },
     });
 
@@ -482,17 +590,20 @@ async function main() {
       },
     });
 
-    // Seed activity events for this invoice (H01 fix)
+    // Seed activity events for this invoice (H01 fix) - dates relative to actual invoice dates
     const invoiceEvents: { eventType: string; createdAt: Date }[] = [];
-    invoiceEvents.push({ eventType: 'created', createdAt: new Date(Date.now() - (30 - i) * 24 * 60 * 60 * 1000) });
-    if (inv.status !== 'draft') {
-      invoiceEvents.push({ eventType: 'sent', createdAt: new Date(Date.now() - (28 - i) * 24 * 60 * 60 * 1000) });
+    invoiceEvents.push({ eventType: 'created', createdAt: invIssueDate });
+    if (invSentAt) {
+      invoiceEvents.push({ eventType: 'sent', createdAt: invSentAt });
     }
-    if (['viewed', 'paid', 'overdue'].includes(inv.status)) {
-      invoiceEvents.push({ eventType: 'viewed', createdAt: new Date(Date.now() - (25 - i) * 24 * 60 * 60 * 1000) });
+    if (invViewedAt) {
+      invoiceEvents.push({ eventType: 'viewed', createdAt: invViewedAt });
     }
-    if (inv.status === 'paid') {
-      invoiceEvents.push({ eventType: 'paid', createdAt: new Date(Date.now() - (20 - i) * 24 * 60 * 60 * 1000) });
+    if (invPaidAt) {
+      invoiceEvents.push({ eventType: 'paid', createdAt: invPaidAt });
+    }
+    if (invVoidedAt) {
+      invoiceEvents.push({ eventType: 'voided', createdAt: invVoidedAt });
     }
 
     // Clear existing events and re-create
@@ -512,6 +623,35 @@ async function main() {
 
     console.log(`Created/Updated invoice: ${invoice.invoiceNumber} (${inv.status})`);
   }
+
+  // BUG-027 fix: Seed activity events for converted quote invoices
+  const convertedInvoices = await prisma.invoice.findMany({
+    where: { workspaceId: workspace.id, quoteId: { not: null } },
+  });
+  for (const cInvoice of convertedInvoices) {
+    const existingEvents = await prisma.invoiceEvent.count({ where: { invoiceId: cInvoice.id } });
+    if (existingEvents > 0) continue;
+
+    const cEvents: { eventType: string; createdAt: Date }[] = [];
+    cEvents.push({ eventType: 'created', createdAt: cInvoice.createdAt });
+    if (cInvoice.sentAt) cEvents.push({ eventType: 'sent', createdAt: cInvoice.sentAt });
+    if (cInvoice.viewedAt) cEvents.push({ eventType: 'viewed', createdAt: cInvoice.viewedAt });
+    if (cInvoice.paidAt) cEvents.push({ eventType: 'paid', createdAt: cInvoice.paidAt });
+
+    for (const evt of cEvents) {
+      await prisma.invoiceEvent.create({
+        data: {
+          invoiceId: cInvoice.id,
+          eventType: evt.eventType,
+          actorId: users['test@quotecraft.dev']!.id,
+          actorType: 'user',
+          metadata: {},
+          createdAt: evt.createdAt,
+        },
+      });
+    }
+  }
+  console.log('Seeded events for converted quote invoices');
 
   // Seed activity events for quotes (H01 fix)
   const allQuotes = await prisma.quote.findMany({ where: { workspaceId: workspace.id } });
