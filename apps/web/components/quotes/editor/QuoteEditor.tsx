@@ -231,6 +231,7 @@ export function QuoteEditor() {
           blocks: document.blocks,
           notes: document.notes,
           terms: document.terms,
+          internalNotes: document.internalNotes,
         });
 
         if (result.success) {

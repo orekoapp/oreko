@@ -88,7 +88,7 @@ export function WorkspaceSettingsForm({ initialData }: WorkspaceSettingsFormProp
       )}
 
       {success && (
-        <p className="text-sm text-green-600">Settings saved successfully</p>
+        <p className="text-sm text-green-600 dark:text-green-400">Settings saved successfully</p>
       )}
 
       <Button type="submit" disabled={isSubmitting}>

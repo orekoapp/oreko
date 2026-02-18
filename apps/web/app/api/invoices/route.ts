@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
 
 /**
  * GET /api/invoices
  * Returns invoices for the current user's workspace
  */
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+                   request.headers.get('x-real-ip') ||
+                   'unknown';
+  const rateLimitResult = checkRateLimit(`invoices:${clientIp}`, defaultRateLimitOptions);
+  const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
+
+  if (rateLimitResult.limited) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders }
+    );
+  }
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: rateLimitHeaders });
     }
 
     // Get user's workspace

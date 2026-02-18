@@ -486,7 +486,8 @@ export async function sendContractInstance(id: string): Promise<void> {
     },
   });
 
-  // TODO: Send email notification to client
+  // Email sending not yet configured - status updated successfully
+  console.warn('[QuoteCraft] Email sending is not configured. Contract status updated but no email was sent to client.');
 
   revalidatePath('/contracts');
   revalidatePath(`/contracts/${id}`);
@@ -516,7 +517,8 @@ export async function signContract(input: SignContractInput, ipAddress?: string)
     },
   });
 
-  // TODO: Generate PDF and send confirmation email
+  // Email sending not yet configured - signature recorded successfully
+  console.warn('[QuoteCraft] Email sending is not configured. Contract signed but no confirmation email was sent.');
 }
 
 // Delete a contract instance

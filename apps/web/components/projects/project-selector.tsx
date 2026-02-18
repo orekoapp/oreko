@@ -13,6 +13,7 @@ import {
 import { getClientProjects } from '@/lib/projects/actions';
 import type { ProjectListItem } from '@/lib/projects/types';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface ProjectSelectorProps {
   clientId: string | null;
@@ -46,6 +47,7 @@ export function ProjectSelector({
         setProjects(data);
       } catch {
         setProjects([]);
+        toast.error('Failed to load projects');
       } finally {
         setIsLoading(false);
       }

@@ -262,6 +262,7 @@ export function AppHeader({ user }: AppHeaderProps) {
                 size="icon"
                 className="relative size-9"
                 data-testid="user-menu"
+                aria-label="User menu"
               >
                 <Avatar className="size-9 rounded-md">
                   <AvatarImage src={user.avatarUrl || undefined} alt={user.name || 'User'} />

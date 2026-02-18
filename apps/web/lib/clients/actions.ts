@@ -37,6 +37,7 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
 
   const {
     search,
+    type,
     page = 1,
     limit = 20,
     sortBy = 'createdAt',
@@ -55,6 +56,13 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
       { email: { contains: search, mode: 'insensitive' } },
       { company: { contains: search, mode: 'insensitive' } },
     ];
+  }
+
+  // Filter by client type (individual vs company)
+  if (type === 'company') {
+    where.company = { not: null };
+  } else if (type === 'individual') {
+    where.company = null;
   }
 
   // Get total count

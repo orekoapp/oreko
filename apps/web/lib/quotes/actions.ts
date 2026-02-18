@@ -588,9 +588,8 @@ export async function sendQuote(quoteId: string) {
     },
   });
 
-  // TODO: Integrate email service to actually send the quote email
-  // For now, we just update the status and log the event
-  // Example: await sendQuoteEmail(quote, quote.client);
+  // Email sending not yet configured - status updated successfully
+  console.warn('[QuoteCraft] Email sending is not configured. Quote status updated but no email was sent to client.');
 
   revalidatePath('/quotes');
   revalidatePath(`/quotes/${quoteId}`);

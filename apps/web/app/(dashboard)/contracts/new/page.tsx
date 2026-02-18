@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateContractForm } from '@/components/contracts/create-contract-form';
 import { getContractTemplates } from '@/lib/contracts/actions';
-import { getClients } from '@/lib/clients/actions';
+import { getClientsForSelect } from '@/lib/clients/actions';
 import { getQuotes } from '@/lib/quotes/actions';
 
 export const metadata = {
@@ -24,7 +24,7 @@ export default async function NewContractPage({ searchParams }: PageProps) {
 
   const [templatesResult, clientsResult, quotesResult] = await Promise.all([
     getContractTemplates({ isTemplate: true, limit: 100 }),
-    getClients({ limit: 100 }),
+    getClientsForSelect(),
     getQuotes({ limit: 100 }),
   ]);
 
@@ -46,7 +46,7 @@ export default async function NewContractPage({ searchParams }: PageProps) {
 
       <CreateContractForm
         templates={templatesResult.data}
-        clients={clientsResult.data.map((c) => ({
+        clients={clientsResult.map((c) => ({
           id: c.id,
           name: c.name,
           company: c.company,

@@ -2,21 +2,20 @@ import { z } from 'zod';
 import { idSchema, moneySchema, percentageSchema, listQuerySchema, emailSchema } from './common';
 import { lineItemSchema } from './quote';
 
-// Invoice status enum
+// Invoice status enum (aligned with runtime types in lib/invoices/types.ts)
 export const invoiceStatusSchema = z.enum([
   'draft',
   'sent',
   'viewed',
   'paid',
-  'partially_paid',
+  'partial',
   'overdue',
-  'cancelled',
-  'refunded',
+  'voided',
 ]);
 
-// Payment method enum
+// Payment method enum (aligned with record-payment-dialog.tsx UI)
 export const paymentMethodSchema = z.enum([
-  'stripe',
+  'card',
   'bank_transfer',
   'check',
   'cash',

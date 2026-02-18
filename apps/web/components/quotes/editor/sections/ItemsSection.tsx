@@ -8,8 +8,6 @@ import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/lib/utils';
 import type { QuoteBlock, ServiceItemBlock } from '@/lib/quotes/types';
 import { createBlock } from '@/lib/quotes/types';
-import Link from 'next/link';
-
 interface ItemsSectionProps {
   blocks: QuoteBlock[];
   onAddBlock: (block: QuoteBlock, index?: number) => void;
@@ -46,10 +44,8 @@ export function ItemsSection({
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Line Items</CardTitle>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/rate-cards">
-              Import from Rate Cards
-            </Link>
+          <Button variant="outline" size="sm" disabled title="Rate card import coming soon">
+            Import from Rate Cards
           </Button>
         </div>
       </CardHeader>

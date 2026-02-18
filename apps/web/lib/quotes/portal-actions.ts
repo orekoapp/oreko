@@ -316,7 +316,8 @@ export async function acceptQuote(data: {
       }),
     ]);
 
-    // TODO: Send confirmation email to client and business owner
+    // Email sending not yet configured - acceptance recorded successfully
+    console.warn('[QuoteCraft] Email sending is not configured. Quote acceptance recorded but no confirmation email was sent.');
     // TODO: Auto-create invoice if setting enabled
     // TODO: Process deposit payment if required
 

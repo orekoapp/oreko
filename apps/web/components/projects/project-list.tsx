@@ -83,6 +83,7 @@ export function ProjectList({ projects }: ProjectListProps) {
   const [status, setStatus] = React.useState(searchParams.get('status') || 'active');
   const [selected, setSelected] = React.useState<string[]>([]);
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [bulkDeleteIds, setBulkDeleteIds] = React.useState<string[]>([]);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const currentPage = projects.pagination.page;
@@ -126,16 +127,21 @@ export function ProjectList({ projects }: ProjectListProps) {
   );
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    const idsToDelete = bulkDeleteIds.length > 0 ? bulkDeleteIds : deleteId ? [deleteId] : [];
+    if (idsToDelete.length === 0) return;
 
     setIsDeleting(true);
     try {
-      await deleteProject(deleteId);
-      toast.success('Project deleted successfully');
+      for (const id of idsToDelete) {
+        await deleteProject(id);
+      }
+      toast.success(idsToDelete.length > 1 ? `${idsToDelete.length} projects deleted` : 'Project deleted successfully');
       setDeleteId(null);
+      setBulkDeleteIds([]);
+      setSelected([]);
       router.refresh();
     } catch {
-      toast.error('Failed to delete project');
+      toast.error('Failed to delete project(s)');
     } finally {
       setIsDeleting(false);
     }
@@ -198,7 +204,10 @@ export function ProjectList({ projects }: ProjectListProps) {
         </div>
 
         {selected.length > 0 && (
-          <Button variant="destructive" size="sm" onClick={() => setDeleteId(selected[0] ?? null)}>
+          <Button variant="destructive" size="sm" onClick={() => {
+            setBulkDeleteIds([...selected]);
+            setDeleteId(selected[0] ?? null);
+          }}>
             <Trash2 className="mr-2 h-4 w-4" />
             Delete {selected.length}
           </Button>

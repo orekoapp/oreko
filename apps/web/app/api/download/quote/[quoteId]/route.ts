@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
 import { getQuotePdfData } from '@/lib/pdf/actions';
 import { generateQuotePdfHtml } from '@/lib/pdf/templates';
 import { generatePdfFromHtml } from '@/lib/services/pdf';
@@ -12,6 +13,11 @@ export async function GET(
   { params }: { params: Promise<{ quoteId: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const { quoteId } = await params;
 
     const data = await getQuotePdfData(quoteId);

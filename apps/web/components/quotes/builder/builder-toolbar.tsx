@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
-import { updateQuote, updateQuoteStatus } from '@/lib/quotes/actions';
+import { updateQuote, sendQuote } from '@/lib/quotes/actions';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -112,7 +112,7 @@ export function BuilderToolbar() {
 
     setIsSendLoading(true);
     try {
-      const result = await updateQuoteStatus(document.id, 'sent');
+      const result = await sendQuote(document.id);
 
       if (result.success) {
         toast.success('Quote sent to client');

@@ -37,7 +37,11 @@ export function InvoicePortalHeader({ invoice }: InvoicePortalHeaderProps) {
               <h1 className="font-semibold">{invoice.title}</h1>
             </div>
           </div>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open(`/api/download/invoice/${invoice.id}`, '_blank')}
+          >
             <Download className="mr-2 h-4 w-4" />
             Download PDF
           </Button>

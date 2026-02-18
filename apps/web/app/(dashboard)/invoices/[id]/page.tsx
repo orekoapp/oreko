@@ -21,13 +21,13 @@ import { InvoiceActions } from '@/components/invoices/invoice-actions';
 import { RecordPaymentDialog } from '@/components/invoices/record-payment-dialog';
 
 const statusColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-  draft: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <Edit className="h-4 w-4" /> },
-  sent: { bg: 'bg-blue-100', text: 'text-blue-700', icon: <Send className="h-4 w-4" /> },
-  viewed: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: <Clock className="h-4 w-4" /> },
-  partial: { bg: 'bg-purple-100', text: 'text-purple-700', icon: <DollarSign className="h-4 w-4" /> },
-  paid: { bg: 'bg-green-100', text: 'text-green-700', icon: <CheckCircle className="h-4 w-4" /> },
-  overdue: { bg: 'bg-red-100', text: 'text-red-700', icon: <AlertCircle className="h-4 w-4" /> },
-  voided: { bg: 'bg-gray-200', text: 'text-gray-500', icon: <Ban className="h-4 w-4" /> },
+  draft: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300', icon: <Edit className="h-4 w-4" /> },
+  sent: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-700 dark:text-blue-300', icon: <Send className="h-4 w-4" /> },
+  viewed: { bg: 'bg-yellow-100 dark:bg-yellow-900', text: 'text-yellow-700 dark:text-yellow-300', icon: <Clock className="h-4 w-4" /> },
+  partial: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-700 dark:text-purple-300', icon: <DollarSign className="h-4 w-4" /> },
+  paid: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-700 dark:text-green-300', icon: <CheckCircle className="h-4 w-4" /> },
+  overdue: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-700 dark:text-red-300', icon: <AlertCircle className="h-4 w-4" /> },
+  voided: { bg: 'bg-gray-200 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400', icon: <Ban className="h-4 w-4" /> },
 };
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {

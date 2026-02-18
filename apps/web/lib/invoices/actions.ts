@@ -550,7 +550,8 @@ export async function sendInvoice(invoiceId: string) {
     return result;
   }
 
-  // TODO: Send email notification to client
+  // Email sending not yet configured - status updated successfully
+  console.warn('[QuoteCraft] Email sending is not configured. Invoice status updated but no email was sent to client.');
 
   return { success: true };
 }

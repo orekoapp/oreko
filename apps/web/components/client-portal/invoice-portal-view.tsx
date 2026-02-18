@@ -74,8 +74,8 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
   const config = statusConfig[invoice.status] ?? defaultConfig;
 
   const handlePayment = () => {
-    // TODO: Integrate with Stripe payment link
-    console.log('Payment initiated for invoice:', invoice.id);
+    // Payment integration not yet configured
+    alert('Online payment is not yet available for this invoice. Please contact the business directly for payment options.');
   };
 
   return (

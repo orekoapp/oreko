@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Trash2, FileText, Mail, CreditCard, ChevronDown } from 'lucide-react';
@@ -54,6 +54,18 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Form state
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -74,6 +86,7 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
   ]);
 
   const addLineItem = () => {
+    setHasUnsavedChanges(true);
     setLineItems([
       ...lineItems,
       { id: Date.now().toString(), name: '', description: '', quantity: 1, rate: 0 }
@@ -87,6 +100,7 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
   };
 
   const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
+    setHasUnsavedChanges(true);
     setLineItems(lineItems.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ));
@@ -191,16 +205,16 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Add custom field</DropdownMenuItem>
-                    <DropdownMenuItem>Set default values</DropdownMenuItem>
-                    <DropdownMenuItem>Import from template</DropdownMenuItem>
+                    <DropdownMenuItem disabled className="text-muted-foreground">Add custom field (coming soon)</DropdownMenuItem>
+                    <DropdownMenuItem disabled className="text-muted-foreground">Set default values (coming soon)</DropdownMenuItem>
+                    <DropdownMenuItem disabled className="text-muted-foreground">Import from template (coming soon)</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="client">Customer</Label>
+                <Label htmlFor="client">Customer <span className="text-destructive">*</span></Label>
                 <Select value={clientId} onValueChange={(value) => {
                   setClientId(value);
                   setProjectId(null);
@@ -284,10 +298,8 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Items</CardTitle>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/rate-cards">
-                    Import from Rate Cards
-                  </Link>
+                <Button variant="outline" size="sm" disabled title="Rate card import coming soon">
+                  Import from Rate Cards
                 </Button>
               </div>
             </CardHeader>
@@ -432,7 +444,7 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
                 {/* Invoice Header */}
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-bold">{title || 'Invoice'}</h2>
-                  <p className="text-sm text-muted-foreground">Invoice #0001</p>
+                  <p className="text-sm text-muted-foreground">Invoice # (auto-generated)</p>
                   <p className="text-2xl font-bold mt-2">${total.toFixed(2)}</p>
                   <p className="text-sm text-muted-foreground">
                     Due on {new Date(dueDate).toLocaleDateString()}
@@ -498,9 +510,19 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
                 )}
 
                 {previewMode === 'payment' && (
-                  <Button className="w-full mt-6" disabled>
-                    Pay Now
+                  <Button className="w-full mt-6" disabled variant="secondary">
+                    Pay Now (available after sending)
                   </Button>
+                )}
+                {previewMode === 'email' && (
+                  <div className="mt-6 rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+                    Email preview will be available after the invoice is created and sent.
+                  </div>
+                )}
+                {previewMode === 'pdf' && (
+                  <div className="mt-6 rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+                    PDF download will be available after the invoice is created.
+                  </div>
                 )}
               </div>
             </CardContent>

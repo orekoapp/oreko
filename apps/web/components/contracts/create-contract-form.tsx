@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -105,6 +106,17 @@ export function CreateContractForm({
   };
 
   const onSubmit = (data: CreateContractFormData) => {
+    // Validate required variables
+    if (selectedTemplate) {
+      const missingRequired = selectedTemplate.variables
+        .filter((v) => v.required && !variableValues[v.key]?.trim())
+        .map((v) => v.label);
+      if (missingRequired.length > 0) {
+        toast.error(`Please fill in required fields: ${missingRequired.join(', ')}`);
+        return;
+      }
+    }
+
     startTransition(async () => {
       try {
         const instance = await createContractInstance({

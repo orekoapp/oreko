@@ -78,7 +78,7 @@ export function TaxRatesManager({ initialData }: TaxRatesManagerProps) {
       return;
     }
 
-    const rate = parseFloat(editingRate.rate);
+    const rate = Math.round(parseFloat(editingRate.rate) * 100) / 100;
     if (isNaN(rate) || rate < 0 || rate > 100) {
       toast.error('Rate must be between 0 and 100');
       return;
