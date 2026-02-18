@@ -58,6 +58,17 @@ async function main() {
   });
   console.log(`Created/Updated workspace: ${workspace.name}`);
 
+  // Clean up stale workspace memberships for test users to prevent duplicate workspace issues
+  for (const userData of testUsers) {
+    const userId = users[userData.email]!.id;
+    await prisma.workspaceMember.deleteMany({
+      where: {
+        userId,
+        workspaceId: { not: workspace.id },
+      },
+    });
+  }
+
   // Add workspace members with different roles
   const memberRoles = [
     { email: 'owner@quotecraft.dev', role: 'owner' },
