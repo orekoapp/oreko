@@ -103,7 +103,7 @@ function generateBreadcrumbs(pathname: string) {
     } else {
       // Capitalize first letter of each word
       label = segment
-        .split('-')
+        .split(/[-_.]/)
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
     }

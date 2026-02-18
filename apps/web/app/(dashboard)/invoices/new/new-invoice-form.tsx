@@ -463,9 +463,9 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
 
                 {/* Line Items Summary */}
                 <div className="space-y-2 mb-6">
-                  {lineItems.filter(item => item.name).map((item) => (
+                  {lineItems.map((item) => (
                     <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.name} × {item.quantity}</span>
+                      <span>{item.name || 'Untitled Item'} × {item.quantity}</span>
                       <span>${(item.quantity * item.rate).toFixed(2)}</span>
                     </div>
                   ))}

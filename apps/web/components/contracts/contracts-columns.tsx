@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
 import { DataTableRowActions } from '@/components/ui/data-table/data-table-row-actions';
 import { ContractInstanceListItem } from '@/lib/contracts/types';
-import { FileText, Mail, Eye, CheckCircle2, Clock, Send } from 'lucide-react';
+import { FileText, Mail, Eye, CheckCircle2, Clock, Send, Variable } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 const statusConfig: Record<
@@ -151,6 +151,21 @@ export function getContractColumns(
       },
       filterFn: (row, id, value) => {
         return value.includes(row.getValue(id));
+      },
+    },
+    {
+      accessorKey: 'variablesCount',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Variables" />
+      ),
+      cell: ({ row }) => {
+        const count = row.getValue('variablesCount') as number;
+        return (
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Variable className="h-3.5 w-3.5" />
+            <span>{count}</span>
+          </div>
+        );
       },
     },
     {

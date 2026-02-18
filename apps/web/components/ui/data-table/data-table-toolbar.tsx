@@ -14,6 +14,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+export interface BulkAction<TData> {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: (rows: TData[]) => void;
+  variant?: 'default' | 'destructive' | 'outline';
+}
+
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   filterKey?: string;
@@ -22,6 +29,7 @@ interface DataTableToolbarProps<TData> {
   statusFilterKey?: string;
   pageSizes?: number[];
   showPageSizeSelector?: boolean;
+  bulkActions?: BulkAction<TData>[];
 }
 
 export function DataTableToolbar<TData>({
@@ -32,6 +40,7 @@ export function DataTableToolbar<TData>({
   statusFilterKey = 'status',
   pageSizes = [10, 25, 50, 100],
   showPageSizeSelector = true,
+  bulkActions,
 }: DataTableToolbarProps<TData>) {
   const [searchValue, setSearchValue] = React.useState('');
   const debouncedSearchRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -149,10 +158,29 @@ export function DataTableToolbar<TData>({
       </div>
       <div className="flex items-center space-x-2">
         {table.getFilteredSelectedRowModel().rows.length > 0 && (
-          <div className="text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{' '}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
+          <>
+            <div className="text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} of{' '}
+              {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
+            {bulkActions?.map((action) => (
+              <Button
+                key={action.label}
+                variant={action.variant || 'outline'}
+                size="sm"
+                className="h-8"
+                onClick={() => {
+                  const selectedRows = table
+                    .getFilteredSelectedRowModel()
+                    .rows.map((row) => row.original);
+                  action.onClick(selectedRows);
+                }}
+              >
+                {action.icon}
+                {action.label}
+              </Button>
+            ))}
+          </>
         )}
       </div>
     </div>

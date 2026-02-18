@@ -58,6 +58,7 @@ export interface ContractInstanceListItem {
   clientName: string;
   quoteName: string | null;
   status: string;
+  variablesCount: number;
   sentAt: Date | null;
   viewedAt: Date | null;
   signedAt: Date | null;

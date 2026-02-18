@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { NumberSequenceForm } from '@/components/settings';
-import { getNumberSequences } from '@/lib/settings/actions';
+import { NumberSequenceForm, InvoiceDefaultsForm } from '@/components/settings';
+import { getNumberSequences, getInvoiceDefaults } from '@/lib/settings/actions';
 
 export const metadata = {
   title: 'Invoice Settings',
 };
 
 export default async function InvoiceSettingsPage() {
-  const sequences = await getNumberSequences();
+  const [sequences, invoiceDefaults] = await Promise.all([
+    getNumberSequences(),
+    getInvoiceDefaults(),
+  ]);
   const invoiceSequence = sequences.find((s) => s.type === 'invoice') || null;
 
   return (
@@ -23,17 +26,21 @@ export default async function InvoiceSettingsPage() {
         <div>
           <h1 className="text-2xl font-bold">Invoice Settings</h1>
           <p className="text-muted-foreground">
-            Configure invoice numbering and payment terms
+            Configure invoice numbering, payment terms, and defaults
           </p>
         </div>
       </div>
 
-      <NumberSequenceForm
-        type="invoice"
-        title="Invoice Numbering"
-        description="Configure how invoice numbers are generated."
-        initialData={invoiceSequence}
-      />
+      <div className="space-y-6">
+        <NumberSequenceForm
+          type="invoice"
+          title="Invoice Numbering"
+          description="Configure how invoice numbers are generated."
+          initialData={invoiceSequence}
+        />
+
+        <InvoiceDefaultsForm initialData={invoiceDefaults} />
+      </div>
     </div>
   );
 }

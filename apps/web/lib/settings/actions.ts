@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { prisma, Prisma } from '@quotecraft/database';
 import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
@@ -489,36 +490,49 @@ export async function getNumberSequences(): Promise<NumberSequenceData[]> {
   }));
 }
 
+// Zod schema for number sequence validation
+const numberSequenceSchema = z.object({
+  type: z.enum(['quote', 'invoice']),
+  prefix: z.string().max(10, 'Prefix must be 10 characters or less').optional(),
+  suffix: z.string().max(10, 'Suffix must be 10 characters or less').optional(),
+  currentValue: z.number().int().min(0, 'Current value must be non-negative').optional(),
+  padding: z.number().int().min(1).max(10, 'Padding must be between 1 and 10').optional(),
+});
+
 // Update number sequence
 export async function updateNumberSequence(
   input: UpdateNumberSequenceInput
 ): Promise<void> {
   await assertNotDemo();
+
+  // Validate input with Zod
+  const validated = numberSequenceSchema.parse(input);
+
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.numberSequence.findFirst({
-    where: { workspaceId, type: input.type },
+    where: { workspaceId, type: validated.type },
   });
 
   if (existing) {
     await prisma.numberSequence.update({
       where: { id: existing.id },
       data: {
-        ...(input.prefix !== undefined && { prefix: input.prefix || null }),
-        ...(input.suffix !== undefined && { suffix: input.suffix || null }),
-        ...(input.currentValue !== undefined && { currentValue: input.currentValue }),
-        ...(input.padding !== undefined && { padding: input.padding }),
+        ...(validated.prefix !== undefined && { prefix: validated.prefix || null }),
+        ...(validated.suffix !== undefined && { suffix: validated.suffix || null }),
+        ...(validated.currentValue !== undefined && { currentValue: validated.currentValue }),
+        ...(validated.padding !== undefined && { padding: validated.padding }),
       },
     });
   } else {
     await prisma.numberSequence.create({
       data: {
         workspaceId,
-        type: input.type,
-        prefix: input.prefix || (input.type === 'quote' ? 'QT' : 'INV'),
-        suffix: input.suffix || null,
-        currentValue: input.currentValue ?? 0,
-        padding: input.padding ?? 4,
+        type: validated.type,
+        prefix: validated.prefix || (validated.type === 'quote' ? 'QT' : 'INV'),
+        suffix: validated.suffix || null,
+        currentValue: validated.currentValue ?? 0,
+        padding: validated.padding ?? 4,
       },
     });
   }
@@ -863,6 +877,75 @@ export async function deleteWorkspace(): Promise<{ success: boolean; error?: str
   });
 
   revalidatePath('/');
+
+  return { success: true };
+}
+
+// ============================================
+// INVOICE DEFAULTS
+// ============================================
+
+export interface InvoiceDefaults {
+  paymentTerms: string;
+  defaultNotes: string;
+  defaultTerms: string;
+  lateFeeEnabled: boolean;
+  lateFeeType: 'percentage' | 'fixed';
+  lateFeeValue: number;
+  reminderEnabled: boolean;
+  reminderDays: number[];
+}
+
+const DEFAULT_INVOICE_DEFAULTS: InvoiceDefaults = {
+  paymentTerms: 'net30',
+  defaultNotes: '',
+  defaultTerms: '',
+  lateFeeEnabled: false,
+  lateFeeType: 'percentage',
+  lateFeeValue: 0,
+  reminderEnabled: true,
+  reminderDays: [7, 3, 1],
+};
+
+export async function getInvoiceDefaults(): Promise<InvoiceDefaults> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { settings: true },
+  });
+
+  const settings = workspace?.settings as Record<string, unknown> | null;
+  const invoiceDefaults = settings?.invoiceDefaults as Partial<InvoiceDefaults> | undefined;
+
+  return { ...DEFAULT_INVOICE_DEFAULTS, ...invoiceDefaults };
+}
+
+export async function updateInvoiceDefaults(
+  input: Partial<InvoiceDefaults>
+): Promise<{ success: boolean; error?: string }> {
+  await assertNotDemo();
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { settings: true },
+  });
+
+  const currentSettings = (workspace?.settings as Record<string, unknown>) || {};
+  const currentDefaults = (currentSettings.invoiceDefaults as Partial<InvoiceDefaults>) || {};
+
+  await prisma.workspace.update({
+    where: { id: workspaceId },
+    data: {
+      settings: {
+        ...currentSettings,
+        invoiceDefaults: { ...currentDefaults, ...input },
+      },
+    },
+  });
+
+  revalidatePath('/settings/invoices');
 
   return { success: true };
 }

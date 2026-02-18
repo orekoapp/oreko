@@ -12,6 +12,8 @@ import type {
   UpdateInvoiceData,
   DEFAULT_INVOICE_SETTINGS,
 } from './types';
+import { sendInvoiceSentEmail } from '@/lib/services/email';
+import { formatCurrency } from '@/lib/utils';
 
 /**
  * Get the current user's active workspace with full workspace data
@@ -35,20 +37,50 @@ async function getActiveWorkspace() {
 
 /**
  * Generate the next invoice number for a workspace
+ * Uses atomic increment on NumberSequence table to prevent race conditions
  */
 async function generateInvoiceNumber(workspaceId: string): Promise<string> {
-  const lastInvoice = await prisma.invoice.findFirst({
-    where: { workspaceId },
-    orderBy: { createdAt: 'desc' },
-    select: { invoiceNumber: true },
+  const result = await prisma.$transaction(async (tx) => {
+    const sequence = await tx.numberSequence.findFirst({
+      where: { workspaceId, type: 'invoice' },
+    });
+
+    if (sequence) {
+      const updated = await tx.numberSequence.update({
+        where: { id: sequence.id },
+        data: { currentValue: { increment: 1 } },
+      });
+      return {
+        prefix: updated.prefix || 'INV',
+        suffix: updated.suffix,
+        value: updated.currentValue,
+        padding: updated.padding,
+      };
+    }
+
+    const created = await tx.numberSequence.create({
+      data: {
+        workspaceId,
+        type: 'invoice',
+        prefix: 'INV',
+        currentValue: 1,
+        padding: 4,
+      },
+    });
+    return {
+      prefix: created.prefix || 'INV',
+      suffix: created.suffix,
+      value: created.currentValue,
+      padding: created.padding,
+    };
   });
 
-  const lastNumber = lastInvoice?.invoiceNumber
-    ? parseInt(lastInvoice.invoiceNumber.replace(/\D/g, ''), 10) || 0
-    : 0;
-
-  const nextNumber = lastNumber + 1;
-  return `INV-${String(nextNumber).padStart(4, '0')}`;
+  const paddedValue = String(result.value).padStart(result.padding, '0');
+  const parts = [result.prefix, paddedValue];
+  if (result.suffix) {
+    parts.push(result.suffix);
+  }
+  return parts.join('-');
 }
 
 /**
@@ -550,8 +582,29 @@ export async function sendInvoice(invoiceId: string) {
     return result;
   }
 
-  // Email sending not yet configured - status updated successfully
-  console.warn('[QuoteCraft] Email sending is not configured. Invoice status updated but no email was sent to client.');
+  // Fetch invoice with client for email
+  const { workspace } = await getActiveWorkspace();
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, workspaceId: workspace.id },
+    include: { client: true },
+  });
+
+  if (invoice?.client?.email) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const invoiceUrl = `${baseUrl}/i/${invoice.accessToken}`;
+
+    sendInvoiceSentEmail({
+      to: invoice.client.email,
+      clientName: invoice.client.name,
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceUrl,
+      businessName: workspace.name,
+      amount: formatCurrency(Number(invoice.total)),
+      dueDate: invoice.dueDate,
+    }).catch((err) => {
+      console.error('Failed to send invoice email:', err);
+    });
+  }
 
   return { success: true };
 }

@@ -6,6 +6,7 @@ import { prisma, type Prisma } from '@quotecraft/database';
 import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
+import { sendQuoteSentEmail } from '@/lib/services/email';
 
 /**
  * Get the current user's active workspace with full workspace data
@@ -588,8 +589,20 @@ export async function sendQuote(quoteId: string) {
     },
   });
 
-  // Email sending not yet configured - status updated successfully
-  console.warn('[QuoteCraft] Email sending is not configured. Quote status updated but no email was sent to client.');
+  // Send email notification (non-blocking - don't fail if email fails)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
+
+  sendQuoteSentEmail({
+    to: quote.client.email,
+    clientName: quote.client.name,
+    quoteName: quote.title || `Quote ${quote.quoteNumber}`,
+    quoteUrl,
+    businessName: workspace.name,
+    validUntil: quote.expirationDate ?? undefined,
+  }).catch((err) => {
+    console.error('Failed to send quote email:', err);
+  });
 
   revalidatePath('/quotes');
   revalidatePath(`/quotes/${quoteId}`);

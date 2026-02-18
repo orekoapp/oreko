@@ -6,3 +6,4 @@ export { TeamMemberList } from './team-member-list';
 export { InviteMemberButton } from './invite-member-button';
 export { WorkspaceSettingsForm } from './workspace-settings-form';
 export { DangerZone } from './danger-zone';
+export { InvoiceDefaultsForm } from './invoice-defaults-form';

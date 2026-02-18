@@ -52,11 +52,11 @@ export function QuotePortalView({ quote, accessToken }: QuotePortalViewProps) {
     <div className="space-y-6">
       {/* Status Banner */}
       {isExpired && (
-        <div className="flex items-center gap-3 rounded-lg border border-orange-200 bg-orange-50 p-4 text-orange-800">
+        <div className="flex items-center gap-3 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950 p-4 text-orange-800 dark:text-orange-200">
           <AlertTriangle className="h-5 w-5 flex-shrink-0" />
           <div>
             <p className="font-medium">This quote has expired</p>
-            <p className="text-sm text-orange-700">
+            <p className="text-sm text-orange-700 dark:text-orange-300">
               This quote expired on{' '}
               {new Date(quote.expirationDate!).toLocaleDateString()}. Please
               contact {quote.business.name} to request a new quote.
@@ -66,11 +66,11 @@ export function QuotePortalView({ quote, accessToken }: QuotePortalViewProps) {
       )}
 
       {isAccepted && (
-        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
+        <div className="flex items-center gap-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 p-4 text-green-800 dark:text-green-200">
           <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
           <div>
             <p className="font-medium">Quote Accepted</p>
-            <p className="text-sm text-green-700">
+            <p className="text-sm text-green-700 dark:text-green-300">
               Thank you for accepting this quote. {quote.business.name} will be
               in touch with next steps.
             </p>
@@ -79,11 +79,11 @@ export function QuotePortalView({ quote, accessToken }: QuotePortalViewProps) {
       )}
 
       {isDeclined && (
-        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+        <div className="flex items-center gap-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-4 text-red-800 dark:text-red-200">
           <XCircle className="h-5 w-5 flex-shrink-0" />
           <div>
             <p className="font-medium">Quote Declined</p>
-            <p className="text-sm text-red-700">
+            <p className="text-sm text-red-700 dark:text-red-300">
               You have declined this quote. If you change your mind, please
               contact {quote.business.name}.
             </p>

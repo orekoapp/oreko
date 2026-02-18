@@ -14,6 +14,8 @@ import {
   Ban,
 } from 'lucide-react';
 import { getInvoice } from '@/lib/invoices/actions';
+import { prisma } from '@quotecraft/database';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { isInvoiceOverdue, getDaysUntilDue } from '@/lib/invoices/types';
@@ -43,7 +45,25 @@ interface InvoiceDetailPageProps {
 
 export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
   const { id } = await params;
-  const invoice = await getInvoice(id);
+
+  let invoice;
+  try {
+    invoice = await getInvoice(id);
+  } catch (error) {
+    console.error('Failed to load invoice:', error);
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Failed to load invoice</h2>
+        <p className="text-muted-foreground mb-4">
+          There was an error loading this invoice. Please try again.
+        </p>
+        <Button asChild>
+          <Link href="/invoices">Back to Invoices</Link>
+        </Button>
+      </div>
+    );
+  }
 
   if (!invoice) {
     notFound();
@@ -298,16 +318,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           )}
 
           {/* Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                No activity yet.
-              </p>
-            </CardContent>
-          </Card>
+          <InvoiceActivity invoiceId={invoice.id} />
 
           {/* Internal Notes */}
           {invoice.internalNotes && (
@@ -325,5 +336,74 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
         </div>
       </div>
     </div>
+  );
+}
+
+async function InvoiceActivity({ invoiceId }: { invoiceId: string }) {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const events = await prisma.invoiceEvent.findMany({
+    where: {
+      invoiceId,
+      invoice: { workspaceId },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+
+  const getEventIcon = (eventType: string) => {
+    if (eventType.includes('sent') || eventType.includes('status_changed_to_sent')) return <Send className="h-4 w-4 text-blue-500" />;
+    if (eventType.includes('paid')) return <CheckCircle className="h-4 w-4 text-green-500" />;
+    if (eventType.includes('viewed')) return <Clock className="h-4 w-4 text-yellow-500" />;
+    if (eventType.includes('voided')) return <Ban className="h-4 w-4 text-gray-500" />;
+    if (eventType.includes('payment')) return <DollarSign className="h-4 w-4 text-green-500" />;
+    return <Clock className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  const getEventLabel = (eventType: string) => {
+    if (eventType === 'status_changed_to_sent') return 'Invoice sent';
+    if (eventType === 'status_changed_to_viewed') return 'Invoice viewed';
+    if (eventType === 'status_changed_to_paid') return 'Invoice paid';
+    if (eventType === 'status_changed_to_partial') return 'Partial payment recorded';
+    if (eventType === 'status_changed_to_voided') return 'Invoice voided';
+    if (eventType === 'status_changed_to_overdue') return 'Invoice overdue';
+    if (eventType.includes('payment')) return 'Payment recorded';
+    if (eventType.includes('created')) return 'Invoice created';
+    return eventType.replace(/_/g, ' ').replace(/status changed to /i, 'Status changed to ');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Activity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {events.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No activity yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {events.map((event) => (
+              <div key={event.id} className="flex items-start gap-3">
+                <div className="mt-0.5">{getEventIcon(event.eventType)}</div>
+                <div className="flex-1">
+                  <p className="text-sm">{getEventLabel(event.eventType)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(event.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

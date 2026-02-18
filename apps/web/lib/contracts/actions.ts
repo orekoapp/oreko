@@ -20,6 +20,7 @@ import type {
   PaginatedContractInstances,
   SignatureData,
 } from './types';
+import { sendEmail } from '@/lib/services/email';
 
 // Get all contract templates
 export async function getContractTemplates(
@@ -244,7 +245,7 @@ export async function getContractInstances(
     prisma.contractInstance.findMany({
       where,
       include: {
-        contract: { select: { name: true } },
+        contract: { select: { name: true, variables: true } },
         client: { select: { name: true, company: true } },
         quote: { select: { title: true } },
       },
@@ -256,17 +257,22 @@ export async function getContractInstances(
   ]);
 
   return {
-    data: instances.map((i) => ({
-      id: i.id,
-      contractName: i.contract.name,
-      clientName: i.client.company || i.client.name,
-      quoteName: i.quote?.title || null,
-      status: i.status,
-      sentAt: i.sentAt,
-      viewedAt: i.viewedAt,
-      signedAt: i.signedAt,
-      createdAt: i.createdAt,
-    })),
+    data: instances.map((i) => {
+      const vars = i.contract.variables;
+      const variablesCount = Array.isArray(vars) ? vars.length : 0;
+      return {
+        id: i.id,
+        contractName: i.contract.name,
+        clientName: i.client.company || i.client.name,
+        quoteName: i.quote?.title || null,
+        status: i.status,
+        variablesCount,
+        sentAt: i.sentAt,
+        viewedAt: i.viewedAt,
+        signedAt: i.signedAt,
+        createdAt: i.createdAt,
+      };
+    }),
     meta: {
       page,
       limit,
@@ -472,11 +478,19 @@ export async function sendContractInstance(id: string): Promise<void> {
 
   const instance = await prisma.contractInstance.findFirst({
     where: { id, workspaceId },
+    include: {
+      client: true,
+      contract: { select: { name: true } },
+    },
   });
 
   if (!instance) {
     throw new Error('Contract instance not found');
   }
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+  });
 
   await prisma.contractInstance.update({
     where: { id },
@@ -486,8 +500,38 @@ export async function sendContractInstance(id: string): Promise<void> {
     },
   });
 
-  // Email sending not yet configured - status updated successfully
-  console.warn('[QuoteCraft] Email sending is not configured. Contract status updated but no email was sent to client.');
+  // Send email notification (non-blocking)
+  if (instance.client?.email && workspace) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const contractUrl = `${baseUrl}/c/${instance.accessToken}`;
+    const contractName = instance.contract?.name || 'Contract';
+
+    sendEmail({
+      to: instance.client.email,
+      subject: `Contract: ${contractName} from ${workspace.name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Contract from ${workspace.name}</h2>
+          <p>Hi ${instance.client.name},</p>
+          <p>${workspace.name} has sent you a contract: <strong>${contractName}</strong></p>
+          <p>Please review and sign at your earliest convenience.</p>
+          <p style="margin: 24px 0;">
+            <a href="${contractUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              Review & Sign Contract
+            </a>
+          </p>
+          <p>Or copy this link: ${contractUrl}</p>
+          <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+          <p style="color: #666; font-size: 14px;">
+            Sent via QuoteCraft on behalf of ${workspace.name}
+          </p>
+        </div>
+      `,
+      tags: [{ name: 'type', value: 'contract_sent' }],
+    }).catch((err) => {
+      console.error('Failed to send contract email:', err);
+    });
+  }
 
   revalidatePath('/contracts');
   revalidatePath(`/contracts/${id}`);

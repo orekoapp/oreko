@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { DataTableToolbar } from './data-table-toolbar';
+import { DataTableToolbar, type BulkAction } from './data-table-toolbar';
 import { DataTablePagination } from './data-table-pagination';
 
 export interface DataTableProps<TData, TValue> {
@@ -38,6 +38,7 @@ export interface DataTableProps<TData, TValue> {
   pageSizes?: number[];
   emptyState?: React.ReactNode;
   isLoading?: boolean;
+  bulkActions?: BulkAction<TData>[];
 }
 
 export function DataTable<TData, TValue>({
@@ -52,6 +53,7 @@ export function DataTable<TData, TValue>({
   pageSizes = [10, 25, 50, 100],
   emptyState,
   isLoading = false,
+  bulkActions,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -94,6 +96,7 @@ export function DataTable<TData, TValue>({
         statusOptions={statusOptions}
         statusFilterKey={statusFilterKey}
         pageSizes={pageSizes}
+        bulkActions={bulkActions}
       />
       <div className="rounded-md border">
         <Table>

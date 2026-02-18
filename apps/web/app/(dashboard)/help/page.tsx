@@ -18,21 +18,25 @@ const helpTopics = [
     icon: FileText,
     title: 'Getting Started',
     description: 'Learn the basics of creating quotes and invoices',
+    href: '/help#getting-started',
   },
   {
     icon: BookOpen,
     title: 'Documentation',
     description: 'Comprehensive guides and API references',
+    href: '/help#docs',
   },
   {
     icon: Video,
     title: 'Video Tutorials',
     description: 'Watch step-by-step tutorials',
+    href: '/help#tutorials',
   },
   {
     icon: Lightbulb,
     title: 'Tips & Tricks',
     description: 'Get the most out of QuoteCraft',
+    href: '/help#tips',
   },
 ];
 
@@ -104,15 +108,17 @@ export default function HelpPage() {
         <h2 className="text-lg font-semibold mb-4">Help Topics</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {helpTopics.map((topic) => (
-            <Card key={topic.title} className="hover:shadow-md transition-shadow h-full">
-              <CardHeader className="pb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-2">
-                  <topic.icon className="h-5 w-5 text-primary" />
-                </div>
-                <CardTitle className="text-base">{topic.title}</CardTitle>
-                <CardDescription>{topic.description}</CardDescription>
-              </CardHeader>
-            </Card>
+            <Link key={topic.title} href={topic.href} className="block">
+              <Card className="hover:shadow-md transition-shadow h-full cursor-pointer">
+                <CardHeader className="pb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-2">
+                    <topic.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-base">{topic.title}</CardTitle>
+                  <CardDescription>{topic.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           ))}
         </div>
       </section>
@@ -163,9 +169,17 @@ export default function HelpPage() {
                     <Button className="w-full">{option.action}</Button>
                   )
                 ) : (
-                  <Button className="w-full" disabled>
-                    Coming Soon
-                  </Button>
+                  <div className="space-y-2">
+                    <Button className="w-full" disabled>
+                      Coming Soon
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      In the meantime, reach us at{' '}
+                      <a href="mailto:support@quotecraft.app" className="text-primary hover:underline">
+                        support@quotecraft.app
+                      </a>
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
