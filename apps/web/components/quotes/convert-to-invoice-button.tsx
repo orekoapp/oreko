@@ -38,12 +38,18 @@ interface ConvertToInvoiceButtonProps {
   quoteId: string;
   quoteTitle: string;
   total: number;
+  currency?: string;
+}
+
+function formatMoney(amount: number, currency: string): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
 export function ConvertToInvoiceButton({
   quoteId,
   quoteTitle,
   total,
+  currency = 'USD',
 }: ConvertToInvoiceButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -104,7 +110,7 @@ export function ConvertToInvoiceButton({
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total Amount</span>
               <span className="font-medium">
-                ${total.toFixed(2)}
+                {formatMoney(total, currency)}
               </span>
             </div>
           </div>

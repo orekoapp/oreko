@@ -1,14 +1,48 @@
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { getInvoice } from '@/lib/invoices/actions';
+import { getClientsForSelect } from '@/lib/clients/actions';
+import { getTaxRates, getBusinessProfile } from '@/lib/settings/actions';
+import { EditInvoiceForm } from './edit-invoice-form';
 
 interface InvoiceEditPageProps {
   params: Promise<{ id: string }>;
 }
 
-/**
- * Invoice edit page - redirects to detail page
- * Full inline editing to be implemented as a feature enhancement
- */
+export async function generateMetadata({ params }: InvoiceEditPageProps) {
+  const { id } = await params;
+  try {
+    const invoice = await getInvoice(id);
+    return { title: invoice ? `Edit ${invoice.title}` : 'Edit Invoice' };
+  } catch {
+    return { title: 'Invoice Not Found' };
+  }
+}
+
 export default async function InvoiceEditPage({ params }: InvoiceEditPageProps) {
   const { id } = await params;
-  redirect(`/invoices/${id}`);
+
+  const [invoice, clients, taxRates, businessProfile] = await Promise.all([
+    getInvoice(id),
+    getClientsForSelect(),
+    getTaxRates(),
+    getBusinessProfile(),
+  ]);
+
+  if (!invoice) {
+    notFound();
+  }
+
+  // Only draft invoices can be edited
+  if (invoice.status !== 'draft') {
+    redirect(`/invoices/${id}`);
+  }
+
+  return (
+    <EditInvoiceForm
+      invoice={invoice}
+      clients={clients}
+      taxRates={taxRates}
+      currency={businessProfile?.currency || invoice.settings.currency || 'USD'}
+    />
+  );
 }

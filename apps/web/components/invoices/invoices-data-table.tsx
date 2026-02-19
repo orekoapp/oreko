@@ -66,7 +66,7 @@ export function InvoicesDataTable({ data }: InvoicesDataTableProps) {
     onDelete: handleDelete,
     onDuplicate: handleDuplicate,
     onDownload: (invoice) => {
-      window.open(`/api/pdf/invoice/${invoice.id}`, '_blank');
+      window.open(`/api/download/invoice/${invoice.id}`, '_blank');
     },
   });
 

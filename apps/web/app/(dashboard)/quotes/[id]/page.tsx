@@ -66,7 +66,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
         <div className="flex items-center gap-2">
           <DuplicateQuoteButton quoteId={id} />
           <Button variant="outline" size="sm" asChild>
-            <a href={`/api/pdf/quote/${id}`} target="_blank" rel="noopener noreferrer">
+            <a href={`/api/download/quote/${id}`} target="_blank" rel="noopener noreferrer">
               <Download className="mr-2 h-4 w-4" />
               Download PDF
             </a>
@@ -87,6 +87,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               quoteId={quote.id}
               quoteTitle={quote.title}
               total={quote.totals.total}
+              currency={quote.settings.currency}
             />
           )}
         </div>

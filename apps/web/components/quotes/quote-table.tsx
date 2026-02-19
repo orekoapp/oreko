@@ -74,7 +74,7 @@ export function QuoteTable({ quotes, isLoading = false }: QuoteTableProps) {
 
   const handleDownload = (quote: QuoteListItem) => {
     // Open PDF in new tab
-    window.open(`/api/pdf/quote/${quote.id}`, '_blank');
+    window.open(`/api/download/quote/${quote.id}`, '_blank');
   };
 
   const columns = createQuoteColumns({

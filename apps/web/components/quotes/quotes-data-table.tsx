@@ -66,7 +66,7 @@ export function QuotesDataTable({ data }: QuotesDataTableProps) {
     onDuplicate: handleDuplicate,
     onDelete: handleDelete,
     onDownload: (quote) => {
-      window.open(`/api/pdf/quote/${quote.id}`, '_blank');
+      window.open(`/api/download/quote/${quote.id}`, '_blank');
     },
   });
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, FileText, Mail, CreditCard, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,18 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { createInvoice } from '@/lib/invoices/actions';
+import { updateInvoice } from '@/lib/invoices/actions';
 import { ProjectSelector } from '@/components/projects';
-import { LogoUpload } from '@/components/shared/logo-upload';
+import type { InvoiceDocument } from '@/lib/invoices/types';
 
 interface LineItem {
   id: string;
@@ -37,8 +30,6 @@ interface LineItem {
   rate: number;
   taxRate?: number;
 }
-
-type PreviewMode = 'payment' | 'email' | 'pdf';
 
 interface ClientOption {
   id: string;
@@ -54,28 +45,22 @@ interface TaxRateOption {
   isActive: boolean;
 }
 
-interface NewInvoiceFormProps {
+interface EditInvoiceFormProps {
+  invoice: InvoiceDocument;
   clients: ClientOption[];
-  taxRates?: TaxRateOption[];
-  defaultNotes?: string;
-  defaultTerms?: string;
+  taxRates: TaxRateOption[];
   currency?: string;
 }
 
 function formatMoney(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-  }).format(amount);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
-export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defaultTerms = '', currency = 'USD' }: NewInvoiceFormProps) {
+export function EditInvoiceForm({ invoice, clients, taxRates, currency = 'USD' }: EditInvoiceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Warn before leaving with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -86,73 +71,69 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // Form state
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [clientId, setClientId] = useState('');
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
-  const [dueDate, setDueDate] = useState(() => {
-    const date = new Date();
-    date.setDate(date.getDate() + 30);
-    return date.toISOString().split('T')[0] ?? date.toISOString().slice(0, 10);
-  });
-  const defaultTaxRate = taxRates.find(t => t.isDefault && t.isActive);
-  const [taxRate, setTaxRate] = useState(defaultTaxRate ? String(defaultTaxRate.rate) : '0');
-  const [notes, setNotes] = useState(defaultNotes);
-  const [terms, setTerms] = useState(defaultTerms);
-  const [internalNotes, setInternalNotes] = useState('');
+  // Derive tax rate from first line item's tax rate (all items share same rate in current UI)
+  const existingTaxRate = invoice.lineItems[0]?.taxRate;
 
-  const [lineItems, setLineItems] = useState<LineItem[]>([
-    { id: '1', name: '', description: '', quantity: 1, rate: 0 }
-  ]);
+  // Form state - pre-populated from invoice
+  const [projectId, setProjectId] = useState<string | null>(invoice.projectId);
+  const [title, setTitle] = useState(invoice.title);
+  const [dueDate, setDueDate] = useState(invoice.dueDate);
+  const [taxRate, setTaxRate] = useState(existingTaxRate ? String(existingTaxRate) : '0');
+  const [notes, setNotes] = useState(invoice.notes);
+  const [terms, setTerms] = useState(invoice.terms);
+  const [internalNotes, setInternalNotes] = useState(invoice.internalNotes);
+
+  const [lineItems, setLineItems] = useState<LineItem[]>(
+    invoice.lineItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description || '',
+      quantity: item.quantity,
+      rate: item.rate,
+      taxRate: item.taxRate ?? undefined,
+    }))
+  );
 
   const addLineItem = () => {
     setHasUnsavedChanges(true);
     setLineItems([
       ...lineItems,
-      { id: Date.now().toString(), name: '', description: '', quantity: 1, rate: 0 }
+      { id: Date.now().toString(), name: '', description: '', quantity: 1, rate: 0 },
     ]);
   };
 
   const removeLineItem = (id: string) => {
     if (lineItems.length > 1) {
-      setLineItems(lineItems.filter(item => item.id !== id));
+      setHasUnsavedChanges(true);
+      setLineItems(lineItems.filter((item) => item.id !== id));
     }
   };
 
   const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
     setHasUnsavedChanges(true);
-    setLineItems(lineItems.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setLineItems(lineItems.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   };
 
   // Calculate totals
-  const subtotal = lineItems.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+  const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
   const taxAmount = subtotal * (parseFloat(taxRate) / 100);
   const total = subtotal + taxAmount;
 
-  const selectedClient = clients.find(c => c.id === clientId);
+  const selectedClient = clients.find((c) => c.id === invoice.clientId);
 
   const handleSubmit = async () => {
-    if (!clientId) {
-      toast.error('Please select a client');
-      return;
-    }
-
-    if (lineItems.some(item => !item.name)) {
+    if (lineItems.some((item) => !item.name)) {
       toast.error('Please fill in all line item names');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await createInvoice({
-        clientId,
+      const result = await updateInvoice(invoice.id, {
         projectId,
         title: title || 'Invoice',
         dueDate,
-        lineItems: lineItems.map(item => ({
+        lineItems: lineItems.map((item) => ({
           name: item.name,
           description: item.description || undefined,
           quantity: item.quantity,
@@ -165,11 +146,14 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
       });
 
       if (result.success) {
-        toast.success('Invoice created successfully');
-        router.push('/invoices');
+        setHasUnsavedChanges(false);
+        toast.success('Invoice updated successfully');
+        router.push(`/invoices/${invoice.id}`);
+      } else {
+        toast.error(result.error || 'Failed to update invoice');
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to create invoice';
+      const message = error instanceof Error ? error.message : 'Failed to update invoice';
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -182,20 +166,21 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/invoices">
+            <Link href={`/invoices/${invoice.id}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">New Invoice</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Edit Invoice</h1>
+            <p className="text-sm text-muted-foreground">{invoice.invoiceNumber}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push('/invoices')}>
+          <Button variant="outline" onClick={() => router.push(`/invoices/${invoice.id}`)}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? 'Creating...' : 'Create Invoice'}
+            {isLoading ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </div>
@@ -204,71 +189,29 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left - Form */}
         <div className="space-y-6">
-          {/* Logo Upload */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base">Business Logo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LogoUpload value={logoUrl} onChange={setLogoUrl} />
-            </CardContent>
-          </Card>
-
           {/* Invoice Details */}
           <Card>
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Invoice Details</CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8">
-                      Options
-                      <ChevronDown className="ml-1 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem disabled className="text-muted-foreground">Add custom field (coming soon)</DropdownMenuItem>
-                    <DropdownMenuItem disabled className="text-muted-foreground">Set default values (coming soon)</DropdownMenuItem>
-                    <DropdownMenuItem disabled className="text-muted-foreground">Import from template (coming soon)</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <CardTitle className="text-base">Invoice Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="client">Customer <span className="text-destructive">*</span></Label>
-                <Select value={clientId} onValueChange={(value) => {
-                  setClientId(value);
-                  setProjectId(null);
-                }}>
-                  <SelectTrigger id="client">
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.length === 0 ? (
-                      <SelectItem value="_none" disabled>No clients found</SelectItem>
-                    ) : (
-                      clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name}{client.company ? ` (${client.company})` : ''}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <Label>Customer</Label>
+                <Input value={selectedClient?.name || 'Unknown Client'} disabled />
                 <p className="text-xs text-muted-foreground mt-1">
-                  <Link href="/clients/new" className="text-primary hover:underline">
-                    + Add new client
-                  </Link>
+                  Client cannot be changed after creation
                 </p>
               </div>
 
               <div>
                 <Label>Project (Optional)</Label>
                 <ProjectSelector
-                  clientId={clientId || null}
+                  clientId={invoice.clientId}
                   value={projectId}
-                  onChange={setProjectId}
+                  onChange={(val) => {
+                    setProjectId(val);
+                    setHasUnsavedChanges(true);
+                  }}
                 />
               </div>
 
@@ -279,27 +222,38 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                     id="dueDate"
                     type="date"
                     value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
+                    onChange={(e) => {
+                      setDueDate(e.target.value);
+                      setHasUnsavedChanges(true);
+                    }}
                   />
                 </div>
                 <div>
                   <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                  <Input id="invoiceNumber" placeholder="Auto-generated" disabled />
+                  <Input id="invoiceNumber" value={invoice.invoiceNumber} disabled />
                 </div>
                 <div>
                   <Label htmlFor="taxRate">Tax Rate</Label>
-                  <Select value={taxRate} onValueChange={setTaxRate}>
+                  <Select
+                    value={taxRate}
+                    onValueChange={(val) => {
+                      setTaxRate(val);
+                      setHasUnsavedChanges(true);
+                    }}
+                  >
                     <SelectTrigger id="taxRate">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="0">0% - No Tax</SelectItem>
-                      {taxRates.filter(t => t.isActive).map((tr) => (
-                        <SelectItem key={tr.id} value={String(tr.rate)}>
-                          {tr.rate}% - {tr.name}
-                        </SelectItem>
-                      ))}
-                      {taxRates.filter(t => t.isActive).length === 0 && (
+                      {taxRates
+                        .filter((t) => t.isActive)
+                        .map((tr) => (
+                          <SelectItem key={tr.id} value={String(tr.rate)}>
+                            {tr.rate}% - {tr.name}
+                          </SelectItem>
+                        ))}
+                      {taxRates.filter((t) => t.isActive).length === 0 && (
                         <>
                           <SelectItem value="5">5%</SelectItem>
                           <SelectItem value="10">10%</SelectItem>
@@ -313,12 +267,15 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
               </div>
 
               <div>
-                <Label htmlFor="title">Invoice Title (Optional)</Label>
+                <Label htmlFor="title">Invoice Title</Label>
                 <Input
                   id="title"
                   placeholder="e.g., Website Development - Phase 1"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
                 />
               </div>
             </CardContent>
@@ -327,12 +284,7 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
           {/* Line Items */}
           <Card>
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Items</CardTitle>
-                <Button variant="outline" size="sm" disabled className="text-muted-foreground">
-                  Import from Rate Cards (Coming Soon)
-                </Button>
-              </div>
+              <CardTitle className="text-base">Items</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -347,7 +299,6 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
 
                 <Separator />
 
-                {/* Items */}
                 {lineItems.map((item) => (
                   <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
                     <div className="col-span-5">
@@ -371,7 +322,9 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                         placeholder="0.00"
                         className="text-right"
                         value={item.rate || ''}
-                        onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                        onChange={(e) =>
+                          updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)
+                        }
                       />
                     </div>
                     <div className="col-span-2">
@@ -381,7 +334,9 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                         placeholder="1"
                         className="text-right"
                         value={item.quantity}
-                        onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 1)
+                        }
                       />
                     </div>
                     <div className="col-span-2 text-right py-2 font-medium">
@@ -421,7 +376,10 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                   id="notes"
                   placeholder="Any additional notes for the client..."
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(e) => {
+                    setNotes(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
                 />
               </div>
               <div>
@@ -430,7 +388,10 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                   id="terms"
                   placeholder="Payment terms, conditions, etc..."
                   value={terms}
-                  onChange={(e) => setTerms(e.target.value)}
+                  onChange={(e) => {
+                    setTerms(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
                 />
               </div>
               <div>
@@ -440,7 +401,10 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                   id="internalNotes"
                   placeholder="Internal notes, reminders, etc..."
                   value={internalNotes}
-                  onChange={(e) => setInternalNotes(e.target.value)}
+                  onChange={(e) => {
+                    setInternalNotes(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
                 />
               </div>
             </CardContent>
@@ -449,43 +413,16 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
 
         {/* Right - Preview */}
         <div className="space-y-4">
-          {/* Preview Mode Tabs */}
-          <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as PreviewMode)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="payment" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Payment Page
-              </TabsTrigger>
-              <TabsTrigger value="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Email Preview
-              </TabsTrigger>
-              <TabsTrigger value="pdf" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Invoice PDF
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Preview Card */}
           <Card className="sticky top-4">
-            <CardContent className="p-6">
+            <CardHeader>
+              <CardTitle className="text-base">Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="rounded-lg border bg-card p-6 shadow-sm">
-                {/* Logo */}
-                {logoUrl && (
-                  <div className="flex justify-center mb-4">
-                    <img
-                      src={logoUrl}
-                      alt="Business Logo"
-                      className="h-12 w-auto object-contain"
-                    />
-                  </div>
-                )}
-
                 {/* Invoice Header */}
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-bold">{title || 'Invoice'}</h2>
-                  <p className="text-sm text-muted-foreground">Invoice # (auto-generated)</p>
+                  <p className="text-sm text-muted-foreground">{invoice.invoiceNumber}</p>
                   <p className="text-2xl font-bold mt-2">{formatMoney(total, currency)}</p>
                   <p className="text-sm text-muted-foreground">
                     Due on {new Date(dueDate).toLocaleDateString()}
@@ -496,9 +433,9 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
 
                 {/* Client Info */}
                 <div className="mb-6">
-                  <p className="font-medium">{selectedClient?.name || 'Client Name'}</p>
+                  <p className="font-medium">{selectedClient?.name || 'Client'}</p>
                   <p className="text-sm text-muted-foreground">
-                    {selectedClient?.company || 'Select a client above'}
+                    {selectedClient?.company || ''}
                   </p>
                 </div>
 
@@ -506,7 +443,9 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                 <div className="space-y-2 mb-6">
                   {lineItems.map((item) => (
                     <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.name || 'Untitled Item'} × {item.quantity}</span>
+                      <span>
+                        {item.name || 'Untitled Item'} x {item.quantity}
+                      </span>
                       <span>{formatMoney(item.quantity * item.rate, currency)}</span>
                     </div>
                   ))}
@@ -530,10 +469,6 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                     <span>Total</span>
                     <span>{formatMoney(total, currency)}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-primary">
-                    <span>Balance Due</span>
-                    <span>{formatMoney(total, currency)}</span>
-                  </div>
                 </div>
 
                 {/* Notes & Terms in Preview */}
@@ -547,22 +482,6 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                   <div className="mt-4">
                     <h3 className="mb-1 text-sm font-semibold">Terms & Conditions</h3>
                     <p className="text-sm text-muted-foreground">{terms}</p>
-                  </div>
-                )}
-
-                {previewMode === 'payment' && (
-                  <Button className="w-full mt-6" disabled variant="secondary">
-                    Pay Now (available after sending)
-                  </Button>
-                )}
-                {previewMode === 'email' && (
-                  <div className="mt-6 rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                    Email preview will be available after the invoice is created and sent.
-                  </div>
-                )}
-                {previewMode === 'pdf' && (
-                  <div className="mt-6 rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                    PDF download will be available after the invoice is created.
                   </div>
                 )}
               </div>

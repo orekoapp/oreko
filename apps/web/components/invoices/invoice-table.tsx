@@ -74,7 +74,7 @@ export function InvoiceTable({ invoices, isLoading = false }: InvoiceTableProps)
 
   const handleDownload = (invoice: InvoiceListItem) => {
     // Open PDF in new tab
-    window.open(`/api/pdf/invoice/${invoice.id}`, '_blank');
+    window.open(`/api/download/invoice/${invoice.id}`, '_blank');
   };
 
   const columns = createInvoiceColumns({
