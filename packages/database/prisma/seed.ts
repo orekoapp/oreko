@@ -812,6 +812,14 @@ async function seedDemoWorkspace() {
   });
   console.log(`Created/Updated demo workspace: ${demoWorkspace.name}`);
 
+  // Clean up stale workspace memberships for demo user (remove from non-demo workspaces)
+  await prisma.workspaceMember.deleteMany({
+    where: {
+      userId: demoUser.id,
+      workspaceId: { not: demoWorkspace.id },
+    },
+  });
+
   // Add demo user as workspace member
   await prisma.workspaceMember.upsert({
     where: {
