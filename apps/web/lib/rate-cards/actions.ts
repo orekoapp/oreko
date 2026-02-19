@@ -50,8 +50,12 @@ export async function getRateCards(filter?: RateCardFilter): Promise<PaginatedRa
     ...(filter?.categoryId && { categoryId: filter.categoryId }),
     ...(filter?.pricingType && { pricingType: filter.pricingType }),
     ...(filter?.isActive !== undefined && { isActive: filter.isActive }),
-    ...(filter?.minRate !== undefined && { rate: { gte: filter.minRate } }),
-    ...(filter?.maxRate !== undefined && { rate: { lte: filter.maxRate } }),
+    ...((filter?.minRate !== undefined || filter?.maxRate !== undefined) && {
+      rate: {
+        ...(filter?.minRate !== undefined && { gte: filter.minRate }),
+        ...(filter?.maxRate !== undefined && { lte: filter.maxRate }),
+      },
+    }),
   };
 
   const orderBy: Prisma.RateCardOrderByWithRelationInput = filter?.sortBy

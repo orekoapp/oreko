@@ -161,6 +161,6 @@ export function getDaysUntilDue(dueDate: string): number {
  * Check if invoice is overdue
  */
 export function isInvoiceOverdue(dueDate: string, status: string): boolean {
-  if (status === 'paid' || status === 'voided') return false;
+  if (status === 'paid' || status === 'voided' || status === 'draft') return false;
   return getDaysUntilDue(dueDate) < 0;
 }

@@ -32,7 +32,10 @@ export function NumberSequenceForm({
   const previewNumber = React.useMemo(() => {
     const nextValue = currentValue + 1;
     const paddedNumber = String(nextValue).padStart(padding, '0');
-    return `${prefix || ''}${paddedNumber}${suffix || ''}`;
+    const cleanPrefix = (prefix || '').replace(/-$/, '');
+    const parts = [cleanPrefix, paddedNumber];
+    if (suffix) parts.push(suffix);
+    return parts.join('-');
   }, [prefix, suffix, currentValue, padding]);
 
   const handleSave = async () => {

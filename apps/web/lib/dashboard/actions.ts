@@ -773,34 +773,34 @@ export async function getMonthlyComparisonData(
   const now = new Date();
   const rangeStart = startOfDay(new Date(subMonths(now, months - 1).getFullYear(), subMonths(now, months - 1).getMonth(), 1));
 
-  // Run all 4 grouped queries in parallel
+  // Run all 4 grouped queries in parallel (using actual DB column names via @map)
   const [revenueByMonth, quotesByMonth, invoicesByMonth, clientsByMonth] = await Promise.all([
     prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
-      SELECT to_char("paidAt", 'YYYY-MM') as month_key, COALESCE(SUM("amountPaid"), 0)::float as total
-      FROM "Invoice"
-      WHERE "workspaceId" = ${workspaceId} AND status = 'paid' AND "deletedAt" IS NULL
-        AND "paidAt" >= ${rangeStart}
+      SELECT to_char(paid_at, 'YYYY-MM') as month_key, COALESCE(SUM(amount_paid), 0)::float as total
+      FROM invoices
+      WHERE workspace_id = ${workspaceId} AND status = 'paid' AND deleted_at IS NULL
+        AND paid_at >= ${rangeStart}
       GROUP BY month_key
     `,
-    prisma.$queryRaw<Array<{ month_key: string; count: bigint }>>`
-      SELECT to_char("createdAt", 'YYYY-MM') as month_key, COUNT(*)::bigint as count
-      FROM "Quote"
-      WHERE "workspaceId" = ${workspaceId} AND "deletedAt" IS NULL
-        AND "createdAt" >= ${rangeStart}
+    prisma.$queryRaw<Array<{ month_key: string; count: number }>>`
+      SELECT to_char(created_at, 'YYYY-MM') as month_key, COUNT(*)::int as count
+      FROM quotes
+      WHERE workspace_id = ${workspaceId} AND deleted_at IS NULL
+        AND created_at >= ${rangeStart}
       GROUP BY month_key
     `,
-    prisma.$queryRaw<Array<{ month_key: string; count: bigint }>>`
-      SELECT to_char("createdAt", 'YYYY-MM') as month_key, COUNT(*)::bigint as count
-      FROM "Invoice"
-      WHERE "workspaceId" = ${workspaceId} AND "deletedAt" IS NULL
-        AND "createdAt" >= ${rangeStart}
+    prisma.$queryRaw<Array<{ month_key: string; count: number }>>`
+      SELECT to_char(created_at, 'YYYY-MM') as month_key, COUNT(*)::int as count
+      FROM invoices
+      WHERE workspace_id = ${workspaceId} AND deleted_at IS NULL
+        AND created_at >= ${rangeStart}
       GROUP BY month_key
     `,
-    prisma.$queryRaw<Array<{ month_key: string; count: bigint }>>`
-      SELECT to_char("createdAt", 'YYYY-MM') as month_key, COUNT(*)::bigint as count
-      FROM "Client"
-      WHERE "workspaceId" = ${workspaceId} AND "deletedAt" IS NULL
-        AND "createdAt" >= ${rangeStart}
+    prisma.$queryRaw<Array<{ month_key: string; count: number }>>`
+      SELECT to_char(created_at, 'YYYY-MM') as month_key, COUNT(*)::int as count
+      FROM clients
+      WHERE workspace_id = ${workspaceId} AND deleted_at IS NULL
+        AND created_at >= ${rangeStart}
       GROUP BY month_key
     `,
   ]);
@@ -920,10 +920,10 @@ export async function getRevenueForecast(
   const rangeStart = startOfDay(new Date(subMonths(now, historicalMonths - 1).getFullYear(), subMonths(now, historicalMonths - 1).getMonth(), 1));
 
   const revenueByMonth = await prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
-    SELECT to_char("paidAt", 'YYYY-MM') as month_key, COALESCE(SUM("amountPaid"), 0)::float as total
-    FROM "Invoice"
-    WHERE "workspaceId" = ${workspaceId} AND status = 'paid' AND "deletedAt" IS NULL
-      AND "paidAt" >= ${rangeStart}
+    SELECT to_char(paid_at, 'YYYY-MM') as month_key, COALESCE(SUM(amount_paid), 0)::float as total
+    FROM invoices
+    WHERE workspace_id = ${workspaceId} AND status = 'paid' AND deleted_at IS NULL
+      AND paid_at >= ${rangeStart}
     GROUP BY month_key
   `;
 

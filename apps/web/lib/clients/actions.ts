@@ -337,7 +337,9 @@ export async function getClientActivity(clientId: string): Promise<ClientActivit
       });
     }
 
-    if (invoice.status === 'overdue') {
+    // Compute overdue at runtime (status 'overdue' is never stored in DB)
+    const isOverdue = invoice.status !== 'paid' && invoice.status !== 'voided' && invoice.status !== 'draft' && invoice.dueDate < new Date();
+    if (isOverdue) {
       activities.push({
         id: `invoice-overdue-${invoice.id}`,
         type: 'invoice_overdue',

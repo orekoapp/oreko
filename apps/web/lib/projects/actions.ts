@@ -379,6 +379,7 @@ export async function getProjectStats(projectId: string) {
           total: true,
           amountDue: true,
           amountPaid: true,
+          dueDate: true,
         },
       },
     },
@@ -411,7 +412,7 @@ export async function getProjectStats(projectId: string) {
       ['draft', 'sent', 'viewed'].includes(i.status)
     ).length,
     paid: project.invoices.filter((i) => i.status === 'paid').length,
-    overdue: project.invoices.filter((i) => i.status === 'overdue').length,
+    overdue: project.invoices.filter((i) => i.status !== 'paid' && i.status !== 'voided' && i.status !== 'draft' && i.dueDate && new Date(i.dueDate) < new Date()).length,
     partial: project.invoices.filter((i) => i.status === 'partial').length,
     totalValue: project.invoices.reduce(
       (sum, i) => sum + Number(i.total),

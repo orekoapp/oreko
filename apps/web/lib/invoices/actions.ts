@@ -501,6 +501,7 @@ export async function getInvoices(filters?: {
     const isOverdue =
       invoice.status !== 'paid' &&
       invoice.status !== 'voided' &&
+      invoice.status !== 'draft' &&
       dueDate < now;
 
     return {
