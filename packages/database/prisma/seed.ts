@@ -917,7 +917,7 @@ async function seedDemoWorkspace() {
   for (const clientData of demoClients) {
     await prisma.client.upsert({
       where: { id: clientData.id },
-      update: { name: clientData.name, email: clientData.email, company: clientData.company, deletedAt: null },
+      update: { workspaceId: demoWorkspace.id, name: clientData.name, email: clientData.email, company: clientData.company, deletedAt: null },
       create: {
         id: clientData.id,
         workspaceId: demoWorkspace.id,
