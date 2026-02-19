@@ -147,7 +147,7 @@ async function main() {
 
     const client = await prisma.client.upsert({
       where: { id: clientId },
-      update: { name: clientData.name, email: clientData.email, company: clientData.company },
+      update: { name: clientData.name, email: clientData.email, company: clientData.company, deletedAt: null },
       create: {
         id: clientId,
         workspaceId: workspace.id,
@@ -368,6 +368,7 @@ async function main() {
         viewedAt,
         acceptedAt,
         declinedAt,
+        deletedAt: null,
       },
       create: {
         workspaceId: workspace.id,
@@ -456,6 +457,7 @@ async function main() {
           issueDate: convertedInvIssueDate,
           dueDate: convertedInvDueDate,
           sentAt: convertedInvSentAt,
+          deletedAt: null,
         },
         create: {
           workspaceId: workspace.id,
@@ -580,6 +582,7 @@ async function main() {
         viewedAt: invViewedAt,
         paidAt: invPaidAt,
         voidedAt: invVoidedAt,
+        deletedAt: null,
       },
       create: {
         workspaceId: workspace.id,
@@ -914,7 +917,7 @@ async function seedDemoWorkspace() {
   for (const clientData of demoClients) {
     await prisma.client.upsert({
       where: { id: clientData.id },
-      update: { name: clientData.name, email: clientData.email, company: clientData.company },
+      update: { name: clientData.name, email: clientData.email, company: clientData.company, deletedAt: null },
       create: {
         id: clientData.id,
         workspaceId: demoWorkspace.id,
@@ -1076,6 +1079,7 @@ async function seedDemoWorkspace() {
         viewedAt: quoteData.viewedAt ?? null,
         acceptedAt: quoteData.acceptedAt ?? null,
         declinedAt: quoteData.declinedAt ?? null,
+        deletedAt: null,
       },
       create: {
         id: quoteData.id,
@@ -1249,6 +1253,7 @@ async function seedDemoWorkspace() {
         sentAt: invoiceData.sentAt ?? null,
         viewedAt: invoiceData.viewedAt ?? null,
         paidAt: invoiceData.paidAt ?? null,
+        deletedAt: null,
       },
       create: {
         id: invoiceData.id,
