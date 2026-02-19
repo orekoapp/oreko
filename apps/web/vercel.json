@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-  "buildCommand": "cd ../.. && pnpm --filter @quotecraft/database generate && pnpm --filter @quotecraft/database db:push --accept-data-loss && cd apps/web && pnpm build",
+  "buildCommand": "cd ../.. && pnpm --filter @quotecraft/database generate && cd packages/database && npx prisma db push --accept-data-loss && cd ../../apps/web && pnpm build",
   "framework": "nextjs",
   "regions": ["iad1"],
   "crons": [
