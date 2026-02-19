@@ -52,6 +52,7 @@ export function SalesPipelineSection({
     { status: 'Accepted', count: quoteStatusCounts.accepted, color: '#22C55E' },
     { status: 'Declined', count: quoteStatusCounts.declined, color: '#EF4444' },
     { status: 'Expired', count: quoteStatusCounts.expired, color: '#F97316' },
+    { status: 'Converted', count: quoteStatusCounts.converted, color: '#A855F7' },
   ], [quoteStatusCounts]);
 
   const totalQuotes = conversionFunnel.quotesCreated;
@@ -132,7 +133,7 @@ export function SalesPipelineSection({
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
               >
-                <XAxis type="number" tickLine={false} axisLine={false} />
+                <XAxis type="number" tickLine={false} axisLine={false} allowDecimals={false} />
                 <YAxis
                   dataKey="status"
                   type="category"

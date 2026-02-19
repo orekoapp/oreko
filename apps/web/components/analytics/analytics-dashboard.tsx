@@ -259,7 +259,7 @@ export function AnalyticsDashboard({
         />
         <StatCard
           title="Conversion Rate"
-          value={`${stats.conversionRate}%`}
+          value={`${stats.conversionRate.toFixed(1)}%`}
           icon={TrendingUp}
           description="Quotes to invoices"
         />
@@ -303,8 +303,8 @@ export function AnalyticsDashboard({
         <ConversionRateCard
           data={{
             conversionRate: stats.conversionRate,
-            acceptedCount: quoteStatusCounts.accepted,
-            totalSentCount: quoteStatusCounts.sent + quoteStatusCounts.viewed + quoteStatusCounts.accepted + quoteStatusCounts.declined,
+            acceptedCount: quoteStatusCounts.accepted + quoteStatusCounts.converted,
+            totalSentCount: quoteStatusCounts.sent + quoteStatusCounts.viewed + quoteStatusCounts.accepted + quoteStatusCounts.declined + quoteStatusCounts.expired + quoteStatusCounts.converted,
           }}
           conversionFunnel={conversionFunnel}
         />

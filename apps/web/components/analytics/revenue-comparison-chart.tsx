@@ -76,7 +76,11 @@ export function RevenueComparisonChart({ data: propData }: RevenueComparisonChar
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 11 }}
-                tickFormatter={(value) => `$${value / 1000}k`}
+                tickFormatter={(value) => {
+                  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+                  if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+                  return `$${value}`;
+                }}
                 width={45}
               />
               <Tooltip

@@ -191,7 +191,7 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
                 <>
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Amount Paid</span>
-                    <span>-{formatCurrency(invoice.totals.amountPaid, invoice.settings.currency)}</span>
+                    <span>{formatCurrency(invoice.totals.amountPaid, invoice.settings.currency)}</span>
                   </div>
                   <div className={`flex justify-between border-t pt-2 font-bold ${invoice.totals.amountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                     <span>Amount Due</span>

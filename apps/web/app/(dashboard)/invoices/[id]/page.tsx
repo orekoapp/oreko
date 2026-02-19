@@ -205,7 +205,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                       <>
                         <div className="flex justify-between text-sm text-green-600">
                           <span>Amount Paid</span>
-                          <span>-{formatCurrency(invoice.totals.amountPaid, invoice.settings.currency)}</span>
+                          <span>{formatCurrency(invoice.totals.amountPaid, invoice.settings.currency)}</span>
                         </div>
                         <div className={`flex justify-between border-t pt-2 font-bold ${invoice.totals.amountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                           <span>Amount Due</span>
@@ -371,12 +371,12 @@ async function InvoiceActivity({ invoiceId }: { invoiceId: string }) {
   };
 
   const getEventLabel = (eventType: string) => {
-    if (eventType === 'status_changed_to_sent') return 'Invoice sent';
-    if (eventType === 'status_changed_to_viewed') return 'Invoice viewed';
-    if (eventType === 'status_changed_to_paid') return 'Invoice paid';
-    if (eventType === 'status_changed_to_partial') return 'Partial payment recorded';
-    if (eventType === 'status_changed_to_voided') return 'Invoice voided';
-    if (eventType === 'status_changed_to_overdue') return 'Invoice overdue';
+    if (eventType === 'sent' || eventType === 'status_changed_to_sent') return 'Invoice sent';
+    if (eventType === 'viewed' || eventType === 'status_changed_to_viewed') return 'Invoice viewed';
+    if (eventType === 'paid' || eventType === 'status_changed_to_paid') return 'Invoice paid';
+    if (eventType === 'partial' || eventType === 'status_changed_to_partial') return 'Partial payment recorded';
+    if (eventType === 'voided' || eventType === 'status_changed_to_voided') return 'Invoice voided';
+    if (eventType === 'overdue' || eventType === 'status_changed_to_overdue') return 'Invoice overdue';
     if (eventType.includes('payment')) return 'Payment recorded';
     if (eventType.includes('created')) return 'Invoice created';
     return eventType.replace(/_/g, ' ').replace(/status changed to /i, 'Status changed to ');

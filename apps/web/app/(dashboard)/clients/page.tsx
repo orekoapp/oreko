@@ -97,7 +97,7 @@ async function ClientStats() {
         <CardContent className="flex items-center gap-3 p-4">
           <Receipt className="h-8 w-8 text-muted-foreground" />
           <div>
-            <p className="text-sm text-muted-foreground">Unpaid Invoices</p>
+            <p className="text-sm text-muted-foreground">Clients with Unpaid</p>
             <p className="text-2xl font-bold">{stats.withUnpaidInvoices}</p>
           </div>
         </CardContent>

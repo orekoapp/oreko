@@ -524,7 +524,7 @@ export async function getAnalyticsStats(): Promise<AnalyticsStats> {
       where: {
         workspaceId,
         deletedAt: null,
-        status: 'accepted',
+        status: { in: ['accepted', 'converted'] },
       },
       _avg: { total: true },
     }),
@@ -603,12 +603,13 @@ export async function getConversionFunnelData(
         ...(dateFilter && { acceptedAt: dateFilter }),
       },
     }),
-    // Invoices created FROM quotes (part of the quote->invoice pipeline)
+    // Invoices created FROM accepted/converted quotes (part of the quote->invoice pipeline)
     prisma.invoice.count({
       where: {
         workspaceId,
         deletedAt: null,
         quoteId: { not: null },
+        quote: { status: { in: ['accepted', 'converted'] } },
         createdAt: dateFilter,
       },
     }),

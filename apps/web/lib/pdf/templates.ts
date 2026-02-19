@@ -729,7 +729,7 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
                 ? `
               <div class="totals-row">
                 <span class="totals-label">Amount Paid</span>
-                <span class="totals-value" style="color: #047857;">-${formatCurrency(data.totals.amountPaid, data.currency)}</span>
+                <span class="totals-value" style="color: #047857;">${formatCurrency(data.totals.amountPaid, data.currency)}</span>
               </div>
             `
                 : ''

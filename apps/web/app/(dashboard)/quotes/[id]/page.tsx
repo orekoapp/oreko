@@ -71,7 +71,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               Download PDF
             </a>
           </Button>
-          {!['converted', 'declined', 'accepted'].includes(quote.status) && (
+          {quote.status === 'draft' && (
             <Button variant="outline" size="sm" asChild>
               <Link href={`/quotes/${id}/builder`}>
                 <Edit className="mr-2 h-4 w-4" />
@@ -333,6 +333,7 @@ async function QuoteActivity({ quoteId }: { quoteId: string }) {
     if (eventType.includes('viewed')) return 'Quote viewed';
     if (eventType.includes('created')) return 'Quote created';
     if (eventType.includes('expired')) return 'Quote expired';
+    if (eventType.includes('converted')) return 'Quote converted to invoice';
     return eventType.replace(/_/g, ' ').replace(/status changed to /i, 'Status changed to ');
   };
 
