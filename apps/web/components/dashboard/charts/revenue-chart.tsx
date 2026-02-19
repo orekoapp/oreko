@@ -86,7 +86,7 @@ export function RevenueChart({
   return (
     <ChartCard
       title="Revenue Trend"
-      description={isEmpty ? undefined : `Total: ${formatFullCurrency(totalRevenue)}`}
+      description={isEmpty ? undefined : `Last ${PERIOD_OPTIONS.find(o => o.value === period)?.label ?? period}: ${formatFullCurrency(totalRevenue)}`}
       className={className}
       isLoading={isLoading}
       isEmpty={isEmpty}

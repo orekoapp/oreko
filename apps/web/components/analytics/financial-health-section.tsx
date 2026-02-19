@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { DateRange } from 'react-day-picker';
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,7 +9,6 @@ import { cn } from '@/lib/utils';
 import type { PaymentAgingData } from '@/lib/dashboard/types';
 
 interface FinancialHealthSectionProps {
-  dateRange?: DateRange;
   outstandingAmount: number;
   overdueAmount: number;
   revenueThisMonth: number;
@@ -28,7 +26,6 @@ function formatCurrency(amount: number): string {
 }
 
 export function FinancialHealthSection({
-  dateRange,
   outstandingAmount,
   overdueAmount,
   revenueThisMonth,

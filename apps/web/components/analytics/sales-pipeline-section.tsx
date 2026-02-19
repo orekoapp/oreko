@@ -13,14 +13,12 @@ import {
   Pie,
   Legend,
 } from 'recharts';
-import { DateRange } from 'react-day-picker';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { QuoteStatusCounts, ConversionFunnelData } from '@/lib/dashboard/types';
 
 interface SalesPipelineSectionProps {
-  dateRange?: DateRange;
   conversionRate: number;
   avgDealValue: number;
   quoteStatusCounts: QuoteStatusCounts;
@@ -38,7 +36,6 @@ function formatCurrency(amount: number): string {
 }
 
 export function SalesPipelineSection({
-  dateRange,
   conversionRate,
   avgDealValue,
   quoteStatusCounts,

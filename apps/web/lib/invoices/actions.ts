@@ -41,26 +41,12 @@ async function getActiveWorkspace() {
  * Uses atomic increment on NumberSequence table to prevent race conditions
  */
 async function generateInvoiceNumber(workspaceId: string): Promise<string> {
+  // Use upsert to atomically create or increment the sequence (race-condition safe)
   const result = await prisma.$transaction(async (tx) => {
-    const sequence = await tx.numberSequence.findFirst({
-      where: { workspaceId, type: 'invoice' },
-    });
-
-    if (sequence) {
-      const updated = await tx.numberSequence.update({
-        where: { id: sequence.id },
-        data: { currentValue: { increment: 1 } },
-      });
-      return {
-        prefix: updated.prefix || 'INV',
-        suffix: updated.suffix,
-        value: updated.currentValue,
-        padding: updated.padding,
-      };
-    }
-
-    const created = await tx.numberSequence.create({
-      data: {
+    const updated = await tx.numberSequence.upsert({
+      where: { workspaceId_type: { workspaceId, type: 'invoice' } },
+      update: { currentValue: { increment: 1 } },
+      create: {
         workspaceId,
         type: 'invoice',
         prefix: 'INV',
@@ -69,10 +55,10 @@ async function generateInvoiceNumber(workspaceId: string): Promise<string> {
       },
     });
     return {
-      prefix: created.prefix || 'INV',
-      suffix: created.suffix,
-      value: created.currentValue,
-      padding: created.padding,
+      prefix: updated.prefix || 'INV',
+      suffix: updated.suffix,
+      value: updated.currentValue,
+      padding: updated.padding,
     };
   });
 

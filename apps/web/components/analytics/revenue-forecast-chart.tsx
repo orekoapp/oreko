@@ -10,14 +10,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
-import { DateRange } from 'react-day-picker';
+
 import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { ForecastDataPoint } from '@/lib/dashboard/types';
 
 interface RevenueForecastChartProps {
-  dateRange?: DateRange;
   forecastData?: ForecastDataPoint[];
 }
 
@@ -30,7 +29,7 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function RevenueForecastChart({ dateRange, forecastData }: RevenueForecastChartProps) {
+export function RevenueForecastChart({ forecastData }: RevenueForecastChartProps) {
   const data = useMemo(() => {
     if (!forecastData || forecastData.length === 0) {
       return [];

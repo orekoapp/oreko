@@ -765,60 +765,64 @@ export async function getClientDistributionData(
   return result;
 }
 
-// Get monthly comparison data
+// Get monthly comparison data (optimized: 4 queries instead of 4*months)
 export async function getMonthlyComparisonData(
   months: number = 12
 ): Promise<MonthlyComparisonData[]> {
   const { workspaceId } = await getCurrentUserWorkspace();
   const now = new Date();
+  const rangeStart = startOfDay(new Date(subMonths(now, months - 1).getFullYear(), subMonths(now, months - 1).getMonth(), 1));
 
+  // Run all 4 grouped queries in parallel
+  const [revenueByMonth, quotesByMonth, invoicesByMonth, clientsByMonth] = await Promise.all([
+    prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
+      SELECT to_char("paidAt", 'YYYY-MM') as month_key, COALESCE(SUM("amountPaid"), 0)::float as total
+      FROM "Invoice"
+      WHERE "workspaceId" = ${workspaceId} AND status = 'paid' AND "deletedAt" IS NULL
+        AND "paidAt" >= ${rangeStart}
+      GROUP BY month_key
+    `,
+    prisma.$queryRaw<Array<{ month_key: string; count: bigint }>>`
+      SELECT to_char("createdAt", 'YYYY-MM') as month_key, COUNT(*)::bigint as count
+      FROM "Quote"
+      WHERE "workspaceId" = ${workspaceId} AND "deletedAt" IS NULL
+        AND "createdAt" >= ${rangeStart}
+      GROUP BY month_key
+    `,
+    prisma.$queryRaw<Array<{ month_key: string; count: bigint }>>`
+      SELECT to_char("createdAt", 'YYYY-MM') as month_key, COUNT(*)::bigint as count
+      FROM "Invoice"
+      WHERE "workspaceId" = ${workspaceId} AND "deletedAt" IS NULL
+        AND "createdAt" >= ${rangeStart}
+      GROUP BY month_key
+    `,
+    prisma.$queryRaw<Array<{ month_key: string; count: bigint }>>`
+      SELECT to_char("createdAt", 'YYYY-MM') as month_key, COUNT(*)::bigint as count
+      FROM "Client"
+      WHERE "workspaceId" = ${workspaceId} AND "deletedAt" IS NULL
+        AND "createdAt" >= ${rangeStart}
+      GROUP BY month_key
+    `,
+  ]);
+
+  // Build lookup maps
+  const revenueMap = new Map(revenueByMonth.map(r => [r.month_key, Number(r.total)]));
+  const quotesMap = new Map(quotesByMonth.map(r => [r.month_key, Number(r.count)]));
+  const invoicesMap = new Map(invoicesByMonth.map(r => [r.month_key, Number(r.count)]));
+  const clientsMap = new Map(clientsByMonth.map(r => [r.month_key, Number(r.count)]));
+
+  // Build result for each month
   const result: MonthlyComparisonData[] = [];
-
   for (let i = months - 1; i >= 0; i--) {
     const monthDate = subMonths(now, i);
-    const monthStart = startOfDay(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1));
-    const monthEnd = startOfDay(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1));
-
-    const [revenue, quoteCount, invoiceCount, clientCount] = await Promise.all([
-      prisma.invoice.aggregate({
-        where: {
-          workspaceId,
-          status: 'paid',
-          deletedAt: null,
-          paidAt: { gte: monthStart, lt: monthEnd },
-        },
-        _sum: { amountPaid: true },
-      }),
-      prisma.quote.count({
-        where: {
-          workspaceId,
-          deletedAt: null,
-          createdAt: { gte: monthStart, lt: monthEnd },
-        },
-      }),
-      prisma.invoice.count({
-        where: {
-          workspaceId,
-          deletedAt: null,
-          createdAt: { gte: monthStart, lt: monthEnd },
-        },
-      }),
-      prisma.client.count({
-        where: {
-          workspaceId,
-          deletedAt: null,
-          createdAt: { gte: monthStart, lt: monthEnd },
-        },
-      }),
-    ]);
-
+    const monthKey = format(monthDate, 'yyyy-MM');
     result.push({
       month: format(monthDate, 'MMM yyyy'),
-      monthKey: format(monthDate, 'yyyy-MM'),
-      revenue: toNumber(revenue._sum.amountPaid),
-      quoteCount,
-      invoiceCount,
-      clientCount,
+      monthKey,
+      revenue: revenueMap.get(monthKey) ?? 0,
+      quoteCount: quotesMap.get(monthKey) ?? 0,
+      invoiceCount: invoicesMap.get(monthKey) ?? 0,
+      clientCount: clientsMap.get(monthKey) ?? 0,
     });
   }
 
@@ -912,27 +916,26 @@ export async function getRevenueForecast(
   const { workspaceId } = await getCurrentUserWorkspace();
   const now = new Date();
 
-  // Get historical monthly revenue
-  const historical: ForecastDataPoint[] = [];
+  // Get historical monthly revenue (single query instead of N)
+  const rangeStart = startOfDay(new Date(subMonths(now, historicalMonths - 1).getFullYear(), subMonths(now, historicalMonths - 1).getMonth(), 1));
 
+  const revenueByMonth = await prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
+    SELECT to_char("paidAt", 'YYYY-MM') as month_key, COALESCE(SUM("amountPaid"), 0)::float as total
+    FROM "Invoice"
+    WHERE "workspaceId" = ${workspaceId} AND status = 'paid' AND "deletedAt" IS NULL
+      AND "paidAt" >= ${rangeStart}
+    GROUP BY month_key
+  `;
+
+  const revenueMap = new Map(revenueByMonth.map(r => [r.month_key, Number(r.total)]));
+
+  const historical: ForecastDataPoint[] = [];
   for (let i = historicalMonths - 1; i >= 0; i--) {
     const monthDate = subMonths(now, i);
-    const monthStart = startOfDay(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1));
-    const monthEnd = startOfDay(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1));
-
-    const revenue = await prisma.invoice.aggregate({
-      where: {
-        workspaceId,
-        status: 'paid',
-        deletedAt: null,
-        paidAt: { gte: monthStart, lt: monthEnd },
-      },
-      _sum: { amountPaid: true },
-    });
-
+    const monthKey = format(monthDate, 'yyyy-MM');
     historical.push({
-      date: format(monthDate, 'yyyy-MM'),
-      actual: toNumber(revenue._sum.amountPaid),
+      date: monthKey,
+      actual: revenueMap.get(monthKey) ?? 0,
       isProjection: false,
     });
   }
