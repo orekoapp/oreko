@@ -54,7 +54,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
             >
-              {quote.status}
+              {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
             </span>
           </div>
           <p className="text-muted-foreground">
@@ -71,7 +71,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               Download PDF
             </a>
           </Button>
-          {!['converted', 'declined'].includes(quote.status) && (
+          {!['converted', 'declined', 'accepted'].includes(quote.status) && (
             <Button variant="outline" size="sm" asChild>
               <Link href={`/quotes/${id}/builder`}>
                 <Edit className="mr-2 h-4 w-4" />

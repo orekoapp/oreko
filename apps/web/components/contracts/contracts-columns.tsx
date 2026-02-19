@@ -226,7 +226,7 @@ export function getContractColumns(
                     },
                   ]
                 : []),
-              ...(onDelete
+              ...(isDraft && onDelete
                 ? [
                     {
                       label: 'Delete',

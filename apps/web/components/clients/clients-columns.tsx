@@ -153,18 +153,21 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
     {
       id: 'actions',
       cell: ({ row }) => {
+        const client = row.original;
+        const hasDocuments = (client.totalQuotes ?? 0) > 0 || (client.totalInvoices ?? 0) > 0;
+
         return (
           <DataTableRowActions
             row={row.original}
             onView={onView}
             onEdit={onEdit}
-            onDelete={onDelete}
+            onDelete={!hasDocuments ? onDelete : undefined}
             actions={[
               ...(onView ? [{ label: 'View Details', icon: <User className="mr-2 h-4 w-4" />, onClick: onView }] : []),
               ...(onEdit ? [{ label: 'Edit', icon: <span className="mr-2 h-4 w-4">✏️</span>, onClick: onEdit }] : []),
               ...(onCreateQuote ? [{ label: 'Create Quote', icon: <FileText className="mr-2 h-4 w-4" />, onClick: onCreateQuote, separator: true }] : []),
               ...(onCreateInvoice ? [{ label: 'Create Invoice', icon: <Receipt className="mr-2 h-4 w-4" />, onClick: onCreateInvoice }] : []),
-              ...(onDelete ? [{ label: 'Delete', icon: <span className="mr-2 h-4 w-4">🗑️</span>, onClick: onDelete, variant: 'destructive' as const, separator: true }] : []),
+              ...(!hasDocuments && onDelete ? [{ label: 'Delete', icon: <span className="mr-2 h-4 w-4">🗑️</span>, onClick: onDelete, variant: 'destructive' as const, separator: true }] : []),
             ]}
           />
         );

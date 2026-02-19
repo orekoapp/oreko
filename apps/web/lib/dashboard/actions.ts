@@ -609,6 +609,7 @@ export async function getConversionFunnelData(
         workspaceId,
         deletedAt: null,
         status: 'paid',
+        quoteId: { not: null },
         ...(dateFilter && { paidAt: dateFilter }),
       },
     }),

@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,7 +30,6 @@ interface ProfileFormProps {
 export function ProfileForm({ initialName, initialEmail }: ProfileFormProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
-  const { update: updateSession } = useSession();
 
   const {
     register,
@@ -55,8 +53,7 @@ export function ProfileForm({ initialName, initialEmail }: ProfileFormProps) {
         return;
       }
 
-      // Update the NextAuth session so the name reflects immediately
-      await updateSession({ name: data.name });
+      // Refresh to pick up updated session data
       router.refresh();
 
       toast.success('Profile updated successfully');

@@ -98,7 +98,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
             >
               {statusStyle.icon}
-              {displayStatus}
+              {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
             </span>
           </div>
           <p className="text-muted-foreground">
@@ -143,14 +143,14 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 {/* Line Items */}
                 <div className="mb-8">
                   <h3 className="mb-4 font-semibold">Line Items</h3>
-                  <div className="overflow-hidden rounded-lg border">
-                    <table className="w-full">
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full min-w-[500px]">
                       <thead className="bg-muted text-sm">
                         <tr>
                           <th className="px-4 py-3 text-left font-medium">Description</th>
-                          <th className="px-4 py-3 text-right font-medium">Qty</th>
-                          <th className="px-4 py-3 text-right font-medium">Rate</th>
-                          <th className="px-4 py-3 text-right font-medium">Amount</th>
+                          <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Qty</th>
+                          <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Rate</th>
+                          <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Amount</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
@@ -164,11 +164,11 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                                 </p>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-right">{item.quantity}</td>
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{item.quantity}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
                               {formatCurrency(item.rate, invoice.settings.currency)}
                             </td>
-                            <td className="px-4 py-3 text-right font-medium">
+                            <td className="px-4 py-3 text-right font-medium whitespace-nowrap">
                               {formatCurrency(item.amount, invoice.settings.currency)}
                             </td>
                           </tr>
@@ -256,7 +256,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
                 >
                   {statusStyle.icon}
-                  {displayStatus}
+                  {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
                 </span>
               </div>
               <div>

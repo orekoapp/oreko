@@ -116,9 +116,9 @@ function isUUID(str: string): boolean {
   return uuidRegex.test(str);
 }
 
-// Check if a string looks like a demo ID (e.g., demo-client-1)
-function isDemoId(str: string): boolean {
-  return str.startsWith('demo-');
+// Check if a string looks like an entity ID (e.g., demo-client-1, client-jane, test-project-1)
+function isEntityId(str: string): boolean {
+  return /^(demo-|client-|test-|invoice-|quote-|contract-|ratecard-)/.test(str);
 }
 
 function generateBreadcrumbs(pathname: string) {
@@ -132,7 +132,7 @@ function generateBreadcrumbs(pathname: string) {
     let label: string;
     if (pathNameMap[segment]) {
       label = pathNameMap[segment];
-    } else if (isUUID(segment) || isDemoId(segment)) {
+    } else if (isUUID(segment) || isEntityId(segment)) {
       // For UUIDs and demo IDs, show "Details" as the label
       label = 'Details';
     } else {

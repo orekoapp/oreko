@@ -48,9 +48,9 @@ async function main() {
   // Create a test workspace
   const workspace = await prisma.workspace.upsert({
     where: { slug: 'test-workspace' },
-    update: { name: 'Test Workspace' },
+    update: { name: 'Acme Digital Studio' },
     create: {
-      name: 'Test Workspace',
+      name: 'Acme Digital Studio',
       slug: 'test-workspace',
       ownerId: users['owner@quotecraft.dev']!.id,
       settings: {},
@@ -473,17 +473,30 @@ async function main() {
         },
       });
 
-      await prisma.invoiceLineItem.upsert({
-        where: { id: `invoice-item-${invoice.id}` },
-        update: { name: q.itemName, quantity: q.qty, rate: q.rate, amount: q.subtotal },
-        create: {
-          id: `invoice-item-${invoice.id}`,
-          invoiceId: invoice.id,
-          name: q.itemName,
-          quantity: q.qty,
-          rate: q.rate,
-          amount: q.subtotal,
-        },
+      // Copy line items from quote to invoice (match the quote's split items)
+      await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: invoice.id } });
+      const quoteLineItems = await prisma.quoteLineItem.findMany({
+        where: { quoteId: quote.id },
+        orderBy: { sortOrder: 'asc' },
+      });
+      for (const qli of quoteLineItems) {
+        await prisma.invoiceLineItem.create({
+          data: {
+            invoiceId: invoice.id,
+            name: qli.name,
+            description: qli.description,
+            quantity: qli.quantity,
+            rate: qli.rate,
+            amount: qli.amount,
+            sortOrder: qli.sortOrder,
+          },
+        });
+      }
+      // Update invoice totals to match actual quote line item totals
+      const invActualTotal = quoteLineItems.reduce((sum, li) => sum + Number(li.amount), 0);
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { subtotal: invActualTotal, total: invActualTotal, amountDue: invActualTotal },
       });
 
       console.log(`Created/Updated invoice: ${invoice.invoiceNumber}`);
@@ -640,8 +653,7 @@ async function main() {
     where: { workspaceId: workspace.id, quoteId: { not: null } },
   });
   for (const cInvoice of convertedInvoices) {
-    const existingEvents = await prisma.invoiceEvent.count({ where: { invoiceId: cInvoice.id } });
-    if (existingEvents > 0) continue;
+    await prisma.invoiceEvent.deleteMany({ where: { invoiceId: cInvoice.id } });
 
     const cEvents: { eventType: string; createdAt: Date }[] = [];
     cEvents.push({ eventType: 'created', createdAt: cInvoice.createdAt });
@@ -664,14 +676,13 @@ async function main() {
   }
   console.log('Seeded events for converted quote invoices');
 
-  // Seed activity events for quotes (H01 fix)
+  // Seed activity events for quotes (H01/H08 fix: force recreate with correct timestamps)
   const allQuotes = await prisma.quote.findMany({ where: { workspaceId: workspace.id } });
   for (const quote of allQuotes) {
-    const existingEvents = await prisma.quoteEvent.count({ where: { quoteId: quote.id } });
-    if (existingEvents > 0) continue; // Don't re-seed if events exist
+    await prisma.quoteEvent.deleteMany({ where: { quoteId: quote.id } });
 
     const quoteEvents: { eventType: string; createdAt: Date }[] = [];
-    quoteEvents.push({ eventType: 'created', createdAt: quote.createdAt });
+    quoteEvents.push({ eventType: 'created', createdAt: quote.issueDate });
     if (quote.sentAt) quoteEvents.push({ eventType: 'sent', createdAt: quote.sentAt });
     if (quote.viewedAt) quoteEvents.push({ eventType: 'viewed', createdAt: quote.viewedAt });
     if (quote.acceptedAt) quoteEvents.push({ eventType: 'accepted', createdAt: quote.acceptedAt });
@@ -691,6 +702,10 @@ async function main() {
     }
   }
   console.log('Seeded activity events for quotes and invoices');
+
+  // Clean up stale notifications for test workspace
+  await prisma.notification.deleteMany({ where: { workspaceId: workspace.id } });
+  console.log('Cleaned up stale notifications for test workspace');
 
   // Update number sequences to match seeded data
   await prisma.numberSequence.update({
@@ -728,7 +743,7 @@ function getDemoQuoteLineItems(title: string, subtotal: number) {
     ],
     'Mobile App UI Design': [
       { name: 'App UI Design', description: 'Screen designs for 20+ views', qty: 48, rate: 150 },
-      { name: 'Prototype & Testing', description: 'Interactive prototype with usability testing', qty: 24, rate: 125 },
+      { name: 'Prototype & Testing', description: 'Interactive prototype with usability testing', qty: 24, rate: 200 },
     ],
     'Annual Retainer Package': [
       { name: 'Monthly Design Support', description: '40 hours/month of on-demand design work', qty: 480, rate: 100 },
@@ -1112,9 +1127,9 @@ async function seedDemoWorkspace() {
       clientId: 'demo-client-1',
       title: 'Previous Project - Final Payment',
       status: 'paid',
-      issueDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-      dueDate: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
-      paidAt: new Date(now.getTime() - 18 * 24 * 60 * 60 * 1000),
+      issueDate: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000),
+      dueDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+      paidAt: new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000),
       subtotal: 4500,
       total: 4500,
       amountPaid: 4500,
@@ -1183,9 +1198,9 @@ async function seedDemoWorkspace() {
       clientId: 'demo-client-3',
       title: 'Brand Guidelines Document',
       status: 'paid',
-      issueDate: new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000),
-      dueDate: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
-      paidAt: new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000),
+      issueDate: new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000),
+      dueDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+      paidAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
       subtotal: 3500,
       total: 3500,
       amountPaid: 3500,
@@ -1388,14 +1403,13 @@ async function seedDemoWorkspace() {
   }
   console.log('Linked invoices to projects');
 
-  // Seed activity events for demo quotes (H01 fix)
+  // Seed activity events for demo quotes (H01/H03/H08 fix: force recreate with correct timestamps)
   const allDemoQuotes = await prisma.quote.findMany({ where: { workspaceId: demoWorkspace.id } });
   for (const quote of allDemoQuotes) {
-    const existingEvents = await prisma.quoteEvent.count({ where: { quoteId: quote.id } });
-    if (existingEvents > 0) continue;
+    await prisma.quoteEvent.deleteMany({ where: { quoteId: quote.id } });
 
     const events: { eventType: string; createdAt: Date }[] = [];
-    events.push({ eventType: 'created', createdAt: quote.createdAt });
+    events.push({ eventType: 'created', createdAt: quote.issueDate });
     if (quote.sentAt) events.push({ eventType: 'sent', createdAt: quote.sentAt });
     if (quote.viewedAt) events.push({ eventType: 'viewed', createdAt: quote.viewedAt });
     if (quote.acceptedAt) events.push({ eventType: 'accepted', createdAt: quote.acceptedAt });
@@ -1415,11 +1429,10 @@ async function seedDemoWorkspace() {
     }
   }
 
-  // Seed activity events for demo invoices (H01 fix)
+  // Seed activity events for demo invoices (H01/H03 fix: force recreate)
   const allDemoInvoices = await prisma.invoice.findMany({ where: { workspaceId: demoWorkspace.id } });
   for (const invoice of allDemoInvoices) {
-    const existingEvents = await prisma.invoiceEvent.count({ where: { invoiceId: invoice.id } });
-    if (existingEvents > 0) continue;
+    await prisma.invoiceEvent.deleteMany({ where: { invoiceId: invoice.id } });
 
     const events: { eventType: string; createdAt: Date }[] = [];
     events.push({ eventType: 'created', createdAt: invoice.createdAt });
@@ -1442,43 +1455,86 @@ async function seedDemoWorkspace() {
   }
   console.log('Seeded demo activity events');
 
-  // Clean up stale test data (manually created during testing)
-  // Remove any quotes/invoices with "Untitled" titles or $0 amounts
+  // Comprehensive cleanup: Remove ALL non-seeded data from demo workspace
+  // This prevents stale test data from polluting the demo experience.
+  const seededDemoQuoteIds = Object.values(demoQuoteIds);
+  const seededDemoInvoiceIds = Object.values(demoInvoiceIds);
+  const seededDemoClientIds = demoClients.map(c => c.id);
+  const seededDemoProjectIds = demoProjects.map(p => p.id);
+
+  // Clean up stale quotes (not seeded)
   const staleQuotes = await prisma.quote.findMany({
     where: {
       workspaceId: demoWorkspace.id,
-      OR: [
-        { title: { contains: 'Untitled' } },
-        { total: 0 },
-      ],
-      id: { notIn: Object.values(demoQuoteIds) },
+      id: { notIn: seededDemoQuoteIds },
     },
     select: { id: true, quoteNumber: true },
   });
-
   for (const sq of staleQuotes) {
+    await prisma.quoteEvent.deleteMany({ where: { quoteId: sq.id } });
     await prisma.quoteLineItem.deleteMany({ where: { quoteId: sq.id } });
     await prisma.quote.delete({ where: { id: sq.id } });
     console.log(`Cleaned up stale quote: ${sq.quoteNumber}`);
   }
 
+  // Clean up stale invoices (not seeded)
   const staleInvoices = await prisma.invoice.findMany({
     where: {
       workspaceId: demoWorkspace.id,
-      OR: [
-        { title: { contains: 'Untitled' } },
-        { total: 0 },
-      ],
-      id: { notIn: Object.values(demoInvoiceIds) },
+      id: { notIn: seededDemoInvoiceIds },
     },
     select: { id: true, invoiceNumber: true },
   });
-
   for (const si of staleInvoices) {
+    await prisma.invoiceEvent.deleteMany({ where: { invoiceId: si.id } });
     await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: si.id } });
     await prisma.invoice.delete({ where: { id: si.id } });
     console.log(`Cleaned up stale invoice: ${si.invoiceNumber}`);
   }
+
+  // Clean up stale projects (not seeded)
+  const staleProjects = await prisma.project.findMany({
+    where: {
+      workspaceId: demoWorkspace.id,
+      id: { notIn: seededDemoProjectIds },
+    },
+    select: { id: true, name: true },
+  });
+  for (const sp of staleProjects) {
+    await prisma.project.delete({ where: { id: sp.id } });
+    console.log(`Cleaned up stale project: ${sp.name}`);
+  }
+
+  // Clean up stale clients (not seeded) - delete their data first
+  const staleClients = await prisma.client.findMany({
+    where: {
+      workspaceId: demoWorkspace.id,
+      id: { notIn: seededDemoClientIds },
+    },
+    select: { id: true, name: true },
+  });
+  for (const sc of staleClients) {
+    // First clean up any remaining quotes/invoices/projects
+    const clientQuotes = await prisma.quote.findMany({ where: { clientId: sc.id }, select: { id: true } });
+    for (const cq of clientQuotes) {
+      await prisma.quoteEvent.deleteMany({ where: { quoteId: cq.id } });
+      await prisma.quoteLineItem.deleteMany({ where: { quoteId: cq.id } });
+    }
+    await prisma.quote.deleteMany({ where: { clientId: sc.id } });
+    const clientInvoices = await prisma.invoice.findMany({ where: { clientId: sc.id }, select: { id: true } });
+    for (const ci of clientInvoices) {
+      await prisma.invoiceEvent.deleteMany({ where: { invoiceId: ci.id } });
+      await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: ci.id } });
+    }
+    await prisma.invoice.deleteMany({ where: { clientId: sc.id } });
+    await prisma.project.deleteMany({ where: { clientId: sc.id } });
+    await prisma.client.delete({ where: { id: sc.id } });
+    console.log(`Cleaned up stale client: ${sc.name}`);
+  }
+
+  // Clean up stale notifications (from manual testing)
+  await prisma.notification.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  console.log('Cleaned up stale notifications');
 
   console.log('Demo workspace seeding completed!');
 }
