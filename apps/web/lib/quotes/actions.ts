@@ -391,7 +391,7 @@ export async function getQuotes(options?: {
       where,
       include: {
         client: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, company: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -415,6 +415,7 @@ export async function getQuotes(options?: {
         id: quote.client.id,
         name: quote.client.name,
         email: quote.client.email,
+        company: quote.client.company,
       } : null,
       createdAt: quote.createdAt.toISOString(),
     })),

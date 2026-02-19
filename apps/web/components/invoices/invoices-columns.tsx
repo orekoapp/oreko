@@ -118,7 +118,8 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
       ),
       cell: ({ row }) => {
         const client = row.original.client;
-        const initials = client.name
+        const displayName = client.company || client.name;
+        const initials = displayName
           .split(' ')
           .map((n) => n[0])
           .join('')
@@ -131,9 +132,9 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
               {initials}
             </div>
             <div>
-              <div className="font-medium">{client.name}</div>
-              {client.email && (
-                <div className="text-sm text-muted-foreground">{client.email}</div>
+              <div className="font-medium">{displayName}</div>
+              {client.company && client.company !== client.name && (
+                <div className="text-sm text-muted-foreground">{client.name}</div>
               )}
             </div>
           </div>
@@ -144,6 +145,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const searchValue = value.toLowerCase();
         return (
           client.name.toLowerCase().includes(searchValue) ||
+          (client.company?.toLowerCase().includes(searchValue) ?? false) ||
           (client.email?.toLowerCase().includes(searchValue) ?? false)
         );
       },

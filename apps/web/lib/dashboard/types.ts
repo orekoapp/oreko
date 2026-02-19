@@ -53,7 +53,9 @@ export interface ActivityItem {
     | 'invoice_created'
     | 'invoice_sent'
     | 'invoice_paid'
+    | 'invoice_viewed'
     | 'invoice_overdue'
+    | 'quote_viewed'
     | 'client_created';
   title: string;
   description?: string;

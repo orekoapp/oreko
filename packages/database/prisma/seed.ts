@@ -118,10 +118,41 @@ async function main() {
   });
   console.log('Created/Updated business profile');
 
+  // Comprehensive pre-seeding cleanup: delete ALL workspace data to prevent stale records
+  console.log('Cleaning up all test workspace data for fresh seeding...');
+  const testClientIds = (await prisma.client.findMany({
+    where: { workspaceId: workspace.id },
+    select: { id: true },
+  })).map(c => c.id);
+  await prisma.quoteEvent.deleteMany({ where: { quote: { workspaceId: workspace.id } } });
+  await prisma.invoiceEvent.deleteMany({ where: { invoice: { workspaceId: workspace.id } } });
+  await prisma.quoteLineItem.deleteMany({ where: { quote: { workspaceId: workspace.id } } });
+  await prisma.invoiceLineItem.deleteMany({ where: { invoice: { workspaceId: workspace.id } } });
+  await prisma.notification.deleteMany({ where: { workspaceId: workspace.id } });
+  await prisma.invoice.deleteMany({ where: { workspaceId: workspace.id } });
+  await prisma.quote.deleteMany({ where: { workspaceId: workspace.id } });
+  if (testClientIds.length > 0) {
+    await prisma.quoteEvent.deleteMany({ where: { quote: { clientId: { in: testClientIds } } } });
+    await prisma.invoiceEvent.deleteMany({ where: { invoice: { clientId: { in: testClientIds } } } });
+    await prisma.quoteLineItem.deleteMany({ where: { quote: { clientId: { in: testClientIds } } } });
+    await prisma.invoiceLineItem.deleteMany({ where: { invoice: { clientId: { in: testClientIds } } } });
+    await prisma.invoice.deleteMany({ where: { clientId: { in: testClientIds } } });
+    await prisma.quote.deleteMany({ where: { clientId: { in: testClientIds } } });
+    await prisma.project.deleteMany({ where: { clientId: { in: testClientIds } } });
+    await prisma.contractInstance.deleteMany({ where: { clientId: { in: testClientIds } } });
+  }
+  await prisma.project.deleteMany({ where: { workspaceId: workspace.id } });
+  await prisma.contractInstance.deleteMany({ where: { workspaceId: workspace.id } });
+  await prisma.rateCard.deleteMany({ where: { workspaceId: workspace.id } });
+  await prisma.rateCardCategory.deleteMany({ where: { workspaceId: workspace.id } });
+  await prisma.contract.deleteMany({ where: { workspaceId: workspace.id } });
+  await prisma.client.deleteMany({ where: { workspaceId: workspace.id } });
+  console.log('Cleaned up all test workspace data');
+
   // Create test clients
   const clients = [
     { name: 'Acme Corporation', email: 'acme@example.com', company: 'Acme Corp' },
-    { name: 'John Doe', email: 'john@example.com', company: 'Doe Industries' },
+    { name: 'John Doe', email: 'john@example.com' },
     { name: 'Jane Smith', email: 'jane@example.com', company: 'Smith LLC' },
   ];
 
@@ -131,23 +162,9 @@ async function main() {
     const clientData = clients[ci]!;
     const clientId = clientIds[ci]!;
 
-    // Clean up old pattern-based IDs (e.g. client-jane@example.com)
-    const oldId = `client-${clientData.email}`;
-    const oldClient = await prisma.client.findUnique({ where: { id: oldId } });
-    if (oldClient) {
-      // Delete old client's references first, then the client
-      await prisma.quoteLineItem.deleteMany({ where: { quote: { clientId: oldId } } });
-      await prisma.invoiceLineItem.deleteMany({ where: { invoice: { clientId: oldId } } });
-      await prisma.quote.deleteMany({ where: { clientId: oldId } });
-      await prisma.invoice.deleteMany({ where: { clientId: oldId } });
-      await prisma.project.deleteMany({ where: { clientId: oldId } });
-      await prisma.client.delete({ where: { id: oldId } });
-      console.log(`Cleaned up old client ID: ${oldId}`);
-    }
-
     const client = await prisma.client.upsert({
       where: { id: clientId },
-      update: { name: clientData.name, email: clientData.email, company: clientData.company, deletedAt: null },
+      update: { name: clientData.name, email: clientData.email, company: clientData.company ?? null, deletedAt: null },
       create: {
         id: clientId,
         workspaceId: workspace.id,
@@ -518,21 +535,6 @@ async function main() {
     { status: 'paid', title: 'Logo & Branding Package', itemName: 'Brand Design', qty: 1, rate: 3500 },
   ];
 
-  // Clean up old INV-01xx invoices from previous seed format (M02 fix)
-  for (let old = 100; old < 110; old++) {
-    const oldNum = `INV-${String(old).padStart(4, '0')}`;
-    const oldInv = await prisma.invoice.findUnique({
-      where: { workspaceId_invoiceNumber: { workspaceId: workspace.id, invoiceNumber: oldNum } },
-      select: { id: true },
-    });
-    if (oldInv) {
-      await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: oldInv.id } });
-      await prisma.invoiceEvent.deleteMany({ where: { invoiceId: oldInv.id } });
-      await prisma.invoice.delete({ where: { id: oldInv.id } });
-      console.log(`Cleaned up old invoice: ${oldNum}`);
-    }
-  }
-
   // BUG-024/025/026 fix: Varied dates per standalone invoice spread across 60 days
   const invDateConfigs: Record<number, { issueDaysAgo: number; sentDaysAgo?: number; viewedDaysAgo?: number; paidDaysAgo?: number; voidedDaysAgo?: number; dueDaysFromNow?: number; dueDaysAgo?: number }> = {
     0: { issueDaysAgo: 0, dueDaysFromNow: 30 },                                                                  // INV-0007 draft
@@ -752,6 +754,10 @@ function getDemoQuoteLineItems(title: string, subtotal: number) {
       { name: 'Monthly Design Support', description: '40 hours/month of on-demand design work', qty: 480, rate: 100 },
       { name: 'Dedicated Project Manager', description: 'Coordination and communication', qty: 120, rate: 50 },
     ],
+    'SEO & Content Strategy': [
+      { name: 'SEO Audit & Optimization', description: 'Technical SEO audit and on-page optimization', qty: 30, rate: 200 },
+      { name: 'Content Strategy', description: 'Content calendar and keyword research', qty: 25, rate: 140 },
+    ],
   };
 
   const items = itemSets[title];
@@ -840,6 +846,39 @@ async function seedDemoWorkspace() {
     },
   });
 
+  // Comprehensive pre-seeding cleanup: delete ALL demo workspace data to prevent stale records
+  console.log('Cleaning up all demo workspace data for fresh seeding...');
+  // Get all demo client IDs first, so we can clean up cross-workspace references
+  const demoClientIds = (await prisma.client.findMany({
+    where: { workspaceId: demoWorkspace.id },
+    select: { id: true },
+  })).map(c => c.id);
+  await prisma.quoteEvent.deleteMany({ where: { quote: { workspaceId: demoWorkspace.id } } });
+  await prisma.invoiceEvent.deleteMany({ where: { invoice: { workspaceId: demoWorkspace.id } } });
+  await prisma.quoteLineItem.deleteMany({ where: { quote: { workspaceId: demoWorkspace.id } } });
+  await prisma.invoiceLineItem.deleteMany({ where: { invoice: { workspaceId: demoWorkspace.id } } });
+  await prisma.notification.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  await prisma.invoice.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  await prisma.quote.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  // Also clean up any cross-workspace references to demo clients
+  if (demoClientIds.length > 0) {
+    await prisma.quoteEvent.deleteMany({ where: { quote: { clientId: { in: demoClientIds } } } });
+    await prisma.invoiceEvent.deleteMany({ where: { invoice: { clientId: { in: demoClientIds } } } });
+    await prisma.quoteLineItem.deleteMany({ where: { quote: { clientId: { in: demoClientIds } } } });
+    await prisma.invoiceLineItem.deleteMany({ where: { invoice: { clientId: { in: demoClientIds } } } });
+    await prisma.invoice.deleteMany({ where: { clientId: { in: demoClientIds } } });
+    await prisma.quote.deleteMany({ where: { clientId: { in: demoClientIds } } });
+    await prisma.project.deleteMany({ where: { clientId: { in: demoClientIds } } });
+    await prisma.contractInstance.deleteMany({ where: { clientId: { in: demoClientIds } } });
+  }
+  await prisma.project.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  await prisma.contractInstance.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  await prisma.rateCard.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  await prisma.rateCardCategory.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  await prisma.contract.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  await prisma.client.deleteMany({ where: { workspaceId: demoWorkspace.id } });
+  console.log('Cleaned up all demo workspace data');
+
   // Create business profile for demo
   await prisma.businessProfile.upsert({
     where: { workspaceId: demoWorkspace.id },
@@ -878,12 +917,12 @@ async function seedDemoWorkspace() {
         type: 'quote',
       },
     },
-    update: {},
+    update: { currentValue: 6 },
     create: {
       workspaceId: demoWorkspace.id,
       type: 'quote',
       prefix: 'Q-',
-      currentValue: 5,
+      currentValue: 6,
       padding: 4,
     },
   });
@@ -895,12 +934,12 @@ async function seedDemoWorkspace() {
         type: 'invoice',
       },
     },
-    update: { currentValue: 7 },
+    update: { currentValue: 8 },
     create: {
       workspaceId: demoWorkspace.id,
       type: 'invoice',
       prefix: 'INV-',
-      currentValue: 7,
+      currentValue: 8,
       padding: 4,
     },
   });
@@ -909,7 +948,7 @@ async function seedDemoWorkspace() {
   const demoClients = [
     { id: 'demo-client-1', name: 'TechStart Inc.', email: 'projects@techstart.demo', company: 'TechStart Inc.', phone: '+1 (555) 234-5678' },
     { id: 'demo-client-2', name: 'Global Retail Co.', email: 'procurement@globalretail.demo', company: 'Global Retail Co.', phone: '+1 (555) 345-6789' },
-    { id: 'demo-client-3', name: 'Sarah Johnson', email: 'sarah.j@email.demo', company: 'Johnson Consulting', phone: '+1 (555) 456-7890' },
+    { id: 'demo-client-3', name: 'Sarah Johnson', email: 'sarah.j@email.demo', phone: '+1 (555) 456-7890' },
     { id: 'demo-client-4', name: 'Marcus Chen', email: 'marcus@chenventures.demo', company: 'Chen Ventures' },
     { id: 'demo-client-5', name: 'Creative Agency LLC', email: 'hello@creativeagency.demo', company: 'Creative Agency LLC', phone: '+1 (555) 567-8901' },
   ];
@@ -917,7 +956,7 @@ async function seedDemoWorkspace() {
   for (const clientData of demoClients) {
     await prisma.client.upsert({
       where: { id: clientData.id },
-      update: { workspaceId: demoWorkspace.id, name: clientData.name, email: clientData.email, company: clientData.company, deletedAt: null },
+      update: { workspaceId: demoWorkspace.id, name: clientData.name, email: clientData.email, company: clientData.company ?? null, deletedAt: null },
       create: {
         id: clientData.id,
         workspaceId: demoWorkspace.id,
@@ -1057,6 +1096,20 @@ async function seedDemoWorkspace() {
       declinedAt: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
       subtotal: 60000,
       total: 60000,
+    },
+    {
+      id: 'demo-quote-6',
+      quoteNumber: 'Q-0006',
+      clientId: 'demo-client-1',
+      title: 'SEO & Content Strategy',
+      status: 'converted',
+      issueDate: new Date(now.getTime() - 35 * 24 * 60 * 60 * 1000),
+      expirationDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+      sentAt: new Date(now.getTime() - 34 * 24 * 60 * 60 * 1000),
+      viewedAt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+      acceptedAt: new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000),
+      subtotal: 9500,
+      total: 9500,
     },
   ];
 
@@ -1234,7 +1287,63 @@ async function seedDemoWorkspace() {
     },
   ];
 
+  // Initialize invoice ID tracking
   const demoInvoiceIds: Record<string, string> = {};
+
+  // Create invoice linked to the converted quote (demo-quote-6) for conversion funnel data
+  const convertedQuoteId = demoQuoteIds['demo-quote-6'];
+  if (convertedQuoteId) {
+    const convertedInvoice = await prisma.invoice.upsert({
+      where: {
+        workspaceId_invoiceNumber: {
+          workspaceId: demoWorkspace.id,
+          invoiceNumber: 'INV-0008',
+        },
+      },
+      update: {
+        status: 'paid',
+        title: 'SEO & Content Strategy - Final Invoice',
+        subtotal: 9500,
+        total: 9500,
+        amountPaid: 9500,
+        amountDue: 0,
+        sentAt: new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000),
+        viewedAt: new Date(now.getTime() - 22 * 24 * 60 * 60 * 1000),
+        paidAt: new Date(now.getTime() - 18 * 24 * 60 * 60 * 1000),
+        deletedAt: null,
+      },
+      create: {
+        id: 'demo-invoice-8',
+        workspaceId: demoWorkspace.id,
+        clientId: 'demo-client-1',
+        quoteId: convertedQuoteId,
+        invoiceNumber: 'INV-0008',
+        title: 'SEO & Content Strategy - Final Invoice',
+        status: 'paid',
+        issueDate: new Date(now.getTime() - 26 * 24 * 60 * 60 * 1000),
+        dueDate: new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000),
+        sentAt: new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000),
+        viewedAt: new Date(now.getTime() - 22 * 24 * 60 * 60 * 1000),
+        paidAt: new Date(now.getTime() - 18 * 24 * 60 * 60 * 1000),
+        subtotal: 9500,
+        total: 9500,
+        amountPaid: 9500,
+        amountDue: 0,
+      },
+    });
+    demoInvoiceIds['demo-invoice-8'] = convertedInvoice.id;
+
+    // Add line items matching the converted quote
+    await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: convertedInvoice.id } });
+    await prisma.invoiceLineItem.create({
+      data: { invoiceId: convertedInvoice.id, name: 'SEO Audit & Optimization', quantity: 30, rate: 200, amount: 6000, sortOrder: 0 },
+    });
+    await prisma.invoiceLineItem.create({
+      data: { invoiceId: convertedInvoice.id, name: 'Content Strategy', quantity: 25, rate: 140, amount: 3500, sortOrder: 1 },
+    });
+    console.log('Created/Updated converted quote invoice: INV-0008');
+  }
+
   for (const invoiceData of demoInvoices) {
     const invoice = await prisma.invoice.upsert({
       where: {
@@ -1448,7 +1557,7 @@ async function seedDemoWorkspace() {
     await prisma.invoiceEvent.deleteMany({ where: { invoiceId: invoice.id } });
 
     const events: { eventType: string; createdAt: Date }[] = [];
-    events.push({ eventType: 'created', createdAt: invoice.createdAt });
+    events.push({ eventType: 'created', createdAt: invoice.issueDate });
     if (invoice.sentAt) events.push({ eventType: 'sent', createdAt: invoice.sentAt });
     if (invoice.viewedAt) events.push({ eventType: 'viewed', createdAt: invoice.viewedAt });
     if (invoice.paidAt) events.push({ eventType: 'paid', createdAt: invoice.paidAt });
@@ -1467,87 +1576,6 @@ async function seedDemoWorkspace() {
     }
   }
   console.log('Seeded demo activity events');
-
-  // Comprehensive cleanup: Remove ALL non-seeded data from demo workspace
-  // This prevents stale test data from polluting the demo experience.
-  const seededDemoQuoteIds = Object.values(demoQuoteIds);
-  const seededDemoInvoiceIds = Object.values(demoInvoiceIds);
-  const seededDemoClientIds = demoClients.map(c => c.id);
-  const seededDemoProjectIds = demoProjects.map(p => p.id);
-
-  // Clean up stale quotes (not seeded)
-  const staleQuotes = await prisma.quote.findMany({
-    where: {
-      workspaceId: demoWorkspace.id,
-      id: { notIn: seededDemoQuoteIds },
-    },
-    select: { id: true, quoteNumber: true },
-  });
-  for (const sq of staleQuotes) {
-    await prisma.quoteEvent.deleteMany({ where: { quoteId: sq.id } });
-    await prisma.quoteLineItem.deleteMany({ where: { quoteId: sq.id } });
-    await prisma.quote.delete({ where: { id: sq.id } });
-    console.log(`Cleaned up stale quote: ${sq.quoteNumber}`);
-  }
-
-  // Clean up stale invoices (not seeded)
-  const staleInvoices = await prisma.invoice.findMany({
-    where: {
-      workspaceId: demoWorkspace.id,
-      id: { notIn: seededDemoInvoiceIds },
-    },
-    select: { id: true, invoiceNumber: true },
-  });
-  for (const si of staleInvoices) {
-    await prisma.invoiceEvent.deleteMany({ where: { invoiceId: si.id } });
-    await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: si.id } });
-    await prisma.invoice.delete({ where: { id: si.id } });
-    console.log(`Cleaned up stale invoice: ${si.invoiceNumber}`);
-  }
-
-  // Clean up stale projects (not seeded)
-  const staleProjects = await prisma.project.findMany({
-    where: {
-      workspaceId: demoWorkspace.id,
-      id: { notIn: seededDemoProjectIds },
-    },
-    select: { id: true, name: true },
-  });
-  for (const sp of staleProjects) {
-    await prisma.project.delete({ where: { id: sp.id } });
-    console.log(`Cleaned up stale project: ${sp.name}`);
-  }
-
-  // Clean up stale clients (not seeded) - delete their data first
-  const staleClients = await prisma.client.findMany({
-    where: {
-      workspaceId: demoWorkspace.id,
-      id: { notIn: seededDemoClientIds },
-    },
-    select: { id: true, name: true },
-  });
-  for (const sc of staleClients) {
-    // First clean up any remaining quotes/invoices/projects
-    const clientQuotes = await prisma.quote.findMany({ where: { clientId: sc.id }, select: { id: true } });
-    for (const cq of clientQuotes) {
-      await prisma.quoteEvent.deleteMany({ where: { quoteId: cq.id } });
-      await prisma.quoteLineItem.deleteMany({ where: { quoteId: cq.id } });
-    }
-    await prisma.quote.deleteMany({ where: { clientId: sc.id } });
-    const clientInvoices = await prisma.invoice.findMany({ where: { clientId: sc.id }, select: { id: true } });
-    for (const ci of clientInvoices) {
-      await prisma.invoiceEvent.deleteMany({ where: { invoiceId: ci.id } });
-      await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: ci.id } });
-    }
-    await prisma.invoice.deleteMany({ where: { clientId: sc.id } });
-    await prisma.project.deleteMany({ where: { clientId: sc.id } });
-    await prisma.client.delete({ where: { id: sc.id } });
-    console.log(`Cleaned up stale client: ${sc.name}`);
-  }
-
-  // Clean up stale notifications (from manual testing)
-  await prisma.notification.deleteMany({ where: { workspaceId: demoWorkspace.id } });
-  console.log('Cleaned up stale notifications');
 
   console.log('Demo workspace seeding completed!');
 }

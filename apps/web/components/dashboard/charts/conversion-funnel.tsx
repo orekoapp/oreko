@@ -79,7 +79,7 @@ export function ConversionFunnel({
   return (
     <ChartCard
       title="Conversion Funnel"
-      description={isEmpty ? undefined : `Overall: ${formatPercentage(overallConversion)} conversion`}
+      description={isEmpty ? undefined : `Quote-to-payment pipeline \u2022 ${formatPercentage(overallConversion)} end-to-end`}
       className={className}
       isLoading={isLoading}
       isEmpty={isEmpty}

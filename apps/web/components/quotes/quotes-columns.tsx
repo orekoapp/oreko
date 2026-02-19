@@ -123,15 +123,23 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
           .toUpperCase()
           .slice(0, 2);
 
+        const displayName = client.company || client.name;
+        const displayInitials = displayName
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2);
+
         return (
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-              {initials}
+              {displayInitials}
             </div>
             <div>
-              <div className="font-medium">{client.name}</div>
-              {client.email && (
-                <div className="text-sm text-muted-foreground">{client.email}</div>
+              <div className="font-medium">{displayName}</div>
+              {client.company && client.company !== client.name && (
+                <div className="text-sm text-muted-foreground">{client.name}</div>
               )}
             </div>
           </div>
@@ -143,6 +151,7 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
         const searchValue = value.toLowerCase();
         return (
           client.name.toLowerCase().includes(searchValue) ||
+          (client.company?.toLowerCase().includes(searchValue) ?? false) ||
           (client.email?.toLowerCase().includes(searchValue) ?? false)
         );
       },

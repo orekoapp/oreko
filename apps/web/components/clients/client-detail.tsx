@@ -122,10 +122,12 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
               Edit
             </Link>
           </Button>
-          <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </Button>
+          {!((client._count?.quotes ?? 0) > 0 || (client._count?.invoices ?? 0) > 0) && (
+            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 

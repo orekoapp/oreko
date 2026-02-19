@@ -402,6 +402,8 @@ function mapQuoteEventType(type: string): ActivityItem['type'] {
       return 'quote_created';
     case 'sent':
       return 'quote_sent';
+    case 'viewed':
+      return 'quote_viewed';
     case 'accepted':
       return 'quote_accepted';
     case 'declined':
@@ -419,6 +421,8 @@ function mapInvoiceEventType(type: string): ActivityItem['type'] {
       return 'invoice_created';
     case 'sent':
       return 'invoice_sent';
+    case 'viewed':
+      return 'invoice_viewed';
     case 'paid':
       return 'invoice_paid';
     case 'overdue':
@@ -434,6 +438,8 @@ function getEventTitle(type: string, reference: string): string {
       return `${reference} was created`;
     case 'sent':
       return `${reference} was sent`;
+    case 'viewed':
+      return `${reference} was viewed`;
     case 'accepted':
       return `${reference} was accepted`;
     case 'declined':
@@ -444,8 +450,10 @@ function getEventTitle(type: string, reference: string): string {
       return `${reference} was paid`;
     case 'overdue':
       return `${reference} is overdue`;
+    case 'voided':
+      return `${reference} was voided`;
     default:
-      return reference;
+      return `${reference} was updated`;
   }
 }
 
