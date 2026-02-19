@@ -725,6 +725,26 @@ async function main() {
   await prisma.notification.deleteMany({ where: { workspaceId: workspace.id } });
   console.log('Cleaned up stale notifications for test workspace');
 
+  // Clean up any double-hyphen invoice/quote numbers for test workspace
+  const testDoubleHyphenInvoices = await prisma.invoice.findMany({
+    where: { workspaceId: workspace.id, invoiceNumber: { contains: '--' } },
+    select: { id: true, invoiceNumber: true },
+  });
+  for (const inv of testDoubleHyphenInvoices) {
+    const fixed = inv.invoiceNumber.replace(/--+/g, '-');
+    await prisma.invoice.update({ where: { id: inv.id }, data: { invoiceNumber: fixed } });
+    console.log(`Fixed test invoice number: ${inv.invoiceNumber} -> ${fixed}`);
+  }
+  const testDoubleHyphenQuotes = await prisma.quote.findMany({
+    where: { workspaceId: workspace.id, quoteNumber: { contains: '--' } },
+    select: { id: true, quoteNumber: true },
+  });
+  for (const q of testDoubleHyphenQuotes) {
+    const fixed = q.quoteNumber.replace(/--+/g, '-');
+    await prisma.quote.update({ where: { id: q.id }, data: { quoteNumber: fixed } });
+    console.log(`Fixed test quote number: ${q.quoteNumber} -> ${fixed}`);
+  }
+
   // Update number sequences to match seeded data
   await prisma.numberSequence.update({
     where: { workspaceId_type: { workspaceId: workspace.id, type: 'quote' } },
