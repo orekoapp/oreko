@@ -444,10 +444,10 @@ export async function getCategories(): Promise<CategoryListItem[]> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const categories = await prisma.rateCardCategory.findMany({
-    where: { workspaceId },
+    where: { workspaceId, deletedAt: null },
     include: {
       _count: {
-        select: { rateCards: true },
+        select: { rateCards: { where: { deletedAt: null } } },
       },
     },
     orderBy: { sortOrder: 'asc' },
@@ -471,7 +471,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<{ id: 
 
   // Get max sort order
   const maxOrder = await prisma.rateCardCategory.aggregate({
-    where: { workspaceId },
+    where: { workspaceId, deletedAt: null },
     _max: { sortOrder: true },
   });
 
@@ -499,6 +499,7 @@ export async function updateCategory(input: UpdateCategoryInput): Promise<{ id: 
     where: {
       id: input.id,
       workspaceId,
+      deletedAt: null,
     },
   });
 
@@ -530,9 +531,10 @@ export async function deleteCategory(id: string): Promise<void> {
     where: {
       id,
       workspaceId,
+      deletedAt: null,
     },
     include: {
-      _count: { select: { rateCards: true } },
+      _count: { select: { rateCards: { where: { deletedAt: null } } } },
     },
   });
 
@@ -544,8 +546,9 @@ export async function deleteCategory(id: string): Promise<void> {
     throw new Error('Cannot delete category with rate cards. Remove or reassign rate cards first.');
   }
 
-  await prisma.rateCardCategory.delete({
+  await prisma.rateCardCategory.update({
     where: { id },
+    data: { deletedAt: new Date() },
   });
 
   revalidatePath('/rate-cards');
@@ -562,7 +565,7 @@ export async function reorderCategories(
   await prisma.$transaction(
     categoryIds.map((id, index) =>
       prisma.rateCardCategory.updateMany({
-        where: { id, workspaceId },
+        where: { id, workspaceId, deletedAt: null },
         data: { sortOrder: index },
       })
     )
@@ -605,7 +608,7 @@ export async function importRateCards(
   for (const name of categoryNames) {
     if (!name) continue;
     let category = await prisma.rateCardCategory.findFirst({
-      where: { workspaceId, name },
+      where: { workspaceId, name, deletedAt: null },
     });
     if (!category) {
       category = await prisma.rateCardCategory.create({

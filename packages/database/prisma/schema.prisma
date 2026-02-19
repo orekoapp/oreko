@@ -297,13 +297,14 @@ model ClientTagAssignment {
 // ============================================
 
 model RateCardCategory {
-  id          String   @id @default(uuid())
-  workspaceId String   @map("workspace_id")
-  name        String   @db.VarChar(100)
-  color       String?  @db.VarChar(7)
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  name        String    @db.VarChar(100)
+  color       String?   @db.VarChar(7)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
 
   workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   rateCards RateCard[]
@@ -709,16 +710,17 @@ model ScheduledEmail {
 // ============================================
 
 model TaxRate {
-  id          String   @id @default(uuid())
-  workspaceId String   @map("workspace_id")
-  name        String   @db.VarChar(100)
-  rate        Decimal  @db.Decimal(5, 2)
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  name        String    @db.VarChar(100)
+  rate        Decimal   @db.Decimal(5, 2)
   description String?
-  isInclusive Boolean  @default(false) @map("is_inclusive")
-  isDefault   Boolean  @default(false) @map("is_default")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  isInclusive Boolean   @default(false) @map("is_inclusive")
+  isDefault   Boolean   @default(false) @map("is_default")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
 
   workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   rateCards RateCard[]

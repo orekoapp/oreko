@@ -317,7 +317,7 @@ export async function getTaxRates(): Promise<TaxRateData[]> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const taxRates = await prisma.taxRate.findMany({
-    where: { workspaceId },
+    where: { workspaceId, deletedAt: null },
     orderBy: { name: 'asc' },
   });
 
@@ -371,7 +371,7 @@ export async function updateTaxRate(input: UpdateTaxRateInput): Promise<void> {
 
   // Verify ownership
   const existing = await prisma.taxRate.findFirst({
-    where: { id: input.id, workspaceId },
+    where: { id: input.id, workspaceId, deletedAt: null },
   });
 
   if (!existing) {
@@ -408,24 +408,25 @@ export async function deleteTaxRate(id: string): Promise<void> {
 
   // Verify ownership
   const existing = await prisma.taxRate.findFirst({
-    where: { id, workspaceId },
+    where: { id, workspaceId, deletedAt: null },
   });
 
   if (!existing) {
     throw new Error('Tax rate not found');
   }
 
-  // Check if in use
+  // Check if in use (only count active/non-deleted rate cards)
   const usageCount = await prisma.rateCard.count({
-    where: { taxRateId: id },
+    where: { taxRateId: id, deletedAt: null },
   });
 
   if (usageCount > 0) {
     throw new Error(`Cannot delete tax rate. It is used by ${usageCount} rate card(s).`);
   }
 
-  await prisma.taxRate.delete({
+  await prisma.taxRate.update({
     where: { id },
+    data: { deletedAt: new Date() },
   });
 
   revalidatePath('/settings/tax-rates');
