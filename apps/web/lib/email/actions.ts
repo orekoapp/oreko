@@ -27,6 +27,7 @@ export async function getEmailTemplates(
 
   const where: Prisma.EmailTemplateWhereInput = {
     workspaceId,
+    deletedAt: null,
     ...(type && { type }),
     ...(isActive !== undefined && { isActive }),
     ...(search && {
@@ -59,7 +60,7 @@ export async function getEmailTemplateById(id: string): Promise<EmailTemplateDet
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const template = await prisma.emailTemplate.findFirst({
-    where: { id, workspaceId },
+    where: { id, workspaceId, deletedAt: null },
   });
 
   if (!template) {
@@ -158,7 +159,7 @@ export async function updateEmailTemplate(
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.emailTemplate.findFirst({
-    where: { id: input.id, workspaceId },
+    where: { id: input.id, workspaceId, deletedAt: null },
   });
 
   if (!existing) {
@@ -176,9 +177,9 @@ export async function updateEmailTemplate(
   const template = await prisma.emailTemplate.update({
     where: { id: input.id },
     data: {
-      ...(input.name && { name: input.name }),
-      ...(input.subject && { subject: input.subject }),
-      ...(input.body && { body: input.body }),
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.subject !== undefined && { subject: input.subject }),
+      ...(input.body !== undefined && { body: input.body }),
       ...(input.isActive !== undefined && { isActive: input.isActive }),
       ...(input.isDefault !== undefined && { isDefault: input.isDefault }),
     },
@@ -207,15 +208,16 @@ export async function deleteEmailTemplate(id: string): Promise<void> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.emailTemplate.findFirst({
-    where: { id, workspaceId },
+    where: { id, workspaceId, deletedAt: null },
   });
 
   if (!existing) {
     throw new Error('Email template not found');
   }
 
-  await prisma.emailTemplate.delete({
+  await prisma.emailTemplate.update({
     where: { id },
+    data: { deletedAt: new Date() },
   });
 
   revalidatePath('/settings/emails');

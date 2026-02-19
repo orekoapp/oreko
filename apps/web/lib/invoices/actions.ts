@@ -172,7 +172,7 @@ export async function createInvoice(data: CreateInvoiceData) {
 /**
  * Create invoice from an accepted quote
  */
-export async function createInvoiceFromQuote(quoteId: string) {
+export async function createInvoiceFromQuote(quoteId: string, options?: { dueDays?: number }) {
   await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
@@ -206,9 +206,10 @@ export async function createInvoiceFromQuote(quoteId: string) {
 
   const invoiceNumber = await generateInvoiceNumber(workspace.id);
 
-  // Calculate due date (default: 30 days from now)
+  // Calculate due date (configurable, default: 30 days from now)
+  const dueDays = options?.dueDays ?? 30;
   const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + 30);
+  dueDate.setDate(dueDate.getDate() + dueDays);
 
   const invoice = await prisma.$transaction(async (tx) => {
     // Create the invoice

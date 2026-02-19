@@ -1,4 +1,5 @@
 import { getClientsForSelect } from '@/lib/clients/actions';
+import { getTaxRates } from '@/lib/settings/actions';
 import { NewInvoiceForm } from './new-invoice-form';
 
 export const metadata = {
@@ -6,7 +7,10 @@ export const metadata = {
 };
 
 export default async function NewInvoicePage() {
-  const clients = await getClientsForSelect();
+  const [clients, taxRates] = await Promise.all([
+    getClientsForSelect(),
+    getTaxRates(),
+  ]);
 
-  return <NewInvoiceForm clients={clients} />;
+  return <NewInvoiceForm clients={clients} taxRates={taxRates} />;
 }

@@ -103,15 +103,20 @@ export function QuotesByStatusChart({ data }: QuotesByStatusChartProps) {
                 height={36}
                 content={({ payload }) => (
                   <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-                    {payload?.map((entry, index) => (
-                      <div key={index} className="flex items-center gap-1">
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: entry.color }}
-                        />
-                        <span className="text-muted-foreground">{entry.value}</span>
-                      </div>
-                    ))}
+                    {payload?.map((entry, index) => {
+                      const item = chartData.find(d => d.status === entry.value);
+                      return (
+                        <div key={index} className="flex items-center gap-1">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: entry.color }}
+                          />
+                          <span className="text-muted-foreground">
+                            {entry.value} ({item?.count ?? 0})
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               />

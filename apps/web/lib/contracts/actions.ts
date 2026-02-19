@@ -171,10 +171,10 @@ export async function updateContractTemplate(
   const contract = await prisma.contract.update({
     where: { id: input.id },
     data: {
-      ...(input.name && { name: input.name }),
-      ...(input.content && { content: input.content }),
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.content !== undefined && { content: input.content }),
       ...(input.isTemplate !== undefined && { isTemplate: input.isTemplate }),
-      ...(input.variables && { variables: input.variables as unknown as Prisma.InputJsonValue }),
+      ...(input.variables !== undefined && { variables: input.variables as unknown as Prisma.InputJsonValue }),
     },
     include: {
       _count: { select: { instances: true } },
@@ -231,6 +231,7 @@ export async function getContractInstances(
 
   const where: Prisma.ContractInstanceWhereInput = {
     workspaceId,
+    deletedAt: null,
     ...(status && { status }),
     ...(clientId && { clientId }),
     ...(search && {
@@ -595,15 +596,16 @@ export async function deleteContractInstance(id: string): Promise<void> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const instance = await prisma.contractInstance.findFirst({
-    where: { id, workspaceId },
+    where: { id, workspaceId, deletedAt: null },
   });
 
   if (!instance) {
     throw new Error('Contract instance not found');
   }
 
-  await prisma.contractInstance.delete({
+  await prisma.contractInstance.update({
     where: { id },
+    data: { deletedAt: new Date() },
   });
 
   revalidatePath('/contracts');

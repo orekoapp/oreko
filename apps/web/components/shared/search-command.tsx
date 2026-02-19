@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Plus,
   FolderKanban,
+  ScrollText,
   Loader2,
 } from 'lucide-react';
 
@@ -82,6 +83,8 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
       case 'quote': return <FileText className="mr-2 h-4 w-4" />;
       case 'invoice': return <Receipt className="mr-2 h-4 w-4" />;
       case 'client': return <Users className="mr-2 h-4 w-4" />;
+      case 'contract': return <ScrollText className="mr-2 h-4 w-4" />;
+      case 'project': return <FolderKanban className="mr-2 h-4 w-4" />;
       default: return null;
     }
   };
@@ -89,6 +92,8 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   const quoteResults = results.filter((r) => r.type === 'quote');
   const invoiceResults = results.filter((r) => r.type === 'invoice');
   const clientResults = results.filter((r) => r.type === 'client');
+  const contractResults = results.filter((r) => r.type === 'contract');
+  const projectResults = results.filter((r) => r.type === 'project');
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
@@ -152,6 +157,42 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
               <CommandItem
                 key={result.id}
                 value={`client-${result.title}-${result.subtitle}`}
+                onSelect={() => runCommand(() => router.push(result.href))}
+              >
+                {getIcon(result.type)}
+                <div className="flex flex-col">
+                  <span>{result.title}</span>
+                  <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {contractResults.length > 0 && (
+          <CommandGroup heading="Contracts">
+            {contractResults.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={`contract-${result.title}-${result.subtitle}`}
+                onSelect={() => runCommand(() => router.push(result.href))}
+              >
+                {getIcon(result.type)}
+                <div className="flex flex-col">
+                  <span>{result.title}</span>
+                  <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {projectResults.length > 0 && (
+          <CommandGroup heading="Projects">
+            {projectResults.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={`project-${result.title}-${result.subtitle}`}
                 onSelect={() => runCommand(() => router.push(result.href))}
               >
                 {getIcon(result.type)}

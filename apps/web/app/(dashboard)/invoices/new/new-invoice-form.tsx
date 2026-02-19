@@ -46,11 +46,20 @@ interface ClientOption {
   company: string | null;
 }
 
-interface NewInvoiceFormProps {
-  clients: ClientOption[];
+interface TaxRateOption {
+  id: string;
+  name: string;
+  rate: number;
+  isDefault: boolean;
+  isActive: boolean;
 }
 
-export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
+interface NewInvoiceFormProps {
+  clients: ClientOption[];
+  taxRates?: TaxRateOption[];
+}
+
+export function NewInvoiceForm({ clients, taxRates = [] }: NewInvoiceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
@@ -77,7 +86,8 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
     date.setDate(date.getDate() + 30);
     return date.toISOString().split('T')[0] ?? date.toISOString().slice(0, 10);
   });
-  const [taxRate, setTaxRate] = useState('0');
+  const defaultTaxRate = taxRates.find(t => t.isDefault && t.isActive);
+  const [taxRate, setTaxRate] = useState(defaultTaxRate ? String(defaultTaxRate.rate) : '0');
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
@@ -274,10 +284,19 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="0">0% - No Tax</SelectItem>
-                      <SelectItem value="5">5%</SelectItem>
-                      <SelectItem value="10">10%</SelectItem>
-                      <SelectItem value="15">15%</SelectItem>
-                      <SelectItem value="20">20%</SelectItem>
+                      {taxRates.filter(t => t.isActive).map((tr) => (
+                        <SelectItem key={tr.id} value={String(tr.rate)}>
+                          {tr.rate}% - {tr.name}
+                        </SelectItem>
+                      ))}
+                      {taxRates.filter(t => t.isActive).length === 0 && (
+                        <>
+                          <SelectItem value="5">5%</SelectItem>
+                          <SelectItem value="10">10%</SelectItem>
+                          <SelectItem value="15">15%</SelectItem>
+                          <SelectItem value="20">20%</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -300,8 +319,8 @@ export function NewInvoiceForm({ clients }: NewInvoiceFormProps) {
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Items</CardTitle>
-                <Button variant="outline" size="sm" disabled title="Rate card import coming soon">
-                  Import from Rate Cards
+                <Button variant="outline" size="sm" disabled className="text-muted-foreground">
+                  Import from Rate Cards (Coming Soon)
                 </Button>
               </div>
             </CardHeader>

@@ -42,7 +42,9 @@ function getPeriodStartDate(period: DashboardPeriod): Date | null {
 // Get dashboard stats
 export async function getDashboardStats(): Promise<DashboardStats> {
   const { workspaceId } = await getCurrentUserWorkspace();
-  const startOfMonth = startOfDay(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const now = new Date();
+  const startOfMonth = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+  const endOfMonth = startOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 1));
 
   const [
     totalQuotes,
@@ -96,7 +98,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       where: {
         workspaceId,
         deletedAt: null,
-        createdAt: { gte: startOfMonth },
+        createdAt: { gte: startOfMonth, lt: endOfMonth },
       },
     }),
     // This month's invoices
@@ -104,7 +106,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       where: {
         workspaceId,
         deletedAt: null,
-        createdAt: { gte: startOfMonth },
+        createdAt: { gte: startOfMonth, lt: endOfMonth },
       },
     }),
     // Revenue this month
@@ -113,7 +115,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         workspaceId,
         status: 'paid',
         deletedAt: null,
-        paidAt: { gte: startOfMonth },
+        paidAt: { gte: startOfMonth, lt: endOfMonth },
       },
       _sum: { amountPaid: true },
     }),

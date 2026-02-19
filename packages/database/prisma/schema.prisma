@@ -640,6 +640,7 @@ model ContractInstance {
   pdfUrl          String?   @map("pdf_url")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
 
   contract  Contract  @relation(fields: [contractId], references: [id])
   quote     Quote?    @relation(fields: [quoteId], references: [id])
@@ -667,9 +668,10 @@ model EmailTemplate {
   subject     String
   body        String   @db.Text
   isActive    Boolean  @default(true) @map("is_active")
-  isDefault   Boolean  @default(false) @map("is_default")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  isDefault   Boolean   @default(false) @map("is_default")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
 
   workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   scheduledEmails ScheduledEmail[]
