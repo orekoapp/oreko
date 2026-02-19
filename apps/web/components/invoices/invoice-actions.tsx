@@ -145,9 +145,9 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
             Send to Client
           </Button>
         )}
-        {invoice.status !== 'draft' && invoice.status !== 'voided' && (
+        {invoice.status !== 'draft' && invoice.status !== 'voided' && invoice.accessToken && (
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/i/${invoice.id}`} target="_blank">
+            <Link href={`/i/${invoice.accessToken}`} target="_blank">
               <ExternalLink className="mr-2 h-4 w-4" />
               View Portal
             </Link>

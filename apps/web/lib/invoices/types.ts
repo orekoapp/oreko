@@ -60,6 +60,7 @@ export interface InvoiceDocument {
   projectId: string | null;
   quoteId: string | null;
   invoiceNumber: string;
+  accessToken: string | null;
   status: InvoiceStatus;
   title: string;
   issueDate: string;

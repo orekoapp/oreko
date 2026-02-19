@@ -77,7 +77,8 @@ async function generateInvoiceNumber(workspaceId: string): Promise<string> {
   });
 
   const paddedValue = String(result.value).padStart(result.padding, '0');
-  const parts = [result.prefix, paddedValue];
+  const prefix = result.prefix.replace(/-$/, '');
+  const parts = [prefix, paddedValue];
   if (result.suffix) {
     parts.push(result.suffix);
   }
@@ -418,6 +419,7 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
     projectId: invoice.projectId,
     quoteId: invoice.quoteId,
     invoiceNumber: invoice.invoiceNumber,
+    accessToken: invoice.accessToken,
     status: invoice.status as InvoiceStatus,
     title: invoice.title || 'Invoice',
     issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',

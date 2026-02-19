@@ -75,7 +75,8 @@ async function generateQuoteNumber(workspaceId: string): Promise<string> {
 
   // Format the quote number
   const paddedValue = String(result.value).padStart(result.padding, '0');
-  const parts = [result.prefix, paddedValue];
+  const prefix = result.prefix.replace(/-$/, '');
+  const parts = [prefix, paddedValue];
   if (result.suffix) {
     parts.push(result.suffix);
   }
