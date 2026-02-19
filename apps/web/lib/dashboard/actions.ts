@@ -873,7 +873,7 @@ export async function getTopClientsByRevenue(
 // Get client lifetime values
 export async function getClientLTVData(
   limit: number = 5
-): Promise<{ id: string; name: string; email?: string; ltv: number }[]> {
+): Promise<{ clients: { id: string; name: string; email?: string; ltv: number }[]; averageLTV: number; totalClients: number }> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const clients = await prisma.client.findMany({
@@ -905,9 +905,15 @@ export async function getClientLTVData(
     ltv: client.invoices.reduce((sum, inv) => sum + toNumber(inv.amountPaid), 0),
   }));
 
-  return clientLTVs
-    .sort((a, b) => b.ltv - a.ltv)
-    .slice(0, limit);
+  // Calculate average from ALL clients (including zero-revenue)
+  const totalLTV = clientLTVs.reduce((sum, c) => sum + c.ltv, 0);
+  const averageLTV = clientLTVs.length > 0 ? totalLTV / clientLTVs.length : 0;
+
+  return {
+    clients: clientLTVs.sort((a, b) => b.ltv - a.ltv).slice(0, limit),
+    averageLTV,
+    totalClients: clientLTVs.length,
+  };
 }
 
 // Get revenue forecast

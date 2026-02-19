@@ -95,7 +95,7 @@ interface AnalyticsDashboardProps {
   conversionFunnel: ConversionFunnelData;
   paymentAging: PaymentAgingData;
   topClients?: TopClient[];
-  clientLTV?: ClientLTV[];
+  clientLTV?: { clients: ClientLTV[]; averageLTV: number; totalClients: number };
   revenueForecast?: ForecastDataPoint[];
   monthlyComparison?: MonthlyComparisonData[];
 }
