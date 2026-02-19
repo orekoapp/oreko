@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { DEMO_CONFIG } from '@/lib/demo/constants';
 
 /**
@@ -47,7 +48,10 @@ export async function GET(request: Request) {
     // Delete all existing demo data (in correct order to respect foreign keys)
     console.log('[Demo Reset] Deleting existing demo data...');
 
-    // Delete invoice line items and invoices
+    // Delete invoice events, line items, and invoices
+    await prisma.invoiceEvent.deleteMany({
+      where: { invoice: { workspaceId: demoWorkspace.id } },
+    });
     await prisma.invoiceLineItem.deleteMany({
       where: { invoice: { workspaceId: demoWorkspace.id } },
     });
@@ -443,13 +447,13 @@ async function seedDemoData(workspaceId: string) {
     ],
   });
 
-  // Invoice 3: Overdue
+  // Invoice 3: Overdue (stored as 'sent' with past dueDate; overdue is computed at runtime)
   await createInvoiceWithLineItems(workspaceId, {
     invoiceNumber: 'INV-0003',
     clientId: 'demo-client-2',
     projectId: 'demo-project-2',
     title: 'Phase 1 Design Delivery',
-    status: 'overdue',
+    status: 'sent',
     issueDate: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
     dueDate: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
     sentAt: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
@@ -929,6 +933,8 @@ async function createInvoiceWithLineItems(
   const subtotal = data.lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
   const amountPaid = data.amountPaid || 0;
 
+  const amountDue = (data.status === 'paid' || data.status === 'voided') ? 0 : subtotal - amountPaid;
+
   const invoice = await prisma.invoice.create({
     data: {
       workspaceId,
@@ -945,7 +951,8 @@ async function createInvoiceWithLineItems(
       subtotal,
       total: subtotal,
       amountPaid,
-      amountDue: subtotal - amountPaid,
+      amountDue,
+      accessToken: crypto.randomUUID(),
     },
   });
 
@@ -959,6 +966,25 @@ async function createInvoiceWithLineItems(
       sortOrder: index,
     })),
   });
+
+  // Create activity events with proper dates
+  const events: { eventType: string; createdAt: Date }[] = [];
+  events.push({ eventType: 'created', createdAt: data.issueDate });
+  if (data.sentAt) events.push({ eventType: 'sent', createdAt: data.sentAt });
+  if (data.viewedAt) events.push({ eventType: 'viewed', createdAt: data.viewedAt });
+  if (data.paidAt) events.push({ eventType: 'paid', createdAt: data.paidAt });
+
+  for (const evt of events) {
+    await prisma.invoiceEvent.create({
+      data: {
+        invoiceId: invoice.id,
+        eventType: evt.eventType,
+        actorType: evt.eventType === 'created' ? 'user' : 'system',
+        metadata: {},
+        createdAt: evt.createdAt,
+      },
+    });
+  }
 
   return invoice;
 }

@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -264,9 +265,9 @@ async function main() {
       content: 'This Standard Service Agreement ("Agreement") is entered into between Test Business ("Provider") and the Client...\n\n1. SCOPE OF SERVICES\nProvider agrees to perform the services as described in the associated quote or proposal.\n\n2. PAYMENT TERMS\nClient agrees to pay Provider according to the payment schedule specified in the invoice.\n\n3. TERM AND TERMINATION\nThis Agreement begins on the effective date and continues until all services are completed.\n\n4. CONFIDENTIALITY\nBoth parties agree to maintain confidentiality of proprietary information.',
       isTemplate: true,
       variables: JSON.stringify([
-        { name: 'clientName', label: 'Client Name', type: 'text' },
-        { name: 'projectName', label: 'Project Name', type: 'text' },
-        { name: 'startDate', label: 'Start Date', type: 'date' },
+        { key: 'clientName', label: 'Client Name', type: 'text' },
+        { key: 'projectName', label: 'Project Name', type: 'text' },
+        { key: 'startDate', label: 'Start Date', type: 'date' },
       ]),
     },
     {
@@ -275,8 +276,8 @@ async function main() {
       content: 'This Non-Disclosure Agreement ("NDA") is entered into between Test Business and the receiving party...\n\n1. DEFINITION OF CONFIDENTIAL INFORMATION\nAll non-public information disclosed by either party.\n\n2. OBLIGATIONS\nThe receiving party shall protect confidential information with reasonable care.\n\n3. DURATION\nThis NDA remains in effect for two (2) years from the date of signing.',
       isTemplate: true,
       variables: JSON.stringify([
-        { name: 'partyName', label: 'Party Name', type: 'text' },
-        { name: 'effectiveDate', label: 'Effective Date', type: 'date' },
+        { key: 'partyName', label: 'Party Name', type: 'text' },
+        { key: 'effectiveDate', label: 'Effective Date', type: 'date' },
       ]),
     },
   ];
@@ -353,10 +354,14 @@ async function main() {
     5: { issueDaysAgo: 30, sentDaysAgo: 28, viewedDaysAgo: 25, acceptedDaysAgo: 22 },    // Q-0006 converted
   };
 
+  // Link quotes to projects (round-robin)
+  const projectIds = ['test-project-1', 'test-project-2', 'test-project-3'];
+
   for (let i = 0; i < testQuotes.length; i++) {
     const q = testQuotes[i]!;
     const client = createdClients[i % createdClients.length]!;
     const dateCfg = quoteDateConfigs[i]!;
+    const projectId = projectIds[i % projectIds.length]!;
     const daysMs = 24 * 60 * 60 * 1000;
 
     const issueDate = new Date(Date.now() - dateCfg.issueDaysAgo * daysMs);
@@ -378,6 +383,7 @@ async function main() {
         title: q.title,
         subtotal: q.subtotal,
         total: q.subtotal,
+        projectId,
         settings: {}, // C03 fix: clear stale blocks so fallback reconstructs from lineItems
         issueDate,
         expirationDate,
@@ -390,6 +396,7 @@ async function main() {
       create: {
         workspaceId: workspace.id,
         clientId: client.id,
+        projectId,
         quoteNumber: `Q-${String(i + 1).padStart(4, '0')}`,
         status: q.status,
         title: q.title,
@@ -529,7 +536,7 @@ async function main() {
     { status: 'sent', title: 'Q1 Consulting Retainer', itemName: 'Consulting', qty: 38, rate: 100 },
     { status: 'viewed', title: 'Design System Delivery', itemName: 'Design Services', qty: 52, rate: 125 },
     { status: 'paid', title: 'Landing Page Build', itemName: 'Web Development', qty: 24, rate: 175 },
-    { status: 'overdue', title: 'Database Optimization', itemName: 'Performance Tuning', qty: 11, rate: 250 },
+    { status: 'sent', title: 'Database Optimization', itemName: 'Performance Tuning', qty: 11, rate: 250 },
     { status: 'voided', title: 'Cancelled Project Deposit', itemName: 'Project Deposit', qty: 1, rate: 950 },
     { status: 'paid', title: 'SEO Audit & Report', itemName: 'SEO Consulting', qty: 10, rate: 200 },
     { status: 'paid', title: 'Logo & Branding Package', itemName: 'Brand Design', qty: 1, rate: 3500 },
@@ -554,6 +561,7 @@ async function main() {
     const invoiceNumber = `INV-${String(7 + i).padStart(4, '0')}`;
     const invDates = invDateConfigs[i]!;
     const daysMs = 24 * 60 * 60 * 1000;
+    const invProjectId = projectIds[i % projectIds.length]!;
 
     const invIssueDate = new Date(Date.now() - invDates.issueDaysAgo * daysMs);
     const invDueDate = invDates.dueDaysFromNow
@@ -563,6 +571,7 @@ async function main() {
     const invViewedAt = invDates.viewedDaysAgo ? new Date(Date.now() - invDates.viewedDaysAgo * daysMs) : null;
     const invPaidAt = invDates.paidDaysAgo ? new Date(Date.now() - invDates.paidDaysAgo * daysMs) : null;
     const invVoidedAt = invDates.voidedDaysAgo ? new Date(Date.now() - invDates.voidedDaysAgo * daysMs) : null;
+    const invAccessToken = crypto.randomUUID();
 
     const invoice = await prisma.invoice.upsert({
       where: {
@@ -574,21 +583,24 @@ async function main() {
       update: {
         status: inv.status,
         title: inv.title,
+        projectId: invProjectId,
         subtotal,
         total: subtotal,
         amountPaid: inv.status === 'paid' ? subtotal : 0,
-        amountDue: inv.status === 'paid' ? 0 : subtotal,
+        amountDue: (inv.status === 'paid' || inv.status === 'voided') ? 0 : subtotal,
         issueDate: invIssueDate,
         dueDate: invDueDate,
         sentAt: invSentAt,
         viewedAt: invViewedAt,
         paidAt: invPaidAt,
         voidedAt: invVoidedAt,
+        accessToken: invAccessToken,
         deletedAt: null,
       },
       create: {
         workspaceId: workspace.id,
         clientId: client.id,
+        projectId: invProjectId,
         invoiceNumber,
         status: inv.status,
         title: inv.title,
@@ -597,11 +609,12 @@ async function main() {
         subtotal,
         total: subtotal,
         amountPaid: inv.status === 'paid' ? subtotal : 0,
-        amountDue: inv.status === 'paid' ? 0 : subtotal,
+        amountDue: (inv.status === 'paid' || inv.status === 'voided') ? 0 : subtotal,
         sentAt: invSentAt,
         viewedAt: invViewedAt,
         paidAt: invPaidAt,
         voidedAt: invVoidedAt,
+        accessToken: invAccessToken,
       },
     });
 
@@ -1219,7 +1232,7 @@ async function seedDemoWorkspace() {
       invoiceNumber: 'INV-0003',
       clientId: 'demo-client-2',
       title: 'Phase 1 Design Delivery',
-      status: 'overdue',
+      status: 'sent',
       issueDate: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
       dueDate: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
       sentAt: new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000),
@@ -1576,6 +1589,26 @@ async function seedDemoWorkspace() {
     }
   }
   console.log('Seeded demo activity events');
+
+  // Clean up any double-hyphen invoice/quote numbers (fixes data created before prefix-strip fix)
+  const doubleHyphenInvoices = await prisma.invoice.findMany({
+    where: { workspaceId: demoWorkspace.id, invoiceNumber: { contains: '--' } },
+    select: { id: true, invoiceNumber: true },
+  });
+  for (const inv of doubleHyphenInvoices) {
+    const fixed = inv.invoiceNumber.replace(/--+/g, '-');
+    await prisma.invoice.update({ where: { id: inv.id }, data: { invoiceNumber: fixed } });
+    console.log(`Fixed invoice number: ${inv.invoiceNumber} -> ${fixed}`);
+  }
+  const doubleHyphenQuotes = await prisma.quote.findMany({
+    where: { workspaceId: demoWorkspace.id, quoteNumber: { contains: '--' } },
+    select: { id: true, quoteNumber: true },
+  });
+  for (const q of doubleHyphenQuotes) {
+    const fixed = q.quoteNumber.replace(/--+/g, '-');
+    await prisma.quote.update({ where: { id: q.id }, data: { quoteNumber: fixed } });
+    console.log(`Fixed quote number: ${q.quoteNumber} -> ${fixed}`);
+  }
 
   console.log('Demo workspace seeding completed!');
 }

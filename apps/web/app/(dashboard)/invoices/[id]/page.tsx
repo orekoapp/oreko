@@ -86,6 +86,8 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
     : invoice.status;
   const defaultStyle = { bg: 'bg-gray-100', text: 'text-gray-700', icon: <Edit className="h-4 w-4" /> };
   const statusStyle = statusColors[displayStatus] ?? defaultStyle;
+  // Voided invoices owe nothing regardless of DB value
+  const displayAmountDue = invoice.status === 'voided' ? 0 : invoice.totals.amountDue;
 
   return (
     <div className="space-y-6">
@@ -261,8 +263,8 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Amount Due</p>
-                <p data-testid="amount-due" className={`text-xl font-bold ${invoice.totals.amountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                  {formatCurrency(invoice.totals.amountDue, invoice.settings.currency)}
+                <p data-testid="amount-due" className={`text-xl font-bold ${displayAmountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                  {formatCurrency(displayAmountDue, invoice.settings.currency)}
                 </p>
               </div>
               <div>

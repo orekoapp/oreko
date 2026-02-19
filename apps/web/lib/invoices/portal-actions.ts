@@ -138,11 +138,14 @@ export async function getInvoiceByAccessToken(
     // Parse settings from JSON
     const settings = invoice.settings as Record<string, unknown>;
 
+    // Voided invoices owe nothing regardless of DB value
+    const amountDue = invoice.status === 'voided' ? 0 : Number(invoice.amountDue);
+
     // Determine if payment is possible
     const canPay =
       invoice.status !== 'paid' &&
       invoice.status !== 'voided' &&
-      Number(invoice.amountDue) > 0;
+      amountDue > 0;
 
     const publicInvoice: PublicInvoiceData = {
       id: invoice.id,
@@ -159,7 +162,7 @@ export async function getInvoiceByAccessToken(
         taxTotal: Number(invoice.taxTotal),
         total: Number(invoice.total),
         amountPaid: Number(invoice.amountPaid),
-        amountDue: Number(invoice.amountDue),
+        amountDue,
       },
       settings: {
         currency: (settings.currency as string) ?? 'USD',

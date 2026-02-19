@@ -214,22 +214,27 @@ export async function createInvoicePaymentIntent(
   }
 
   try {
-    // Use accessToken for public checkout (unauthenticated), or invoiceId for authenticated users
-    const invoice = accessToken
-      ? await prisma.invoice.findFirst({
-          where: { id: invoiceId, accessToken, deletedAt: null },
-          include: {
-            client: true,
-            workspace: { include: { paymentSettings: true } },
-          },
-        })
-      : await prisma.invoice.findFirst({
-          where: { id: invoiceId, deletedAt: null },
-          include: {
-            client: true,
-            workspace: { include: { paymentSettings: true } },
-          },
-        });
+    // Use accessToken for public checkout (unauthenticated), or workspace-scoped query for authenticated users
+    let invoice;
+    if (accessToken) {
+      invoice = await prisma.invoice.findFirst({
+        where: { id: invoiceId, accessToken, deletedAt: null },
+        include: {
+          client: true,
+          workspace: { include: { paymentSettings: true } },
+        },
+      });
+    } else {
+      // Authenticated path: require workspace scope
+      const { workspaceId } = await getCurrentUserWorkspace();
+      invoice = await prisma.invoice.findFirst({
+        where: { id: invoiceId, workspaceId, deletedAt: null },
+        include: {
+          client: true,
+          workspace: { include: { paymentSettings: true } },
+        },
+      });
+    }
 
     if (!invoice) {
       return { success: false, error: 'Invoice not found' };

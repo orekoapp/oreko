@@ -110,18 +110,16 @@ export function AnalyticsDashboard({
   revenueForecast,
   monthlyComparison,
 }: AnalyticsDashboardProps) {
-  // Calculate trends
+  // Calculate trends (null when no prior period data to avoid misleading "+100%")
   const revenueTrend = useMemo(() => {
-    const change = stats.prevMonthRevenue > 0
-      ? ((stats.revenueThisMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100
-      : stats.revenueThisMonth > 0 ? 100 : 0;
+    if (stats.prevMonthRevenue === 0) return null;
+    const change = ((stats.revenueThisMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100;
     return { value: Math.abs(Math.round(change)), isPositive: change >= 0 };
   }, [stats]);
 
   const quotesTrend = useMemo(() => {
-    const change = stats.prevMonthQuotes > 0
-      ? ((stats.quotesThisMonth - stats.prevMonthQuotes) / stats.prevMonthQuotes) * 100
-      : stats.quotesThisMonth > 0 ? 100 : 0;
+    if (stats.prevMonthQuotes === 0) return null;
+    const change = ((stats.quotesThisMonth - stats.prevMonthQuotes) / stats.prevMonthQuotes) * 100;
     return { value: Math.abs(Math.round(change)), isPositive: change >= 0 };
   }, [stats]);
 
@@ -133,14 +131,14 @@ export function AnalyticsDashboard({
           title="Total Revenue"
           value={formatCurrency(stats.totalRevenue)}
           icon={DollarSign}
-          trend={revenueTrend}
+          trend={revenueTrend ?? undefined}
           description="vs last month"
         />
         <StatCard
           title="Total Quotes"
           value={stats.totalQuotes}
           icon={FileText}
-          trend={quotesTrend}
+          trend={quotesTrend ?? undefined}
           description="vs last month"
         />
         <StatCard
