@@ -5,7 +5,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import { BlockRenderer } from './block-renderer';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -116,23 +116,23 @@ export function DocumentCanvas() {
                   <div className="w-64 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>${document.totals.subtotal.toFixed(2)}</span>
+                      <span>{formatCurrency(document.totals.subtotal)}</span>
                     </div>
                     {document.totals.discountAmount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
-                        <span>-${document.totals.discountAmount.toFixed(2)}</span>
+                        <span>-{formatCurrency(document.totals.discountAmount)}</span>
                       </div>
                     )}
                     {document.totals.taxTotal > 0 && (
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>${document.totals.taxTotal.toFixed(2)}</span>
+                        <span>{formatCurrency(document.totals.taxTotal)}</span>
                       </div>
                     )}
                     <div className="flex justify-between border-t pt-2 text-lg font-bold">
                       <span>Total</span>
-                      <span>${document.totals.total.toFixed(2)}</span>
+                      <span>{formatCurrency(document.totals.total)}</span>
                     </div>
                   </div>
                 </div>

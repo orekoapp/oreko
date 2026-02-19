@@ -13,8 +13,13 @@ export async function POST(
     const { invoiceId } = await params;
     const body = await request.json().catch(() => ({}));
     const amount = body.amount ? Number(body.amount) : undefined;
+    const accessToken = body.accessToken as string | undefined;
 
-    const result = await createInvoicePaymentIntent(invoiceId, amount);
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Access token is required' }, { status: 400 });
+    }
+
+    const result = await createInvoicePaymentIntent(invoiceId, amount, accessToken);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });

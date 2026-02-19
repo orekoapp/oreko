@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
-import { auth } from '@/lib/auth';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 
 /**
  * GET /api/clients
@@ -8,19 +8,12 @@ import { auth } from '@/lib/auth';
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    let workspaceId: string;
+    try {
+      const result = await getCurrentUserWorkspace();
+      workspaceId = result.workspaceId;
+    } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get user's workspace
-    const membership = await prisma.workspaceMember.findFirst({
-      where: { userId: session.user.id },
-      select: { workspaceId: true },
-    });
-
-    if (!membership) {
-      return NextResponse.json({ error: 'No workspace found' }, { status: 404 });
     }
 
     // Parse query params
@@ -31,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const where = {
-      workspaceId: membership.workspaceId,
+      workspaceId,
       deletedAt: null,
       ...(search && {
         OR: [

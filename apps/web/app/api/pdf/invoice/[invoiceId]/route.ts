@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInvoicePdfData } from '@/lib/pdf/actions';
 import { generateInvoicePdfHtml } from '@/lib/pdf/templates';
+import { auth } from '@/lib/auth';
 
 /**
  * GET /api/pdf/invoice/[invoiceId]
@@ -11,6 +12,11 @@ export async function GET(
   { params }: { params: Promise<{ invoiceId: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const { invoiceId } = await params;
 
     const data = await getInvoicePdfData(invoiceId);

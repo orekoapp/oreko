@@ -418,10 +418,13 @@ export async function createContractInstance(
   // Process template content with variable values
   let content = input.content || template.content;
   if (input.variableValues) {
-    const variables = (typeof template.variables === 'string' ? JSON.parse(template.variables) : template.variables) as ContractVariable[];
+    const variables = (typeof template.variables === 'string' ? JSON.parse(template.variables) : template.variables) as Array<ContractVariable & { name?: string }>;
     for (const variable of variables) {
-      const value = input.variableValues[variable.key] || variable.defaultValue || '';
-      content = content.replace(new RegExp(`{{${variable.key}}}`, 'g'), value);
+      // Support both 'key' (type definition) and 'name' (seed data) fields
+      const varKey = variable.key || variable.name || '';
+      if (!varKey) continue;
+      const value = input.variableValues[varKey] || variable.defaultValue || '';
+      content = content.replace(new RegExp(`{{${varKey}}}`, 'g'), value);
     }
   }
 
@@ -475,7 +478,7 @@ export async function createContractInstance(
 // Send a contract instance to client
 export async function sendContractInstance(id: string): Promise<void> {
   await assertNotDemo();
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   const instance = await prisma.contractInstance.findFirst({
     where: { id, workspaceId },
@@ -536,7 +539,7 @@ export async function sendContractInstance(id: string): Promise<void> {
 
   // Create notification for sender
   createNotification({
-    userId: (await getCurrentUserWorkspace()).userId,
+    userId,
     workspaceId,
     type: 'contract_sent',
     title: `Contract sent to ${instance.client?.name || 'client'}`,

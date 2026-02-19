@@ -77,6 +77,14 @@ export async function createQuote(data: {
   await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
+  // Verify client belongs to workspace
+  const client = await prisma.client.findFirst({
+    where: { id: data.clientId, workspaceId: workspace.id, deletedAt: null },
+  });
+  if (!client) {
+    return { success: false, error: 'Client not found' };
+  }
+
   const quoteNumber = await generateQuoteNumber(workspace.id);
 
   // Extract service items from blocks to create line items
@@ -413,6 +421,15 @@ export async function deleteQuote(quoteId: string) {
   await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
+  // Check for linked invoices
+  const linkedInvoice = await prisma.invoice.findFirst({
+    where: { quoteId, deletedAt: null },
+  });
+
+  if (linkedInvoice) {
+    return { success: false, error: 'Cannot delete a quote that has a linked invoice. Delete or void the invoice first.' };
+  }
+
   await prisma.quote.update({
     where: {
       id: quoteId,
@@ -455,6 +472,7 @@ export async function duplicateQuote(quoteId: string) {
     data: {
       workspaceId: workspace.id,
       clientId: original.clientId,
+      projectId: original.projectId,
       quoteNumber,
       title: `${original.title || 'Untitled'} (Copy)`,
       status: 'draft',
@@ -496,6 +514,29 @@ export async function updateQuoteStatus(
 ) {
   await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
+
+  // Validate state transitions
+  const validTransitions: Record<string, string[]> = {
+    draft: ['sent'],
+    sent: ['viewed', 'accepted', 'declined', 'expired'],
+    viewed: ['accepted', 'declined', 'expired'],
+    accepted: [], // converted is set internally via createInvoiceFromQuote
+    declined: ['draft'], // allow re-drafting
+    expired: ['draft'], // allow re-drafting
+  };
+
+  const existingQuote = await prisma.quote.findFirst({
+    where: { id: quoteId, workspaceId: workspace.id, deletedAt: null },
+  });
+
+  if (!existingQuote) {
+    return { success: false, error: 'Quote not found' };
+  }
+
+  const allowed = validTransitions[existingQuote.status] || [];
+  if (!allowed.includes(status)) {
+    return { success: false, error: `Cannot change status from '${existingQuote.status}' to '${status}'` };
+  }
 
   const statusTimestamps: Record<string, string> = {
     sent: 'sentAt',
@@ -557,6 +598,11 @@ export async function sendQuote(quoteId: string) {
 
   if (!quote.client?.email) {
     return { success: false, error: 'Client email is required to send quote' };
+  }
+
+  // Prevent sending empty quotes
+  if (Number(quote.total) === 0) {
+    return { success: false, error: 'Cannot send a quote with zero total. Add line items first.' };
   }
 
   // Update quote status to sent

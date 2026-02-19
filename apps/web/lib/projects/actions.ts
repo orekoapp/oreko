@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@quotecraft/database';
-import { auth } from '@/lib/auth';
 import { assertNotDemo } from '@/lib/demo/guard';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { z } from 'zod';
 
 // Constants
@@ -13,23 +13,19 @@ const DEFAULT_PAGE_SIZE = 25;
  * Get the current user's active workspace
  */
 async function getActiveWorkspace() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
 
-  const membership = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    include: { workspace: true },
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
   });
 
-  if (!membership) {
-    throw new Error('No workspace found');
+  if (!workspace) {
+    throw new Error('Workspace not found');
   }
 
   return {
-    userId: session.user.id,
-    workspace: membership.workspace,
+    userId,
+    workspace,
   };
 }
 

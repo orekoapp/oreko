@@ -206,24 +206,30 @@ export async function checkStripeAccountStatus(): Promise<{
  */
 export async function createInvoicePaymentIntent(
   invoiceId: string,
-  amount?: number
+  amount?: number,
+  accessToken?: string
 ): Promise<PaymentIntentResult> {
   if (!stripe || !isStripeEnabled()) {
     return { success: false, error: 'Stripe payments are not available' };
   }
 
   try {
-    const invoice = await prisma.invoice.findUnique({
-      where: { id: invoiceId },
-      include: {
-        client: true,
-        workspace: {
+    // Use accessToken for public checkout (unauthenticated), or invoiceId for authenticated users
+    const invoice = accessToken
+      ? await prisma.invoice.findFirst({
+          where: { id: invoiceId, accessToken, deletedAt: null },
           include: {
-            paymentSettings: true,
+            client: true,
+            workspace: { include: { paymentSettings: true } },
           },
-        },
-      },
-    });
+        })
+      : await prisma.invoice.findFirst({
+          where: { id: invoiceId, deletedAt: null },
+          include: {
+            client: true,
+            workspace: { include: { paymentSettings: true } },
+          },
+        });
 
     if (!invoice) {
       return { success: false, error: 'Invoice not found' };

@@ -149,8 +149,8 @@ export async function getClientById(id: string): Promise<ClientDetail> {
       },
       _count: {
         select: {
-          quotes: true,
-          invoices: true,
+          quotes: { where: { deletedAt: null } },
+          invoices: { where: { deletedAt: null } },
         },
       },
     },
@@ -226,7 +226,7 @@ export async function getClientActivity(clientId: string): Promise<ClientActivit
   // Get quotes and invoices for activity
   const [quotes, invoices] = await Promise.all([
     prisma.quote.findMany({
-      where: { clientId },
+      where: { clientId, workspaceId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       take: 20,
       select: {
@@ -241,7 +241,7 @@ export async function getClientActivity(clientId: string): Promise<ClientActivit
       },
     }),
     prisma.invoice.findMany({
-      where: { clientId },
+      where: { clientId, workspaceId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       take: 20,
       select: {
@@ -515,7 +515,7 @@ export async function getClientStats(): Promise<ClientStats> {
             where: { status: { in: ['draft', 'sent', 'viewed'] } },
           },
           invoices: {
-            where: { status: { in: ['sent', 'viewed', 'overdue'] } },
+            where: { status: { in: ['sent', 'viewed', 'partial'] } },
           },
         },
       },

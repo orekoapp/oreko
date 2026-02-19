@@ -676,6 +676,12 @@ export async function inviteMember(
   await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
+  // Only owners and admins can invite members
+  const currentRole = await getCurrentUserRole();
+  if (currentRole !== 'owner' && currentRole !== 'admin') {
+    return { success: false, error: 'Insufficient permissions to invite members' };
+  }
+
   // Check if user exists
   const user = await prisma.user.findUnique({
     where: { email },

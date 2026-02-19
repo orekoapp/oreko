@@ -102,6 +102,14 @@ export async function createInvoice(data: CreateInvoiceData) {
   await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
+  // Verify client belongs to workspace
+  const client = await prisma.client.findFirst({
+    where: { id: data.clientId, workspaceId: workspace.id, deletedAt: null },
+  });
+  if (!client) {
+    return { success: false, error: 'Client not found' };
+  }
+
   const invoiceNumber = await generateInvoiceNumber(workspace.id);
   const { subtotal, taxTotal, total } = calculateTotals(data.lineItems);
 
@@ -340,7 +348,7 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
           subtotal,
           taxTotal,
           total,
-          amountDue: total,
+          amountDue: Math.max(0, total - Number(existingInvoice.amountPaid)),
           lineItems: {
             create: data.lineItems.map((item, index) => ({
               name: item.name,
@@ -560,6 +568,7 @@ export async function updateInvoiceStatus(
     updateData.amountDue = 0;
   } else if (status === 'voided') {
     updateData.voidedAt = new Date();
+    updateData.amountDue = 0;
   }
 
   await prisma.$transaction([
@@ -699,6 +708,10 @@ export async function recordPayment(
 
   if (invoice.status === 'voided') {
     return { success: false, error: 'Cannot record payment for voided invoice' };
+  }
+
+  if (data.amount <= 0) {
+    return { success: false, error: 'Payment amount must be greater than zero' };
   }
 
   const currentAmountPaid = Number(invoice.amountPaid);

@@ -32,11 +32,14 @@ export const authConfig: NextAuthConfig = {
         '/templates',
         '/contracts',
         '/onboarding',
+        '/projects',
+        '/analytics',
+        '/help',
       ];
       const isOnProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
       const isOnAuth = pathname.startsWith('/login') || pathname.startsWith('/register');
-      const isOnPortal = pathname.startsWith('/p/') || pathname.startsWith('/q/'); // Client portals
+      const isOnPortal = pathname.startsWith('/p/') || pathname.startsWith('/q/') || pathname.startsWith('/i/') || pathname.startsWith('/c/'); // Client portals
 
       // Allow public access to client portal
       if (isOnPortal) {
@@ -88,12 +91,10 @@ export const authConfig: NextAuthConfig = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
     }),
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
     }),
     Credentials({
       name: 'credentials',

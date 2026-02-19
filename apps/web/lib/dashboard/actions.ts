@@ -72,21 +72,22 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       where: { workspaceId, status: 'paid', deletedAt: null },
       _sum: { amountPaid: true },
     }),
-    // Unpaid invoices (outstanding)
+    // Unpaid invoices (outstanding) — 'overdue' is computed at runtime, not stored in DB
     prisma.invoice.aggregate({
       where: {
         workspaceId,
         deletedAt: null,
-        status: { in: ['sent', 'viewed', 'partial', 'overdue'] },
+        status: { in: ['sent', 'viewed', 'partial'] },
       },
       _sum: { total: true, amountPaid: true },
     }),
-    // Overdue invoices
+    // Overdue invoices — computed by dueDate < now for non-draft, non-paid, non-voided
     prisma.invoice.aggregate({
       where: {
         workspaceId,
         deletedAt: null,
-        status: 'overdue',
+        status: { in: ['sent', 'viewed', 'partial'] },
+        dueDate: { lt: new Date() },
       },
       _sum: { total: true, amountPaid: true },
     }),
@@ -904,8 +905,7 @@ export async function getClientLTVData(
 
   return clientLTVs
     .sort((a, b) => b.ltv - a.ltv)
-    .slice(0, limit)
-    .filter((c) => c.ltv > 0);
+    .slice(0, limit);
 }
 
 // Get revenue forecast
