@@ -23,9 +23,18 @@ export default function NewClientPage() {
       toast.success('Client created successfully');
       router.push(`/clients/${result.id}`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create client';
+      let errorMessage = 'Failed to create client';
+      if (error instanceof Error) {
+        // Server action errors may be sanitized; check for demo mode keywords
+        if (error.message.includes('demo') || error.message.includes('Demo')) {
+          errorMessage = 'This action is not available in demo mode. Create an account to save your changes.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
       setServerError(errorMessage);
       toast.error(errorMessage);
+    } finally {
       setIsLoading(false);
     }
   };

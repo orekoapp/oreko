@@ -82,6 +82,7 @@ export function RevenueComparisonChart({ data: propData }: RevenueComparisonChar
                   return `$${value}`;
                 }}
                 width={45}
+                domain={[0, (dataMax: number) => Math.max(dataMax, 1000)]}
               />
               <Tooltip
                 content={({ active, payload, label }) => {

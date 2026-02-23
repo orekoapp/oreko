@@ -96,6 +96,11 @@ export async function GET(request: Request) {
       where: { workspaceId: demoWorkspace.id },
     });
 
+    // Delete notifications (prevents stale/leaked notification data)
+    await prisma.notification.deleteMany({
+      where: { workspaceId: demoWorkspace.id },
+    });
+
     // Delete email templates
     await prisma.emailTemplate.deleteMany({
       where: { workspaceId: demoWorkspace.id },

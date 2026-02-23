@@ -74,22 +74,27 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       where: { workspaceId, status: 'paid', deletedAt: null },
       _sum: { amountPaid: true },
     }),
-    // Unpaid invoices (outstanding) — 'overdue' is computed at runtime, not stored in DB
+    // Unpaid invoices (outstanding) — includes 'overdue' which may be stored in DB
     prisma.invoice.aggregate({
       where: {
         workspaceId,
         deletedAt: null,
-        status: { in: ['sent', 'viewed', 'partial'] },
+        status: { in: ['sent', 'viewed', 'partial', 'overdue'] },
       },
       _sum: { total: true, amountPaid: true },
     }),
-    // Overdue invoices — computed by dueDate < now for non-draft, non-paid, non-voided
+    // Overdue invoices — either stored as 'overdue' status OR computed by dueDate < now
     prisma.invoice.aggregate({
       where: {
         workspaceId,
         deletedAt: null,
-        status: { in: ['sent', 'viewed', 'partial'] },
-        dueDate: { lt: new Date() },
+        OR: [
+          { status: 'overdue' },
+          {
+            status: { in: ['sent', 'viewed', 'partial'] },
+            dueDate: { lt: new Date() },
+          },
+        ],
       },
       _sum: { total: true, amountPaid: true },
     }),

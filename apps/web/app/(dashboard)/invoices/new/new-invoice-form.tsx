@@ -250,7 +250,7 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                     ) : (
                       clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
-                          {client.name}{client.company ? ` (${client.company})` : ''}
+                          {client.name}{client.company && client.company !== client.name ? ` (${client.company})` : ''}
                         </SelectItem>
                       ))
                     )}

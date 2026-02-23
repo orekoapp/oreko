@@ -176,7 +176,7 @@ export function ClientForm({
             <p className="text-sm text-destructive">{form.formState.errors.address.message}</p>
           )}
           <div className="space-y-2">
-            <Label htmlFor="address.street">Street Address</Label>
+            <Label htmlFor="address.street">Street Address *</Label>
             <Input
               id="address.street"
               {...form.register('address.street')}
@@ -189,7 +189,7 @@ export function ClientForm({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="address.city">City</Label>
+              <Label htmlFor="address.city">City *</Label>
               <Input
                 id="address.city"
                 {...form.register('address.city')}
@@ -225,7 +225,7 @@ export function ClientForm({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address.country">Country</Label>
+              <Label htmlFor="address.country">Country *</Label>
               <Input
                 id="address.country"
                 {...form.register('address.country')}
