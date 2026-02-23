@@ -110,7 +110,7 @@ export function ConversionRateCard({ data: propData, conversionFunnel }: Convers
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              {data.acceptedCount} of {data.totalSentCount} quotes
+              {data.acceptedCount} of {data.totalSentCount} sent
             </p>
             {trend && <p className="text-xs text-muted-foreground">vs prev period</p>}
           </div>

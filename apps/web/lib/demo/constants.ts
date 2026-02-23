@@ -5,7 +5,7 @@
  * The demo account provides read-only access to a pre-populated workspace.
  */
 
-export const DEMO_USER_EMAIL = process.env.DEMO_USER_EMAIL || 'demo@quotecraft.demo';
+export const DEMO_USER_EMAIL = (process.env.DEMO_USER_EMAIL || 'demo@quotecraft.demo').trim();
 export const DEMO_USER_PASSWORD = 'DemoPassword123!';
 export const DEMO_WORKSPACE_SLUG = 'demo-workspace';
 

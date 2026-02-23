@@ -29,6 +29,48 @@ export async function GET(request: Request) {
   try {
     console.log('[Demo Reset] Starting demo workspace reset...');
 
+    // Fix duplicate demo users caused by trailing whitespace in env var.
+    // The env var DEMO_USER_EMAIL may have had a trailing newline, creating
+    // a second user. Merge them: keep the clean-email user, delete the dirty one.
+    const cleanEmail = DEMO_CONFIG.email; // Already trimmed in constants.ts
+    const dirtyUsers = await prisma.user.findMany({
+      where: {
+        email: { startsWith: cleanEmail },
+        NOT: { email: cleanEmail },
+      },
+      select: { id: true, email: true },
+    });
+    if (dirtyUsers.length > 0) {
+      console.log(`[Demo Reset] Found ${dirtyUsers.length} duplicate demo user(s) with dirty email, cleaning up...`);
+      // Ensure the clean user exists first
+      const cleanUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      for (const dirty of dirtyUsers) {
+        // Transfer any workspace memberships from dirty user to clean user
+        if (cleanUser) {
+          await prisma.workspaceMember.updateMany({
+            where: { userId: dirty.id },
+            data: { userId: cleanUser.id },
+          }).catch(() => {
+            // Ignore unique constraint errors (clean user already has membership)
+          });
+        }
+        // Delete dirty user's memberships and then the user
+        await prisma.workspaceMember.deleteMany({ where: { userId: dirty.id } });
+        // Update workspace ownership if needed
+        await prisma.workspace.updateMany({
+          where: { ownerId: dirty.id },
+          data: { ownerId: cleanUser?.id || dirty.id },
+        });
+        await prisma.user.delete({ where: { id: dirty.id } }).catch(() => {
+          // May fail if there are other FK references; update email instead
+          prisma.user.update({
+            where: { id: dirty.id },
+            data: { email: `deleted-${dirty.id}@cleanup` },
+          }).catch(() => {});
+        });
+      }
+    }
+
     // Find demo workspace
     const demoWorkspace = await prisma.workspace.findUnique({
       where: { slug: DEMO_CONFIG.workspaceSlug },
@@ -96,6 +138,24 @@ export async function GET(request: Request) {
       where: { workspaceId: demoWorkspace.id },
     });
 
+    // Clean up hardcoded-ID records that may exist in other workspaces (from initial seed)
+    // These collide with seedDemoData() which reuses the same IDs
+    const hardcodedIds = {
+      contracts: ['demo-contract-1', 'demo-contract-2', 'demo-contract-3'],
+      contractInstances: ['demo-contract-instance-1', 'demo-contract-instance-2', 'demo-contract-instance-3'],
+      clients: ['demo-client-1', 'demo-client-2', 'demo-client-3', 'demo-client-4', 'demo-client-5'],
+      projects: ['demo-project-1', 'demo-project-2', 'demo-project-3', 'demo-project-4', 'demo-project-5'],
+    };
+    const hardcodedEmailIds = [
+      'demo-email-template-1', 'demo-email-template-2', 'demo-email-template-3',
+      'demo-email-template-4', 'demo-email-template-5', 'demo-email-template-6',
+    ];
+    await prisma.emailTemplate.deleteMany({ where: { id: { in: hardcodedEmailIds } } });
+    await prisma.contractInstance.deleteMany({ where: { id: { in: hardcodedIds.contractInstances } } });
+    await prisma.contract.deleteMany({ where: { id: { in: hardcodedIds.contracts } } });
+    await prisma.project.deleteMany({ where: { id: { in: hardcodedIds.projects } } });
+    await prisma.client.deleteMany({ where: { id: { in: hardcodedIds.clients } } });
+
     // Delete notifications (prevents stale/leaked notification data)
     await prisma.notification.deleteMany({
       where: { workspaceId: demoWorkspace.id },
@@ -105,6 +165,26 @@ export async function GET(request: Request) {
     await prisma.emailTemplate.deleteMany({
       where: { workspaceId: demoWorkspace.id },
     });
+
+    // Deduplicate workspace members: keep only the demo user as owner
+    const demoUser = await prisma.user.findUnique({
+      where: { email: DEMO_CONFIG.email },
+      select: { id: true },
+    });
+    if (demoUser) {
+      // Remove all members, then re-add demo user
+      await prisma.workspaceMember.deleteMany({
+        where: { workspaceId: demoWorkspace.id },
+      });
+      await prisma.workspaceMember.create({
+        data: {
+          workspaceId: demoWorkspace.id,
+          userId: demoUser.id,
+          role: 'owner',
+          acceptedAt: new Date(),
+        },
+      });
+    }
 
     // Reset number sequences
     await prisma.numberSequence.updateMany({
@@ -169,9 +249,16 @@ async function createDemoWorkspaceAndData() {
     },
   });
 
-  // Add demo user as workspace member
-  await prisma.workspaceMember.create({
-    data: {
+  // Add demo user as workspace member (upsert to prevent duplicates on re-runs)
+  await prisma.workspaceMember.upsert({
+    where: {
+      workspaceId_userId: {
+        workspaceId: demoWorkspace.id,
+        userId: demoUser.id,
+      },
+    },
+    update: { role: 'owner' },
+    create: {
       workspaceId: demoWorkspace.id,
       userId: demoUser.id,
       role: 'owner',
@@ -319,10 +406,10 @@ async function seedDemoData(workspaceId: string) {
   });
 
   const rateCards = [
-    { id: 'demo-rate-1', workspaceId, categoryId: category.id, name: 'UI/UX Design', rate: 150, unit: 'hour', pricingType: 'hourly' },
-    { id: 'demo-rate-2', workspaceId, categoryId: category.id, name: 'Brand Identity', rate: 125, unit: 'hour', pricingType: 'hourly' },
-    { id: 'demo-rate-3', workspaceId, categoryId: category.id, name: 'Web Development', rate: 175, unit: 'hour', pricingType: 'hourly' },
-    { id: 'demo-rate-4', workspaceId, categoryId: category.id, name: 'Logo Design Package', rate: 2500, unit: 'project', pricingType: 'fixed' },
+    { workspaceId, categoryId: category.id, name: 'UI/UX Design', rate: 150, unit: 'hour', pricingType: 'hourly' },
+    { workspaceId, categoryId: category.id, name: 'Brand Identity', rate: 125, unit: 'hour', pricingType: 'hourly' },
+    { workspaceId, categoryId: category.id, name: 'Web Development', rate: 175, unit: 'hour', pricingType: 'hourly' },
+    { workspaceId, categoryId: category.id, name: 'Logo Design Package', rate: 2500, unit: 'project', pricingType: 'fixed' },
   ];
 
   await prisma.rateCard.createMany({ data: rateCards });
@@ -496,7 +583,6 @@ async function seedDemoData(workspaceId: string) {
   // Create contract templates
   const serviceAgreement = await prisma.contract.create({
     data: {
-      id: 'demo-contract-1',
       workspaceId,
       name: 'Service Agreement',
       isTemplate: true,
@@ -552,7 +638,6 @@ Email: {{client_email}}</p>
 
   const ndaTemplate = await prisma.contract.create({
     data: {
-      id: 'demo-contract-2',
       workspaceId,
       name: 'Non-Disclosure Agreement (NDA)',
       isTemplate: true,
@@ -601,7 +686,6 @@ Email: {{client_email}}</p>
 
   const projectContract = await prisma.contract.create({
     data: {
-      id: 'demo-contract-3',
       workspaceId,
       name: 'Project Contract',
       isTemplate: true,
@@ -652,7 +736,6 @@ Email: {{client_email}}</p>
   // Create sample contract instances (sent to clients)
   await prisma.contractInstance.create({
     data: {
-      id: 'demo-contract-instance-1',
       workspaceId,
       contractId: serviceAgreement.id,
       clientId: 'demo-client-1',
@@ -680,7 +763,6 @@ Email: {{client_email}}</p>
 
   await prisma.contractInstance.create({
     data: {
-      id: 'demo-contract-instance-2',
       workspaceId,
       contractId: ndaTemplate.id,
       clientId: 'demo-client-2',
@@ -697,7 +779,6 @@ Email: {{client_email}}</p>
 
   await prisma.contractInstance.create({
     data: {
-      id: 'demo-contract-instance-3',
       workspaceId,
       contractId: projectContract.id,
       clientId: 'demo-client-4',
@@ -722,7 +803,7 @@ Email: {{client_email}}</p>
   await prisma.emailTemplate.createMany({
     data: [
       {
-        id: 'demo-email-template-1',
+
         workspaceId,
         type: 'quote_sent',
         name: 'Quote Sent',
@@ -745,7 +826,7 @@ Acme Design Studio</p>`,
         isDefault: true,
       },
       {
-        id: 'demo-email-template-2',
+
         workspaceId,
         type: 'quote_reminder',
         name: 'Quote Reminder',
@@ -766,7 +847,7 @@ Acme Design Studio</p>`,
         isDefault: true,
       },
       {
-        id: 'demo-email-template-3',
+
         workspaceId,
         type: 'invoice_sent',
         name: 'Invoice Sent',
@@ -794,7 +875,7 @@ Acme Design Studio</p>`,
         isDefault: true,
       },
       {
-        id: 'demo-email-template-4',
+
         workspaceId,
         type: 'payment_reminder',
         name: 'Payment Reminder',
@@ -817,7 +898,7 @@ Acme Design Studio</p>`,
         isDefault: true,
       },
       {
-        id: 'demo-email-template-5',
+
         workspaceId,
         type: 'payment_received',
         name: 'Payment Confirmation',
@@ -836,7 +917,7 @@ Acme Design Studio</p>`,
         isDefault: true,
       },
       {
-        id: 'demo-email-template-6',
+
         workspaceId,
         type: 'contract_sent',
         name: 'Contract for Signature',

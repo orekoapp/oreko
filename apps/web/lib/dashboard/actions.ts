@@ -98,20 +98,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       },
       _sum: { total: true, amountPaid: true },
     }),
-    // This month's quotes
+    // This month's quotes (by business date, not DB insert time)
     prisma.quote.count({
       where: {
         workspaceId,
         deletedAt: null,
-        createdAt: { gte: startOfMonth, lt: endOfMonth },
+        issueDate: { gte: startOfMonth, lt: endOfMonth },
       },
     }),
-    // This month's invoices
+    // This month's invoices (by business date, not DB insert time)
     prisma.invoice.count({
       where: {
         workspaceId,
         deletedAt: null,
-        createdAt: { gte: startOfMonth, lt: endOfMonth },
+        issueDate: { gte: startOfMonth, lt: endOfMonth },
       },
     }),
     // Revenue this month
