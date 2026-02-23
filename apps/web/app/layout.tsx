@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { FontSizeProvider } from '@/components/providers/font-size-provider';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -140,8 +141,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster richColors position="top-right" />
+          <FontSizeProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </FontSizeProvider>
         </ThemeProvider>
       </body>
     </html>

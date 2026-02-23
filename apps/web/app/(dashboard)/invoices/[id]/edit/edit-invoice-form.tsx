@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, FileText, Mail, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { updateInvoice } from '@/lib/invoices/actions';
 import { ProjectSelector } from '@/components/projects';
@@ -56,10 +57,13 @@ function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
+type PreviewMode = 'payment' | 'email' | 'pdf';
+
 export function EditInvoiceForm({ invoice, clients, taxRates, currency = 'USD' }: EditInvoiceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -185,10 +189,10 @@ export function EditInvoiceForm({ invoice, clients, taxRates, currency = 'USD' }
         </div>
       </div>
 
-      {/* Main Content - Split View */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left - Form */}
-        <div className="space-y-6">
+      {/* Main Content - Split View (60/40) */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* Left - Form (60%) */}
+        <div className="lg:col-span-3 space-y-6">
           {/* Invoice Details */}
           <Card>
             <CardHeader className="pb-4">
@@ -411,13 +415,28 @@ export function EditInvoiceForm({ invoice, clients, taxRates, currency = 'USD' }
           </Card>
         </div>
 
-        {/* Right - Preview */}
-        <div className="space-y-4">
+        {/* Right - Preview (40%) */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Preview Mode Tabs */}
+          <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as PreviewMode)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="payment" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Payment Page
+              </TabsTrigger>
+              <TabsTrigger value="email" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Email Preview
+              </TabsTrigger>
+              <TabsTrigger value="pdf" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Invoice PDF
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           <Card className="sticky top-4">
-            <CardHeader>
-              <CardTitle className="text-base">Preview</CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <div className="rounded-lg border bg-card p-6 shadow-sm">
                 {/* Invoice Header */}
                 <div className="text-center mb-6">
@@ -482,6 +501,22 @@ export function EditInvoiceForm({ invoice, clients, taxRates, currency = 'USD' }
                   <div className="mt-4">
                     <h3 className="mb-1 text-sm font-semibold">Terms & Conditions</h3>
                     <p className="text-sm text-muted-foreground">{terms}</p>
+                  </div>
+                )}
+
+                {previewMode === 'payment' && (
+                  <Button className="w-full mt-6" disabled variant="secondary">
+                    Pay Now (available after sending)
+                  </Button>
+                )}
+                {previewMode === 'email' && (
+                  <div className="mt-6 rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+                    Email preview will be available after the invoice is sent.
+                  </div>
+                )}
+                {previewMode === 'pdf' && (
+                  <div className="mt-6 rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+                    PDF download will be available after saving.
                   </div>
                 )}
               </div>

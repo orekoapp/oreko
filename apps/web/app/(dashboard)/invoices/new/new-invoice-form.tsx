@@ -200,10 +200,10 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
         </div>
       </div>
 
-      {/* Main Content - Split View */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left - Form */}
-        <div className="space-y-6">
+      {/* Main Content - Split View (60/40) */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* Left - Form (60%) */}
+        <div className="lg:col-span-3 space-y-6">
           {/* Logo Upload */}
           <Card>
             <CardHeader className="pb-4">
@@ -447,8 +447,8 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
           </Card>
         </div>
 
-        {/* Right - Preview */}
-        <div className="space-y-4">
+        {/* Right - Preview (40%) */}
+        <div className="lg:col-span-2 space-y-4">
           {/* Preview Mode Tabs */}
           <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as PreviewMode)}>
             <TabsList className="grid w-full grid-cols-3">

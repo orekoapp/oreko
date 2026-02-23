@@ -11,6 +11,7 @@ import {
   Settings2,
   Wallet,
   UserCircle,
+  SunMoon,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -36,6 +37,12 @@ const settingsLinks = [
     icon: Palette,
     title: 'Branding',
     description: 'Colors, fonts, and visual customization',
+  },
+  {
+    href: '/settings/appearance',
+    icon: SunMoon,
+    title: 'Appearance',
+    description: 'Theme, font size, and sidebar style preferences',
   },
   {
     href: '/settings/team',
