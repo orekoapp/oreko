@@ -86,9 +86,9 @@ export function QuoteEditor() {
   const [expirationDays, setExpirationDays] = useState('30');
   const [taxRate, setTaxRate] = useState('0');
 
-  // Initialize document if not exists
+  // Initialize document if not exists or has empty ID (from resetDocument())
   useEffect(() => {
-    if (!document) {
+    if (!document || !document.id) {
       const now = new Date().toISOString();
       const expDate = new Date();
       expDate.setDate(expDate.getDate() + 30);
