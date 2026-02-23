@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma, type Prisma } from '@quotecraft/database';
-import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 import { sendQuoteSentEmail } from '@/lib/services/email';
@@ -74,7 +73,6 @@ export async function createQuote(data: {
   projectId?: string | null;
   blocks?: QuoteBlock[];
 }) {
-  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   // Verify client belongs to workspace
@@ -164,7 +162,6 @@ export async function updateQuote(
     settings?: Record<string, unknown>;
   }
 ) {
-  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   // Verify quote belongs to workspace
@@ -418,7 +415,6 @@ export async function getQuotes(options?: {
  * Delete a quote (soft delete)
  */
 export async function deleteQuote(quoteId: string) {
-  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   // Check for linked invoices
@@ -449,7 +445,6 @@ export async function deleteQuote(quoteId: string) {
  * Duplicate a quote
  */
 export async function duplicateQuote(quoteId: string) {
-  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   const original = await prisma.quote.findFirst({
@@ -512,7 +507,6 @@ export async function updateQuoteStatus(
   quoteId: string,
   status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired'
 ) {
-  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   // Validate state transitions
@@ -578,7 +572,6 @@ export async function updateQuoteStatus(
  * Updates status to 'sent' and triggers email notification
  */
 export async function sendQuote(quoteId: string) {
-  await assertNotDemo();
   const { userId, workspace } = await getActiveWorkspace();
 
   // Get quote with client details

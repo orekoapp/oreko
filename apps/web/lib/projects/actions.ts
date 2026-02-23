@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@quotecraft/database';
-import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { z } from 'zod';
 
@@ -49,7 +48,6 @@ export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
  * Create a new project
  */
 export async function createProject(data: CreateProjectInput) {
-  await assertNotDemo();
   const { workspace } = await getActiveWorkspace();
 
   const validated = createProjectSchema.parse(data);
@@ -239,7 +237,6 @@ export async function updateProject(
   projectId: string,
   data: UpdateProjectInput
 ) {
-  await assertNotDemo();
   const { workspace } = await getActiveWorkspace();
 
   const validated = updateProjectSchema.parse(data);
@@ -282,7 +279,6 @@ export async function updateProject(
  * Soft delete a project (sets deletedAt timestamp)
  */
 export async function deleteProject(projectId: string) {
-  await assertNotDemo();
   const { workspace } = await getActiveWorkspace();
 
   const project = await prisma.project.findFirst({
@@ -312,7 +308,6 @@ export async function deleteProject(projectId: string) {
  * Deactivate a project (sets isActive to false)
  */
 export async function deactivateProject(projectId: string) {
-  await assertNotDemo();
   return updateProject(projectId, { isActive: false });
 }
 
@@ -320,7 +315,6 @@ export async function deactivateProject(projectId: string) {
  * Reactivate a project (sets isActive to true)
  */
 export async function reactivateProject(projectId: string) {
-  await assertNotDemo();
   return updateProject(projectId, { isActive: true });
 }
 

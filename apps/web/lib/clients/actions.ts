@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma, Prisma } from '@quotecraft/database';
-import { assertNotDemo } from '@/lib/demo/guard';
 import { NotFoundError, UnauthorizedError } from '@/lib/api/errors';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
@@ -360,7 +359,6 @@ export async function getClientActivity(clientId: string): Promise<ClientActivit
 
 // Create client
 export async function createClient(input: CreateClientInput): Promise<{ id: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Build metadata
@@ -396,7 +394,6 @@ export async function createClient(input: CreateClientInput): Promise<{ id: stri
 
 // Update client
 export async function updateClient(input: UpdateClientInput): Promise<{ id: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -457,7 +454,6 @@ export async function updateClient(input: UpdateClientInput): Promise<{ id: stri
 
 // Delete client (soft delete)
 export async function deleteClient(id: string): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -483,7 +479,6 @@ export async function deleteClient(id: string): Promise<void> {
 
 // Bulk delete clients
 export async function deleteClients(ids: string[]): Promise<{ deleted: number }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const result = await prisma.client.updateMany({
@@ -567,7 +562,6 @@ export async function importClients(
   }>,
   skipDuplicates = true
 ): Promise<ClientImportResult> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const result: ClientImportResult = {

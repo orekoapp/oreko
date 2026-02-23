@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { hash, compare } from 'bcryptjs';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
-import { assertNotDemo } from '@/lib/demo/guard';
 
 interface ActionResult {
   success: boolean;
@@ -18,7 +17,6 @@ interface ChangePasswordInput {
 
 export async function changePassword(input: ChangePasswordInput): Promise<ActionResult> {
   try {
-    await assertNotDemo();
 
     const session = await auth();
     if (!session?.user?.id) {
@@ -86,7 +84,6 @@ interface UpdateProfileInput {
 
 export async function updateProfile(input: UpdateProfileInput): Promise<ActionResult> {
   try {
-    await assertNotDemo();
 
     const session = await auth();
     if (!session?.user?.id) {

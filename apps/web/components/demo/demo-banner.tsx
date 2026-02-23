@@ -30,9 +30,9 @@ export function DemoBanner({ className }: DemoBannerProps) {
             <AlertTriangle className="h-4 w-4 flex-shrink-0" />
             <span className="font-medium">Demo Mode</span>
             <span className="hidden sm:inline">
-              &mdash; Changes will not be saved. Create an account to save your work.
+              &mdash; Data resets daily. Create an account to keep your work.
             </span>
-            <span className="sm:hidden">&mdash; Changes won't be saved</span>
+            <span className="sm:hidden">&mdash; Data resets daily</span>
           </div>
 
           <div className="flex items-center gap-2">

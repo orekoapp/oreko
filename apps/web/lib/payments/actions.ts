@@ -8,7 +8,6 @@ import {
   createPaymentIntent,
   getOrCreateCustomer,
 } from '@/lib/services/stripe';
-import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
   PaymentListItem,
@@ -57,7 +56,6 @@ export async function updatePaymentSettings(data: {
   passProcessingFees?: boolean;
   defaultPaymentTerms?: number;
 }): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   try {
@@ -88,7 +86,6 @@ export async function updatePaymentSettings(data: {
  * Create Stripe Connect onboarding link
  */
 export async function createStripeOnboardingLink(): Promise<StripeOnboardingResult> {
-  await assertNotDemo();
   if (!stripe || !isStripeEnabled()) {
     return { success: false, error: 'Stripe is not configured' };
   }

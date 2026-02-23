@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
-import { assertNotDemo } from '@/lib/demo/guard';
 
 const ACTIVE_WORKSPACE_COOKIE = 'active-workspace-id';
 
@@ -170,7 +169,6 @@ export async function switchWorkspace(workspaceId: string): Promise<void> {
  * Create a new workspace
  */
 export async function createWorkspace(input: CreateWorkspaceInput): Promise<WorkspaceWithRole> {
-  await assertNotDemo();
   const userId = await getCurrentUserId();
 
   const { name } = input;
@@ -222,7 +220,6 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Work
  * Update workspace name
  */
 export async function updateWorkspace(workspaceId: string, name: string): Promise<void> {
-  await assertNotDemo();
   const userId = await getCurrentUserId();
 
   // Verify user is owner or admin
@@ -250,7 +247,6 @@ export async function updateWorkspace(workspaceId: string, name: string): Promis
  * Delete a workspace (owner only)
  */
 export async function deleteWorkspace(workspaceId: string): Promise<void> {
-  await assertNotDemo();
   const userId = await getCurrentUserId();
 
   // Verify user is owner

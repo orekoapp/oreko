@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma, Prisma } from '@quotecraft/database';
-import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
   BusinessProfileData,
@@ -56,7 +55,6 @@ export async function getWorkspace(): Promise<WorkspaceData> {
 
 // Update workspace name
 export async function updateWorkspaceName(name: string): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   await prisma.workspace.update({
@@ -100,7 +98,6 @@ export async function getBusinessProfile(): Promise<BusinessProfileData | null> 
 export async function updateBusinessProfile(
   input: UpdateBusinessProfileInput
 ): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.businessProfile.findUnique({
@@ -145,7 +142,6 @@ export async function updateBusinessProfile(
 
 // Update business logo
 export async function updateBusinessLogo(logoUrl: string | null): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.businessProfile.findUnique({
@@ -202,7 +198,6 @@ export async function getBrandingSettings(): Promise<BrandingSettingsData | null
 export async function updateBrandingSettings(
   input: UpdateBrandingSettingsInput
 ): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.brandingSettings.findUnique({
@@ -271,7 +266,6 @@ export async function getPaymentSettings(): Promise<PaymentSettingsData | null> 
 export async function updatePaymentSettings(
   input: UpdatePaymentSettingsInput
 ): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.paymentSettings.findUnique({
@@ -336,7 +330,6 @@ export async function getTaxRates(): Promise<TaxRateData[]> {
 
 // Create tax rate
 export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // If setting as default, unset other defaults
@@ -366,7 +359,6 @@ export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: st
 
 // Update tax rate
 export async function updateTaxRate(input: UpdateTaxRateInput): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -403,7 +395,6 @@ export async function updateTaxRate(input: UpdateTaxRateInput): Promise<void> {
 
 // Delete tax rate
 export async function deleteTaxRate(id: string): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify ownership
@@ -504,7 +495,6 @@ const numberSequenceSchema = z.object({
 export async function updateNumberSequence(
   input: UpdateNumberSequenceInput
 ): Promise<void> {
-  await assertNotDemo();
 
   // Validate input with Zod
   const validated = numberSequenceSchema.parse(input);
@@ -611,7 +601,6 @@ export async function updateMemberRole(
   memberId: string,
   newRole: WorkspaceMemberRole
 ): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   // Get current user's role
@@ -674,7 +663,6 @@ export async function inviteMember(
   email: string,
   role: WorkspaceMemberRole = 'member'
 ): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Only owners and admins can invite members
@@ -725,7 +713,6 @@ export async function inviteMember(
 export async function removeMember(
   memberId: string
 ): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   // Get current user's role
@@ -834,7 +821,6 @@ export async function getWorkspaceSettings(): Promise<WorkspaceSettings | null> 
 export async function updateWorkspaceSettings(
   input: { name?: string; slug?: string }
 ): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify current user is owner
@@ -885,7 +871,6 @@ export async function updateWorkspaceSettings(
 
 // Delete workspace
 export async function deleteWorkspace(): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify current user is owner
@@ -948,7 +933,6 @@ export async function getInvoiceDefaults(): Promise<InvoiceDefaults> {
 export async function updateInvoiceDefaults(
   input: Partial<InvoiceDefaults>
 ): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const workspace = await prisma.workspace.findUnique({

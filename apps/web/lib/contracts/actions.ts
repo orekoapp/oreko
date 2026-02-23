@@ -2,7 +2,6 @@
 
 import { prisma, Prisma } from '@quotecraft/database';
 import { revalidatePath } from 'next/cache';
-import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
   ContractTemplateListItem,
@@ -118,7 +117,6 @@ export async function getContractTemplateById(id: string): Promise<ContractTempl
 export async function createContractTemplate(
   input: CreateContractTemplateInput
 ): Promise<ContractTemplateDetail> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const contract = await prisma.contract.create({
@@ -156,7 +154,6 @@ export async function createContractTemplate(
 export async function updateContractTemplate(
   input: UpdateContractTemplateInput
 ): Promise<ContractTemplateDetail> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Verify the contract belongs to the workspace
@@ -202,7 +199,6 @@ export async function updateContractTemplate(
 
 // Delete a contract template (soft delete)
 export async function deleteContractTemplate(id: string): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.contract.findFirst({
@@ -384,7 +380,6 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
 export async function createContractInstance(
   input: CreateContractInstanceInput
 ): Promise<ContractInstanceDetail> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // Get the template
@@ -478,7 +473,6 @@ export async function createContractInstance(
 
 // Send a contract instance to client
 export async function sendContractInstance(id: string): Promise<void> {
-  await assertNotDemo();
   const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   const instance = await prisma.contractInstance.findFirst({
@@ -592,7 +586,6 @@ export async function signContract(input: SignContractInput, ipAddress?: string)
 
 // Delete a contract instance
 export async function deleteContractInstance(id: string): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const instance = await prisma.contractInstance.findFirst({
@@ -613,7 +606,6 @@ export async function deleteContractInstance(id: string): Promise<void> {
 
 // Duplicate a contract template
 export async function duplicateContractTemplate(id: string): Promise<ContractTemplateDetail> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const original = await prisma.contract.findFirst({

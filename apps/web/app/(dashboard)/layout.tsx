@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { needsOnboarding } from '@/lib/onboarding/actions';
 import { getUserWorkspaces, getActiveWorkspace } from '@/lib/workspace/actions';
 import { getUnreadNotificationCount, getNotifications } from '@/lib/notifications/actions';
+import { DemoModeProvider } from '@/components/demo/demo-mode-provider';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -44,11 +45,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
         />
         <SidebarInset>
           <AppHeader user={session.user} unreadCount={unreadCount} notifications={notifications} />
-          <main id="main-content" className="flex-1 overflow-auto bg-muted/30 p-4 md:p-6 lg:p-8" tabIndex={-1}>
-            <div className="mx-auto max-w-7xl">
-              {children}
-            </div>
-          </main>
+          <DemoModeProvider>
+            <main id="main-content" className="flex-1 overflow-auto bg-muted/30 p-4 md:p-6 lg:p-8" tabIndex={-1}>
+              <div className="mx-auto max-w-7xl">
+                {children}
+              </div>
+            </main>
+          </DemoModeProvider>
         </SidebarInset>
       </SidebarProvider>
     </>

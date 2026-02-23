@@ -3,7 +3,6 @@
 import { prisma, Prisma } from '@quotecraft/database';
 import { revalidatePath } from 'next/cache';
 import { sendEmail, sendQuoteSentEmail, sendInvoiceSentEmail } from '@/lib/services/email';
-import { assertNotDemo } from '@/lib/demo/guard';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
   EmailTemplateListItem,
@@ -112,7 +111,6 @@ export async function getActiveTemplateByType(type: EmailTemplateType): Promise<
 export async function createEmailTemplate(
   input: CreateEmailTemplateInput
 ): Promise<EmailTemplateDetail> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   // If setting as default, unset other defaults of same type
@@ -155,7 +153,6 @@ export async function createEmailTemplate(
 export async function updateEmailTemplate(
   input: UpdateEmailTemplateInput
 ): Promise<EmailTemplateDetail> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.emailTemplate.findFirst({
@@ -204,7 +201,6 @@ export async function updateEmailTemplate(
 
 // Delete email template
 export async function deleteEmailTemplate(id: string): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.emailTemplate.findFirst({
@@ -254,7 +250,6 @@ export async function sendTemplatedEmail(params: {
   customSubject?: string;
   customBody?: string;
 }): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
   const { type, to, variables, customSubject, customBody } = params;
 
@@ -331,7 +326,6 @@ export async function getScheduledEmails(filter?: {
 
 // Cancel scheduled email
 export async function cancelScheduledEmail(id: string): Promise<void> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const existing = await prisma.scheduledEmail.findFirst({
@@ -355,7 +349,6 @@ export async function sendContractSentEmail(params: {
   contractInstanceId: string;
   message?: string;
 }): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const instance = await prisma.contractInstance.findFirst({
@@ -401,7 +394,6 @@ export async function sendContractSentEmail(params: {
 export async function sendContractSignedEmail(params: {
   contractInstanceId: string;
 }): Promise<{ success: boolean; error?: string }> {
-  await assertNotDemo();
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const instance = await prisma.contractInstance.findFirst({
