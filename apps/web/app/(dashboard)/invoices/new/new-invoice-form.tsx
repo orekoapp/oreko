@@ -449,19 +449,20 @@ export function NewInvoiceForm({
                 {lineItems.map((item) => (
                   <div
                     key={item.id}
-                    className="grid grid-cols-12 gap-2 items-start"
+                    className="grid grid-cols-12 gap-2 items-start group"
                   >
                     <div className="col-span-6">
-                      <Input
+                      <input
                         placeholder="Item name"
+                        className="w-full text-sm font-medium bg-transparent outline-none placeholder:text-muted-foreground"
                         value={item.name}
                         onChange={(e) =>
                           updateLineItem(item.id, 'name', e.target.value)
                         }
                       />
-                      <Input
+                      <input
                         placeholder="Description (optional)"
-                        className="mt-1 text-sm"
+                        className="w-full text-sm text-muted-foreground bg-transparent outline-none mt-1 placeholder:text-muted-foreground"
                         value={item.description}
                         onChange={(e) =>
                           updateLineItem(item.id, 'description', e.target.value)
@@ -501,7 +502,7 @@ export function NewInvoiceForm({
                         }
                       />
                     </div>
-                    <div className="col-span-2 flex items-center justify-end">
+                    <div className="col-span-2 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -586,12 +587,10 @@ export function NewInvoiceForm({
                       </p>
                     </div>
 
-                    <Separator className="my-4" />
-
                     {/* Client */}
                     {selectedClient && (
-                      <div className="mb-4">
-                        <p className="text-sm font-medium">
+                      <div className="mb-4 border-b pb-3">
+                        <p className="text-sm font-semibold">
                           {selectedClient.company || selectedClient.name}
                         </p>
                       </div>
@@ -602,19 +601,17 @@ export function NewInvoiceForm({
                       {lineItems.map((item) => (
                         <div key={item.id} className="text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              {item.name || 'Untitled Item'}{' '}
-                              {item.quantity} &times; {formatMoney(item.rate, currency)}
+                            <span className="font-semibold">
+                              {item.name || 'Untitled Item'}
                             </span>
                             <span className="font-medium">
                               {formatMoney(item.quantity * item.rate, currency)}
                             </span>
                           </div>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {item.description}
-                            </p>
-                          )}
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {item.quantity} &times; {formatMoney(item.rate, currency)}
+                            {item.description ? ` · ${item.description}` : ''}
+                          </p>
                         </div>
                       ))}
                     </div>
