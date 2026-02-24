@@ -166,6 +166,17 @@ export async function GET(request: Request) {
       where: { workspaceId: demoWorkspace.id },
     });
 
+    // Reset business profile (may have been changed by demo user)
+    await prisma.businessProfile.updateMany({
+      where: { workspaceId: demoWorkspace.id },
+      data: {
+        businessName: 'Robert P. Loving',
+        email: 'hello@acmedesign.demo',
+        phone: '+1 (555) 123-4567',
+        website: 'https://acmedesign.demo',
+      },
+    });
+
     // Deduplicate workspace members: keep only the demo user as owner
     const demoUser = await prisma.user.findUnique({
       where: { email: DEMO_CONFIG.email },
@@ -186,10 +197,15 @@ export async function GET(request: Request) {
       });
     }
 
-    // Reset number sequences
-    await prisma.numberSequence.updateMany({
+    // Delete and recreate number sequences (prefix may have been changed by demo user)
+    await prisma.numberSequence.deleteMany({
       where: { workspaceId: demoWorkspace.id },
-      data: { currentValue: 0 },
+    });
+    await prisma.numberSequence.createMany({
+      data: [
+        { workspaceId: demoWorkspace.id, type: 'quote', prefix: 'Q-', currentValue: 0, padding: 4 },
+        { workspaceId: demoWorkspace.id, type: 'invoice', prefix: '', currentValue: 0, padding: 4 },
+      ],
     });
 
     // Re-seed demo data
