@@ -143,7 +143,7 @@ export async function GET(request: Request) {
     const hardcodedIds = {
       contracts: ['demo-contract-1', 'demo-contract-2', 'demo-contract-3'],
       contractInstances: ['demo-contract-instance-1', 'demo-contract-instance-2', 'demo-contract-instance-3'],
-      clients: ['demo-client-1', 'demo-client-2', 'demo-client-3', 'demo-client-4', 'demo-client-5'],
+      clients: ['demo-client-1', 'demo-client-2', 'demo-client-3', 'demo-client-4', 'demo-client-5', 'demo-client-6'],
       projects: ['demo-project-1', 'demo-project-2', 'demo-project-3', 'demo-project-4', 'demo-project-5'],
     };
     const hardcodedEmailIds = [
@@ -346,6 +346,14 @@ async function seedDemoData(workspaceId: string) {
       company: 'Creative Agency LLC',
       phone: '+1 (555) 567-8901',
     },
+    {
+      id: `demo-client-6`,
+      workspaceId,
+      name: 'Globex Corporation',
+      email: 'info@globex.com',
+      company: 'Globex Corp',
+      phone: '+1 (555) 678-9012',
+    },
   ];
 
   await prisma.client.createMany({ data: clients });
@@ -413,6 +421,23 @@ async function seedDemoData(workspaceId: string) {
   ];
 
   await prisma.rateCard.createMany({ data: rateCards });
+
+  // Photography category + rate cards (matching reference screenshot)
+  const photoCategory = await prisma.rateCardCategory.create({
+    data: {
+      workspaceId,
+      name: 'Photography',
+      color: '#F59E0B',
+    },
+  });
+
+  await prisma.rateCard.createMany({
+    data: [
+      { workspaceId, categoryId: photoCategory.id, name: 'Photo Session', description: '2-hour on-location shoot', rate: 800, unit: 'session', pricingType: 'fixed' },
+      { workspaceId, categoryId: photoCategory.id, name: 'Photo Editing', description: 'Color correction & retouching', rate: 25, unit: 'photo', pricingType: 'fixed' },
+      { workspaceId, categoryId: photoCategory.id, name: 'Digital Delivery', description: 'High-res files via gallery', rate: 100, unit: 'delivery', pricingType: 'fixed' },
+    ],
+  });
 
   // Create sample quotes with different statuses
   const now = new Date();
