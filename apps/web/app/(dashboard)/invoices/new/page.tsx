@@ -23,7 +23,7 @@ export default async function NewInvoicePage() {
   const prefix = (invoiceSeq?.prefix ?? 'INV').replace(/-$/, '');
   const paddedValue = String(nextValue).padStart(padding, '0');
   const suffix = invoiceSeq?.suffix;
-  const parts = [prefix, paddedValue];
+  const parts = [prefix, paddedValue].filter(Boolean);
   if (suffix) parts.push(suffix);
   const nextInvoiceNumber = parts.join('-');
 

@@ -270,7 +270,7 @@ async function createDemoWorkspaceAndData() {
   await prisma.businessProfile.create({
     data: {
       workspaceId: demoWorkspace.id,
-      businessName: 'Acme Design Studio',
+      businessName: 'Robert P. Loving',
       email: 'hello@acmedesign.demo',
       phone: '+1 (555) 123-4567',
       address: {
@@ -290,7 +290,7 @@ async function createDemoWorkspaceAndData() {
   await prisma.numberSequence.createMany({
     data: [
       { workspaceId: demoWorkspace.id, type: 'quote', prefix: 'Q-', currentValue: 0, padding: 4 },
-      { workspaceId: demoWorkspace.id, type: 'invoice', prefix: 'INV-', currentValue: 0, padding: 4 },
+      { workspaceId: demoWorkspace.id, type: 'invoice', prefix: '', currentValue: 0, padding: 4 },
     ],
   });
 
@@ -351,7 +351,7 @@ async function seedDemoData(workspaceId: string) {
       workspaceId,
       name: 'Globex Corporation',
       email: 'info@globex.com',
-      company: 'Globex Corp',
+      company: 'Globex Corporation',
       phone: '+1 (555) 678-9012',
     },
   ];
@@ -602,7 +602,7 @@ async function seedDemoData(workspaceId: string) {
 
   await prisma.numberSequence.updateMany({
     where: { workspaceId, type: 'invoice' },
-    data: { currentValue: 4 },
+    data: { currentValue: 0 },
   });
 
   // Create contract templates
