@@ -100,7 +100,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
             >
               {statusStyle.icon}
-              {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+              {displayStatus}
             </span>
           </div>
           <p className="text-muted-foreground">
@@ -207,7 +207,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                       <>
                         <div className="flex justify-between text-sm text-green-600">
                           <span>Amount Paid</span>
-                          <span>{formatCurrency(invoice.totals.amountPaid, invoice.settings.currency)}</span>
+                          <span>-{formatCurrency(invoice.totals.amountPaid, invoice.settings.currency)}</span>
                         </div>
                         <div className={`flex justify-between border-t pt-2 font-bold ${invoice.totals.amountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                           <span>Amount Due</span>
@@ -258,7 +258,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
                 >
                   {statusStyle.icon}
-                  {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+                  {displayStatus}
                 </span>
               </div>
               <div>
@@ -304,7 +304,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               ) : (
                 <p className="text-muted-foreground text-sm">No client assigned</p>
               )}
-              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+              <Button variant="outline" size="sm" className="mt-4 w-auto" asChild>
                 <Link href={`/clients/${invoice.clientId}`}>
                   <ExternalLink className="mr-2 h-4 w-4" />
                   View Client

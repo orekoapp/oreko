@@ -14,14 +14,15 @@ interface StatsCardsProps {
 function MiniBarChart({ data }: { data: RevenueSparklinePoint[] }) {
   if (data.length === 0) return null;
   return (
-    <div className="h-10 w-20">
+    <div className="h-12 w-24">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <Bar
             dataKey="revenue"
             fill="hsl(var(--primary))"
             radius={[2, 2, 0, 0]}
-            opacity={0.6}
+            opacity={0.7}
+            minPointSize={3}
           />
         </BarChart>
       </ResponsiveContainer>
@@ -34,6 +35,7 @@ export function StatsCards({ stats, revenueSparkline = [] }: StatsCardsProps) {
     {
       title: 'Revenue this Month',
       value: formatCurrency(stats.revenueThisMonth),
+      description: `${formatCurrency(stats.revenueThisMonth)} this month`,
       icon: DollarSign,
       iconColor: 'text-green-500',
       bgColor: 'bg-green-500/10',
@@ -42,6 +44,7 @@ export function StatsCards({ stats, revenueSparkline = [] }: StatsCardsProps) {
     {
       title: 'Total Revenue',
       value: formatCurrency(stats.totalRevenue),
+      description: `${formatCurrency(stats.revenueThisMonth)} this month`,
       icon: TrendingUp,
       iconColor: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
