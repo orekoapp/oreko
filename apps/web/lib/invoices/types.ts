@@ -97,6 +97,7 @@ export interface CreateInvoiceData {
   clientId: string;
   projectId?: string | null;
   title: string;
+  invoiceNumber?: string;
   dueDate: string;
   lineItems: Array<{
     name: string;

@@ -10,6 +10,8 @@ export interface DashboardStats {
   invoicesThisMonth: number;
   revenueThisMonth: number;
   conversionRate: number;
+  winRate: number;
+  collectionRate: number;
 }
 
 // Quote status counts
@@ -88,6 +90,12 @@ export interface RecentInvoice {
   createdAt: Date;
 }
 
+// Revenue sparkline point (monthly)
+export interface RevenueSparklinePoint {
+  date: string;
+  revenue: number;
+}
+
 // Dashboard data
 export interface DashboardData {
   stats: DashboardStats;
@@ -97,6 +105,7 @@ export interface DashboardData {
   recentInvoices: RecentInvoice[];
   recentActivity: ActivityItem[];
   revenueData: RevenueDataPoint[];
+  revenueSparkline: RevenueSparklinePoint[];
 }
 
 // Period filter

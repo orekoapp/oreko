@@ -1,55 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { BarChart3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   RevenueChart,
-  QuoteStatusChart,
-  InvoiceStatusChart,
-  ConversionFunnel,
-  PaymentAgingChart,
+  CircularProgressCard,
+  QuotePipeline,
 } from './charts';
 import type {
   RevenueDataPoint,
-  QuoteStatusCounts,
-  InvoiceStatusCounts,
   DashboardPeriod,
   ConversionFunnelData,
-  PaymentAgingData,
 } from '@/lib/dashboard/types';
 
 interface AnalyticsSectionProps {
   revenueData: RevenueDataPoint[];
-  quoteStatusCounts: QuoteStatusCounts;
-  invoiceStatusCounts: InvoiceStatusCounts;
   conversionFunnelData?: ConversionFunnelData;
-  paymentAgingData?: PaymentAgingData;
+  winRate: number;
+  collectionRate: number;
 }
 
 export function AnalyticsSection({
   revenueData,
-  quoteStatusCounts,
-  invoiceStatusCounts,
   conversionFunnelData,
-  paymentAgingData,
+  winRate,
+  collectionRate,
 }: AnalyticsSectionProps) {
   const [revenuePeriod, setRevenuePeriod] = useState<DashboardPeriod>('30d');
 
   return (
     <div className="space-y-6" data-testid="analytics-section">
-      {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Analytics</h2>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/analytics">
-            <BarChart3 className="mr-2 h-4 w-4" />
-            View All
-          </Link>
-        </Button>
-      </div>
-
       {/* Revenue Chart */}
       <RevenueChart
         data={revenueData}
@@ -57,19 +36,22 @@ export function AnalyticsSection({
         onPeriodChange={setRevenuePeriod}
       />
 
-      {/* Status Charts Row */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <QuoteStatusChart data={quoteStatusCounts} />
-        <InvoiceStatusChart data={invoiceStatusCounts} />
+      {/* Win Rate | Collection Rate | Pipeline */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <CircularProgressCard
+          label="Win Rate"
+          percentage={winRate}
+          color="hsl(var(--chart-1, 220 70% 50%))"
+        />
+        <CircularProgressCard
+          label="Collection Rate"
+          percentage={collectionRate}
+          color="hsl(142 71% 45%)"
+        />
         {conversionFunnelData && (
-          <ConversionFunnel data={conversionFunnelData} />
+          <QuotePipeline data={conversionFunnelData} />
         )}
       </div>
-
-      {/* Payment Aging (if data available) */}
-      {paymentAgingData && paymentAgingData.totalOutstanding > 0 && (
-        <PaymentAgingChart data={paymentAgingData} />
-      )}
     </div>
   );
 }

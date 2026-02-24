@@ -7,7 +7,7 @@ import { StatsCards } from '@/components/dashboard/stats-cards';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { RecentQuotes, RecentInvoices } from '@/components/dashboard/recent-items';
 import { AnalyticsSection } from '@/components/dashboard/analytics-section';
-import { getDashboardData, getConversionFunnelData, getPaymentAgingData } from '@/lib/dashboard/actions';
+import { getDashboardData, getConversionFunnelData } from '@/lib/dashboard/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,35 +17,34 @@ export const metadata = {
 };
 
 async function DashboardContent() {
-  // Fetch all dashboard data in parallel
-  const [data, conversionFunnelData, paymentAgingData] = await Promise.all([
+  const [data, conversionFunnelData] = await Promise.all([
     getDashboardData(),
     getConversionFunnelData(),
-    getPaymentAgingData(),
   ]);
 
   return (
     <>
       {/* Stats Cards */}
-      <StatsCards stats={data.stats} />
+      <StatsCards stats={data.stats} revenueSparkline={data.revenueSparkline} />
 
       {/* Analytics Charts Section */}
       <AnalyticsSection
         revenueData={data.revenueData}
-        quoteStatusCounts={data.quoteStatusCounts}
-        invoiceStatusCounts={data.invoiceStatusCounts}
         conversionFunnelData={conversionFunnelData}
-        paymentAgingData={paymentAgingData}
+        winRate={data.stats.winRate}
+        collectionRate={data.stats.collectionRate}
       />
 
-      {/* Recent Items Section */}
+      {/* Recent Items Section — 3-column layout */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <RecentQuotes quotes={data.recentQuotes} />
-          <RecentInvoices invoices={data.recentInvoices} />
-        </div>
         <div>
           <RecentActivity activities={data.recentActivity} />
+        </div>
+        <div>
+          <RecentQuotes quotes={data.recentQuotes} />
+        </div>
+        <div>
+          <RecentInvoices invoices={data.recentInvoices} />
         </div>
       </div>
     </>
@@ -55,34 +54,28 @@ async function DashboardContent() {
 function DashboardSkeleton() {
   return (
     <>
-      {/* Stats Cards Skeleton */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {[...Array(6)].map((_, i) => (
+      {/* Stats Cards Skeleton — 4 cards */}
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
           <Skeleton key={i} className="h-32" />
         ))}
       </div>
 
       {/* Analytics Section Skeleton */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-6 w-24" />
-          <Skeleton className="h-9 w-24" />
-        </div>
         <Skeleton className="h-[350px]" />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-[300px]" />
-          <Skeleton className="h-[300px]" />
-          <Skeleton className="h-[300px]" />
+        <div className="grid gap-6 md:grid-cols-3">
+          <Skeleton className="h-[200px]" />
+          <Skeleton className="h-[200px]" />
+          <Skeleton className="h-[200px]" />
         </div>
       </div>
 
-      {/* Recent Items Skeleton */}
+      {/* Recent Items Skeleton — 3 columns */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-80" />
-          <Skeleton className="h-80" />
-        </div>
         <Skeleton className="h-96" />
+        <Skeleton className="h-80" />
+        <Skeleton className="h-80" />
       </div>
     </>
   );
@@ -95,7 +88,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back! Here&apos;s your business overview.
+            Track your business performance and recent activity.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

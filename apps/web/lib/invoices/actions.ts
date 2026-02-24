@@ -108,7 +108,21 @@ export async function createInvoice(data: CreateInvoiceData) {
     return { success: false, error: 'Client not found' };
   }
 
-  const invoiceNumber = await generateInvoiceNumber(workspace.id);
+  // Use custom invoice number if provided, otherwise auto-generate
+  let invoiceNumber: string;
+  if (data.invoiceNumber) {
+    // Check uniqueness
+    const existing = await prisma.invoice.findFirst({
+      where: { workspaceId: workspace.id, invoiceNumber: data.invoiceNumber },
+    });
+    if (existing) {
+      return { success: false, error: 'Invoice number already exists' };
+    }
+    invoiceNumber = data.invoiceNumber;
+  } else {
+    invoiceNumber = await generateInvoiceNumber(workspace.id);
+  }
+
   const { subtotal, taxTotal, total } = calculateTotals(data.lineItems);
 
   const lineItems = data.lineItems.map((item, index) => ({

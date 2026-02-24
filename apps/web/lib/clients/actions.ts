@@ -672,6 +672,7 @@ export async function searchClients(query: string, limit = 10): Promise<Array<{
 export async function getClientsForSelect(): Promise<Array<{
   id: string;
   name: string;
+  email: string | null;
   company: string | null;
 }>> {
   const { workspaceId } = await getCurrentUserWorkspace();
@@ -684,6 +685,7 @@ export async function getClientsForSelect(): Promise<Array<{
     select: {
       id: true,
       name: true,
+      email: true,
       company: true,
     },
     orderBy: { name: 'asc' },

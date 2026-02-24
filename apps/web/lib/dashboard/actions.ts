@@ -8,6 +8,7 @@ import type {
   QuoteStatusCounts,
   InvoiceStatusCounts,
   RevenueDataPoint,
+  RevenueSparklinePoint,
   ActivityItem,
   RecentQuote,
   RecentInvoice,
@@ -58,6 +59,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     paidThisMonth,
     acceptedQuotes,
     sentQuotes,
+    declinedQuotes,
+    totalBilledInvoices,
   ] = await Promise.all([
     // Total counts
     prisma.quote.count({
@@ -136,6 +139,19 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         status: { in: ['sent', 'viewed', 'accepted', 'declined', 'expired', 'converted'] },
       },
     }),
+    // Declined quotes (for win rate: accepted / (accepted + declined))
+    prisma.quote.count({
+      where: { workspaceId, status: 'declined', deletedAt: null },
+    }),
+    // Total billed invoices (for collection rate: paid total / total billed)
+    prisma.invoice.aggregate({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        status: { notIn: ['draft', 'voided'] },
+      },
+      _sum: { total: true, amountPaid: true },
+    }),
   ]);
 
   const totalRevenue = toNumber(paidInvoices._sum.amountPaid);
@@ -145,6 +161,15 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     toNumber(overdueInvoices._sum.total) - toNumber(overdueInvoices._sum.amountPaid);
   const revenueThisMonth = toNumber(paidThisMonth._sum.amountPaid);
   const conversionRate = sentQuotes > 0 ? (acceptedQuotes / sentQuotes) * 100 : 0;
+
+  // Win rate: accepted / (accepted + declined)
+  const winRateDenominator = acceptedQuotes + declinedQuotes;
+  const winRate = winRateDenominator > 0 ? (acceptedQuotes / winRateDenominator) * 100 : 0;
+
+  // Collection rate: paid / total billed
+  const totalBilled = toNumber(totalBilledInvoices._sum.total);
+  const totalCollected = toNumber(totalBilledInvoices._sum.amountPaid);
+  const collectionRate = totalBilled > 0 ? (totalCollected / totalBilled) * 100 : 0;
 
   return {
     totalQuotes,
@@ -157,6 +182,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     invoicesThisMonth,
     revenueThisMonth,
     conversionRate,
+    winRate,
+    collectionRate,
   };
 }
 
@@ -465,6 +492,36 @@ function getEventTitle(type: string, reference: string): string {
   }
 }
 
+// Get revenue sparkline (last 6 months of monthly revenue)
+export async function getRevenueSparkline(): Promise<RevenueSparklinePoint[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+  const now = new Date();
+  const sixMonthsAgo = startOfDay(new Date(now.getFullYear(), now.getMonth() - 5, 1));
+
+  const revenueByMonth = await prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
+    SELECT to_char(paid_at, 'YYYY-MM') as month_key, COALESCE(SUM(amount_paid), 0)::float as total
+    FROM invoices
+    WHERE workspace_id = ${workspaceId} AND status = 'paid' AND deleted_at IS NULL
+      AND paid_at >= ${sixMonthsAgo}
+    GROUP BY month_key
+    ORDER BY month_key ASC
+  `;
+
+  const revenueMap = new Map(revenueByMonth.map(r => [r.month_key, Number(r.total)]));
+
+  const result: RevenueSparklinePoint[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const monthDate = subMonths(now, i);
+    const monthKey = format(monthDate, 'yyyy-MM');
+    result.push({
+      date: monthKey,
+      revenue: revenueMap.get(monthKey) ?? 0,
+    });
+  }
+
+  return result;
+}
+
 // Get all dashboard data
 export async function getDashboardData(): Promise<DashboardData> {
   const [
@@ -475,6 +532,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     recentInvoices,
     recentActivity,
     revenueData,
+    revenueSparkline,
   ] = await Promise.all([
     getDashboardStats(),
     getQuoteStatusCounts(),
@@ -483,6 +541,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     getRecentInvoices(5),
     getRecentActivity(10),
     getRevenueData('30d'),
+    getRevenueSparkline(),
   ]);
 
   return {
@@ -493,6 +552,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     recentInvoices,
     recentActivity,
     revenueData,
+    revenueSparkline,
   };
 }
 

@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, FileText, Mail, CreditCard, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, FileText, Mail, CreditCard, ChevronDown, CheckCircle2, Pencil, X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -24,10 +23,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { createInvoice } from '@/lib/invoices/actions';
-import { ProjectSelector } from '@/components/projects';
-import { LogoUpload } from '@/components/shared/logo-upload';
 
 interface LineItem {
   id: string;
@@ -43,6 +42,7 @@ type PreviewMode = 'payment' | 'email' | 'pdf';
 interface ClientOption {
   id: string;
   name: string;
+  email: string | null;
   company: string | null;
 }
 
@@ -54,12 +54,22 @@ interface TaxRateOption {
   isActive: boolean;
 }
 
+interface RateCardOption {
+  id: string;
+  name: string;
+  description: string | null;
+  rate: number;
+  unit: string | null;
+  categoryName: string | null;
+}
+
 interface NewInvoiceFormProps {
   clients: ClientOption[];
   taxRates?: TaxRateOption[];
-  defaultNotes?: string;
-  defaultTerms?: string;
   currency?: string;
+  nextInvoiceNumber: string;
+  rateCards?: RateCardOption[];
+  businessName?: string;
 }
 
 function formatMoney(amount: number, currency: string): string {
@@ -69,7 +79,23 @@ function formatMoney(amount: number, currency: string): string {
   }).format(amount);
 }
 
-export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defaultTerms = '', currency = 'USD' }: NewInvoiceFormProps) {
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+export function NewInvoiceForm({
+  clients,
+  taxRates = [],
+  currency = 'USD',
+  nextInvoiceNumber,
+  rateCards = [],
+  businessName = 'Your Business',
+}: NewInvoiceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
@@ -87,61 +113,75 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
   }, [hasUnsavedChanges]);
 
   // Form state
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [clientId, setClientId] = useState('');
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState(nextInvoiceNumber);
   const [dueDate, setDueDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() + 30);
     return date.toISOString().split('T')[0] ?? date.toISOString().slice(0, 10);
   });
-  const defaultTaxRate = taxRates.find(t => t.isDefault && t.isActive);
+  const defaultTaxRate = taxRates.find((t) => t.isDefault && t.isActive);
   const [taxRate, setTaxRate] = useState(defaultTaxRate ? String(defaultTaxRate.rate) : '0');
-  const [notes, setNotes] = useState(defaultNotes);
-  const [terms, setTerms] = useState(defaultTerms);
-  const [internalNotes, setInternalNotes] = useState('');
 
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { id: '1', name: '', description: '', quantity: 1, rate: 0 }
+    { id: '1', name: '', description: '', quantity: 1, rate: 0 },
   ]);
 
   const addLineItem = () => {
     setHasUnsavedChanges(true);
     setLineItems([
       ...lineItems,
-      { id: Date.now().toString(), name: '', description: '', quantity: 1, rate: 0 }
+      { id: Date.now().toString(), name: '', description: '', quantity: 1, rate: 0 },
+    ]);
+  };
+
+  const addFromRateCard = (rc: RateCardOption) => {
+    setHasUnsavedChanges(true);
+    setLineItems([
+      ...lineItems,
+      {
+        id: Date.now().toString(),
+        name: rc.name,
+        description: rc.description || '',
+        quantity: 1,
+        rate: rc.rate,
+      },
     ]);
   };
 
   const removeLineItem = (id: string) => {
     if (lineItems.length > 1) {
-      setLineItems(lineItems.filter(item => item.id !== id));
+      setLineItems(lineItems.filter((item) => item.id !== id));
     }
   };
 
   const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
     setHasUnsavedChanges(true);
-    setLineItems(lineItems.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setLineItems(
+      lineItems.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
   };
 
   // Calculate totals
-  const subtotal = lineItems.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+  const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
   const taxAmount = subtotal * (parseFloat(taxRate) / 100);
   const total = subtotal + taxAmount;
 
-  const selectedClient = clients.find(c => c.id === clientId);
+  const selectedClient = clients.find((c) => c.id === clientId);
+
+  // Validation issues
+  const validationIssues = useMemo(() => {
+    const issues: string[] = [];
+    if (!clientId) issues.push('Client is required');
+    if (lineItems.some((item) => !item.name)) issues.push('All items need a name');
+    if (lineItems.every((item) => item.rate === 0)) issues.push('At least one item needs a rate');
+    if (!invoiceNumber.trim()) issues.push('Invoice number is required');
+    return issues;
+  }, [clientId, lineItems, invoiceNumber]);
 
   const handleSubmit = async () => {
-    if (!clientId) {
-      toast.error('Please select a client');
-      return;
-    }
-
-    if (lineItems.some(item => !item.name)) {
-      toast.error('Please fill in all line item names');
+    if (validationIssues.length > 0) {
+      toast.error(validationIssues[0]);
       return;
     }
 
@@ -149,27 +189,27 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
     try {
       const result = await createInvoice({
         clientId,
-        projectId,
-        title: title || 'Invoice',
+        title: 'Invoice',
+        invoiceNumber: invoiceNumber.trim(),
         dueDate,
-        lineItems: lineItems.map(item => ({
+        lineItems: lineItems.map((item) => ({
           name: item.name,
           description: item.description || undefined,
           quantity: item.quantity,
           rate: item.rate,
           taxRate: parseFloat(taxRate) || undefined,
         })),
-        notes: notes || undefined,
-        terms: terms || undefined,
-        internalNotes: internalNotes || undefined,
       });
 
       if (result.success) {
         toast.success('Invoice created successfully');
         router.push('/invoices');
+      } else if ('error' in result) {
+        toast.error(result.error);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to create invoice';
+      const message =
+        error instanceof Error ? error.message : 'Failed to create invoice';
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -178,42 +218,20 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/invoices">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">New Invoice</h1>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push('/invoices')}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? 'Creating...' : 'Create Invoice'}
-          </Button>
-        </div>
+      {/* Header — Cancel + Create buttons, no back arrow or title */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" onClick={() => router.push('/invoices')}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={isLoading}>
+          {isLoading ? 'Creating...' : 'Create Invoice'}
+        </Button>
       </div>
 
       {/* Main Content - Split View (60/40) */}
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Left - Form (60%) */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Logo Upload */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base">Business Logo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LogoUpload value={logoUrl} onChange={setLogoUrl} />
-            </CardContent>
-          </Card>
-
           {/* Invoice Details */}
           <Card>
             <CardHeader className="pb-4">
@@ -227,49 +245,99 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem disabled className="text-muted-foreground">Add custom field (coming soon)</DropdownMenuItem>
-                    <DropdownMenuItem disabled className="text-muted-foreground">Set default values (coming soon)</DropdownMenuItem>
-                    <DropdownMenuItem disabled className="text-muted-foreground">Import from template (coming soon)</DropdownMenuItem>
+                    <DropdownMenuItem disabled className="text-muted-foreground">
+                      Add custom field (coming soon)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled className="text-muted-foreground">
+                      Set default values (coming soon)
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Client selection / display */}
               <div>
-                <Label htmlFor="client">Customer <span className="text-destructive">*</span></Label>
-                <Select value={clientId} onValueChange={(value) => {
-                  setClientId(value);
-                  setProjectId(null);
-                }}>
-                  <SelectTrigger id="client">
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.length === 0 ? (
-                      <SelectItem value="_none" disabled>No clients found</SelectItem>
-                    ) : (
-                      clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name}{client.company && client.company !== client.name ? ` (${client.company})` : ''}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <Link href="/clients/new" className="text-primary hover:underline">
-                    + Add new client
-                  </Link>
-                </p>
-              </div>
-
-              <div>
-                <Label>Project (Optional)</Label>
-                <ProjectSelector
-                  clientId={clientId || null}
-                  value={projectId}
-                  onChange={setProjectId}
-                />
+                <Label htmlFor="client">
+                  Customer <span className="text-destructive">*</span>
+                </Label>
+                {selectedClient ? (
+                  <div className="flex items-center gap-3 rounded-lg border p-3 mt-1.5">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                        {getInitials(selectedClient.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {selectedClient.name}
+                        {selectedClient.company &&
+                          selectedClient.company !== selectedClient.name &&
+                          ` (${selectedClient.company})`}
+                      </p>
+                      {selectedClient.email && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {selectedClient.email}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          /* keep client, just allow re-selection */
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setClientId('')}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Select
+                      value={clientId}
+                      onValueChange={(value) => setClientId(value)}
+                    >
+                      <SelectTrigger id="client">
+                        <SelectValue placeholder="Select a client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.length === 0 ? (
+                          <SelectItem value="_none" disabled>
+                            No clients found
+                          </SelectItem>
+                        ) : (
+                          clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.name}
+                              {client.company && client.company !== client.name
+                                ? ` (${client.company})`
+                                : ''}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <Link
+                        href="/clients/new"
+                        className="text-primary hover:underline"
+                      >
+                        + Add new client
+                      </Link>
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-4">
@@ -284,7 +352,14 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                 </div>
                 <div>
                   <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                  <Input id="invoiceNumber" placeholder="Auto-generated" disabled />
+                  <Input
+                    id="invoiceNumber"
+                    value={invoiceNumber}
+                    onChange={(e) => {
+                      setInvoiceNumber(e.target.value);
+                      setHasUnsavedChanges(true);
+                    }}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="taxRate">Tax Rate</Label>
@@ -293,13 +368,15 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">0% - No Tax</SelectItem>
-                      {taxRates.filter(t => t.isActive).map((tr) => (
-                        <SelectItem key={tr.id} value={String(tr.rate)}>
-                          {tr.rate}% - {tr.name}
-                        </SelectItem>
-                      ))}
-                      {taxRates.filter(t => t.isActive).length === 0 && (
+                      <SelectItem value="0">0% - Default</SelectItem>
+                      {taxRates
+                        .filter((t) => t.isActive)
+                        .map((tr) => (
+                          <SelectItem key={tr.id} value={String(tr.rate)}>
+                            {tr.rate}% - {tr.name}
+                          </SelectItem>
+                        ))}
+                      {taxRates.filter((t) => t.isActive).length === 0 && (
                         <>
                           <SelectItem value="5">5%</SelectItem>
                           <SelectItem value="10">10%</SelectItem>
@@ -311,16 +388,6 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                   </Select>
                 </div>
               </div>
-
-              <div>
-                <Label htmlFor="title">Invoice Title (Optional)</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., Website Development - Phase 1"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
             </CardContent>
           </Card>
 
@@ -329,38 +396,76 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Items</CardTitle>
-                <Button variant="outline" size="sm" disabled className="text-muted-foreground">
-                  Import from Rate Cards (Coming Soon)
-                </Button>
+                {rateCards.length > 0 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        Templates
+                        <ChevronDown className="ml-1 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      {rateCards.map((rc) => (
+                        <DropdownMenuItem
+                          key={rc.id}
+                          onClick={() => addFromRateCard(rc)}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{rc.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatMoney(rc.rate, currency)}
+                              {rc.unit ? ` / ${rc.unit}` : ''}
+                            </span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="text-muted-foreground"
+                  >
+                    Templates
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {/* Header */}
                 <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground">
-                  <div className="col-span-5">ITEM</div>
+                  <div className="col-span-6">ITEMS</div>
                   <div className="col-span-2 text-right">RATE</div>
                   <div className="col-span-2 text-right">QTY</div>
-                  <div className="col-span-2 text-right">AMOUNT</div>
-                  <div className="col-span-1"></div>
+                  <div className="col-span-2"></div>
                 </div>
 
                 <Separator />
 
                 {/* Items */}
                 {lineItems.map((item) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
-                    <div className="col-span-5">
+                  <div
+                    key={item.id}
+                    className="grid grid-cols-12 gap-2 items-start"
+                  >
+                    <div className="col-span-6">
                       <Input
                         placeholder="Item name"
                         value={item.name}
-                        onChange={(e) => updateLineItem(item.id, 'name', e.target.value)}
+                        onChange={(e) =>
+                          updateLineItem(item.id, 'name', e.target.value)
+                        }
                       />
                       <Input
                         placeholder="Description (optional)"
                         className="mt-1 text-sm"
                         value={item.description}
-                        onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                        onChange={(e) =>
+                          updateLineItem(item.id, 'description', e.target.value)
+                        }
                       />
                     </div>
                     <div className="col-span-2">
@@ -371,7 +476,13 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                         placeholder="0.00"
                         className="text-right"
                         value={item.rate || ''}
-                        onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                        onChange={(e) =>
+                          updateLineItem(
+                            item.id,
+                            'rate',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                       />
                     </div>
                     <div className="col-span-2">
@@ -381,13 +492,19 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
                         placeholder="1"
                         className="text-right"
                         value={item.quantity}
-                        onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          updateLineItem(
+                            item.id,
+                            'quantity',
+                            parseInt(e.target.value) || 1
+                          )
+                        }
                       />
                     </div>
-                    <div className="col-span-2 text-right py-2 font-medium">
-                      {formatMoney(item.quantity * item.rate, currency)}
-                    </div>
-                    <div className="col-span-1 flex justify-end">
+                    <div className="col-span-2 flex items-center justify-end gap-2">
+                      <span className="text-sm font-medium">
+                        {formatMoney(item.quantity * item.rate, currency)}
+                      </span>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -409,48 +526,26 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
             </CardContent>
           </Card>
 
-          {/* Memo/Notes */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base">Memo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="notes">Notes for Client</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any additional notes for the client..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="terms">Terms & Conditions</Label>
-                <Textarea
-                  id="terms"
-                  placeholder="Payment terms, conditions, etc..."
-                  value={terms}
-                  onChange={(e) => setTerms(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="internalNotes">Internal Notes</Label>
-                <p className="text-xs text-muted-foreground mb-1">(Not visible to client)</p>
-                <Textarea
-                  id="internalNotes"
-                  placeholder="Internal notes, reminders, etc..."
-                  value={internalNotes}
-                  onChange={(e) => setInternalNotes(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Validation badge */}
+          {validationIssues.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge variant="destructive">
+                {validationIssues.length} Issue{validationIssues.length > 1 ? 's' : ''}
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                {validationIssues[0]}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Right - Preview (40%) */}
         <div className="lg:col-span-2 space-y-4">
           {/* Preview Mode Tabs */}
-          <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as PreviewMode)}>
+          <Tabs
+            value={previewMode}
+            onValueChange={(v) => setPreviewMode(v as PreviewMode)}
+          >
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="payment" className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
@@ -471,97 +566,84 @@ export function NewInvoiceForm({ clients, taxRates = [], defaultNotes = '', defa
           <Card className="sticky top-4">
             <CardContent className="p-6">
               <div className="rounded-lg border bg-card p-6 shadow-sm">
-                {/* Logo */}
-                {logoUrl && (
-                  <div className="flex justify-center mb-4">
-                    <img
-                      src={logoUrl}
-                      alt="Business Logo"
-                      className="h-12 w-auto object-contain"
-                    />
-                  </div>
-                )}
-
-                {/* Invoice Header */}
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold">{title || 'Invoice'}</h2>
-                  <p className="text-sm text-muted-foreground">Invoice # (auto-generated)</p>
-                  <p className="text-2xl font-bold mt-2">{formatMoney(total, currency)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Due on {new Date(dueDate).toLocaleDateString()}
-                  </p>
-                </div>
-
-                <Separator className="my-4" />
-
-                {/* Client Info */}
-                <div className="mb-6">
-                  <p className="font-medium">{selectedClient?.name || 'Client Name'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedClient?.company || 'Select a client above'}
-                  </p>
-                </div>
-
-                {/* Line Items Summary */}
-                <div className="space-y-2 mb-6">
-                  {lineItems.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.name || 'Untitled Item'} × {item.quantity}</span>
-                      <span>{formatMoney(item.quantity * item.rate, currency)}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator className="my-4" />
-
-                {/* Totals */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>{formatMoney(subtotal, currency)}</span>
-                  </div>
-                  {taxAmount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span>Tax ({taxRate}%)</span>
-                      <span>{formatMoney(taxAmount, currency)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold pt-2 border-t">
-                    <span>Total</span>
-                    <span>{formatMoney(total, currency)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-primary">
-                    <span>Balance Due</span>
-                    <span>{formatMoney(total, currency)}</span>
-                  </div>
-                </div>
-
-                {/* Notes & Terms in Preview */}
-                {notes && (
-                  <div className="mt-6 border-t pt-4">
-                    <h3 className="mb-1 text-sm font-semibold">Notes</h3>
-                    <p className="text-sm text-muted-foreground">{notes}</p>
-                  </div>
-                )}
-                {terms && (
-                  <div className="mt-4">
-                    <h3 className="mb-1 text-sm font-semibold">Terms & Conditions</h3>
-                    <p className="text-sm text-muted-foreground">{terms}</p>
-                  </div>
-                )}
-
                 {previewMode === 'payment' && (
-                  <Button className="w-full mt-6" disabled variant="secondary">
-                    Pay Now (available after sending)
-                  </Button>
+                  <>
+                    {/* Checkmark + Business Name + Total */}
+                    <div className="text-center mb-6">
+                      <div className="flex justify-center mb-3">
+                        <CheckCircle2 className="h-12 w-12 text-green-500" />
+                      </div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {businessName}
+                      </p>
+                      <p className="text-3xl font-bold mt-1">
+                        {formatMoney(total, currency)}
+                      </p>
+                    </div>
+
+                    <Separator className="my-4" />
+
+                    {/* Client */}
+                    {selectedClient && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium">
+                          {selectedClient.company || selectedClient.name}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Line Items */}
+                    <div className="space-y-3 mb-6">
+                      {lineItems.map((item) => (
+                        <div key={item.id} className="text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              {item.name || 'Untitled Item'}{' '}
+                              {item.quantity} &times; {formatMoney(item.rate, currency)}
+                            </span>
+                            <span className="font-medium">
+                              {formatMoney(item.quantity * item.rate, currency)}
+                            </span>
+                          </div>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <Separator className="my-4" />
+
+                    {/* Total Due */}
+                    <div className="flex justify-between items-center font-bold text-lg mb-4">
+                      <span>Total Due</span>
+                      <span>{formatMoney(total, currency)}</span>
+                    </div>
+
+                    {/* Thank you message */}
+                    <p className="text-center text-sm text-muted-foreground mb-4">
+                      Thank you for your business!
+                    </p>
+
+                    {/* Download Invoice button */}
+                    <Button variant="outline" className="w-full" disabled>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Invoice
+                    </Button>
+                  </>
                 )}
+
                 {previewMode === 'email' && (
-                  <div className="mt-6 rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                    Email preview will be available after the invoice is created and sent.
+                  <div className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+                    Email preview will be available after the invoice is created
+                    and sent.
                   </div>
                 )}
+
                 {previewMode === 'pdf' && (
-                  <div className="mt-6 rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+                  <div className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
                     PDF download will be available after the invoice is created.
                   </div>
                 )}
