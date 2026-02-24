@@ -501,10 +501,7 @@ export function NewInvoiceForm({
                         }
                       />
                     </div>
-                    <div className="col-span-2 flex items-center justify-end gap-2">
-                      <span className="text-sm font-medium">
-                        {formatMoney(item.quantity * item.rate, currency)}
-                      </span>
+                    <div className="col-span-2 flex items-center justify-end">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -520,7 +517,7 @@ export function NewInvoiceForm({
 
                 <Button variant="outline" className="w-full" onClick={addLineItem}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Item
+                  Add Items
                 </Button>
               </div>
             </CardContent>
@@ -579,6 +576,14 @@ export function NewInvoiceForm({
                       <p className="text-3xl font-bold mt-1">
                         {formatMoney(total, currency)}
                       </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Invoice #{invoiceNumber} &middot; Due{' '}
+                        {new Date(dueDate + 'T00:00:00').toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: '2-digit',
+                          year: 'numeric',
+                        })}
+                      </p>
                     </div>
 
                     <Separator className="my-4" />
@@ -628,7 +633,7 @@ export function NewInvoiceForm({
                     </p>
 
                     {/* Download Invoice button */}
-                    <Button variant="outline" className="w-full" disabled>
+                    <Button className="w-full">
                       <Download className="mr-2 h-4 w-4" />
                       Download Invoice
                     </Button>
