@@ -42,7 +42,7 @@ export function DocumentCanvas() {
         <div
           ref={setNodeRef}
           className={cn(
-            'relative w-full max-w-[816px] min-h-[1056px] bg-white shadow-lg transition-all',
+            'document-paper relative w-full max-w-[816px] min-h-[1056px] bg-white shadow-lg transition-all',
             isOver && 'ring-2 ring-primary ring-offset-2',
             previewMode && 'pointer-events-none'
           )}

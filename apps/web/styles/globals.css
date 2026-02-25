@@ -300,6 +300,21 @@ html {
   background: rgb(var(--muted-foreground) / 0.5);
 }
 
+/* Document canvas: always render in light mode (paper simulation) */
+.dark .document-paper {
+  --foreground: var(--base-950);
+  --card: var(--base-50);
+  --card-foreground: var(--base-950);
+  --muted: var(--base-100);
+  --muted-foreground: var(--base-500);
+  --border: var(--base-200);
+  --input: var(--base-200);
+  --ring: var(--primary-500);
+  --accent: var(--primary-100);
+  --accent-foreground: var(--primary-900);
+  color: var(--base-950);
+}
+
 /* Print styles for quotes/invoices */
 @media print {
   body {
