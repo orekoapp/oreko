@@ -1,4 +1,4 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
+import puppeteer, { Browser, Page } from 'puppeteer-core';
 
 // PDF generation options
 export interface PdfOptions {
@@ -36,9 +36,31 @@ const defaultOptions: PdfOptions = {
 let browserInstance: Browser | null = null;
 
 async function getBrowser(): Promise<Browser> {
-  if (!browserInstance) {
+  if (browserInstance) {
+    return browserInstance;
+  }
+
+  // In serverless environments (Vercel), use @sparticuz/chromium
+  // In local dev, fall back to system Chrome/Chromium
+  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+  if (isServerless) {
+    const chromium = (await import('@sparticuz/chromium')).default;
+    browserInstance = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+      defaultViewport: { width: 1280, height: 720 },
+    });
+  } else {
+    // Local development: find system Chrome/Chromium
+    const executablePath =
+      process.env.PUPPETEER_EXECUTABLE_PATH ||
+      findLocalChrome();
+
     browserInstance = await puppeteer.launch({
       headless: true,
+      executablePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -50,7 +72,42 @@ async function getBrowser(): Promise<Browser> {
       ],
     });
   }
+
   return browserInstance;
+}
+
+/**
+ * Find a local Chrome/Chromium executable for development
+ */
+function findLocalChrome(): string {
+  const paths = [
+    // Linux
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    // macOS
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    // Windows (WSL)
+    '/mnt/c/Program Files/Google/Chrome/Application/chrome.exe',
+    '/mnt/c/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+  ];
+
+  const fs = require('fs');
+  for (const p of paths) {
+    try {
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(
+    'Could not find Chrome/Chromium. Set PUPPETEER_EXECUTABLE_PATH environment variable.'
+  );
 }
 
 // Close browser instance
@@ -72,13 +129,16 @@ export async function generatePdfFromHtml(
   try {
     page = await browser.newPage();
 
-    // Set content
+    // Set content with a reasonable timeout
     await page.setContent(html, {
       waitUntil: 'networkidle0',
+      timeout: 15000,
     });
 
-    // Wait for fonts to load
-    await page.evaluateHandle('document.fonts.ready');
+    // Wait for fonts to load (with timeout fallback)
+    await page.evaluateHandle('document.fonts.ready').catch(() => {
+      // Fonts may not be available in serverless - continue anyway
+    });
 
     const mergedOptions = { ...defaultOptions, ...options };
 
@@ -120,7 +180,9 @@ export async function generatePdfFromUrl(
     });
 
     // Wait for fonts to load
-    await page.evaluateHandle('document.fonts.ready');
+    await page.evaluateHandle('document.fonts.ready').catch(() => {
+      // Fonts may not be available in serverless - continue anyway
+    });
 
     const mergedOptions = { ...defaultOptions, ...options };
 
