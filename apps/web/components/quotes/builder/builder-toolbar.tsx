@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
-import { updateQuote, sendQuote } from '@/lib/quotes/actions';
+import { createQuote, updateQuote, sendQuote } from '@/lib/quotes/actions';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -59,19 +59,47 @@ export function BuilderToolbar() {
     redo,
     setSaving,
     markSaved,
+    updateDocumentId,
   } = useQuoteBuilderStore();
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
   const handleSave = async () => {
-    if (!document || !document.id) {
+    if (!document) {
       toast.error('No document to save');
       return;
     }
 
     setSaving(true);
     try {
+      // New quote: create in database first
+      if (!document.id) {
+        if (!document.clientId) {
+          toast.error('Please select a client before saving');
+          setSaving(false);
+          return;
+        }
+
+        const result = await createQuote({
+          title: document.title || 'Untitled Quote',
+          clientId: document.clientId,
+          projectId: document.projectId,
+          blocks: document.blocks,
+        });
+
+        if (result.success && result.quote) {
+          updateDocumentId(result.quote.id, result.quote.quoteNumber);
+          markSaved();
+          toast.success('Quote created successfully');
+          router.replace(`/quotes/${result.quote.id}/builder`);
+        } else {
+          toast.error(result.error || 'Failed to create quote');
+        }
+        return;
+      }
+
+      // Existing quote: update
       const result = await updateQuote(document.id, {
         title: document.title,
         blocks: document.blocks,

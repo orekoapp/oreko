@@ -67,6 +67,7 @@ interface QuoteBuilderActions {
   setSaving: (saving: boolean) => void;
   markSaved: () => void;
   markDirty: () => void;
+  updateDocumentId: (id: string, quoteNumber?: string) => void;
 
   // Undo/Redo
   undo: () => void;
@@ -383,6 +384,17 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
         markDirty: () => {
           set((state) => {
             state.isDirty = true;
+          });
+        },
+
+        updateDocumentId: (id, quoteNumber) => {
+          set((state) => {
+            if (state.document) {
+              state.document.id = id;
+              if (quoteNumber) {
+                state.document.quoteNumber = quoteNumber;
+              }
+            }
           });
         },
 
