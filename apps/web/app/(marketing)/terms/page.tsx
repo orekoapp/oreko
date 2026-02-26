@@ -87,8 +87,8 @@ export default function TermsPage() {
           <h2>12. Contact</h2>
           <p>
             If you have questions about these Terms of Service, please contact us at{' '}
-            <a href="mailto:legal@quotecraft.app" className="text-primary hover:underline">
-              legal@quotecraft.app
+            <a href="mailto:legal@quote.persuado.tech" className="text-primary hover:underline">
+              legal@quote.persuado.tech
             </a>
             .
           </p>

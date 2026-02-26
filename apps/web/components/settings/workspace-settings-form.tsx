@@ -68,7 +68,7 @@ export function WorkspaceSettingsForm({ initialData }: WorkspaceSettingsFormProp
       <div className="grid gap-2">
         <Label htmlFor="slug">Workspace URL</Label>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">quotecraft.app/</span>
+          <span className="text-sm text-muted-foreground">quote.persuado.tech/</span>
           <Input
             id="slug"
             value={slug}

@@ -26,7 +26,7 @@ const contactMethods = [
     icon: Mail,
     title: 'Email Support',
     description: 'For general inquiries and support questions.',
-    href: 'mailto:support@quotecraft.app',
+    href: 'mailto:support@quote.persuado.tech',
     label: 'Send Email',
   },
   {

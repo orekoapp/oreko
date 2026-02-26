@@ -81,8 +81,8 @@ export default function PrivacyPage() {
           <h2>Contact Us</h2>
           <p>
             If you have questions about this Privacy Policy, please contact us at{' '}
-            <a href="mailto:privacy@quotecraft.app" className="text-primary hover:underline">
-              privacy@quotecraft.app
+            <a href="mailto:privacy@quote.persuado.tech" className="text-primary hover:underline">
+              privacy@quote.persuado.tech
             </a>
             .
           </p>

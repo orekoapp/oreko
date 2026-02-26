@@ -46,7 +46,7 @@ const faqs = [
   {
     question: 'Can I use my own domain?',
     answer:
-      "Self-hosted: Absolutely, it's your server. Cloud Pro and Team: Yes, you can connect your custom domain. Cloud Starter: Uses a quotecraft.app subdomain.",
+      "Self-hosted: Absolutely, it's your server. Cloud Pro and Team: Yes, you can connect your custom domain. Cloud Starter: Uses a quote.persuado.tech subdomain.",
   },
   {
     question: 'Is there a mobile app?',
@@ -94,7 +94,7 @@ export function FAQSection() {
           <p className="text-center text-slate-500 dark:text-slate-400 mt-8">
             Still have questions?{' '}
             <a
-              href="mailto:support@quotecraft.app"
+              href="mailto:support@quote.persuado.tech"
               className="text-blue-600 dark:text-blue-400 hover:underline"
             >
               Contact us

@@ -51,7 +51,7 @@ function getEmailClient(): Resend | null {
 // Get default config
 function getDefaultConfig(): EmailConfig {
   return {
-    from: process.env.EMAIL_FROM || 'QuoteCraft <noreply@quotecraft.app>',
+    from: process.env.EMAIL_FROM || 'QuoteCraft <noreply@quote.persuado.tech>',
     replyTo: process.env.EMAIL_REPLY_TO,
   };
 }
