@@ -437,6 +437,12 @@ export async function processPaymentWebhook(
       return { success: false };
     }
 
+    // Prevent duplicate webhook processing - skip if already completed or failed
+    if (payment.status === 'completed' || payment.status === 'failed') {
+      console.info('Payment already processed, skipping duplicate webhook:', paymentIntentId);
+      return { success: true };
+    }
+
     if (status === 'succeeded') {
       const currentAmountPaid = Number(payment.invoice.amountPaid);
       const newAmountPaid = currentAmountPaid + Number(payment.amount);
