@@ -245,9 +245,14 @@ export async function createInvoicePaymentIntent(
       return { success: false, error: 'Invoice has been voided' };
     }
 
-    const amountToPay = amount ?? Number(invoice.amountDue);
+    const invoiceAmountDue = Number(invoice.amountDue);
+    const amountToPay = amount ?? invoiceAmountDue;
     if (amountToPay <= 0) {
       return { success: false, error: 'Invalid payment amount' };
+    }
+    // Prevent underpayment attacks - amount must not exceed what's owed
+    if (amountToPay > invoiceAmountDue) {
+      return { success: false, error: 'Payment amount exceeds amount due' };
     }
 
     // Get currency from invoice settings
