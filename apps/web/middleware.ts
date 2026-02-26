@@ -1,13 +1,16 @@
-import { auth } from '@/lib/auth';
-import type { NextMiddleware } from 'next/server';
+import NextAuth from 'next-auth';
+import { authConfig } from '@/lib/auth/config';
 
-// @ts-expect-error - NextAuth middleware types have portability issues
-const middleware: NextMiddleware = auth((req) => {
-  // Middleware logic is handled in auth callbacks
-  // This file just ensures auth middleware runs
+// Use a lightweight NextAuth instance for middleware (Edge Runtime compatible).
+// This does NOT import the Prisma adapter, which requires Node.js runtime.
+// The full auth config (with adapter) is used in server components and API routes.
+const { auth } = NextAuth({
+  session: { strategy: 'jwt' },
+  trustHost: true,
+  ...authConfig,
 });
 
-export default middleware;
+export default auth;
 
 export const config = {
   matcher: [

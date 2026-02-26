@@ -49,6 +49,7 @@ export default defineConfig({
         '**/accessibility.spec.ts',
         '**/rate-limiting.spec.ts',
         '**/error-boundaries.spec.ts',
+        '**/session-persistence.spec.ts',
       ],
       use: { ...devices['Desktop Chrome'] },
     },
@@ -97,6 +98,16 @@ export default defineConfig({
     {
       name: 'regression',
       testDir: './e2e/regression',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authFile,
+      },
+    },
+
+    // Exhaustive interaction coverage tests
+    {
+      name: 'exhaustive',
+      testDir: './e2e/exhaustive',
       use: {
         ...devices['Desktop Chrome'],
         storageState: authFile,
