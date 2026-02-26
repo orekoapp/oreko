@@ -118,7 +118,8 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
   const canEdit = invoice.status === 'draft';
   const canSend = invoice.status === 'draft';
   const canVoid = invoice.status !== 'draft' && invoice.status !== 'voided' && invoice.status !== 'paid';
-  const canDelete = invoice.status === 'draft';
+  const canDelete = invoice.status === 'draft' || invoice.status === 'voided';
+  const hasDropdownActions = canVoid || canDelete;
 
   return (
     <>
@@ -154,30 +155,32 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
           </Button>
         )}
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {canVoid && (
-              <DropdownMenuItem onClick={() => setShowVoidDialog(true)} className="text-orange-600">
-                <Ban className="mr-2 h-4 w-4" />
-                Void Invoice
-              </DropdownMenuItem>
-            )}
-            {canDelete && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Invoice
+        {hasDropdownActions && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canVoid && (
+                <DropdownMenuItem onClick={() => setShowVoidDialog(true)} className="text-orange-600">
+                  <Ban className="mr-2 h-4 w-4" />
+                  Void Invoice
                 </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              )}
+              {canDelete && (
+                <>
+                  {canVoid && <DropdownMenuSeparator />}
+                  <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Invoice
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Send Confirmation Dialog */}
