@@ -60,11 +60,15 @@ uploads/*
 # OS files
 Thumbs.db
 *.Zone.Identifier
+*:Zone.Identifier
 .vercel
 .env*.local
 
 # Playwright auth state
 apps/web/e2e/.auth/
+
+# Test environment config (contains credentials)
+.claude/test-environment.json
 
 # Playwright MCP screenshots
 .playwright-mcp/
