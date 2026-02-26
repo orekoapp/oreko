@@ -50,6 +50,7 @@ export function ContractTemplateForm({ template }: ContractTemplateFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<ContractTemplateFormData>({
     resolver: zodResolver(contractTemplateSchema),
@@ -58,6 +59,11 @@ export function ContractTemplateForm({ template }: ContractTemplateFormProps) {
       content: template?.content || '',
     },
   });
+
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    setValue('content', newContent, { shouldValidate: true });
+  };
 
   const onSubmit = (data: ContractTemplateFormData) => {
     startTransition(async () => {
@@ -69,6 +75,7 @@ export function ContractTemplateForm({ template }: ContractTemplateFormProps) {
             content,
             variables,
           });
+          toast.success('Template updated successfully');
         } else {
           await createContractTemplate({
             name: data.name,
@@ -76,6 +83,7 @@ export function ContractTemplateForm({ template }: ContractTemplateFormProps) {
             isTemplate: true,
             variables,
           });
+          toast.success('Template created successfully');
         }
         router.push('/templates');
         router.refresh();
@@ -124,9 +132,12 @@ export function ContractTemplateForm({ template }: ContractTemplateFormProps) {
         <CardContent>
           <ContractEditor
             content={content}
-            onChange={setContent}
+            onChange={handleContentChange}
             variables={variables}
           />
+          {errors.content && (
+            <p className="mt-2 text-sm text-destructive">{errors.content.message}</p>
+          )}
         </CardContent>
       </Card>
 
