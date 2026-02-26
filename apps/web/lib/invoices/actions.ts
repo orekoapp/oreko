@@ -368,10 +368,10 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
               description: item.description || null,
               quantity: item.quantity,
               rate: item.rate,
-              amount: item.quantity * item.rate,
+              amount: Math.round(item.quantity * item.rate * 100) / 100,
               taxRate: item.taxRate || null,
               taxAmount: item.taxRate
-                ? item.quantity * item.rate * (item.taxRate / 100)
+                ? Math.round(item.quantity * item.rate * (item.taxRate / 100) * 100) / 100
                 : 0,
               sortOrder: index,
             })),

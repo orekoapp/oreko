@@ -245,6 +245,15 @@ export async function createInvoicePaymentIntent(
       return { success: false, error: 'Invoice has been voided' };
     }
 
+    // Verify workspace has a connected Stripe account with charges enabled
+    const paymentSettings = invoice.workspace.paymentSettings;
+    if (!paymentSettings?.stripeAccountId) {
+      return { success: false, error: 'Payment processing is not configured. Please complete Stripe onboarding.' };
+    }
+    if (!paymentSettings.stripeOnboardingComplete) {
+      return { success: false, error: 'Stripe account setup is incomplete. Please complete onboarding first.' };
+    }
+
     const invoiceAmountDue = Number(invoice.amountDue);
     const amountToPay = amount ?? invoiceAmountDue;
     if (amountToPay <= 0) {
