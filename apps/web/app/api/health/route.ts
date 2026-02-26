@@ -26,7 +26,7 @@ export async function GET() {
         services: {
           database: 'disconnected',
         },
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Database connection failed',
       },
       { status: 503 }
     );

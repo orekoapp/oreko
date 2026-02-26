@@ -86,10 +86,13 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   const config = getDefaultConfig();
 
   try {
+    // Strip newlines from subject to prevent email header injection
+    const safeSubject = options.subject.replace(/[\r\n]+/g, ' ').trim();
+
     const { data, error } = await client.emails.send({
       from: config.from,
       to: Array.isArray(options.to) ? options.to : [options.to],
-      subject: options.subject,
+      subject: safeSubject,
       html: options.html || options.text || 'This email has no content',
       replyTo: options.replyTo ?? config.replyTo,
       cc: options.cc,

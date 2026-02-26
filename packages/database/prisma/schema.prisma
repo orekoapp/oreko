@@ -594,6 +594,7 @@ model PaymentSchedule {
   payment Payment? @relation(fields: [paymentId], references: [id])
 
   @@index([invoiceId])
+  @@index([paymentId])
   @@index([dueDate, status])
   @@map("payment_schedules")
 }
@@ -652,6 +653,7 @@ model ContractInstance {
   @@index([quoteId])
   @@index([clientId])
   @@index([projectId])
+  @@index([workspaceId])
   @@index([accessToken])
   @@map("contract_instances")
 }

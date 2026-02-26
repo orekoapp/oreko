@@ -93,10 +93,10 @@ export async function createQuote(data: {
       description: block.content.description || null,
       quantity: block.content.quantity,
       rate: block.content.rate,
-      amount: block.content.quantity * block.content.rate,
+      amount: Math.round(block.content.quantity * block.content.rate * 100) / 100,
       taxRate: block.content.taxRate,
       taxAmount: block.content.taxRate
-        ? block.content.quantity * block.content.rate * (block.content.taxRate / 100)
+        ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
         : 0,
       sortOrder: index,
     })) || [];
@@ -184,10 +184,10 @@ export async function updateQuote(
       description: block.content.description || null,
       quantity: block.content.quantity,
       rate: block.content.rate,
-      amount: block.content.quantity * block.content.rate,
+      amount: Math.round(block.content.quantity * block.content.rate * 100) / 100,
       taxRate: block.content.taxRate,
       taxAmount: block.content.taxRate
-        ? block.content.quantity * block.content.rate * (block.content.taxRate / 100)
+        ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
         : 0,
       sortOrder: index,
     }));
