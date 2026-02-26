@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Loader2, CreditCard, Building2, Banknote, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +52,7 @@ export function RecordPaymentDialog({
   currency,
 }: RecordPaymentDialogProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amount, setAmount] = useState(amountDue.toString());
@@ -84,6 +86,7 @@ export function RecordPaymentDialog({
       });
 
       if (result.success) {
+        toast({ title: 'Payment recorded', description: `${formatCurrency(numAmount, currency)} payment recorded successfully.` });
         setOpen(false);
         router.refresh();
         // Reset form
