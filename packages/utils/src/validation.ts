@@ -20,7 +20,9 @@ export const passwordSchema = z
  */
 export const phoneSchema = z
   .string()
+  .trim()
   .regex(/^[\d\s\-+()]*$/, 'Invalid phone number format')
+  .refine((val) => !val || /\d/.test(val), 'Phone number must contain at least one digit')
   .optional()
   .or(z.literal(''));
 
