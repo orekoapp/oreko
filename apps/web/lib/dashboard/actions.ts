@@ -72,9 +72,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     prisma.client.count({
       where: { workspaceId, deletedAt: null },
     }),
-    // Paid invoices (total revenue)
+    // Paid invoices (total revenue) — includes partial payments
     prisma.invoice.aggregate({
-      where: { workspaceId, status: 'paid', deletedAt: null },
+      where: { workspaceId, status: { in: ['paid', 'partial'] }, deletedAt: null },
       _sum: { amountPaid: true },
     }),
     // Unpaid invoices (outstanding) — includes 'overdue' which may be stored in DB
@@ -117,15 +117,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         issueDate: { gte: startOfMonth, lt: endOfMonth },
       },
     }),
-    // Revenue this month
-    prisma.invoice.aggregate({
+    // Revenue this month — sum from Payment records so partial payments are included
+    prisma.payment.aggregate({
       where: {
-        workspaceId,
-        status: 'paid',
-        deletedAt: null,
-        paidAt: { gte: startOfMonth, lt: endOfMonth },
+        status: 'completed',
+        processedAt: { gte: startOfMonth, lt: endOfMonth },
+        invoice: { workspaceId, deletedAt: null },
       },
-      _sum: { amountPaid: true },
+      _sum: { amount: true },
     }),
     // Accepted quotes (for conversion rate) - include converted since they were accepted first
     prisma.quote.count({
@@ -159,7 +158,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     toNumber(unpaidInvoices._sum.total) - toNumber(unpaidInvoices._sum.amountPaid);
   const overdueAmount =
     toNumber(overdueInvoices._sum.total) - toNumber(overdueInvoices._sum.amountPaid);
-  const revenueThisMonth = toNumber(paidThisMonth._sum.amountPaid);
+  const revenueThisMonth = toNumber(paidThisMonth._sum.amount);
   const conversionRate = sentQuotes > 0 ? (acceptedQuotes / sentQuotes) * 100 : 0;
 
   // Win rate: accepted / (accepted + declined)
@@ -238,29 +237,29 @@ export async function getRevenueData(period: DashboardPeriod = '30d'): Promise<R
   const { workspaceId } = await getCurrentUserWorkspace();
   const startDate = getPeriodStartDate(period);
 
-  const invoices = await prisma.invoice.findMany({
+  // Query Payment records so partial payments are included with correct timestamps
+  const payments = await prisma.payment.findMany({
     where: {
-      workspaceId,
-      status: 'paid',
-      deletedAt: null,
-      paidAt: startDate ? { gte: startDate } : undefined,
+      status: 'completed',
+      processedAt: startDate ? { gte: startDate } : undefined,
+      invoice: { workspaceId, deletedAt: null },
     },
     select: {
-      paidAt: true,
-      amountPaid: true,
+      processedAt: true,
+      amount: true,
     },
-    orderBy: { paidAt: 'asc' },
+    orderBy: { processedAt: 'asc' },
   });
 
   // Group by date
   const dataMap = new Map<string, { revenue: number; count: number }>();
 
-  invoices.forEach((invoice) => {
-    if (!invoice.paidAt) return;
-    const dateKey = format(invoice.paidAt, 'yyyy-MM-dd');
+  payments.forEach((payment) => {
+    if (!payment.processedAt) return;
+    const dateKey = format(payment.processedAt, 'yyyy-MM-dd');
     const existing = dataMap.get(dateKey) || { revenue: 0, count: 0 };
     dataMap.set(dateKey, {
-      revenue: existing.revenue + toNumber(invoice.amountPaid),
+      revenue: existing.revenue + toNumber(payment.amount),
       count: existing.count + 1,
     });
   });
@@ -498,11 +497,14 @@ export async function getRevenueSparkline(): Promise<RevenueSparklinePoint[]> {
   const now = new Date();
   const sixMonthsAgo = startOfDay(new Date(now.getFullYear(), now.getMonth() - 5, 1));
 
+  // Query Payment records so partial payments are included
   const revenueByMonth = await prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
-    SELECT to_char(paid_at, 'YYYY-MM') as month_key, COALESCE(SUM(amount_paid), 0)::float as total
-    FROM invoices
-    WHERE workspace_id = ${workspaceId} AND status = 'paid' AND deleted_at IS NULL
-      AND paid_at >= ${sixMonthsAgo}
+    SELECT to_char(p.processed_at, 'YYYY-MM') as month_key, COALESCE(SUM(p.amount), 0)::float as total
+    FROM payments p
+    JOIN invoices i ON p.invoice_id = i.id
+    WHERE i.workspace_id = ${workspaceId} AND i.deleted_at IS NULL
+      AND p.status = 'completed'
+      AND p.processed_at >= ${sixMonthsAgo}
     GROUP BY month_key
     ORDER BY month_key ASC
   `;
@@ -596,15 +598,14 @@ export async function getAnalyticsStats(): Promise<AnalyticsStats> {
       },
       _avg: { total: true },
     }),
-    // Previous month revenue
-    prisma.invoice.aggregate({
+    // Previous month revenue — sum from Payment records so partial payments are included
+    prisma.payment.aggregate({
       where: {
-        workspaceId,
-        status: 'paid',
-        deletedAt: null,
-        paidAt: { gte: startOfPrevMonth, lt: endOfPrevMonth },
+        status: 'completed',
+        processedAt: { gte: startOfPrevMonth, lt: endOfPrevMonth },
+        invoice: { workspaceId, deletedAt: null },
       },
-      _sum: { amountPaid: true },
+      _sum: { amount: true },
     }),
     // Previous month quotes
     prisma.quote.count({
@@ -619,7 +620,7 @@ export async function getAnalyticsStats(): Promise<AnalyticsStats> {
   return {
     ...baseStats,
     avgDealValue: toNumber(avgDealResult._avg.total),
-    prevMonthRevenue: toNumber(prevMonthRevenueResult._sum.amountPaid),
+    prevMonthRevenue: toNumber(prevMonthRevenueResult._sum.amount),
     prevMonthQuotes: prevMonthQuotesResult,
   };
 }
@@ -774,7 +775,7 @@ export async function getClientDistributionData(
     select: {
       address: true,
       invoices: {
-        where: { status: 'paid', deletedAt: null },
+        where: { status: { in: ['paid', 'partial'] }, deletedAt: null },
         select: { amountPaid: true },
       },
       quotes: {
@@ -843,11 +844,14 @@ export async function getMonthlyComparisonData(
 
   // Run all 4 grouped queries in parallel (using actual DB column names via @map)
   const [revenueByMonth, quotesByMonth, invoicesByMonth, clientsByMonth] = await Promise.all([
+    // Revenue from Payment records so partial payments are included
     prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
-      SELECT to_char(paid_at, 'YYYY-MM') as month_key, COALESCE(SUM(amount_paid), 0)::float as total
-      FROM invoices
-      WHERE workspace_id = ${workspaceId} AND status = 'paid' AND deleted_at IS NULL
-        AND paid_at >= ${rangeStart}
+      SELECT to_char(p.processed_at, 'YYYY-MM') as month_key, COALESCE(SUM(p.amount), 0)::float as total
+      FROM payments p
+      JOIN invoices i ON p.invoice_id = i.id
+      WHERE i.workspace_id = ${workspaceId} AND i.deleted_at IS NULL
+        AND p.status = 'completed'
+        AND p.processed_at >= ${rangeStart}
       GROUP BY month_key
     `,
     prisma.$queryRaw<Array<{ month_key: string; count: number }>>`
@@ -914,7 +918,7 @@ export async function getTopClientsByRevenue(
       company: true,
       invoices: {
         where: {
-          status: 'paid',
+          status: { in: ['paid', 'partial'] },
           deletedAt: null,
         },
         select: {
@@ -953,7 +957,7 @@ export async function getClientLTVData(
       email: true,
       invoices: {
         where: {
-          status: 'paid',
+          status: { in: ['paid', 'partial'] },
           deletedAt: null,
         },
         select: {
@@ -992,11 +996,14 @@ export async function getRevenueForecast(
   // Get historical monthly revenue (single query instead of N)
   const rangeStart = startOfDay(new Date(subMonths(now, historicalMonths - 1).getFullYear(), subMonths(now, historicalMonths - 1).getMonth(), 1));
 
+  // Query Payment records so partial payments are included
   const revenueByMonth = await prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
-    SELECT to_char(paid_at, 'YYYY-MM') as month_key, COALESCE(SUM(amount_paid), 0)::float as total
-    FROM invoices
-    WHERE workspace_id = ${workspaceId} AND status = 'paid' AND deleted_at IS NULL
-      AND paid_at >= ${rangeStart}
+    SELECT to_char(p.processed_at, 'YYYY-MM') as month_key, COALESCE(SUM(p.amount), 0)::float as total
+    FROM payments p
+    JOIN invoices i ON p.invoice_id = i.id
+    WHERE i.workspace_id = ${workspaceId} AND i.deleted_at IS NULL
+      AND p.status = 'completed'
+      AND p.processed_at >= ${rangeStart}
     GROUP BY month_key
   `;
 
