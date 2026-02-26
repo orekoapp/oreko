@@ -420,7 +420,9 @@ export async function createContractInstance(
       const varKey = variable.key || variable.name || '';
       if (!varKey) continue;
       const value = input.variableValues[varKey] || variable.defaultValue || '';
-      content = content.replace(new RegExp(`{{${varKey}}}`, 'g'), value);
+      // Escape regex special characters in variable key to prevent regex injection
+      const escapedKey = varKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      content = content.replace(new RegExp(`{{${escapedKey}}}`, 'g'), value);
     }
   }
 

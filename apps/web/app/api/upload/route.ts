@@ -36,7 +36,11 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const ext = file.name.split('.').pop() || 'png';
+    // Derive extension from validated MIME type, not user-provided filename
+    const MIME_TO_EXT: Record<string, string> = {
+      'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/webp': 'webp',
+    };
+    const ext = MIME_TO_EXT[file.type] || 'png';
     const timestamp = Date.now();
     const filename = `${timestamp}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
     const folder = purpose === 'logo' ? 'logos' : 'uploads';
