@@ -143,7 +143,11 @@ export function BuilderToolbar() {
       const result = await sendQuote(document.id);
 
       if (result.success) {
-        toast.success('Quote sent to client');
+        if (result.emailSent) {
+          toast.success('Quote sent and email delivered');
+        } else {
+          toast.warning('Quote marked as sent, but email delivery failed. Please check your email configuration.');
+        }
         router.push(`/quotes/${document.id}`);
       } else {
         toast.error('Failed to send quote');

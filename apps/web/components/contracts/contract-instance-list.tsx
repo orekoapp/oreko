@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   FileText,
   MoreHorizontal,
@@ -127,7 +128,12 @@ export function ContractInstanceList({
   const handleSend = async (id: string) => {
     startTransition(async () => {
       try {
-        await sendContractInstance(id);
+        const result = await sendContractInstance(id);
+        if (result.emailSent) {
+          toast.success('Contract sent and email delivered');
+        } else {
+          toast.warning('Contract marked as sent, but email delivery failed. Please check your email configuration.');
+        }
         router.refresh();
       } catch (error) {
         console.error('Failed to send contract:', error);

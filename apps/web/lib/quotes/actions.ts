@@ -624,20 +624,27 @@ export async function sendQuote(quoteId: string) {
     },
   });
 
-  // Send email notification (non-blocking - don't fail if email fails)
+  // Send email notification
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
 
-  sendQuoteSentEmail({
-    to: quote.client.email,
-    clientName: quote.client.name,
-    quoteName: quote.title || `Quote ${quote.quoteNumber}`,
-    quoteUrl,
-    businessName: workspace.name,
-    validUntil: quote.expirationDate ?? undefined,
-  }).catch((err) => {
+  let emailSent = false;
+  try {
+    const emailResult = await sendQuoteSentEmail({
+      to: quote.client.email,
+      clientName: quote.client.name,
+      quoteName: quote.title || `Quote ${quote.quoteNumber}`,
+      quoteUrl,
+      businessName: workspace.name,
+      validUntil: quote.expirationDate ?? undefined,
+    });
+    emailSent = emailResult.success;
+    if (!emailResult.success) {
+      console.error('Failed to send quote email:', emailResult.error);
+    }
+  } catch (err) {
     console.error('Failed to send quote email:', err);
-  });
+  }
 
   // Create notification for sender
   createNotification({
@@ -654,5 +661,5 @@ export async function sendQuote(quoteId: string) {
   revalidatePath('/quotes');
   revalidatePath(`/quotes/${quoteId}`);
 
-  return { success: true, recipientEmail: quote.client.email };
+  return { success: true, recipientEmail: quote.client.email, emailSent };
 }

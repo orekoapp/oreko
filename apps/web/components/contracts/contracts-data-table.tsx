@@ -33,8 +33,12 @@ export function ContractsDataTable({ data }: ContractsDataTableProps) {
   const handleSend = async (contract: ContractInstanceListItem) => {
     startTransition(async () => {
       try {
-        await sendContractInstance(contract.id);
-        toast.success('Contract sent successfully');
+        const result = await sendContractInstance(contract.id);
+        if (result.emailSent) {
+          toast.success('Contract sent and email delivered');
+        } else {
+          toast.warning('Contract marked as sent, but email delivery failed. Please check your email configuration.');
+        }
         router.refresh();
       } catch {
         toast.error('Failed to send contract');
