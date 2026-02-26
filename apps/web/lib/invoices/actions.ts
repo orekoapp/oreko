@@ -594,9 +594,8 @@ export async function updateInvoiceStatus(
     updateData.sentAt = new Date();
   } else if (status === 'paid') {
     updateData.paidAt = new Date();
-    // Only set amountPaid to total if no partial payments exist
-    const currentPaid = Number(invoice.amountPaid ?? 0);
-    updateData.amountPaid = currentPaid > 0 ? currentPaid : invoice.total;
+    // Always set amountPaid to total when marking as paid for consistency
+    updateData.amountPaid = invoice.total;
     updateData.amountDue = 0;
   } else if (status === 'voided') {
     updateData.voidedAt = new Date();
