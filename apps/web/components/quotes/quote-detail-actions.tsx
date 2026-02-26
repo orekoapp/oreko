@@ -21,7 +21,11 @@ export function SendQuoteButton({ quoteId }: { quoteId: string }) {
     try {
       const result = await sendQuote(quoteId);
       if (result.success) {
-        toast.success('Quote sent successfully');
+        if (result.emailSent) {
+          toast.success('Quote sent and email delivered');
+        } else {
+          toast.warning('Quote marked as sent, but email delivery failed. Please check your email configuration.');
+        }
         router.refresh();
       } else {
         toast.error(result.error || 'Failed to send quote');

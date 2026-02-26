@@ -610,7 +610,7 @@ export async function sendInvoice(invoiceId: string) {
   const result = await updateInvoiceStatus(invoiceId, 'sent');
 
   if (!result.success) {
-    return result;
+    return { ...result, emailSent: false };
   }
 
   // Fetch invoice with client for email
@@ -620,21 +620,29 @@ export async function sendInvoice(invoiceId: string) {
     include: { client: true },
   });
 
+  let emailSent = false;
+
   if (invoice?.client?.email) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const invoiceUrl = `${baseUrl}/i/${invoice.accessToken}`;
 
-    sendInvoiceSentEmail({
-      to: invoice.client.email,
-      clientName: invoice.client.name,
-      invoiceNumber: invoice.invoiceNumber,
-      invoiceUrl,
-      businessName: workspace.name,
-      amount: formatCurrency(Number(invoice.total)),
-      dueDate: invoice.dueDate,
-    }).catch((err) => {
+    try {
+      const emailResult = await sendInvoiceSentEmail({
+        to: invoice.client.email,
+        clientName: invoice.client.name,
+        invoiceNumber: invoice.invoiceNumber,
+        invoiceUrl,
+        businessName: workspace.name,
+        amount: formatCurrency(Number(invoice.total)),
+        dueDate: invoice.dueDate,
+      });
+      emailSent = emailResult.success;
+      if (!emailResult.success) {
+        console.error('Failed to send invoice email:', emailResult.error);
+      }
+    } catch (err) {
       console.error('Failed to send invoice email:', err);
-    });
+    }
   }
 
   // Create notification for sender
@@ -652,7 +660,7 @@ export async function sendInvoice(invoiceId: string) {
     }).catch(() => {});
   }
 
-  return { success: true };
+  return { success: true, emailSent };
 }
 
 /**

@@ -54,7 +54,11 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
     try {
       const result = await sendInvoice(invoice.id);
       if (result.success) {
-        toast.success('Invoice sent successfully');
+        if (result.emailSent) {
+          toast.success('Invoice sent and email delivered');
+        } else {
+          toast.warning('Invoice marked as sent, but email delivery failed. Please check your email configuration.');
+        }
         router.refresh();
         setShowSendDialog(false);
       } else {

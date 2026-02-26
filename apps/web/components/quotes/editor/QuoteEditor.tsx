@@ -271,7 +271,11 @@ export function QuoteEditor() {
       const result = await sendQuote(quoteId);
 
       if (result.success) {
-        toast.success('Quote sent successfully');
+        if (result.emailSent) {
+          toast.success('Quote sent and email delivered');
+        } else {
+          toast.warning('Quote marked as sent, but email delivery failed. Please check your email configuration.');
+        }
         router.push(`/quotes/${quoteId}`);
       } else {
         throw new Error(result.error || 'Failed to send quote');
