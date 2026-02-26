@@ -79,10 +79,10 @@ export const authConfig: NextAuthConfig = {
     },
     session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-        session.user.avatarUrl = token.avatarUrl as string | null;
+        session.user.id = typeof token.id === 'string' ? token.id : String(token.id ?? '');
+        session.user.email = typeof token.email === 'string' ? token.email : '';
+        session.user.name = typeof token.name === 'string' ? token.name : '';
+        session.user.avatarUrl = typeof token.avatarUrl === 'string' ? token.avatarUrl : null;
       }
       return session;
     },

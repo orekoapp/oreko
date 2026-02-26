@@ -11,7 +11,12 @@ export async function POST(
 ) {
   try {
     const { invoiceId } = await params;
-    const body = await request.json().catch(() => ({}));
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
     const amount = body.amount ? Number(body.amount) : undefined;
     const accessToken = body.accessToken as string | undefined;
 

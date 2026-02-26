@@ -43,9 +43,10 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10) || 20));
     const statusParam = searchParams.get('status');
-    const validInvoiceStatuses = ['draft', 'sent', 'viewed', 'partially_paid', 'paid', 'overdue', 'voided'];
+    const validInvoiceStatuses = ['draft', 'sent', 'viewed', 'partial', 'paid', 'overdue', 'voided'];
     const status = statusParam && validInvoiceStatuses.includes(statusParam) ? statusParam : null;
-    const search = searchParams.get('search');
+    const rawSearch = searchParams.get('search');
+    const search = rawSearch ? rawSearch.slice(0, 200) : null;
 
     // Build where clause
     const where = {

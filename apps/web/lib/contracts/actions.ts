@@ -74,7 +74,7 @@ export async function getContractTemplates(
       id: c.id,
       name: c.name,
       isTemplate: c.isTemplate,
-      variables: (typeof c.variables === 'string' ? JSON.parse(c.variables) : c.variables) as ContractVariable[],
+      variables: safeParseVariables(c.variables),
       instanceCount: c._count.instances,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
@@ -424,7 +424,7 @@ export async function createContractInstance(
   // Process template content with variable values
   let content = input.content || template.content;
   if (input.variableValues) {
-    const variables = (typeof template.variables === 'string' ? JSON.parse(template.variables) : template.variables) as Array<ContractVariable & { name?: string }>;
+    const variables = safeParseVariables(template.variables) as Array<ContractVariable & { name?: string }>;
     for (const variable of variables) {
       // Support both 'key' (type definition) and 'name' (seed data) fields
       const varKey = variable.key || variable.name || '';

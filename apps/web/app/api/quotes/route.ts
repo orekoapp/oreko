@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
     const statusParam = searchParams.get('status');
     const validQuoteStatuses = ['draft', 'sent', 'accepted', 'declined', 'expired', 'converted'];
     const status = statusParam && validQuoteStatuses.includes(statusParam) ? statusParam : null;
-    const search = searchParams.get('search');
+    const rawSearch = searchParams.get('search');
+    const search = rawSearch ? rawSearch.slice(0, 200) : null;
 
     // Build where clause
     const where = {

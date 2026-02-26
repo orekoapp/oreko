@@ -130,9 +130,11 @@ export async function createInvoice(data: CreateInvoiceData) {
     description: item.description || null,
     quantity: item.quantity,
     rate: item.rate,
-    amount: item.quantity * item.rate,
+    amount: Math.round(item.quantity * item.rate * 100) / 100,
     taxRate: item.taxRate || null,
-    taxAmount: item.taxRate ? item.quantity * item.rate * (item.taxRate / 100) : 0,
+    taxAmount: item.taxRate
+      ? Math.round(item.quantity * item.rate * (item.taxRate / 100) * 100) / 100
+      : 0,
     sortOrder: index,
   }));
 
@@ -568,9 +570,10 @@ export async function updateInvoiceStatus(
   // Validate status transitions
   const allowedTransitions: Record<string, string[]> = {
     draft: ['sent', 'voided'],
-    sent: ['paid', 'voided', 'draft'],
-    partially_paid: ['paid', 'voided'],
+    sent: ['paid', 'partial', 'voided', 'draft'],
+    partial: ['paid', 'voided'],
     paid: ['voided'],
+    overdue: ['paid', 'partial', 'voided'],
     voided: ['draft'],
   };
 
