@@ -14,7 +14,7 @@ export const quoteStatusSchema = z.enum([
 
 // Quote block types
 export const quoteBlockTypeSchema = z.enum([
-  'heading',
+  'header',
   'paragraph',
   'line-item',
   'subtotal',

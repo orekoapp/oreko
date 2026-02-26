@@ -594,7 +594,7 @@ export async function sendQuote(quoteId: string) {
   }
 
   // Prevent sending empty quotes
-  if (Number(quote.total) === 0) {
+  if (Math.abs(Number(quote.total)) < 0.01) {
     return { success: false, error: 'Cannot send a quote with zero total. Add line items first.' };
   }
 

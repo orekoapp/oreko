@@ -38,10 +38,12 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
     search,
     type,
     page = 1,
-    limit = 20,
+    limit: rawLimit = 20,
     sortBy = 'createdAt',
     sortOrder = 'desc',
   } = filter;
+
+  const limit = Math.min(100, Math.max(1, rawLimit));
 
   // Build where clause
   const where: Prisma.ClientWhereInput = {

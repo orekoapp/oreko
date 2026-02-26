@@ -42,7 +42,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10) || 20));
-    const status = searchParams.get('status');
+    const statusParam = searchParams.get('status');
+    const validQuoteStatuses = ['draft', 'sent', 'accepted', 'declined', 'expired', 'converted'];
+    const status = statusParam && validQuoteStatuses.includes(statusParam) ? statusParam : null;
     const search = searchParams.get('search');
 
     // Build where clause

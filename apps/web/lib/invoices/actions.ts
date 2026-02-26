@@ -565,6 +565,23 @@ export async function updateInvoiceStatus(
     return { success: false, error: 'Invoice not found' };
   }
 
+  // Validate status transitions
+  const allowedTransitions: Record<string, string[]> = {
+    draft: ['sent', 'voided'],
+    sent: ['paid', 'voided', 'draft'],
+    partially_paid: ['paid', 'voided'],
+    paid: ['voided'],
+    voided: ['draft'],
+  };
+
+  const allowed = allowedTransitions[invoice.status];
+  if (allowed && !allowed.includes(status)) {
+    return {
+      success: false,
+      error: `Cannot transition from '${invoice.status}' to '${status}'`,
+    };
+  }
+
   const updateData: Prisma.InvoiceUpdateInput = {
     status,
   };
@@ -574,7 +591,9 @@ export async function updateInvoiceStatus(
     updateData.sentAt = new Date();
   } else if (status === 'paid') {
     updateData.paidAt = new Date();
-    updateData.amountPaid = invoice.total;
+    // Only set amountPaid to total if no partial payments exist
+    const currentPaid = Number(invoice.amountPaid ?? 0);
+    updateData.amountPaid = currentPaid > 0 ? currentPaid : invoice.total;
     updateData.amountDue = 0;
   } else if (status === 'voided') {
     updateData.voidedAt = new Date();
