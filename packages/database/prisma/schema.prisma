@@ -381,7 +381,7 @@ model Quote {
   // Relations
   workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   client            Client             @relation(fields: [clientId], references: [id])
-  project           Project?           @relation(fields: [projectId], references: [id])
+  project           Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
   lineItems         QuoteLineItem[]
   events            QuoteEvent[]
   invoice           Invoice?
@@ -415,7 +415,7 @@ model QuoteLineItem {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   quote    Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  rateCard RateCard? @relation(fields: [rateCardId], references: [id])
+  rateCard RateCard? @relation(fields: [rateCardId], references: [id], onDelete: SetNull)
 
   @@index([quoteId])
   @@index([quoteId, sortOrder])
@@ -434,7 +434,7 @@ model QuoteEvent {
   createdAt DateTime @default(now()) @map("created_at")
 
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  actor User? @relation(fields: [actorId], references: [id])
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([quoteId])
   @@index([createdAt(sort: Desc)])
@@ -482,7 +482,7 @@ model Invoice {
   // Relations
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   client           Client            @relation(fields: [clientId], references: [id])
-  project          Project?          @relation(fields: [projectId], references: [id])
+  project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
   quote            Quote?            @relation(fields: [quoteId], references: [id])
   lineItems        InvoiceLineItem[]
   events           InvoiceEvent[]
@@ -518,7 +518,7 @@ model InvoiceLineItem {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   invoice  Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  rateCard RateCard? @relation(fields: [rateCardId], references: [id])
+  rateCard RateCard? @relation(fields: [rateCardId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@index([invoiceId, sortOrder])
@@ -537,7 +537,7 @@ model InvoiceEvent {
   createdAt DateTime @default(now()) @map("created_at")
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  actor   User?   @relation(fields: [actorId], references: [id])
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@index([createdAt(sort: Desc)])
@@ -567,7 +567,7 @@ model Payment {
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  invoice          Invoice           @relation(fields: [invoiceId], references: [id])
+  invoice          Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   paymentSchedules PaymentSchedule[]
 
   @@index([invoiceId])
@@ -591,7 +591,7 @@ model PaymentSchedule {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  payment Payment? @relation(fields: [paymentId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@index([paymentId])
@@ -643,10 +643,10 @@ model ContractInstance {
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
 
-  contract  Contract  @relation(fields: [contractId], references: [id])
-  quote     Quote?    @relation(fields: [quoteId], references: [id])
+  contract  Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  quote     Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   client    Client    @relation(fields: [clientId], references: [id])
-  project   Project?  @relation(fields: [projectId], references: [id])
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([contractId])
@@ -702,7 +702,7 @@ model ScheduledEmail {
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
   workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  template  EmailTemplate? @relation(fields: [templateId], references: [id])
+  template  EmailTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
   @@index([scheduledFor, status])
   @@index([entityType, entityId])
