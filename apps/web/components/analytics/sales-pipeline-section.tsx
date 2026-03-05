@@ -49,7 +49,6 @@ export function SalesPipelineSection({
     { status: 'Accepted', count: quoteStatusCounts.accepted, color: '#22C55E' },
     { status: 'Declined', count: quoteStatusCounts.declined, color: '#EF4444' },
     { status: 'Expired', count: quoteStatusCounts.expired, color: '#F97316' },
-    { status: 'Converted', count: quoteStatusCounts.converted, color: '#A855F7' },
   ], [quoteStatusCounts]);
 
   const totalQuotes = conversionFunnel.quotesCreated;

@@ -53,20 +53,81 @@ export function RevenueChart({
   height = 300,
   className,
 }: RevenueChartProps) {
-  // Calculate total revenue for the period
-  const totalRevenue = useMemo(() => {
-    return data.reduce((sum, point) => sum + point.revenue, 0);
-  }, [data]);
+  // Filter data based on selected period and aggregate as needed
+  const filteredData = useMemo(() => {
+    const now = new Date();
+    let cutoff: Date;
+    switch (period) {
+      case '7d':
+        cutoff = new Date(now.getTime() - 7 * 86400000);
+        break;
+      case '30d':
+        cutoff = new Date(now.getTime() - 30 * 86400000);
+        break;
+      case '90d':
+        cutoff = new Date(now.getTime() - 90 * 86400000);
+        break;
+      case '12m':
+        cutoff = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        break;
+      case 'all':
+      default:
+        cutoff = new Date(0);
+    }
+    const filtered = data.filter((point) => new Date(point.date) >= cutoff);
 
-  // Format data for chart
+    // For 12m / all, aggregate by month for cleaner display
+    if (period === '12m' || period === 'all') {
+      const monthly = new Map<string, { date: string; revenue: number; invoiceCount: number }>();
+      for (const point of filtered) {
+        const monthKey = point.date.substring(0, 7);
+        const existing = monthly.get(monthKey);
+        if (existing) {
+          existing.revenue += point.revenue;
+          existing.invoiceCount += point.invoiceCount;
+        } else {
+          monthly.set(monthKey, { date: `${monthKey}-01`, revenue: point.revenue, invoiceCount: point.invoiceCount });
+        }
+      }
+      return Array.from(monthly.values());
+    }
+
+    // For 90d, aggregate by week
+    if (period === '90d') {
+      const weekly = new Map<string, { date: string; revenue: number; invoiceCount: number }>();
+      for (const point of filtered) {
+        const d = new Date(point.date);
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - d.getDay());
+        const weekKey = weekStart.toISOString().split('T')[0]!;
+        const existing = weekly.get(weekKey);
+        if (existing) {
+          existing.revenue += point.revenue;
+          existing.invoiceCount += point.invoiceCount;
+        } else {
+          weekly.set(weekKey, { date: weekKey, revenue: point.revenue, invoiceCount: point.invoiceCount });
+        }
+      }
+      return Array.from(weekly.values());
+    }
+
+    return filtered;
+  }, [data, period]);
+
+  // Calculate total revenue for the filtered period
+  const totalRevenue = useMemo(() => {
+    return filteredData.reduce((sum, point) => sum + point.revenue, 0);
+  }, [filteredData]);
+
+  // Format data for chart axis labels
   const chartData = useMemo(() => {
-    return data.map((point) => ({
+    return filteredData.map((point) => ({
       ...point,
       formattedDate: formatChartDate(point.date, period),
     }));
-  }, [data, period]);
+  }, [filteredData, period]);
 
-  const isEmpty = data.length === 0;
+  const isEmpty = chartData.length === 0;
 
   const periodSelector = showPeriodSelector && onPeriodChange && (
     <Select value={period} onValueChange={(v) => onPeriodChange(v as DashboardPeriod)}>

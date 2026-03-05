@@ -11,7 +11,13 @@ import {
   Eye,
   AlertCircle,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { formatCurrency, formatRelativeTime } from '@/lib/utils';
 import type { ActivityItem } from '@/lib/dashboard/types';
 
@@ -34,83 +40,86 @@ const activityIcons: Record<ActivityItem['type'], typeof FileText> = {
   client_created: Eye,
 };
 
+// Theme-derived activity icon colors
 const activityColors: Record<ActivityItem['type'], string> = {
-  quote_created: 'text-blue-500 bg-blue-500/10',
-  quote_sent: 'text-yellow-500 bg-yellow-500/10',
-  quote_viewed: 'text-cyan-500 bg-cyan-500/10',
-  quote_accepted: 'text-green-500 bg-green-500/10',
-  quote_declined: 'text-red-500 bg-red-500/10',
-  quote_expired: 'text-muted-foreground bg-muted',
-  invoice_created: 'text-violet-500 bg-violet-500/10',
-  invoice_sent: 'text-yellow-500 bg-yellow-500/10',
-  invoice_viewed: 'text-cyan-500 bg-cyan-500/10',
-  invoice_paid: 'text-green-500 bg-green-500/10',
-  invoice_overdue: 'text-red-500 bg-red-500/10',
-  client_created: 'text-teal-500 bg-teal-500/10',
+  quote_created: 'text-[var(--primary-500)]',
+  quote_sent: 'text-[var(--primary-400)]',
+  quote_viewed: 'text-[var(--primary-300)]',
+  quote_accepted: 'text-[var(--chart-2)]',
+  quote_declined: 'text-destructive',
+  quote_expired: 'text-muted-foreground',
+  invoice_created: 'text-[var(--primary-600)]',
+  invoice_sent: 'text-[var(--primary-400)]',
+  invoice_viewed: 'text-[var(--primary-300)]',
+  invoice_paid: 'text-[var(--chart-2)]',
+  invoice_overdue: 'text-destructive',
+  client_created: 'text-[var(--primary-300)]',
 };
 
 export function RecentActivity({ activities }: RecentActivityProps) {
-  if (activities.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center text-muted-foreground py-8">
+  return (
+    <Card className="h-full">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-medium">Recent Activity</CardTitle>
+        <CardDescription className="text-xs">
+          Latest updates across your workspace
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {activities.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
             No recent activity
           </p>
-        </CardContent>
-      </Card>
-    );
-  }
+        ) : (
+          <div className="relative">
+            {/* Timeline */}
+            <div className="absolute left-[9px] top-1 bottom-1 w-px" style={{ background: 'linear-gradient(to bottom, var(--primary-300), var(--primary-100))' }} />
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity) => {
-            const Icon = activityIcons[activity.type];
-            const colorClass = activityColors[activity.type];
-            const href = activity.relatedType === 'quote'
-              ? `/quotes/${activity.relatedId}`
-              : activity.relatedType === 'invoice'
-                ? `/invoices/${activity.relatedId}`
-                : '#';
+            <div className="space-y-4">
+              {activities.map((activity) => {
+                const Icon = activityIcons[activity.type];
+                const color = activityColors[activity.type];
+                const href = activity.relatedType === 'quote'
+                  ? `/quotes/${activity.relatedId}`
+                  : activity.relatedType === 'invoice'
+                    ? `/invoices/${activity.relatedId}`
+                    : '#';
 
-            return (
-              <Link
-                key={activity.id}
-                href={href}
-                className="flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-muted/50"
-              >
-                <div className={`rounded-full p-2 ${colorClass.split(' ')[1]}`}>
-                  <Icon className={`h-4 w-4 ${colorClass.split(' ')[0]}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{activity.title}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {activity.clientName && (
-                      <span className="truncate">{activity.clientName}</span>
-                    )}
-                    {activity.amount && activity.amount > 0 && (
-                      <>
-                        <span>•</span>
-                        <span>{formatCurrency(activity.amount)}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {formatRelativeTime(activity.date)}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+                return (
+                  <Link
+                    key={activity.id}
+                    href={href}
+                    className="group relative flex gap-3 rounded-md py-1 transition-colors"
+                  >
+                    <div className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-background ring-[3px] ring-background">
+                      <Icon className={`h-3.5 w-3.5 ${color}`} />
+                    </div>
+                    <div className="min-w-0 flex-1 -mt-0.5">
+                      <p className="text-sm leading-snug group-hover:text-primary transition-colors">
+                        {activity.title}
+                      </p>
+                      <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <span>{formatRelativeTime(activity.date)}</span>
+                        {activity.clientName && (
+                          <>
+                            <span>&middot;</span>
+                            <span className="truncate">{activity.clientName}</span>
+                          </>
+                        )}
+                        {activity.amount && activity.amount > 0 && (
+                          <>
+                            <span>&middot;</span>
+                            <span className="tabular-nums">{formatCurrency(activity.amount)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

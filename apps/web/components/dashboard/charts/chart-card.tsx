@@ -40,10 +40,10 @@ export function ChartCard({
   return (
     <Card className={cn('flex flex-col', className)} data-testid="chart-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="space-y-1">
+        <div>
           <CardTitle className="text-base font-medium">{title}</CardTitle>
           {description && (
-            <CardDescription className="text-sm">{description}</CardDescription>
+            <CardDescription className="text-xs mt-0.5">{description}</CardDescription>
           )}
         </div>
         <div className="flex items-center gap-1">

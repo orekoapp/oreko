@@ -22,7 +22,7 @@ export function ConversionRateCard({ data: propData, conversionFunnel }: Convers
     if (propData) {
       return {
         currentRate: propData.conversionRate,
-        previousRate: propData.prevConversionRate ?? null,
+        previousRate: propData.prevConversionRate ?? propData.conversionRate,
         acceptedCount: propData.acceptedCount,
         totalSentCount: propData.totalSentCount,
       };
@@ -47,7 +47,6 @@ export function ConversionRateCard({ data: propData, conversionFunnel }: Convers
   }, [propData, conversionFunnel]);
 
   const trend = useMemo(() => {
-    if (data.previousRate === null) return null;
     const change = data.currentRate - data.previousRate;
     return {
       value: Math.abs(change).toFixed(1),
@@ -91,28 +90,26 @@ export function ConversionRateCard({ data: propData, conversionFunnel }: Convers
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold">{data.currentRate.toFixed(1)}%</span>
+              <span className="text-lg font-bold">{data.currentRate}%</span>
             </div>
           </div>
 
           {/* Stats */}
           <div className="space-y-2 text-right">
-            {trend && (
-              <div className="flex items-center justify-end gap-1 text-sm">
-                {trend.isPositive ? (
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-500" />
-                )}
-                <span className={trend.isPositive ? 'text-green-500' : 'text-red-500'}>
-                  {trend.isPositive ? '+' : '-'}{trend.value}%
-                </span>
-              </div>
-            )}
+            <div className="flex items-center justify-end gap-1 text-sm">
+              {trend.isPositive ? (
+                <TrendingUp className="h-4 w-4 text-green-500" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-red-500" />
+              )}
+              <span className={trend.isPositive ? 'text-green-500' : 'text-red-500'}>
+                {trend.isPositive ? '+' : '-'}{trend.value}%
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground">
-              {data.acceptedCount} of {data.totalSentCount} sent
+              {data.acceptedCount} of {data.totalSentCount} quotes
             </p>
-            {trend && <p className="text-xs text-muted-foreground">vs prev period</p>}
+            <p className="text-xs text-muted-foreground">vs prev period</p>
           </div>
         </div>
       </CardContent>

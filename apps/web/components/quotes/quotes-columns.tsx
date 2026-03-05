@@ -197,15 +197,13 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
     {
       id: 'actions',
       cell: ({ row }) => {
-        const status = row.original.status;
-        const canDelete = status === 'draft';
         return (
           <DataTableRowActions
             row={row.original}
             onView={onView}
             onEdit={onEdit}
             onDuplicate={onDuplicate}
-            onDelete={canDelete ? onDelete : undefined}
+            onDelete={onDelete}
             onDownload={onDownload}
           />
         );

@@ -7,5 +7,6 @@ export { ConversionFunnel } from './conversion-funnel';
 export { PaymentAgingChart } from './payment-aging-chart';
 export { ClientDistributionChart } from './client-distribution-chart';
 export { MonthlyComparisonChart } from './monthly-comparison-chart';
+export { WinRateCard, CollectionRateCard, PipelineCard } from './metric-cards';
 export { CircularProgressCard } from './circular-progress-card';
 export { QuotePipeline } from './quote-pipeline';

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -13,11 +14,7 @@ interface ClientLTV {
 }
 
 interface ClientLifetimeValueCardProps {
-  data?: {
-    clients: ClientLTV[];
-    averageLTV: number;
-    totalClients: number;
-  };
+  data?: ClientLTV[];
 }
 
 function formatCurrency(amount: number): string {
@@ -30,8 +27,13 @@ function formatCurrency(amount: number): string {
 }
 
 export function ClientLifetimeValueCard({ data: propData }: ClientLifetimeValueCardProps) {
-  const clientData = propData?.clients ?? [];
-  const averageLTV = propData?.averageLTV ?? 0;
+  const { clientData, averageLTV } = useMemo(() => {
+    if (!propData || propData.length === 0) {
+      return { clientData: [], averageLTV: 0 };
+    }
+    const avg = propData.reduce((sum, c) => sum + c.ltv, 0) / propData.length;
+    return { clientData: propData, averageLTV: avg };
+  }, [propData]);
 
   if (clientData.length === 0) {
     return (

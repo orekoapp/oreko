@@ -51,7 +51,7 @@ async function AnalyticsContent() {
       conversionFunnel={conversionFunnel}
       paymentAging={paymentAging}
       topClients={topClients}
-      clientLTV={clientLTV}
+      clientLTV={clientLTV.clients}
       revenueForecast={revenueForecast}
       monthlyComparison={monthlyComparison}
     />

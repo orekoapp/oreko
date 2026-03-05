@@ -942,8 +942,11 @@ export async function getTopClientsByRevenue(
 // Get client lifetime values
 export async function getClientLTVData(
   limit: number = 5
-): Promise<{ clients: { id: string; name: string; email?: string; ltv: number }[]; averageLTV: number; totalClients: number }> {
+): Promise<{ clients: { id: string; name: string; email?: string; ltv: number; growth?: number; isGrowing?: boolean }[]; averageLTV: number; totalClients: number }> {
   const { workspaceId } = await getCurrentUserWorkspace();
+
+  const sixMonthsAgo = subMonths(new Date(), 6);
+  const twelveMonthsAgo = subMonths(new Date(), 12);
 
   const clients = await prisma.client.findMany({
     where: {
@@ -962,17 +965,42 @@ export async function getClientLTVData(
         },
         select: {
           amountPaid: true,
+          paidAt: true,
         },
       },
     },
   });
 
-  const clientLTVs = clients.map((client) => ({
-    id: client.id,
-    name: client.company || client.name,
-    email: client.email,
-    ltv: client.invoices.reduce((sum, inv) => sum + toNumber(inv.amountPaid), 0),
-  }));
+  const clientLTVs = clients.map((client) => {
+    const totalLtv = client.invoices.reduce((sum, inv) => sum + toNumber(inv.amountPaid), 0);
+
+    // Calculate growth: compare last 6 months revenue vs prior 6 months
+    const recentRevenue = client.invoices
+      .filter((inv) => inv.paidAt && inv.paidAt >= sixMonthsAgo)
+      .reduce((sum, inv) => sum + toNumber(inv.amountPaid), 0);
+    const olderRevenue = client.invoices
+      .filter((inv) => inv.paidAt && inv.paidAt >= twelveMonthsAgo && inv.paidAt < sixMonthsAgo)
+      .reduce((sum, inv) => sum + toNumber(inv.amountPaid), 0);
+
+    let growth: number | undefined;
+    let isGrowing: boolean | undefined;
+    if (olderRevenue > 0) {
+      growth = Math.round(((recentRevenue - olderRevenue) / olderRevenue) * 100);
+      isGrowing = growth >= 0;
+    } else if (recentRevenue > 0) {
+      growth = 100;
+      isGrowing = true;
+    }
+
+    return {
+      id: client.id,
+      name: client.company || client.name,
+      email: client.email,
+      ltv: totalLtv,
+      growth,
+      isGrowing,
+    };
+  });
 
   // Calculate average from ALL clients (including zero-revenue)
   const totalLTV = clientLTVs.reduce((sum, c) => sum + c.ltv, 0);
@@ -996,14 +1024,14 @@ export async function getRevenueForecast(
   // Get historical monthly revenue (single query instead of N)
   const rangeStart = startOfDay(new Date(subMonths(now, historicalMonths - 1).getFullYear(), subMonths(now, historicalMonths - 1).getMonth(), 1));
 
-  // Query Payment records so partial payments are included
+  // Query invoices with paid_at date for revenue by month
   const revenueByMonth = await prisma.$queryRaw<Array<{ month_key: string; total: number }>>`
-    SELECT to_char(p.processed_at, 'YYYY-MM') as month_key, COALESCE(SUM(p.amount), 0)::float as total
-    FROM payments p
-    JOIN invoices i ON p.invoice_id = i.id
+    SELECT to_char(i.paid_at, 'YYYY-MM') as month_key, COALESCE(SUM(i.amount_paid), 0)::float as total
+    FROM invoices i
     WHERE i.workspace_id = ${workspaceId} AND i.deleted_at IS NULL
-      AND p.status = 'completed'
-      AND p.processed_at >= ${rangeStart}
+      AND i.status IN ('paid', 'partial')
+      AND i.paid_at IS NOT NULL
+      AND i.paid_at >= ${rangeStart}
     GROUP BY month_key
   `;
 

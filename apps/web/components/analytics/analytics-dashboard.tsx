@@ -1,9 +1,26 @@
 'use client';
 
-import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, FileText, Receipt } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { format, subDays, startOfMonth, endOfMonth, startOfYear } from 'date-fns';
+import { CalendarIcon, TrendingUp, TrendingDown, DollarSign, FileText, Receipt } from 'lucide-react';
+import { DateRange } from 'react-day-picker';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 import { SalesPipelineSection } from './sales-pipeline-section';
 import { FinancialHealthSection } from './financial-health-section';
@@ -35,6 +52,34 @@ interface ClientLTV {
   ltv: number;
   growth?: number;
   isGrowing?: boolean;
+}
+
+const presets = [
+  { label: 'Last 7 days', value: '7d' },
+  { label: 'Last 30 days', value: '30d' },
+  { label: 'Last 90 days', value: '90d' },
+  { label: 'This month', value: 'month' },
+  { label: 'This year', value: 'ytd' },
+  { label: 'Custom', value: 'custom' },
+];
+
+function getDateRangeFromPreset(preset: string): DateRange {
+  const today = new Date();
+
+  switch (preset) {
+    case '7d':
+      return { from: subDays(today, 7), to: today };
+    case '30d':
+      return { from: subDays(today, 30), to: today };
+    case '90d':
+      return { from: subDays(today, 90), to: today };
+    case 'month':
+      return { from: startOfMonth(today), to: endOfMonth(today) };
+    case 'ytd':
+      return { from: startOfYear(today), to: today };
+    default:
+      return { from: subDays(today, 30), to: today };
+  }
 }
 
 interface StatCardProps {
@@ -95,7 +140,7 @@ interface AnalyticsDashboardProps {
   conversionFunnel: ConversionFunnelData;
   paymentAging: PaymentAgingData;
   topClients?: TopClient[];
-  clientLTV?: { clients: ClientLTV[]; averageLTV: number; totalClients: number };
+  clientLTV?: ClientLTV[];
   revenueForecast?: ForecastDataPoint[];
   monthlyComparison?: MonthlyComparisonData[];
 }
@@ -110,40 +155,111 @@ export function AnalyticsDashboard({
   revenueForecast,
   monthlyComparison,
 }: AnalyticsDashboardProps) {
-  // Calculate trends (null when no prior period data to avoid misleading "+100%")
+  const [selectedPreset, setSelectedPreset] = useState('30d');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    getDateRangeFromPreset('30d')
+  );
+
+  const handlePresetChange = (value: string) => {
+    setSelectedPreset(value);
+    if (value !== 'custom') {
+      setDateRange(getDateRangeFromPreset(value));
+    }
+  };
+
+  // Calculate trends
   const revenueTrend = useMemo(() => {
-    if (stats.prevMonthRevenue === 0) return null;
-    const change = ((stats.revenueThisMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100;
+    const change = stats.prevMonthRevenue > 0
+      ? ((stats.revenueThisMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100
+      : stats.revenueThisMonth > 0 ? 100 : 0;
     return { value: Math.abs(Math.round(change)), isPositive: change >= 0 };
   }, [stats]);
 
   const quotesTrend = useMemo(() => {
-    if (stats.prevMonthQuotes === 0) return null;
-    const change = ((stats.quotesThisMonth - stats.prevMonthQuotes) / stats.prevMonthQuotes) * 100;
+    const change = stats.prevMonthQuotes > 0
+      ? ((stats.quotesThisMonth - stats.prevMonthQuotes) / stats.prevMonthQuotes) * 100
+      : stats.quotesThisMonth > 0 ? 100 : 0;
     return { value: Math.abs(Math.round(change)), isPositive: change >= 0 };
   }, [stats]);
 
   return (
     <div className="space-y-6">
+      {/* Date Range Filter */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <Select value={selectedPreset} onValueChange={handlePresetChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select period" />
+          </SelectTrigger>
+          <SelectContent>
+            {presets.map((preset) => (
+              <SelectItem key={preset.value} value={preset.value}>
+                {preset.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-[280px] justify-start text-left font-normal',
+                !dateRange && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateRange?.from ? (
+                dateRange.to ? (
+                  <>
+                    {format(dateRange.from, 'LLL dd, y')} -{' '}
+                    {format(dateRange.to, 'LLL dd, y')}
+                  </>
+                ) : (
+                  format(dateRange.from, 'LLL dd, y')
+                )
+              ) : (
+                <span>Pick a date range</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange?.from}
+              selected={dateRange}
+              onSelect={(range) => {
+                setDateRange(range);
+                if (range?.from && range?.to) {
+                  setSelectedPreset('custom');
+                }
+              }}
+              numberOfMonths={2}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
       {/* Overview Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Revenue"
           value={formatCurrency(stats.totalRevenue)}
           icon={DollarSign}
-          trend={revenueTrend ?? undefined}
+          trend={revenueTrend}
           description="vs last month"
         />
         <StatCard
           title="Total Quotes"
           value={stats.totalQuotes}
           icon={FileText}
-          trend={quotesTrend ?? undefined}
+          trend={quotesTrend}
           description="vs last month"
         />
         <StatCard
           title="Conversion Rate"
-          value={`${stats.conversionRate.toFixed(1)}%`}
+          value={`${stats.conversionRate}%`}
           icon={TrendingUp}
           description="Quotes to invoices"
         />
@@ -185,8 +301,8 @@ export function AnalyticsDashboard({
         <ConversionRateCard
           data={{
             conversionRate: stats.conversionRate,
-            acceptedCount: quoteStatusCounts.accepted + quoteStatusCounts.converted,
-            totalSentCount: quoteStatusCounts.sent + quoteStatusCounts.viewed + quoteStatusCounts.accepted + quoteStatusCounts.declined + quoteStatusCounts.expired + quoteStatusCounts.converted,
+            acceptedCount: quoteStatusCounts.accepted,
+            totalSentCount: quoteStatusCounts.sent + quoteStatusCounts.viewed + quoteStatusCounts.accepted + quoteStatusCounts.declined,
           }}
           conversionFunnel={conversionFunnel}
         />

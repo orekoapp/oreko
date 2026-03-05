@@ -76,13 +76,8 @@ export function RevenueComparisonChart({ data: propData }: RevenueComparisonChar
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 11 }}
-                tickFormatter={(value) => {
-                  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-                  if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-                  return `$${value}`;
-                }}
+                tickFormatter={(value) => `$${value / 1000}k`}
                 width={45}
-                domain={[0, (dataMax: number) => Math.max(dataMax, 1000)]}
               />
               <Tooltip
                 content={({ active, payload, label }) => {

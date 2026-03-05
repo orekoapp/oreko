@@ -1,12 +1,17 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { FileText, Receipt } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { RecentQuotes, RecentInvoices } from '@/components/dashboard/recent-items';
 import { AnalyticsSection } from '@/components/dashboard/analytics-section';
+import {
+  WinRateCard,
+  CollectionRateCard,
+  PipelineCard,
+} from '@/components/dashboard/charts';
 import { getDashboardData, getConversionFunnelData } from '@/lib/dashboard/actions';
 
 export const dynamic = 'force-dynamic';
@@ -27,25 +32,23 @@ async function DashboardContent() {
       {/* Stats Cards */}
       <StatsCards stats={data.stats} revenueSparkline={data.revenueSparkline} />
 
-      {/* Analytics Charts Section */}
-      <AnalyticsSection
-        revenueData={data.revenueData}
-        conversionFunnelData={conversionFunnelData}
-        winRate={data.stats.winRate}
-        collectionRate={data.stats.collectionRate}
-      />
+      {/* Revenue Chart (full width) */}
+      <AnalyticsSection revenueData={data.revenueData} />
 
-      {/* Recent Items Section — 3-column layout */}
+      {/* Metrics Row: Win Rate + Collection Rate + Pipeline */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <WinRateCard data={data.quoteStatusCounts} />
+        <CollectionRateCard data={data.invoiceStatusCounts} />
+        {conversionFunnelData && (
+          <PipelineCard data={conversionFunnelData} />
+        )}
+      </div>
+
+      {/* Activity + Recent Quotes + Recent Invoices */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div>
-          <RecentActivity activities={data.recentActivity} />
-        </div>
-        <div>
-          <RecentQuotes quotes={data.recentQuotes} />
-        </div>
-        <div>
-          <RecentInvoices invoices={data.recentInvoices} />
-        </div>
+        <RecentActivity activities={data.recentActivity} />
+        <RecentQuotes quotes={data.recentQuotes} />
+        <RecentInvoices invoices={data.recentInvoices} />
       </div>
     </>
   );
@@ -86,21 +89,21 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
             Track your business performance and recent activity.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
             <Link href="/quotes/new">
-              <FileText className="mr-2 h-4 w-4" />
+              <Plus className="mr-1.5 h-4 w-4" />
               New Quote
             </Link>
           </Button>
-          <Button size="sm" asChild className="flex-1 sm:flex-none">
+          <Button size="sm" asChild className="gradient-accent border-0 text-white shadow-sm hover:opacity-90 transition-opacity">
             <Link href="/invoices/new">
-              <Receipt className="mr-2 h-4 w-4" />
+              <Plus className="mr-1.5 h-4 w-4" />
               New Invoice
             </Link>
           </Button>

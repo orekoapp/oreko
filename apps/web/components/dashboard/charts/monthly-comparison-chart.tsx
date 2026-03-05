@@ -146,7 +146,6 @@ export function MonthlyComparisonChart({
               tickLine={false}
               axisLine={false}
               width={60}
-              allowDecimals={false}
             />
             <Tooltip
               content={({ active, payload }) => {

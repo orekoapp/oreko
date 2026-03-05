@@ -108,12 +108,8 @@ export function RevenueForecastChart({ forecastData }: RevenueForecastChartProps
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => {
-                  if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
-                  return `$${value}`;
-                }}
+                tickFormatter={(value) => `$${value / 1000}k`}
                 width={50}
-                domain={[0, (dataMax: number) => Math.max(dataMax, 1000)]}
               />
               <Tooltip
                 content={({ active, payload, label }) => {

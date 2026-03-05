@@ -10,40 +10,41 @@ import type { DashboardPeriod, AnalyticsDateRange } from './types';
 // Color Palette (matches design system)
 // ============================================
 
+// Theme-aligned color palette (primary OKLCH values from globals.css)
 export const CHART_COLORS = {
-  primary: 'hsl(221, 83%, 53%)',      // Blue-500
-  secondary: 'hsl(262, 83%, 58%)',    // Violet-500
-  success: 'hsl(142, 76%, 36%)',      // Green-600
-  warning: 'hsl(38, 92%, 50%)',       // Amber-500
-  danger: 'hsl(0, 84%, 60%)',         // Red-500
-  muted: 'hsl(215, 16%, 47%)',        // Gray-500
-  teal: 'hsl(168, 76%, 42%)',         // Teal-500
-  emerald: 'hsl(160, 84%, 39%)',      // Emerald-600
-  orange: 'hsl(25, 95%, 53%)',        // Orange-500
-  pink: 'hsl(330, 81%, 60%)',         // Pink-500
+  primary: 'oklch(0.6898 0.1101 233.96)',   // primary-500
+  secondary: 'oklch(0.5915 0.1022 236.73)', // primary-600
+  success: 'oklch(0.648 0.150 160)',        // success/chart-2
+  warning: 'oklch(0.769 0.189 70.08)',      // warning/chart-4
+  danger: 'oklch(0.577 0.245 27.325)',      // destructive
+  muted: 'oklch(0.554 0.0246 234.94)',      // base-500
+  teal: 'oklch(0.7527 0.1062 232.98)',      // primary-400
+  emerald: 'oklch(0.648 0.150 160)',        // chart-2
+  orange: 'oklch(0.7 0.15 45)',             // chart-5
+  pink: 'oklch(0.5033 0.0865 237.61)',      // primary-700
 } as const;
 
-// Status-specific colors for quotes
+// Status colors using theme primary gradient shades
 export const QUOTE_STATUS_COLORS: Record<string, string> = {
-  draft: '#6B7280',     // Gray-500
-  sent: '#3B82F6',      // Blue-500
-  viewed: '#EAB308',    // Yellow-500
-  accepted: '#22C55E',  // Green-500
-  declined: '#EF4444',  // Red-500
-  expired: '#9CA3AF',   // Gray-400
-  signed: '#8B5CF6',    // Violet-500
-  converted: '#A855F7', // Purple-500
+  draft: 'oklch(0.554 0.0246 234.94)',      // base-500 (muted)
+  sent: 'oklch(0.6898 0.1101 233.96)',      // primary-500
+  viewed: 'oklch(0.769 0.189 70.08)',       // warning
+  accepted: 'oklch(0.648 0.150 160)',       // success
+  declined: 'oklch(0.577 0.245 27.325)',    // destructive
+  expired: 'oklch(0.7047 0.0227 234.18)',   // base-400
+  signed: 'oklch(0.5915 0.1022 236.73)',    // primary-600
+  converted: 'oklch(0.5033 0.0865 237.61)', // primary-700
 };
 
-// Status-specific colors for invoices
+// Invoice status colors matching the theme
 export const INVOICE_STATUS_COLORS: Record<string, string> = {
-  draft: '#6B7280',     // Gray-500
-  sent: '#3B82F6',      // Blue-500
-  viewed: '#EAB308',    // Yellow-500
-  paid: '#22C55E',      // Green-500
-  partial: '#F97316',   // Orange-500
-  overdue: '#EF4444',   // Red-500
-  voided: '#9CA3AF',    // Gray-400
+  draft: 'oklch(0.554 0.0246 234.94)',      // base-500 (muted)
+  sent: 'oklch(0.6898 0.1101 233.96)',      // primary-500
+  viewed: 'oklch(0.769 0.189 70.08)',       // warning
+  paid: 'oklch(0.648 0.150 160)',           // success
+  partial: 'oklch(0.7 0.15 45)',            // chart-5 (orange)
+  overdue: 'oklch(0.577 0.245 27.325)',     // destructive
+  voided: 'oklch(0.7047 0.0227 234.18)',    // base-400
 };
 
 // Payment aging bucket colors (gradient from green to red)
