@@ -156,6 +156,15 @@ export function QuoteEditor() {
     }
   }, [document]);
 
+  // Cleanup blob URL on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (logoUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(logoUrl);
+      }
+    };
+  }, [logoUrl]);
+
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
     updateTitle(newTitle);
@@ -195,6 +204,10 @@ export function QuoteEditor() {
 
     setIsUploadingLogo(true);
     try {
+      // Revoke previous object URL to prevent memory leak
+      if (logoUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(logoUrl);
+      }
       // Create a local preview URL
       const url = URL.createObjectURL(file);
       setLogoUrl(url);

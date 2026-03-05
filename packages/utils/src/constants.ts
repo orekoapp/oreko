@@ -23,7 +23,7 @@ export const INVOICE_STATUS = {
   PARTIAL: 'partial',
   PAID: 'paid',
   OVERDUE: 'overdue',
-  VOID: 'void',
+  VOIDED: 'voided',
 } as const;
 
 export type InvoiceStatus = (typeof INVOICE_STATUS)[keyof typeof INVOICE_STATUS];

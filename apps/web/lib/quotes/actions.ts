@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { prisma, type Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
@@ -93,10 +92,10 @@ export async function createQuote(data: {
       description: block.content.description || null,
       quantity: block.content.quantity,
       rate: block.content.rate,
-      amount: block.content.quantity * block.content.rate,
+      amount: Math.round(block.content.quantity * block.content.rate * 100) / 100,
       taxRate: block.content.taxRate,
       taxAmount: block.content.taxRate
-        ? block.content.quantity * block.content.rate * (block.content.taxRate / 100)
+        ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
         : 0,
       sortOrder: index,
     })) || [];
@@ -184,10 +183,10 @@ export async function updateQuote(
       description: block.content.description || null,
       quantity: block.content.quantity,
       rate: block.content.rate,
-      amount: block.content.quantity * block.content.rate,
+      amount: Math.round(block.content.quantity * block.content.rate * 100) / 100,
       taxRate: block.content.taxRate,
       taxAmount: block.content.taxRate
-        ? block.content.quantity * block.content.rate * (block.content.taxRate / 100)
+        ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
         : 0,
       sortOrder: index,
     }));
@@ -594,7 +593,7 @@ export async function sendQuote(quoteId: string) {
   }
 
   // Prevent sending empty quotes
-  if (Number(quote.total) === 0) {
+  if (Math.abs(Number(quote.total)) < 0.01) {
     return { success: false, error: 'Cannot send a quote with zero total. Add line items first.' };
   }
 

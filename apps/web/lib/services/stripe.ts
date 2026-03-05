@@ -12,6 +12,7 @@ function getStripeClient(): Stripe | null {
   return new Stripe(secretKey, {
     apiVersion: '2025-02-24.acacia',
     typescript: true,
+    timeout: 30000, // 30s timeout to prevent hanging requests
   });
 }
 
@@ -36,18 +37,24 @@ export async function createPaymentIntent(params: {
 
   const { amount, currency, invoiceId, customerId, metadata = {} } = params;
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount,
-    currency: currency.toLowerCase(),
-    metadata: {
-      invoiceId,
-      ...metadata,
+  // Use invoice ID + amount as idempotency key to prevent duplicate payment intents
+  const idempotencyKey = `pi_${invoiceId}_${amount}_${currency}`;
+
+  const paymentIntent = await stripe.paymentIntents.create(
+    {
+      amount,
+      currency: currency.toLowerCase(),
+      metadata: {
+        invoiceId,
+        ...metadata,
+      },
+      ...(customerId && { customer: customerId }),
+      automatic_payment_methods: {
+        enabled: true,
+      },
     },
-    ...(customerId && { customer: customerId }),
-    automatic_payment_methods: {
-      enabled: true,
-    },
-  });
+    { idempotencyKey }
+  );
 
   return paymentIntent;
 }

@@ -15,14 +15,17 @@ function generateSlug(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  const randomSuffix = crypto.randomUUID().substring(0, 8);
   return `${baseSlug}-${randomSuffix}`;
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password } = registerSchema.parse(body);
+    const parsed = registerSchema.parse(body);
+    const name = parsed.name;
+    const email = parsed.email.toLowerCase();
+    const password = parsed.password;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({

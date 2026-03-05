@@ -99,6 +99,6 @@ A comprehensive project management system to organize quotes, invoices, and cont
 - Workspace management
 - Shadcn UI component library (43 components)
 
-[Unreleased]: https://github.com/your-org/quote-software/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/your-org/quote-software/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/your-org/quote-software/releases/tag/v1.0.0
+[Unreleased]: https://github.com/WisdmLabs/quote-software/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/WisdmLabs/quote-software/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/WisdmLabs/quote-software/releases/tag/v1.0.0

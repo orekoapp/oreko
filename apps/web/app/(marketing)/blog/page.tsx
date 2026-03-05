@@ -64,15 +64,12 @@ export default function BlogPage() {
                 <span className="text-sm text-muted-foreground">{post.date}</span>
               </div>
               <h2 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
-                <Link href={post.slug}>{post.title}</Link>
+                {post.title}
               </h2>
               <p className="text-muted-foreground mb-4">{post.excerpt}</p>
-              <Link
-                href={post.slug}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                Read more &rarr;
-              </Link>
+              <span className="text-sm font-medium text-muted-foreground">
+                Coming soon
+              </span>
             </article>
           ))}
         </div>

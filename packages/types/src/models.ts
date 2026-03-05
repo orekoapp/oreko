@@ -226,7 +226,7 @@ export type InvoiceStatus =
   | 'partial'
   | 'paid'
   | 'overdue'
-  | 'void';
+  | 'voided';
 
 /**
  * Invoice type
@@ -312,7 +312,7 @@ export interface Payment extends BaseModel {
   invoiceId: string;
   amount: number;
   currency: string;
-  paymentMethod: 'card' | 'bank' | 'manual';
+  paymentMethod: 'card' | 'bank_transfer' | 'manual';
   status: PaymentStatus;
   stripePaymentIntentId: string | null;
   stripeChargeId: string | null;

@@ -22,6 +22,16 @@ import type {
 import { sendEmail } from '@/lib/services/email';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
 
+function safeParseVariables(variables: unknown): ContractVariable[] {
+  try {
+    if (Array.isArray(variables)) return variables;
+    if (typeof variables === 'string') return JSON.parse(variables);
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 // Get all contract templates
 export async function getContractTemplates(
   filter: ContractFilter = {}
@@ -64,7 +74,7 @@ export async function getContractTemplates(
       id: c.id,
       name: c.name,
       isTemplate: c.isTemplate,
-      variables: (typeof c.variables === 'string' ? JSON.parse(c.variables) : c.variables) as ContractVariable[],
+      variables: safeParseVariables(c.variables),
       instanceCount: c._count.instances,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
@@ -103,7 +113,7 @@ export async function getContractTemplateById(id: string): Promise<ContractTempl
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
+    variables: safeParseVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -140,7 +150,7 @@ export async function createContractTemplate(
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
+    variables: safeParseVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -187,7 +197,7 @@ export async function updateContractTemplate(
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
+    variables: safeParseVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -414,13 +424,15 @@ export async function createContractInstance(
   // Process template content with variable values
   let content = input.content || template.content;
   if (input.variableValues) {
-    const variables = (typeof template.variables === 'string' ? JSON.parse(template.variables) : template.variables) as Array<ContractVariable & { name?: string }>;
+    const variables = safeParseVariables(template.variables) as Array<ContractVariable & { name?: string }>;
     for (const variable of variables) {
       // Support both 'key' (type definition) and 'name' (seed data) fields
       const varKey = variable.key || variable.name || '';
       if (!varKey) continue;
       const value = input.variableValues[varKey] || variable.defaultValue || '';
-      content = content.replace(new RegExp(`{{${varKey}}}`, 'g'), value);
+      // Escape regex special characters in variable key to prevent regex injection
+      const escapedKey = varKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      content = content.replace(new RegExp(`{{${escapedKey}}}`, 'g'), value);
     }
   }
 
@@ -485,6 +497,11 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
 
   if (!instance) {
     throw new Error('Contract instance not found');
+  }
+
+  // Prevent sending already-signed or voided contracts
+  if (instance.status === 'signed' || instance.status === 'voided') {
+    throw new Error(`Cannot send a contract that is already ${instance.status}`);
   }
 
   const workspace = await prisma.workspace.findUnique({
@@ -646,7 +663,7 @@ export async function duplicateContractTemplate(id: string): Promise<ContractTem
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
+    variables: safeParseVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,

@@ -265,9 +265,20 @@ export async function acceptQuote(data: {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
-    // Validate signature
+    // Validate signature - must be a valid base64 PNG data URL from SignaturePad
     if (!data.signatureData || !data.signerName) {
       return { success: false, error: 'Signature is required' };
+    }
+    if (!data.signatureData.startsWith('data:image/png;base64,')) {
+      return { success: false, error: 'Invalid signature format' };
+    }
+    // Ensure signature has sufficient data (not just a blank canvas or single dot)
+    const signatureBase64 = data.signatureData.replace('data:image/png;base64,', '');
+    if (signatureBase64.length < 1000) {
+      return { success: false, error: 'Signature is too simple. Please provide a full signature.' };
+    }
+    if (data.signerName.trim().length < 2) {
+      return { success: false, error: 'Please enter your full name' };
     }
 
     if (!data.agreedToTerms) {

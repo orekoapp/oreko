@@ -130,9 +130,11 @@ export async function createInvoice(data: CreateInvoiceData) {
     description: item.description || null,
     quantity: item.quantity,
     rate: item.rate,
-    amount: item.quantity * item.rate,
+    amount: Math.round(item.quantity * item.rate * 100) / 100,
     taxRate: item.taxRate || null,
-    taxAmount: item.taxRate ? item.quantity * item.rate * (item.taxRate / 100) : 0,
+    taxAmount: item.taxRate
+      ? Math.round(item.quantity * item.rate * (item.taxRate / 100) * 100) / 100
+      : 0,
     sortOrder: index,
   }));
 
@@ -366,10 +368,10 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
               description: item.description || null,
               quantity: item.quantity,
               rate: item.rate,
-              amount: item.quantity * item.rate,
+              amount: Math.round(item.quantity * item.rate * 100) / 100,
               taxRate: item.taxRate || null,
               taxAmount: item.taxRate
-                ? item.quantity * item.rate * (item.taxRate / 100)
+                ? Math.round(item.quantity * item.rate * (item.taxRate / 100) * 100) / 100
                 : 0,
               sortOrder: index,
             })),
@@ -565,6 +567,25 @@ export async function updateInvoiceStatus(
     return { success: false, error: 'Invoice not found' };
   }
 
+  // Validate status transitions
+  const allowedTransitions: Record<string, string[]> = {
+    draft: ['sent', 'voided'],
+    sent: ['viewed', 'paid', 'partial', 'voided', 'draft'],
+    viewed: ['paid', 'partial', 'voided'],
+    partial: ['paid', 'voided'],
+    paid: ['voided'],
+    overdue: ['paid', 'partial', 'voided'],
+    voided: ['draft'],
+  };
+
+  const allowed = allowedTransitions[invoice.status];
+  if (allowed && !allowed.includes(status)) {
+    return {
+      success: false,
+      error: `Cannot transition from '${invoice.status}' to '${status}'`,
+    };
+  }
+
   const updateData: Prisma.InvoiceUpdateInput = {
     status,
   };
@@ -574,6 +595,7 @@ export async function updateInvoiceStatus(
     updateData.sentAt = new Date();
   } else if (status === 'paid') {
     updateData.paidAt = new Date();
+    // Always set amountPaid to total when marking as paid for consistency
     updateData.amountPaid = invoice.total;
     updateData.amountDue = 0;
   } else if (status === 'voided') {

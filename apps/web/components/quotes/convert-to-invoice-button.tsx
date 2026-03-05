@@ -71,7 +71,9 @@ export function ConvertToInvoiceButton({
 
       if (result.success && result.invoice) {
         if (sendImmediately) {
-          await sendInvoice(result.invoice.id).catch(() => {});
+          await sendInvoice(result.invoice.id).catch((err) => {
+            console.error('Failed to send invoice after conversion:', err);
+          });
         }
         router.push(`/invoices/${result.invoice.id}`);
       } else {

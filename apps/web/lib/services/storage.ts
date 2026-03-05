@@ -1,7 +1,17 @@
 import { writeFile, readFile, unlink, mkdir } from 'fs/promises';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { existsSync } from 'fs';
 import crypto from 'crypto';
+
+// Validate that resolved path stays within base directory (prevents path traversal)
+function assertSafePath(basePath: string, key: string): string {
+  const resolvedBase = resolve(basePath);
+  const resolvedPath = resolve(join(basePath, key));
+  if (!resolvedPath.startsWith(resolvedBase + '/') && resolvedPath !== resolvedBase) {
+    throw new Error('Invalid file path: path traversal detected');
+  }
+  return resolvedPath;
+}
 
 // Storage configuration
 export interface StorageConfig {
@@ -56,7 +66,7 @@ async function uploadLocal(
   const filename = options.filename || generateFilename('upload');
   const folder = options.folder || 'files';
   const key = `${folder}/${filename}`;
-  const filePath = join(config.basePath || './uploads', key);
+  const filePath = assertSafePath(config.basePath || './uploads', key);
 
   // Ensure directory exists
   const dir = dirname(filePath);
@@ -78,14 +88,14 @@ async function uploadLocal(
 // Get file from local storage
 async function getLocal(key: string): Promise<Buffer> {
   const config = getStorageConfig();
-  const filePath = join(config.basePath || './uploads', key);
+  const filePath = assertSafePath(config.basePath || './uploads', key);
   return readFile(filePath);
 }
 
 // Delete file from local storage
 async function deleteLocal(key: string): Promise<void> {
   const config = getStorageConfig();
-  const filePath = join(config.basePath || './uploads', key);
+  const filePath = assertSafePath(config.basePath || './uploads', key);
   await unlink(filePath);
 }
 

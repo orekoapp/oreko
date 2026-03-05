@@ -245,9 +245,23 @@ export async function createInvoicePaymentIntent(
       return { success: false, error: 'Invoice has been voided' };
     }
 
-    const amountToPay = amount ?? Number(invoice.amountDue);
+    // Verify workspace has a connected Stripe account with charges enabled
+    const paymentSettings = invoice.workspace.paymentSettings;
+    if (!paymentSettings?.stripeAccountId) {
+      return { success: false, error: 'Payment processing is not configured. Please complete Stripe onboarding.' };
+    }
+    if (!paymentSettings.stripeOnboardingComplete) {
+      return { success: false, error: 'Stripe account setup is incomplete. Please complete onboarding first.' };
+    }
+
+    const invoiceAmountDue = Number(invoice.amountDue);
+    const amountToPay = amount ?? invoiceAmountDue;
     if (amountToPay <= 0) {
       return { success: false, error: 'Invalid payment amount' };
+    }
+    // Prevent underpayment attacks - amount must not exceed what's owed
+    if (amountToPay > invoiceAmountDue) {
+      return { success: false, error: 'Payment amount exceeds amount due' };
     }
 
     // Get currency from invoice settings
@@ -435,6 +449,12 @@ export async function processPaymentWebhook(
     if (!payment) {
       console.warn('Payment not found for payment intent:', paymentIntentId);
       return { success: false };
+    }
+
+    // Prevent duplicate webhook processing - skip if already completed or failed
+    if (payment.status === 'completed' || payment.status === 'failed') {
+      console.info('Payment already processed, skipping duplicate webhook:', paymentIntentId);
+      return { success: true };
     }
 
     if (status === 'succeeded') {

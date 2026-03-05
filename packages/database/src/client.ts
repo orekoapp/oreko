@@ -10,8 +10,9 @@ export const prisma =
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+// Cache Prisma client on globalThis to prevent multiple instances
+// In dev: prevents HMR from creating new clients
+// In production/serverless: ensures connection reuse within warm instances
+globalForPrisma.prisma = prisma;
 
 export type { PrismaClient };

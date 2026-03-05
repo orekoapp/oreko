@@ -35,13 +35,17 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const {
-    search,
+    search: rawSearch,
     type,
-    page = 1,
-    limit = 20,
+    page: rawPage = 1,
+    limit: rawLimit = 20,
     sortBy = 'createdAt',
     sortOrder = 'desc',
   } = filter;
+
+  const search = rawSearch ? rawSearch.slice(0, 200) : undefined;
+  const page = Math.max(1, rawPage);
+  const limit = Math.min(100, Math.max(1, rawLimit));
 
   // Build where clause
   const where: Prisma.ClientWhereInput = {

@@ -37,7 +37,7 @@ export async function GET(
       `,
     });
 
-    const filename = `Invoice-${data.invoiceNumber}.pdf`;
+    const filename = `Invoice-${data.invoiceNumber.replace(/[^a-zA-Z0-9\-_]/g, '')}.pdf`;
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

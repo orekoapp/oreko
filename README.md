@@ -3,8 +3,8 @@
 **The open-source alternative to Bloom and Bonsai**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/your-org/quote-software/releases)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/your-org/quote-software/actions)
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/WisdmLabs/quote-software/releases)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/WisdmLabs/quote-software/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black.svg)](https://nextjs.org/)
 
@@ -112,7 +112,7 @@ The fastest way to get QuoteCraft running is with Docker Compose.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-org/quote-software.git
+git clone https://github.com/WisdmLabs/quote-software.git
 cd quote-software
 ```
 
@@ -168,7 +168,7 @@ For development or custom deployment scenarios.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-org/quote-software.git
+git clone https://github.com/WisdmLabs/quote-software.git
 cd quote-software
 ```
 
@@ -402,8 +402,8 @@ SOFTWARE.
 ## Support
 
 - **Documentation:** [docs/](docs/)
-- **Issues:** [GitHub Issues](https://github.com/your-org/quote-software/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/your-org/quote-software/discussions)
+- **Issues:** [GitHub Issues](https://github.com/WisdmLabs/quote-software/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/WisdmLabs/quote-software/discussions)
 
 ---
 
