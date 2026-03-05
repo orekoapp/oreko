@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { sendEmail } from '@/lib/services/email';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,28 +61,29 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
     });
 
-    // Generate a secure random token
-    const token = randomBytes(32).toString('hex');
+    // Generate a secure random token (store hash, send raw)
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
-    // Save the token
+    // Save the hashed token
     await prisma.passwordResetToken.create({
       data: {
         userId: user.id,
-        token,
+        token: tokenHash,
         expiresAt,
       },
     });
 
-    // Build reset URL
+    // Build reset URL (email gets raw token)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+    const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
     // Send email
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Reset your password</h2>
-        <p>Hi${user.name ? ` ${user.name}` : ''},</p>
+        <p>Hi${user.name ? ` ${escapeHtml(user.name)}` : ''},</p>
         <p>We received a request to reset your password. Click the button below to create a new password:</p>
         <p style="margin: 24px 0;">
           <a href="${resetUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">

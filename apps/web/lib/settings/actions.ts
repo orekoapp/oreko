@@ -670,6 +670,12 @@ export async function inviteMember(
   }
   const normalizedEmail = emailResult.data.toLowerCase().trim();
 
+  // Validate role at runtime (TypeScript types are erased, server actions accept any value)
+  const validRoles = ['member', 'admin', 'owner'] as const;
+  if (!validRoles.includes(role as typeof validRoles[number])) {
+    return { success: false, error: 'Invalid role' };
+  }
+
   const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   // Only owners and admins can invite members

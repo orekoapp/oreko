@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { hash } from 'bcryptjs';
 import { prisma } from '@quotecraft/database';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
@@ -46,9 +47,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Hash the token to look up (tokens are stored as hashes)
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+
     // Find the token
     const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { token: tokenHash },
       include: { user: true },
     });
 
