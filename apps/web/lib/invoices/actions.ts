@@ -570,7 +570,8 @@ export async function updateInvoiceStatus(
   // Validate status transitions
   const allowedTransitions: Record<string, string[]> = {
     draft: ['sent', 'voided'],
-    sent: ['paid', 'partial', 'voided', 'draft'],
+    sent: ['viewed', 'paid', 'partial', 'voided', 'draft'],
+    viewed: ['paid', 'partial', 'voided'],
     partial: ['paid', 'voided'],
     paid: ['voided'],
     overdue: ['paid', 'partial', 'voided'],

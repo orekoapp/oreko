@@ -197,7 +197,7 @@ export function getInvoiceStatusVariant(
       return 'success';
     case INVOICE_STATUS.OVERDUE:
       return 'destructive';
-    case INVOICE_STATUS.VOID:
+    case INVOICE_STATUS.VOIDED:
       return 'secondary';
     default:
       return 'default';
