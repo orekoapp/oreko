@@ -22,6 +22,16 @@ import type {
 import { sendEmail } from '@/lib/services/email';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
 
+// HTML escape for safe email template interpolation
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function safeParseVariables(variables: unknown): ContractVariable[] {
   try {
     if (Array.isArray(variables)) return variables;
@@ -524,24 +534,28 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
     const contractName = instance.contract?.name || 'Contract';
 
     try {
+      const safeWorkspaceName = escapeHtml(workspace.name);
+      const safeClientName = escapeHtml(instance.client.name);
+      const safeContractName = escapeHtml(contractName);
+
       const emailResult = await sendEmail({
         to: instance.client.email,
         subject: `Contract: ${contractName} from ${workspace.name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Contract from ${workspace.name}</h2>
-            <p>Hi ${instance.client.name},</p>
-            <p>${workspace.name} has sent you a contract: <strong>${contractName}</strong></p>
+            <h2>Contract from ${safeWorkspaceName}</h2>
+            <p>Hi ${safeClientName},</p>
+            <p>${safeWorkspaceName} has sent you a contract: <strong>${safeContractName}</strong></p>
             <p>Please review and sign at your earliest convenience.</p>
             <p style="margin: 24px 0;">
               <a href="${contractUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Review & Sign Contract
+                Review &amp; Sign Contract
               </a>
             </p>
             <p>Or copy this link: ${contractUrl}</p>
             <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
             <p style="color: #666; font-size: 14px;">
-              Sent via QuoteCraft on behalf of ${workspace.name}
+              Sent via QuoteCraft on behalf of ${safeWorkspaceName}
             </p>
           </div>
         `,
