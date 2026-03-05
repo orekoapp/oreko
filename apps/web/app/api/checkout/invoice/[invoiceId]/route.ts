@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoicePaymentIntent } from '@/lib/payments/actions';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 
 /**
  * POST /api/checkout/invoice/[invoiceId]
@@ -10,6 +11,16 @@ export async function POST(
   { params }: { params: Promise<{ invoiceId: string }> }
 ) {
   try {
+    // Rate limit: 10 checkout attempts per minute per IP
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimitResult = checkRateLimit(`checkout:${clientIp}`, { limit: 10, windowMs: 60000 });
+    if (rateLimitResult.limited) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const { invoiceId } = await params;
     let body: Record<string, unknown>;
     try {

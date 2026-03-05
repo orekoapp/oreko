@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@quotecraft/database';
 import { hashPassword } from '@/lib/auth/credentials';
+import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -21,6 +22,15 @@ function generateSlug(name: string): string {
 
 export async function POST(request: Request) {
   try {
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimitResult = checkRateLimit(`register:${clientIp}`, strictRateLimitOptions);
+    if (rateLimitResult.limited) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const body = await request.json();
     const parsed = registerSchema.parse(body);
     const name = parsed.name;

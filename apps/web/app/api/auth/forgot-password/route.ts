@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { sendEmail } from '@/lib/services/email';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimitResult = checkRateLimit(`forgot-password:${clientIp}`, { limit: 5, windowMs: 300000 }); // 5 requests per 5 minutes
+    if (rateLimitResult.limited) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const body = await request.json();
     const { email } = body;
 

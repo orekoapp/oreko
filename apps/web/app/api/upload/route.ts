@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { uploadFile } from '@/lib/services/storage';
 import { updateBusinessLogo } from '@/lib/settings/actions';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
@@ -30,6 +31,15 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate limit: 20 uploads per minute per user
+  const rateLimitResult = checkRateLimit(`upload:${session.user.id}`, { limit: 20, windowMs: 60000 });
+  if (rateLimitResult.limited) {
+    return NextResponse.json(
+      { error: 'Too many uploads. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
   }
 
   try {
