@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { InviteAcceptClient } from './invite-accept-client';
@@ -10,9 +11,12 @@ interface InvitePageProps {
 export default async function InvitePage({ params }: InvitePageProps) {
   const { token } = await params;
 
+  // Hash the incoming token to look up (tokens are stored as hashes)
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+
   // Look up the invitation
   const invitation = await prisma.workspaceInvitation.findUnique({
-    where: { token },
+    where: { token: tokenHash },
     include: {
       workspace: { select: { name: true } },
       invitedBy: { select: { name: true } },

@@ -76,6 +76,46 @@ export async function createInvoicePaymentIntent(
       return { success: false, error: 'No amount due on this invoice' };
     }
 
+    // Check for existing pending payment intent to prevent duplicates
+    const existingPayment = await prisma.payment.findFirst({
+      where: {
+        invoiceId: invoice.id,
+        status: 'pending',
+        stripePaymentIntentId: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existingPayment?.stripePaymentIntentId) {
+      // Retrieve the existing payment intent from Stripe to get a fresh client secret
+      try {
+        const existingIntent = await stripe.paymentIntents.retrieve(
+          existingPayment.stripePaymentIntentId
+        );
+        // If the intent is still usable, return it
+        if (existingIntent.status === 'requires_payment_method' || existingIntent.status === 'requires_confirmation') {
+          return {
+            success: true,
+            clientSecret: existingIntent.client_secret ?? undefined,
+            paymentIntentId: existingIntent.id,
+          };
+        }
+        // If intent is in a terminal state, clean up the stale record
+        if (['canceled', 'succeeded'].includes(existingIntent.status)) {
+          await prisma.payment.update({
+            where: { id: existingPayment.id },
+            data: { status: existingIntent.status === 'succeeded' ? 'completed' : 'failed' },
+          });
+        }
+      } catch {
+        // Stripe retrieval failed — mark stale and create a new one
+        await prisma.payment.update({
+          where: { id: existingPayment.id },
+          data: { status: 'failed' },
+        });
+      }
+    }
+
     // Get currency from invoice settings
     const settings = invoice.settings as Record<string, unknown>;
     const currency = (settings?.currency as string) ?? 'USD';

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { randomBytes, createHash } from 'crypto';
 import { z } from 'zod';
 import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
@@ -720,8 +721,9 @@ export async function inviteMember(
       select: { name: true },
     });
 
-    // Create invitation
-    const token = crypto.randomUUID();
+    // Create invitation (store hash, send raw token)
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     await prisma.workspaceInvitation.create({
@@ -729,7 +731,7 @@ export async function inviteMember(
         workspaceId,
         email: normalizedEmail,
         role,
-        token,
+        token: tokenHash,
         invitedById: userId,
         expiresAt,
       },
@@ -739,7 +741,7 @@ export async function inviteMember(
     try {
       const { sendInvitationEmail } = await import('@/lib/services/email');
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      const inviteUrl = `${baseUrl}/invite/${token}`;
+      const inviteUrl = `${baseUrl}/invite/${rawToken}`;
       await sendInvitationEmail({
         to: normalizedEmail,
         workspaceName: workspace?.name || 'Workspace',
@@ -907,13 +909,14 @@ export async function resendInvitation(
     return { success: false, error: 'Invitation not found' };
   }
 
-  // Regenerate token and extend expiry
-  const newToken = crypto.randomUUID();
+  // Regenerate token and extend expiry (store hash, send raw)
+  const rawToken = randomBytes(32).toString('hex');
+  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
   const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   await prisma.workspaceInvitation.update({
     where: { id: invitationId },
-    data: { token: newToken, expiresAt: newExpiresAt },
+    data: { token: tokenHash, expiresAt: newExpiresAt },
   });
 
   // Get current user name (reuse userId from above)
@@ -926,7 +929,7 @@ export async function resendInvitation(
   try {
     const { sendInvitationEmail } = await import('@/lib/services/email');
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const inviteUrl = `${baseUrl}/invite/${newToken}`;
+    const inviteUrl = `${baseUrl}/invite/${rawToken}`;
     await sendInvitationEmail({
       to: invitation.email,
       workspaceName: invitation.workspace.name,
@@ -953,8 +956,18 @@ export async function acceptInvitation(
     return { success: false, error: 'You must be logged in to accept an invitation' };
   }
 
+  // Rate limit by user ID to prevent brute-force token enumeration
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = checkRateLimit(`accept-invite:${session.user.id}`, { limit: 10, windowMs: 60000 });
+  if (rateLimitResult.limited) {
+    return { success: false, error: 'Too many attempts. Please try again later.' };
+  }
+
+  // Hash the incoming token to look up (tokens are stored as hashes)
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+
   const invitation = await prisma.workspaceInvitation.findUnique({
-    where: { token },
+    where: { token: tokenHash },
     include: { workspace: { select: { name: true } } },
   });
 
