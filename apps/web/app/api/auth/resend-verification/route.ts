@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
@@ -40,14 +41,15 @@ export async function POST() {
       where: { userId: user.id, usedAt: null },
     });
 
-    // Create new token
-    const token = crypto.randomUUID();
+    // Create new token (store hash, send raw)
+    const rawToken = crypto.randomUUID();
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     await prisma.emailVerificationToken.create({
       data: {
         userId: user.id,
-        token,
+        token: tokenHash,
         expiresAt,
       },
     });
@@ -56,7 +58,7 @@ export async function POST() {
     try {
       const { sendVerificationEmail } = await import('@/lib/services/email');
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      const verifyUrl = `${baseUrl}/verify-email/confirm?token=${token}`;
+      const verifyUrl = `${baseUrl}/verify-email/confirm?token=${rawToken}`;
       await sendVerificationEmail({
         to: user.email,
         name: user.name || 'there',

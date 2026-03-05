@@ -663,6 +663,13 @@ export async function inviteMember(
   email: string,
   role: WorkspaceMemberRole = 'member'
 ): Promise<{ success: boolean; error?: string }> {
+  // Validate and normalize email upfront
+  const emailResult = z.string().email().safeParse(email);
+  if (!emailResult.success) {
+    return { success: false, error: 'Invalid email address' };
+  }
+  const normalizedEmail = emailResult.data.toLowerCase().trim();
+
   const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   // Only owners and admins can invite members
@@ -676,14 +683,12 @@ export async function inviteMember(
     return { success: false, error: 'Only workspace owners can assign the owner role' };
   }
 
-  // Check if user exists
+  // Check if user exists (use normalized email)
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
   });
 
   if (!user) {
-    const normalizedEmail = email.toLowerCase().trim();
-
     // Check for existing pending invitation
     const existingInvitation = await prisma.workspaceInvitation.findFirst({
       where: {

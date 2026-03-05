@@ -278,7 +278,7 @@ export async function acceptQuote(data: {
   signatureData: string;
   signerName: string;
   agreedToTerms: boolean;
-}): Promise<{ success: true; depositRequired?: boolean; depositAmount?: number; invoiceAccessToken?: string } | { success: false; error: string }> {
+}): Promise<{ success: true; depositRequired?: boolean; depositAmount?: number; invoicePayUrl?: string } | { success: false; error: string }> {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
@@ -419,7 +419,7 @@ export async function acceptQuote(data: {
         success: true,
         depositRequired: true,
         depositAmount,
-        invoiceAccessToken: autoInvoice.accessToken,
+        invoicePayUrl: `/i/${autoInvoice.accessToken}`,
       };
     }
 
