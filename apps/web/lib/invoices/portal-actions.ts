@@ -124,6 +124,22 @@ export async function getInvoiceByAccessToken(
       return { success: false, error: 'Invoice not found' };
     }
 
+    // Reject access to voided invoices
+    if (invoice.status === 'voided') {
+      return { success: false, error: 'This invoice has been voided' };
+    }
+
+    // Reject access to paid invoices older than 90 days (grace period for receipts)
+    if (invoice.status === 'paid') {
+      const paidAt = invoice.paidAt || invoice.updatedAt;
+      const daysSincePaid = Math.ceil(
+        (new Date().getTime() - new Date(paidAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSincePaid > 90) {
+        return { success: false, error: 'This invoice link has expired' };
+      }
+    }
+
     // Calculate overdue status
     const now = new Date();
     const dueDate = new Date(invoice.dueDate);
