@@ -1,6 +1,19 @@
 /**
- * Simple in-memory rate limiter
- * For production, consider using Redis for distributed rate limiting
+ * In-memory rate limiter with sliding window.
+ *
+ * IMPORTANT: This is a per-instance rate limiter. On serverless platforms
+ * (Vercel, AWS Lambda), each function instance has its own memory, so rate
+ * limits are NOT shared across instances. This means an attacker can bypass
+ * limits by spreading requests across instances.
+ *
+ * For production hardening, replace with a distributed rate limiter:
+ * - Upstash Redis (@upstash/ratelimit)
+ * - Vercel KV
+ * - Redis (ioredis)
+ *
+ * The current implementation still provides basic protection against:
+ * - Single-instance bursts (warm lambda reuse)
+ * - Development/self-hosted single-process deployments
  */
 
 interface RateLimitRecord {
@@ -10,15 +23,26 @@ interface RateLimitRecord {
 
 const requestCounts = new Map<string, RateLimitRecord>();
 
-// Clean up expired entries periodically
-setInterval(() => {
+// Track last cleanup time for lazy cleanup (no setInterval in serverless)
+let lastCleanup = Date.now();
+const CLEANUP_INTERVAL = 60000; // 1 minute
+
+/**
+ * Lazy cleanup: remove expired entries when enough time has passed.
+ * Called on every rate limit check instead of using setInterval,
+ * which is problematic in serverless environments.
+ */
+function lazyCleanup() {
   const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL) return;
+  lastCleanup = now;
+
   for (const [key, record] of requestCounts.entries()) {
     if (now > record.resetAt) {
       requestCounts.delete(key);
     }
   }
-}, 60000); // Clean every minute
+}
 
 export interface RateLimitOptions {
   /** Maximum requests allowed in the window */
@@ -39,12 +63,16 @@ export interface RateLimitResult {
 }
 
 /**
- * Check rate limit for a given key (typically IP address or user ID)
+ * Check rate limit for a given key (typically IP address or user ID).
+ *
+ * NOTE: Per-instance only. See module-level comment for limitations.
  */
 export function checkRateLimit(
   key: string,
   options: RateLimitOptions
 ): RateLimitResult {
+  lazyCleanup();
+
   const now = Date.now();
   const record = requestCounts.get(key);
 

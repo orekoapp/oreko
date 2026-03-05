@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { constructWebhookEvent, isStripeEnabled } from '@/lib/services/stripe';
-import { processPaymentWebhook } from '@/lib/payments/actions';
+import { processPaymentWebhook, processAccountUpdate } from '@/lib/payments/internal';
 import type Stripe from 'stripe';
 
 /**
@@ -52,10 +52,8 @@ export async function POST(request: NextRequest) {
       }
 
       case 'account.updated': {
-        // Handle Stripe Connect account updates
         const account = event.data.object as Stripe.Account;
-        console.log('Stripe Connect account updated:', account.id);
-        // Could update payment settings status here
+        await processAccountUpdate(account);
         break;
       }
 

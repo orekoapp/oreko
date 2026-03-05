@@ -29,13 +29,14 @@ export async function createPaymentIntent(params: {
   currency: string;
   invoiceId: string;
   customerId?: string;
+  stripeAccountId?: string;
   metadata?: Record<string, string>;
 }): Promise<Stripe.PaymentIntent | null> {
   if (!stripe) {
     throw new Error('Stripe is not configured');
   }
 
-  const { amount, currency, invoiceId, customerId, metadata = {} } = params;
+  const { amount, currency, invoiceId, customerId, stripeAccountId, metadata = {} } = params;
 
   // Use invoice ID + amount as idempotency key to prevent duplicate payment intents
   const idempotencyKey = `pi_${invoiceId}_${amount}_${currency}`;
@@ -49,6 +50,9 @@ export async function createPaymentIntent(params: {
         ...metadata,
       },
       ...(customerId && { customer: customerId }),
+      ...(stripeAccountId && {
+        transfer_data: { destination: stripeAccountId },
+      }),
       automatic_payment_methods: {
         enabled: true,
       },

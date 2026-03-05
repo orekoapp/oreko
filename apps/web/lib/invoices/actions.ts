@@ -39,36 +39,8 @@ async function getActiveWorkspace() {
  * Generate the next invoice number for a workspace
  * Uses atomic increment on NumberSequence table to prevent race conditions
  */
-async function generateInvoiceNumber(workspaceId: string): Promise<string> {
-  // Use upsert to atomically create or increment the sequence (race-condition safe)
-  const result = await prisma.$transaction(async (tx) => {
-    const updated = await tx.numberSequence.upsert({
-      where: { workspaceId_type: { workspaceId, type: 'invoice' } },
-      update: { currentValue: { increment: 1 } },
-      create: {
-        workspaceId,
-        type: 'invoice',
-        prefix: 'INV',
-        currentValue: 1,
-        padding: 4,
-      },
-    });
-    return {
-      prefix: updated.prefix || 'INV',
-      suffix: updated.suffix,
-      value: updated.currentValue,
-      padding: updated.padding,
-    };
-  });
-
-  const paddedValue = String(result.value).padStart(result.padding, '0');
-  const prefix = result.prefix.replace(/-$/, '');
-  const parts = [prefix, paddedValue];
-  if (result.suffix) {
-    parts.push(result.suffix);
-  }
-  return parts.join('-');
-}
+// Import from internal module (not a server action)
+import { generateInvoiceNumber } from './internal';
 
 /**
  * Calculate totals from line items
@@ -121,6 +93,16 @@ export async function createInvoice(data: CreateInvoiceData) {
     invoiceNumber = data.invoiceNumber;
   } else {
     invoiceNumber = await generateInvoiceNumber(workspace.id);
+  }
+
+  // Validate line item values
+  for (const item of data.lineItems) {
+    if (item.rate < 0) {
+      return { success: false, error: 'Line item rate cannot be negative' };
+    }
+    if (item.quantity < 0) {
+      return { success: false, error: 'Line item quantity cannot be negative' };
+    }
   }
 
   const { subtotal, taxTotal, total } = calculateTotals(data.lineItems);
@@ -305,6 +287,7 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
   return { success: true, invoice };
 }
 
+
 /**
  * Update an existing invoice
  */
@@ -334,6 +317,14 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
   let total = Number(existingInvoice.total);
 
   if (data.lineItems) {
+    for (const item of data.lineItems) {
+      if (item.rate < 0) {
+        return { success: false, error: 'Line item rate cannot be negative' };
+      }
+      if (item.quantity < 0) {
+        return { success: false, error: 'Line item quantity cannot be negative' };
+      }
+    }
     const totals = calculateTotals(data.lineItems);
     subtotal = totals.subtotal;
     taxTotal = totals.taxTotal;
