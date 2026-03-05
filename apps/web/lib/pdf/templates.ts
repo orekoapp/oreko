@@ -20,6 +20,13 @@ function sanitizeColor(color: string, fallback: string = '#3B82F6'): string {
 }
 
 /**
+ * Validate URL is http/https (prevents javascript: protocol injection)
+ */
+function isSafeUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
+/**
  * Format currency for display
  */
 function formatCurrency(amount: number, currency: string = 'USD'): string {
@@ -453,7 +460,7 @@ export function generateQuotePdfHtml(data: QuotePdfData): string {
       <div class="signature-section">
         <div class="signature-box">
           <div class="signature-label">Client Signature</div>
-          ${data.signature.data.startsWith('data:image/png;base64,') ? `<img src="${data.signature.data}" alt="Signature" class="signature-image" />` : ''}
+          ${data.signature.data.startsWith('data:image/png;base64,') ? `<img src="${escapeHtml(data.signature.data)}" alt="Signature" class="signature-image" />` : ''}
           <div class="signature-name">${escapeHtml(data.signature.signerName)}</div>
           <div class="signature-date">Signed on ${formatDate(data.signature.signedAt)}</div>
         </div>
@@ -479,7 +486,7 @@ export function generateQuotePdfHtml(data: QuotePdfData): string {
         <div class="container">
           <div class="header">
             <div class="business-info">
-              ${data.business.logoUrl ? `<img src="${escapeHtml(data.business.logoUrl)}" alt="${escapeHtml(data.business.name)}" class="logo" />` : `<div class="party-name">${escapeHtml(data.business.name)}</div>`}
+              ${data.business.logoUrl && isSafeUrl(data.business.logoUrl) ? `<img src="${escapeHtml(data.business.logoUrl)}" alt="${escapeHtml(data.business.name)}" class="logo" />` : `<div class="party-name">${escapeHtml(data.business.name)}</div>`}
             </div>
             <div class="document-title">
               <h1>Quote</h1>
@@ -663,7 +670,7 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
         <div class="container">
           <div class="header">
             <div class="business-info">
-              ${data.business.logoUrl ? `<img src="${escapeHtml(data.business.logoUrl)}" alt="${escapeHtml(data.business.name)}" class="logo" />` : `<div class="party-name">${escapeHtml(data.business.name)}</div>`}
+              ${data.business.logoUrl && isSafeUrl(data.business.logoUrl) ? `<img src="${escapeHtml(data.business.logoUrl)}" alt="${escapeHtml(data.business.name)}" class="logo" />` : `<div class="party-name">${escapeHtml(data.business.name)}</div>`}
             </div>
             <div class="document-title">
               <h1>Invoice</h1>
