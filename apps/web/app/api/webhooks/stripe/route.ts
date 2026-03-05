@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { constructWebhookEvent, isStripeEnabled } from '@/lib/services/stripe';
-import { processPaymentWebhook, processAccountUpdate } from '@/lib/payments/actions';
+import { processPaymentWebhook, processAccountUpdate } from '@/lib/payments/internal';
 import type Stripe from 'stripe';
 
 /**

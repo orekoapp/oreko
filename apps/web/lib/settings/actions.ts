@@ -663,12 +663,17 @@ export async function inviteMember(
   email: string,
   role: WorkspaceMemberRole = 'member'
 ): Promise<{ success: boolean; error?: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   // Only owners and admins can invite members
   const currentRole = await getCurrentUserRole();
   if (currentRole !== 'owner' && currentRole !== 'admin') {
     return { success: false, error: 'Insufficient permissions to invite members' };
+  }
+
+  // Prevent privilege escalation: only owners can assign owner role
+  if (role === 'owner' && currentRole !== 'owner') {
+    return { success: false, error: 'Only workspace owners can assign the owner role' };
   }
 
   // Check if user exists
@@ -698,8 +703,7 @@ export async function inviteMember(
       select: { name: true },
     });
 
-    // Get current user name for email
-    const { userId } = await getCurrentUserWorkspace();
+    // Get current user name for email (reuse userId from above)
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createInvoicePaymentIntent } from '@/lib/payments/actions';
+import { createInvoicePaymentIntent } from '@/lib/payments/internal';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 
 /**
@@ -35,7 +35,7 @@ export async function POST(
     }
 
     // Amount is determined server-side from the invoice record, not client input
-    const result = await createInvoicePaymentIntent(invoiceId, undefined, accessToken);
+    const result = await createInvoicePaymentIntent(invoiceId, accessToken);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });
