@@ -28,14 +28,14 @@ export async function POST(
     } catch {
       return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
     }
-    const amount = body.amount ? Number(body.amount) : undefined;
     const accessToken = body.accessToken as string | undefined;
 
     if (!accessToken) {
       return NextResponse.json({ error: 'Access token is required' }, { status: 400 });
     }
 
-    const result = await createInvoicePaymentIntent(invoiceId, amount, accessToken);
+    // Amount is determined server-side from the invoice record, not client input
+    const result = await createInvoicePaymentIntent(invoiceId, undefined, accessToken);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });

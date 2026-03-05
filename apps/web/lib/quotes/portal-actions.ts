@@ -4,7 +4,7 @@ import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { QuoteBlock, QuoteDocument } from './types';
 import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
-import { createInvoiceFromQuoteInternal } from '@/lib/invoices/actions';
+import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
 
 /**
  * Public quote data for client portal (subset of full quote)

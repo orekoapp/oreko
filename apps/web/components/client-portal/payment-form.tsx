@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -103,17 +103,18 @@ export function PaymentForm(props: PaymentFormProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Create payment intent on mount
-  useState(() => {
+  useEffect(() => {
+    let cancelled = false;
     fetch(`/api/checkout/invoice/${props.invoiceId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        amount: props.amountDue,
         accessToken: props.accessToken,
       }),
     })
       .then((res) => res.json())
       .then((data) => {
+        if (cancelled) return;
         if (data.error) {
           setError(data.error);
         } else {
@@ -122,10 +123,12 @@ export function PaymentForm(props: PaymentFormProps) {
         setIsLoading(false);
       })
       .catch(() => {
+        if (cancelled) return;
         setError('Failed to initialize payment. Please try again.');
         setIsLoading(false);
       });
-  });
+    return () => { cancelled = true; };
+  }, [props.invoiceId, props.accessToken]);
 
   if (isLoading) {
     return (

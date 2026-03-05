@@ -877,7 +877,7 @@ export async function cancelInvitation(
 export async function resendInvitation(
   invitationId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
   const role = await getCurrentUserRole();
   if (role !== 'owner' && role !== 'admin') {
     return { success: false, error: 'Insufficient permissions' };
@@ -901,8 +901,7 @@ export async function resendInvitation(
     data: { token: newToken, expiresAt: newExpiresAt },
   });
 
-  // Get current user name
-  const { userId } = await getCurrentUserWorkspace();
+  // Get current user name (reuse userId from above)
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
     select: { name: true },
@@ -985,7 +984,11 @@ export async function acceptInvitation(
       data: {
         workspaceId: invitation.workspaceId,
         userId: session.user.id,
-        role: invitation.role as 'member' | 'admin' | 'owner',
+        role: (['member', 'admin', 'owner'] as const).includes(
+          invitation.role as 'member' | 'admin' | 'owner'
+        )
+          ? (invitation.role as 'member' | 'admin' | 'owner')
+          : 'member',
       },
     }),
     prisma.workspaceInvitation.update({
@@ -994,6 +997,7 @@ export async function acceptInvitation(
     }),
   ]);
 
+  revalidatePath('/settings/team');
   return { success: true, workspaceId: invitation.workspaceId };
 }
 
