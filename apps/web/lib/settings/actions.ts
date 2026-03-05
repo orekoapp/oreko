@@ -602,6 +602,12 @@ export async function updateMemberRole(
   memberId: string,
   newRole: WorkspaceMemberRole
 ): Promise<{ success: boolean; error?: string }> {
+  // Validate role at runtime (TypeScript types are erased, server actions accept any value)
+  const validRoles = ['member', 'admin', 'owner'] as const;
+  if (!validRoles.includes(newRole as typeof validRoles[number])) {
+    return { success: false, error: 'Invalid role' };
+  }
+
   const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   // Get current user's role
@@ -702,6 +708,7 @@ export async function inviteMember(
         workspaceId,
         email: normalizedEmail,
         acceptedAt: null,
+        cancelledAt: null,
         expiresAt: { gt: new Date() },
       },
     });
@@ -851,6 +858,7 @@ export async function getPendingInvitations(): Promise<PendingInvitation[]> {
     where: {
       workspaceId,
       acceptedAt: null,
+      cancelledAt: null,
       expiresAt: { gt: new Date() },
     },
     include: {
@@ -879,14 +887,17 @@ export async function cancelInvitation(
   }
 
   const invitation = await prisma.workspaceInvitation.findFirst({
-    where: { id: invitationId, workspaceId, acceptedAt: null },
+    where: { id: invitationId, workspaceId, acceptedAt: null, cancelledAt: null },
   });
 
   if (!invitation) {
     return { success: false, error: 'Invitation not found' };
   }
 
-  await prisma.workspaceInvitation.delete({ where: { id: invitationId } });
+  await prisma.workspaceInvitation.update({
+    where: { id: invitationId },
+    data: { cancelledAt: new Date() },
+  });
   revalidatePath('/settings/team');
   return { success: true };
 }
@@ -900,8 +911,15 @@ export async function resendInvitation(
     return { success: false, error: 'Insufficient permissions' };
   }
 
+  // Rate limit to prevent email spam
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = checkRateLimit(`resend-invite:${userId}`, { limit: 5, windowMs: 300000 });
+  if (rateLimitResult.limited) {
+    return { success: false, error: 'Too many resend attempts. Please try again later.' };
+  }
+
   const invitation = await prisma.workspaceInvitation.findFirst({
-    where: { id: invitationId, workspaceId, acceptedAt: null },
+    where: { id: invitationId, workspaceId, acceptedAt: null, cancelledAt: null },
     include: { workspace: { select: { name: true } } },
   });
 

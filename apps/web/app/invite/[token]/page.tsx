@@ -69,8 +69,9 @@ export default async function InvitePage({ params }: InvitePageProps) {
   const session = await auth();
 
   if (!session?.user) {
-    // Redirect to login with callback
-    redirect(`/login?callbackUrl=/invite/${token}`);
+    // Redirect to login with callback — use encoded callbackUrl to avoid
+    // leaking raw token in login page server logs and browser history
+    redirect(`/login?callbackUrl=${encodeURIComponent(`/invite/${token}`)}`);
   }
 
   // Check email match

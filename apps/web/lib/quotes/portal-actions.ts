@@ -282,6 +282,13 @@ export async function acceptQuote(data: {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
+    // Rate limit by IP to prevent abuse on unauthenticated endpoint
+    const { checkRateLimit } = await import('@/lib/rate-limit');
+    const rateLimitResult = checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
+    if (rateLimitResult.limited) {
+      return { success: false, error: 'Too many attempts. Please try again later.' };
+    }
+
     // Validate signature - must be a valid base64 PNG data URL from SignaturePad
     if (!data.signatureData || !data.signerName) {
       return { success: false, error: 'Signature is required' };
@@ -440,6 +447,13 @@ export async function declineQuote(data: {
 }): Promise<{ success: true } | { success: false; error: string }> {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
+
+    // Rate limit by IP to prevent abuse on unauthenticated endpoint
+    const { checkRateLimit } = await import('@/lib/rate-limit');
+    const rateLimitResult = checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
+    if (rateLimitResult.limited) {
+      return { success: false, error: 'Too many attempts. Please try again later.' };
+    }
 
     // Find the quote
     const quote = await prisma.quote.findUnique({

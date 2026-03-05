@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     const result = await uploadFile(buffer, {
       filename,
       folder,
-      contentType: file.type,
+      contentType: detectedType,
       isPublic: true,
     });
 

@@ -406,7 +406,7 @@ export async function sendInvitationEmail(params: {
 
   return sendEmail({
     to,
-    subject: `You've been invited to ${workspaceName} - QuoteCraft`,
+    subject: `You've been invited to ${safeWorkspaceName} - QuoteCraft`,
     html,
     tags: [{ name: 'type', value: 'workspace_invitation' }],
   });

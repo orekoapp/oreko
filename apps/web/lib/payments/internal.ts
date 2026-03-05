@@ -92,13 +92,22 @@ export async function createInvoicePaymentIntent(
         const existingIntent = await stripe.paymentIntents.retrieve(
           existingPayment.stripePaymentIntentId
         );
-        // If the intent is still usable, return it
+        // If the intent is still usable, verify amount matches current amountDue
         if (existingIntent.status === 'requires_payment_method' || existingIntent.status === 'requires_confirmation') {
-          return {
-            success: true,
-            clientSecret: existingIntent.client_secret ?? undefined,
-            paymentIntentId: existingIntent.id,
-          };
+          const expectedAmountCents = Math.round(amountToPay * 100);
+          if (existingIntent.amount === expectedAmountCents) {
+            return {
+              success: true,
+              clientSecret: existingIntent.client_secret ?? undefined,
+              paymentIntentId: existingIntent.id,
+            };
+          }
+          // Amount changed — cancel stale intent and create a fresh one
+          await stripe.paymentIntents.cancel(existingIntent.id);
+          await prisma.payment.update({
+            where: { id: existingPayment.id },
+            data: { status: 'failed' },
+          });
         }
         // If intent is in a terminal state, clean up the stale record
         if (['canceled', 'succeeded'].includes(existingIntent.status)) {
@@ -248,17 +257,14 @@ export async function processPaymentWebhook(
     }
 
     if (status === 'succeeded') {
-      const currentAmountPaid = Number(payment.invoice.amountPaid);
-      const newAmountPaid = currentAmountPaid + Number(payment.amount);
+      const paymentAmount = Number(payment.amount);
       const total = Number(payment.invoice.total);
-      const newAmountDue = total - newAmountPaid;
 
-      // Determine new status
-      const newInvoiceStatus = newAmountPaid >= total ? 'paid' : 'partial';
-
-      await prisma.$transaction([
-        // Update payment
-        prisma.payment.update({
+      // Use interactive transaction with serializable isolation to prevent
+      // concurrent webhooks from double-crediting amountPaid
+      await prisma.$transaction(async (tx) => {
+        // Mark payment as completed
+        await tx.payment.update({
           where: { id: payment.id },
           data: {
             status: 'completed',
@@ -266,31 +272,43 @@ export async function processPaymentWebhook(
             stripeChargeId: chargeId,
             stripeReceiptUrl: receiptUrl,
           },
-        }),
-        // Update invoice
-        prisma.invoice.update({
+        });
+
+        // Atomically increment amountPaid and recalculate amountDue
+        const updatedInvoice = await tx.invoice.update({
           where: { id: payment.invoiceId },
           data: {
-            amountPaid: newAmountPaid,
-            amountDue: Math.max(0, newAmountDue),
+            amountPaid: { increment: paymentAmount },
+          },
+        });
+
+        const newAmountPaid = Number(updatedInvoice.amountPaid);
+        const newAmountDue = Math.max(0, total - newAmountPaid);
+        const newInvoiceStatus = newAmountPaid >= total ? 'paid' : 'partial';
+
+        await tx.invoice.update({
+          where: { id: payment.invoiceId },
+          data: {
+            amountDue: newAmountDue,
             status: newInvoiceStatus,
             ...(newInvoiceStatus === 'paid' && { paidAt: new Date() }),
           },
-        }),
+        });
+
         // Create event
-        prisma.invoiceEvent.create({
+        await tx.invoiceEvent.create({
           data: {
             invoiceId: payment.invoiceId,
             eventType: 'payment_received',
             actorType: 'system',
             metadata: {
               paymentId: payment.id,
-              amount: Number(payment.amount),
+              amount: paymentAmount,
               method: 'stripe',
             },
           },
-        }),
-      ]);
+        });
+      });
     } else {
       // Payment failed
       await prisma.payment.update({
