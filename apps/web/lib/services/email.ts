@@ -369,3 +369,83 @@ export async function sendInvoiceReminderEmail(params: {
     ],
   });
 }
+
+/**
+ * Send workspace invitation email
+ */
+export async function sendInvitationEmail(params: {
+  to: string;
+  workspaceName: string;
+  inviterName: string;
+  role: string;
+  inviteUrl: string;
+}): Promise<EmailResult> {
+  const { to, workspaceName, inviterName, role, inviteUrl } = params;
+
+  const safeInviterName = escapeHtml(inviterName);
+  const safeWorkspaceName = escapeHtml(workspaceName);
+  const safeRole = escapeHtml(role);
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #3B82F6;">You've been invited!</h2>
+      <p>${safeInviterName} has invited you to join <strong>${safeWorkspaceName}</strong> as a <strong>${safeRole}</strong>.</p>
+      <p>QuoteCraft is a visual quote and invoice management tool that helps teams create professional quotes and invoices.</p>
+      <p style="margin: 24px 0;">
+        <a href="${inviteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          Accept Invitation
+        </a>
+      </p>
+      <p style="color: #666; font-size: 14px;">This invitation expires in 7 days. If you don't have an account yet, you'll be able to create one.</p>
+      <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+      <p style="color: #666; font-size: 14px;">
+        Sent via QuoteCraft
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to,
+    subject: `You've been invited to ${workspaceName} - QuoteCraft`,
+    html,
+    tags: [{ name: 'type', value: 'workspace_invitation' }],
+  });
+}
+
+/**
+ * Send email verification email
+ */
+export async function sendVerificationEmail(params: {
+  to: string;
+  name: string;
+  verifyUrl: string;
+}): Promise<EmailResult> {
+  const { to, name, verifyUrl } = params;
+
+  const safeName = escapeHtml(name);
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #3B82F6;">Verify your email</h2>
+      <p>Hi ${safeName},</p>
+      <p>Thanks for creating an account with QuoteCraft! Please click the button below to verify your email address:</p>
+      <p style="margin: 24px 0;">
+        <a href="${verifyUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          Verify Email
+        </a>
+      </p>
+      <p style="color: #666; font-size: 14px;">This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.</p>
+      <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+      <p style="color: #666; font-size: 14px;">
+        Sent via QuoteCraft
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to,
+    subject: 'Verify your email - QuoteCraft',
+    html,
+    tags: [{ name: 'type', value: 'email_verification' }],
+  });
+}

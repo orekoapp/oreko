@@ -4,6 +4,7 @@ import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { QuoteBlock, QuoteDocument } from './types';
 import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { createInvoiceFromQuoteInternal } from '@/lib/invoices/actions';
 
 /**
  * Public quote data for client portal (subset of full quote)
@@ -277,7 +278,7 @@ export async function acceptQuote(data: {
   signatureData: string;
   signerName: string;
   agreedToTerms: boolean;
-}): Promise<{ success: true } | { success: false; error: string }> {
+}): Promise<{ success: true; depositRequired?: boolean; depositAmount?: number; invoiceAccessToken?: string } | { success: false; error: string }> {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
@@ -310,6 +311,7 @@ export async function acceptQuote(data: {
         expirationDate: true,
         settings: true,
         workspaceId: true,
+        total: true,
       },
     });
 
@@ -370,8 +372,56 @@ export async function acceptQuote(data: {
       link: `/quotes/${quote.id}`,
     }).catch(() => {});
 
-    // TODO: Auto-create invoice if setting enabled
-    // TODO: Process deposit payment if required
+    // Auto-create invoice if setting enabled
+    const quoteSettings = (quote.settings as Record<string, unknown>) ?? {};
+    const shouldAutoInvoice = (quoteSettings.autoConvertToInvoice as boolean) ?? false;
+
+    let autoInvoice: { id: string; accessToken: string } | undefined;
+    if (shouldAutoInvoice) {
+      try {
+        const invoiceResult = await createInvoiceFromQuoteInternal(quote.id, quote.workspaceId);
+        if (invoiceResult.success && invoiceResult.invoice) {
+          autoInvoice = invoiceResult.invoice;
+        }
+      } catch (error) {
+        // Log but don't fail acceptance - invoice can be created manually
+        console.error('Auto-invoice creation failed:', error);
+      }
+    }
+
+    // Process deposit payment if required (and invoice was created)
+    const depositRequired = (quoteSettings.depositRequired as boolean) ?? false;
+    if (depositRequired && autoInvoice) {
+      const depositType = (quoteSettings.depositType as 'percentage' | 'fixed') ?? 'percentage';
+      const depositValue = (quoteSettings.depositValue as number) ?? 50;
+      const total = Number(quote.total);
+      const depositAmount = depositType === 'percentage'
+        ? Math.round(total * (depositValue / 100) * 100) / 100
+        : Math.min(depositValue, total);
+
+      try {
+        await prisma.paymentSchedule.create({
+          data: {
+            invoiceId: autoInvoice.id,
+            type: 'deposit',
+            description: `Deposit (${depositType === 'percentage' ? `${depositValue}%` : `$${depositValue}`})`,
+            amount: depositAmount,
+            percentage: depositType === 'percentage' ? depositValue : null,
+            dueDate: new Date(),
+            status: 'pending',
+          },
+        });
+      } catch (error) {
+        console.error('Deposit schedule creation failed:', error);
+      }
+
+      return {
+        success: true,
+        depositRequired: true,
+        depositAmount,
+        invoiceAccessToken: autoInvoice.accessToken,
+      };
+    }
 
     return { success: true };
   } catch (error) {

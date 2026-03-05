@@ -183,6 +183,8 @@ export async function checkStripeAccountStatus(): Promise<{
       data: {
         stripeAccountStatus: status,
         stripeOnboardingComplete: onboardingComplete,
+        chargesEnabled: account.charges_enabled ?? false,
+        payoutsEnabled: account.payouts_enabled ?? false,
       },
     });
 
@@ -429,6 +431,53 @@ export async function getPaymentById(paymentId: string): Promise<PaymentDetail |
       },
     },
   };
+}
+
+/**
+ * Process Stripe Connect account.updated webhook
+ * Updates local PaymentSettings when Stripe notifies us of account changes
+ */
+export async function processAccountUpdate(account: {
+  id: string;
+  charges_enabled?: boolean;
+  payouts_enabled?: boolean;
+  details_submitted?: boolean;
+  requirements?: {
+    currently_due?: string[] | null;
+    past_due?: string[] | null;
+  } | null;
+}): Promise<void> {
+  const paymentSettings = await prisma.paymentSettings.findFirst({
+    where: { stripeAccountId: account.id },
+  });
+
+  if (!paymentSettings) {
+    console.warn('No workspace found for Stripe account:', account.id);
+    return;
+  }
+
+  const chargesEnabled = account.charges_enabled ?? false;
+  const payoutsEnabled = account.payouts_enabled ?? false;
+  const onboardingComplete = chargesEnabled && payoutsEnabled;
+
+  let status = 'pending';
+  if (onboardingComplete) {
+    status = 'active';
+  } else if (account.requirements?.past_due?.length) {
+    status = 'past_due';
+  } else if (account.requirements?.currently_due?.length) {
+    status = 'incomplete';
+  }
+
+  await prisma.paymentSettings.update({
+    where: { workspaceId: paymentSettings.workspaceId },
+    data: {
+      stripeAccountStatus: status,
+      stripeOnboardingComplete: onboardingComplete,
+      chargesEnabled,
+      payoutsEnabled,
+    },
+  });
 }
 
 /**

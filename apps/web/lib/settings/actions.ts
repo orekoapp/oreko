@@ -677,8 +677,67 @@ export async function inviteMember(
   });
 
   if (!user) {
-    // TODO: Create invitation record and send email
-    return { success: false, error: 'User not found. Invitation emails coming soon.' };
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check for existing pending invitation
+    const existingInvitation = await prisma.workspaceInvitation.findFirst({
+      where: {
+        workspaceId,
+        email: normalizedEmail,
+        acceptedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+    if (existingInvitation) {
+      return { success: false, error: 'An invitation has already been sent to this email' };
+    }
+
+    // Get workspace info for email
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    });
+
+    // Get current user name for email
+    const { userId } = await getCurrentUserWorkspace();
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+
+    // Create invitation
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await prisma.workspaceInvitation.create({
+      data: {
+        workspaceId,
+        email: normalizedEmail,
+        role,
+        token,
+        invitedById: userId,
+        expiresAt,
+      },
+    });
+
+    // Send invitation email (don't fail if email fails)
+    try {
+      const { sendInvitationEmail } = await import('@/lib/services/email');
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const inviteUrl = `${baseUrl}/invite/${token}`;
+      await sendInvitationEmail({
+        to: normalizedEmail,
+        workspaceName: workspace?.name || 'Workspace',
+        inviterName: currentUser?.name || 'A team member',
+        role,
+        inviteUrl,
+      });
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+    }
+
+    revalidatePath('/settings/team');
+    return { success: true };
   }
 
   // Check if already a member
@@ -753,6 +812,189 @@ export async function removeMember(
   revalidatePath('/settings/team');
 
   return { success: true };
+}
+
+// ============================================
+// INVITATION MANAGEMENT ACTIONS
+// ============================================
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: string;
+  expiresAt: Date;
+  createdAt: Date;
+  invitedBy: { name: string | null };
+}
+
+export async function getPendingInvitations(): Promise<PendingInvitation[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const invitations = await prisma.workspaceInvitation.findMany({
+    where: {
+      workspaceId,
+      acceptedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    include: {
+      invitedBy: { select: { name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return invitations.map((inv) => ({
+    id: inv.id,
+    email: inv.email,
+    role: inv.role,
+    expiresAt: inv.expiresAt,
+    createdAt: inv.createdAt,
+    invitedBy: { name: inv.invitedBy.name },
+  }));
+}
+
+export async function cancelInvitation(
+  invitationId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+  const role = await getCurrentUserRole();
+  if (role !== 'owner' && role !== 'admin') {
+    return { success: false, error: 'Insufficient permissions' };
+  }
+
+  const invitation = await prisma.workspaceInvitation.findFirst({
+    where: { id: invitationId, workspaceId, acceptedAt: null },
+  });
+
+  if (!invitation) {
+    return { success: false, error: 'Invitation not found' };
+  }
+
+  await prisma.workspaceInvitation.delete({ where: { id: invitationId } });
+  revalidatePath('/settings/team');
+  return { success: true };
+}
+
+export async function resendInvitation(
+  invitationId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+  const role = await getCurrentUserRole();
+  if (role !== 'owner' && role !== 'admin') {
+    return { success: false, error: 'Insufficient permissions' };
+  }
+
+  const invitation = await prisma.workspaceInvitation.findFirst({
+    where: { id: invitationId, workspaceId, acceptedAt: null },
+    include: { workspace: { select: { name: true } } },
+  });
+
+  if (!invitation) {
+    return { success: false, error: 'Invitation not found' };
+  }
+
+  // Regenerate token and extend expiry
+  const newToken = crypto.randomUUID();
+  const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  await prisma.workspaceInvitation.update({
+    where: { id: invitationId },
+    data: { token: newToken, expiresAt: newExpiresAt },
+  });
+
+  // Get current user name
+  const { userId } = await getCurrentUserWorkspace();
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+
+  // Send email
+  try {
+    const { sendInvitationEmail } = await import('@/lib/services/email');
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const inviteUrl = `${baseUrl}/invite/${newToken}`;
+    await sendInvitationEmail({
+      to: invitation.email,
+      workspaceName: invitation.workspace.name,
+      inviterName: currentUser?.name || 'A team member',
+      role: invitation.role,
+      inviteUrl,
+    });
+  } catch (emailError) {
+    console.error('Failed to resend invitation email:', emailError);
+  }
+
+  revalidatePath('/settings/team');
+  return { success: true };
+}
+
+// Accept an invitation by token (called from the invite page)
+export async function acceptInvitation(
+  token: string
+): Promise<{ success: boolean; error?: string; workspaceId?: string }> {
+  const { auth } = await import('@/lib/auth');
+  const session = await auth();
+
+  if (!session?.user?.id || !session.user.email) {
+    return { success: false, error: 'You must be logged in to accept an invitation' };
+  }
+
+  const invitation = await prisma.workspaceInvitation.findUnique({
+    where: { token },
+    include: { workspace: { select: { name: true } } },
+  });
+
+  if (!invitation) {
+    return { success: false, error: 'Invitation not found' };
+  }
+
+  if (invitation.acceptedAt) {
+    return { success: false, error: 'This invitation has already been accepted' };
+  }
+
+  if (new Date() > invitation.expiresAt) {
+    return { success: false, error: 'This invitation has expired' };
+  }
+
+  if (invitation.email.toLowerCase() !== session.user.email.toLowerCase()) {
+    return { success: false, error: 'This invitation was sent to a different email address' };
+  }
+
+  // Check if already a member
+  const existingMember = await prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId: invitation.workspaceId,
+        userId: session.user.id,
+      },
+    },
+  });
+
+  if (existingMember) {
+    // Mark invitation as accepted anyway
+    await prisma.workspaceInvitation.update({
+      where: { id: invitation.id },
+      data: { acceptedAt: new Date() },
+    });
+    return { success: true, workspaceId: invitation.workspaceId };
+  }
+
+  // Create membership and mark invitation accepted in a transaction
+  await prisma.$transaction([
+    prisma.workspaceMember.create({
+      data: {
+        workspaceId: invitation.workspaceId,
+        userId: session.user.id,
+        role: invitation.role as 'member' | 'admin' | 'owner',
+      },
+    }),
+    prisma.workspaceInvitation.update({
+      where: { id: invitation.id },
+      data: { acceptedAt: new Date() },
+    }),
+  ]);
+
+  return { success: true, workspaceId: invitation.workspaceId };
 }
 
 // ============================================

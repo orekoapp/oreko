@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ExternalLink, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,17 @@ export function PaymentSettingsForm({ initialData, stripeEnabled }: PaymentSetti
     onboardingComplete: initialData?.stripeOnboardingComplete ?? false,
     status: initialData?.stripeAccountStatus,
   });
+
+  // Auto-check status when returning from Stripe onboarding
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true' || params.get('refresh') === 'true') {
+      handleCheckStatus();
+      // Clean up URL params
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSave = () => {
     startTransition(async () => {

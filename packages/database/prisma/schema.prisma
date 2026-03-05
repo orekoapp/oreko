@@ -29,8 +29,9 @@ model User {
   // Relations
   accounts            Account[]
   sessions            Session[]
-  passwordResetTokens PasswordResetToken[]
-  workspaceMembers    WorkspaceMember[]
+  passwordResetTokens      PasswordResetToken[]
+  emailVerificationTokens  EmailVerificationToken[]
+  workspaceMembers         WorkspaceMember[]
   ownedWorkspaces     Workspace[]           @relation("WorkspaceOwner")
   workspaceInvites    WorkspaceInvitation[] @relation("InvitedBy")
   quoteEvents         QuoteEvent[]
@@ -101,6 +102,20 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
 }
 
 // ============================================
@@ -738,6 +753,8 @@ model PaymentSettings {
   stripeAccountId          String?  @map("stripe_account_id")
   stripeAccountStatus      String?  @map("stripe_account_status") @db.VarChar(20)
   stripeOnboardingComplete Boolean  @default(false) @map("stripe_onboarding_complete")
+  chargesEnabled           Boolean  @default(false) @map("charges_enabled")
+  payoutsEnabled           Boolean  @default(false) @map("payouts_enabled")
   enabledPaymentMethods    Json     @default("[\"card\"]") @map("enabled_payment_methods")
   passProcessingFees       Boolean  @default(false) @map("pass_processing_fees")
   defaultPaymentTerms      Int      @default(30) @map("default_payment_terms")

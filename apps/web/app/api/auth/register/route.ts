@@ -94,7 +94,32 @@ export async function POST(request: Request) {
       return user;
     });
 
-    return NextResponse.json({ user: result }, { status: 201 });
+    // Create email verification token and send email
+    try {
+      const verificationToken = crypto.randomUUID();
+      const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await prisma.emailVerificationToken.create({
+        data: {
+          userId: result.id,
+          token: verificationToken,
+          expiresAt: tokenExpiresAt,
+        },
+      });
+
+      const { sendVerificationEmail } = await import('@/lib/services/email');
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const verifyUrl = `${baseUrl}/verify-email/confirm?token=${verificationToken}`;
+      await sendVerificationEmail({ to: email, name, verifyUrl });
+    } catch (emailError) {
+      // Don't fail registration if verification email fails
+      console.error('Failed to send verification email:', emailError);
+    }
+
+    return NextResponse.json({
+      user: result,
+      message: 'Account created. Please check your email to verify your account.',
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
