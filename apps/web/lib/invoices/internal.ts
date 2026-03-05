@@ -81,7 +81,7 @@ export async function createInvoiceFromQuoteInternal(
         quoteId: quote.id,
         invoiceNumber,
         title: quote.title || 'Invoice',
-        status: 'draft',
+        status: 'sent', // Auto-generated from quote acceptance — ready for client payment
         issueDate: new Date(),
         dueDate,
         subtotal: quote.subtotal,

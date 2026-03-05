@@ -36,6 +36,19 @@ export default async function InvitePage({ params }: InvitePageProps) {
     );
   }
 
+  if (invitation.cancelledAt) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="mx-auto max-w-md text-center space-y-4 p-8">
+          <h1 className="text-2xl font-bold text-destructive">Invitation Cancelled</h1>
+          <p className="text-muted-foreground">
+            This invitation has been cancelled. Please ask the workspace owner to send a new one.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (invitation.acceptedAt) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">

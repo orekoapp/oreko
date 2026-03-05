@@ -993,6 +993,10 @@ export async function acceptInvitation(
     return { success: false, error: 'Invitation not found' };
   }
 
+  if (invitation.cancelledAt) {
+    return { success: false, error: 'This invitation has been cancelled' };
+  }
+
   if (invitation.acceptedAt) {
     return { success: false, error: 'This invitation has already been accepted' };
   }

@@ -139,12 +139,13 @@ export async function createInvoicePaymentIntent(
       },
     });
 
-    // Create payment intent
+    // Create payment intent (route funds to connected Stripe account)
     const paymentIntent = await createPaymentIntent({
       amount: Math.round(amountToPay * 100), // Convert to cents
       currency,
       invoiceId: invoice.id,
       customerId: customer?.id,
+      stripeAccountId: paymentSettings.stripeAccountId,
       metadata: {
         workspaceId: invoice.workspaceId,
         invoiceNumber: invoice.invoiceNumber,

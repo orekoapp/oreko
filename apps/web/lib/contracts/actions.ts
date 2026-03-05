@@ -540,7 +540,7 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
 
       const emailResult = await sendEmail({
         to: instance.client.email,
-        subject: `Contract: ${safeContractName} from ${safeWorkspaceName}`,
+        subject: `Contract: ${contractName} from ${workspace.name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2>Contract from ${safeWorkspaceName}</h2>
