@@ -483,7 +483,7 @@ model Invoice {
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   client           Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
   project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  quote            Quote?            @relation(fields: [quoteId], references: [id])
+  quote            Quote?            @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   lineItems        InvoiceLineItem[]
   events           InvoiceEvent[]
   payments         Payment[]

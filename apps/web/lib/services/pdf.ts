@@ -123,6 +123,12 @@ export async function generatePdfFromHtml(
   html: string,
   options: PdfOptions = {}
 ): Promise<Buffer> {
+  // Limit HTML size to prevent DoS via massive content (e.g., thousands of line items)
+  const MAX_HTML_SIZE = 2 * 1024 * 1024; // 2MB
+  if (html.length > MAX_HTML_SIZE) {
+    throw new Error('PDF content too large to generate');
+  }
+
   const browser = await getBrowser();
   let page: Page | null = null;
 

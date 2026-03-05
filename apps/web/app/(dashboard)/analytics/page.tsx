@@ -23,17 +23,8 @@ export const metadata: Metadata = {
 };
 
 async function AnalyticsContent() {
-  // Fetch all analytics data in parallel
-  const [
-    stats,
-    quoteStatusCounts,
-    conversionFunnel,
-    paymentAging,
-    topClients,
-    clientLTV,
-    revenueForecast,
-    monthlyComparison,
-  ] = await Promise.all([
+  // Fetch all analytics data in parallel with individual error isolation
+  const results = await Promise.allSettled([
     getAnalyticsStats(),
     getQuoteStatusCounts(),
     getConversionFunnelData(),
@@ -44,16 +35,27 @@ async function AnalyticsContent() {
     getMonthlyComparisonData(12),
   ]);
 
+  const getValue = <T,>(result: PromiseSettledResult<T>, fallback: T): T =>
+    result.status === 'fulfilled' ? result.value : fallback;
+
+  const emptyStats = {
+    totalQuotes: 0, totalInvoices: 0, totalClients: 0,
+    totalRevenue: 0, outstandingAmount: 0, overdueAmount: 0,
+    quotesThisMonth: 0, invoicesThisMonth: 0, revenueThisMonth: 0,
+    conversionRate: 0, winRate: 0, collectionRate: 0,
+    avgDealValue: 0, prevMonthRevenue: 0, prevMonthQuotes: 0,
+  };
+
   return (
     <AnalyticsDashboard
-      stats={stats}
-      quoteStatusCounts={quoteStatusCounts}
-      conversionFunnel={conversionFunnel}
-      paymentAging={paymentAging}
-      topClients={topClients}
-      clientLTV={clientLTV}
-      revenueForecast={revenueForecast}
-      monthlyComparison={monthlyComparison}
+      stats={getValue(results[0], emptyStats)}
+      quoteStatusCounts={getValue(results[1], { draft: 0, sent: 0, viewed: 0, accepted: 0, declined: 0, expired: 0, converted: 0 })}
+      conversionFunnel={getValue(results[2], { quotesCreated: 0, quotesSent: 0, quotesViewed: 0, quotesAccepted: 0, invoicesCreated: 0, invoicesPaid: 0 })}
+      paymentAging={getValue(results[3], { current: 0, days1to30: 0, days31to60: 0, days61to90: 0, days90plus: 0, totalOutstanding: 0 })}
+      topClients={getValue(results[4], [])}
+      clientLTV={getValue(results[5], { clients: [], averageLTV: 0, totalClients: 0 })}
+      revenueForecast={getValue(results[6], [])}
+      monthlyComparison={getValue(results[7], [])}
     />
   );
 }

@@ -85,8 +85,20 @@ export async function createQuote(data: {
   const quoteNumber = await generateQuoteNumber(workspace.id);
 
   // Extract service items from blocks to create line items
-  const lineItems = data.blocks
-    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item')
+  const serviceItems = data.blocks
+    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item') || [];
+
+  // Validate line item values
+  for (const block of serviceItems) {
+    if (block.content.rate < 0) {
+      return { success: false, error: 'Line item rate cannot be negative' };
+    }
+    if (block.content.quantity < 0) {
+      return { success: false, error: 'Line item quantity cannot be negative' };
+    }
+  }
+
+  const lineItems = serviceItems
     .map((block, index) => ({
       name: block.content.name,
       description: block.content.description || null,
@@ -98,7 +110,7 @@ export async function createQuote(data: {
         ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
         : 0,
       sortOrder: index,
-    })) || [];
+    }));
 
   // Calculate totals
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
@@ -176,20 +188,33 @@ export async function updateQuote(
   }
 
   // Extract service items from blocks
-  const lineItems = data.blocks
-    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item')
-    .map((block, index) => ({
-      name: block.content.name,
-      description: block.content.description || null,
-      quantity: block.content.quantity,
-      rate: block.content.rate,
-      amount: Math.round(block.content.quantity * block.content.rate * 100) / 100,
-      taxRate: block.content.taxRate,
-      taxAmount: block.content.taxRate
-        ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
-        : 0,
-      sortOrder: index,
-    }));
+  const serviceBlocks = data.blocks
+    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item');
+
+  // Validate line item values
+  if (serviceBlocks) {
+    for (const block of serviceBlocks) {
+      if (block.content.rate < 0) {
+        throw new Error('Line item rate cannot be negative');
+      }
+      if (block.content.quantity < 0) {
+        throw new Error('Line item quantity cannot be negative');
+      }
+    }
+  }
+
+  const lineItems = serviceBlocks?.map((block, index) => ({
+    name: block.content.name,
+    description: block.content.description || null,
+    quantity: block.content.quantity,
+    rate: block.content.rate,
+    amount: Math.round(block.content.quantity * block.content.rate * 100) / 100,
+    taxRate: block.content.taxRate,
+    taxAmount: block.content.taxRate
+      ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
+      : 0,
+    sortOrder: index,
+  }));
 
   // Calculate totals
   const subtotal = lineItems?.reduce((sum, item) => sum + item.amount, 0) || 0;

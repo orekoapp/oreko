@@ -123,6 +123,16 @@ export async function createInvoice(data: CreateInvoiceData) {
     invoiceNumber = await generateInvoiceNumber(workspace.id);
   }
 
+  // Validate line item values
+  for (const item of data.lineItems) {
+    if (item.rate < 0) {
+      return { success: false, error: 'Line item rate cannot be negative' };
+    }
+    if (item.quantity < 0) {
+      return { success: false, error: 'Line item quantity cannot be negative' };
+    }
+  }
+
   const { subtotal, taxTotal, total } = calculateTotals(data.lineItems);
 
   const lineItems = data.lineItems.map((item, index) => ({
@@ -334,6 +344,14 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
   let total = Number(existingInvoice.total);
 
   if (data.lineItems) {
+    for (const item of data.lineItems) {
+      if (item.rate < 0) {
+        return { success: false, error: 'Line item rate cannot be negative' };
+      }
+      if (item.quantity < 0) {
+        return { success: false, error: 'Line item quantity cannot be negative' };
+      }
+    }
     const totals = calculateTotals(data.lineItems);
     subtotal = totals.subtotal;
     taxTotal = totals.taxTotal;
