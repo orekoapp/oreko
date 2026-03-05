@@ -123,10 +123,26 @@ export async function getQuoteByAccessToken(
       return { success: false, error: 'Quote not found' };
     }
 
+    // Reject access to voided or converted quotes that are no longer actionable
+    if (quote.status === 'declined') {
+      return { success: false, error: 'This quote has been declined' };
+    }
+
     // Check if quote is expired
     const now = new Date();
     const isExpired =
       quote.expirationDate !== null && new Date(quote.expirationDate) < now;
+
+    // Reject access if quote expired more than 30 days ago (grace period for reference)
+    if (isExpired) {
+      const expirationDate = new Date(quote.expirationDate!);
+      const daysSinceExpiry = Math.ceil(
+        (now.getTime() - expirationDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSinceExpiry > 30) {
+        return { success: false, error: 'This quote link has expired' };
+      }
+    }
 
     // Parse settings from JSON
     const settings = quote.settings as Record<string, unknown>;
