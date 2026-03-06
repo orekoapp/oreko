@@ -63,6 +63,12 @@ async function generateQuoteNumber(workspaceId: string): Promise<string> {
   return parts.join('-');
 }
 
+/** Allowed block types for server-side validation */
+const VALID_BLOCK_TYPES = new Set([
+  'header', 'text', 'service-item', 'service-group',
+  'image', 'divider', 'spacer', 'columns', 'table', 'signature',
+]);
+
 /**
  * Create a new quote
  */
@@ -73,6 +79,20 @@ export async function createQuote(data: {
   blocks?: QuoteBlock[];
 }) {
   const { userId, workspace } = await getActiveWorkspace();
+
+  // Validate title
+  if (!data.title || data.title.length > 500) {
+    return { success: false, error: 'Title is required and must be under 500 characters' };
+  }
+
+  // Validate block types server-side
+  if (data.blocks) {
+    for (const block of data.blocks) {
+      if (!VALID_BLOCK_TYPES.has(block.type)) {
+        return { success: false, error: `Invalid block type: ${block.type}` };
+      }
+    }
+  }
 
   // Verify client belongs to workspace
   const client = await prisma.client.findFirst({

@@ -126,14 +126,14 @@ model Workspace {
   id        String    @id @default(uuid())
   name      String
   slug      String    @unique
-  ownerId   String    @map("owner_id")
+  ownerId   String?   @map("owner_id")
   settings  Json      @default("{}")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
   // Relations
-  owner              User                  @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  owner              User?                 @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   members            WorkspaceMember[]
   invitations        WorkspaceInvitation[]
   businessProfile    BusinessProfile?
@@ -236,7 +236,7 @@ model Project {
 
   // Relations
   workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  client            Client             @relation(fields: [clientId], references: [id])
+  client            Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
   quotes            Quote[]
   invoices          Invoice[]
   contractInstances ContractInstance[]
@@ -345,8 +345,8 @@ model RateCard {
   deletedAt   DateTime? @map("deleted_at")
 
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  category         RateCardCategory? @relation(fields: [categoryId], references: [id])
-  taxRate          TaxRate?          @relation(fields: [taxRateId], references: [id])
+  category         RateCardCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  taxRate          TaxRate?          @relation(fields: [taxRateId], references: [id], onDelete: SetNull)
   quoteLineItems   QuoteLineItem[]
   invoiceLineItems InvoiceLineItem[]
 
@@ -396,7 +396,7 @@ model Quote {
 
   // Relations
   workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  client            Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client            Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
   project           Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
   lineItems         QuoteLineItem[]
   events            QuoteEvent[]
@@ -497,7 +497,7 @@ model Invoice {
 
   // Relations
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  client           Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
   quote            Quote?            @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   lineItems        InvoiceLineItem[]
@@ -661,7 +661,7 @@ model ContractInstance {
 
   contract  Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
   quote     Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
-  client    Client    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 

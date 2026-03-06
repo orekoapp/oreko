@@ -39,10 +39,17 @@ export const emailSchema = z
   .min(1, 'Email is required')
   .max(255, 'Email must be less than 255 characters');
 
-// Phone schema (flexible international format)
+// Phone schema (flexible international format, requires at least 7 digits)
 export const phoneSchema = z
   .string()
-  .regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/, 'Please enter a valid phone number')
+  .regex(
+    /^\+?[\d\s\-().]{7,25}$/,
+    'Please enter a valid phone number (at least 7 digits)'
+  )
+  .refine(
+    (val) => (val.match(/\d/g) || []).length >= 7,
+    'Phone number must contain at least 7 digits'
+  )
   .optional()
   .or(z.literal(''));
 
@@ -59,11 +66,11 @@ export const urlSchema = z
   .optional()
   .or(z.literal(''));
 
-// Money/currency amount schema (in cents for precision)
+// Money/currency amount schema (stored in dollars)
 export const moneySchema = z
   .number()
-  .int('Amount must be a whole number (in cents)')
-  .min(0, 'Amount cannot be negative');
+  .min(0, 'Amount cannot be negative')
+  .max(999999999, 'Amount exceeds maximum allowed ($999,999,999)');
 
 // Percentage schema (0-100)
 export const percentageSchema = z

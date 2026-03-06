@@ -43,14 +43,21 @@ export const metadata: Metadata = {
     title: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
     description:
       'The open-source alternative to Bloom and Bonsai. Visual quote builder, e-signatures, one-click invoice conversion. Free self-hosted or $9/mo cloud.',
-    images: [],
+    images: [
+      {
+        url: '/og-image.svg',
+        width: 1200,
+        height: 630,
+        alt: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
     description:
       'The open-source alternative to Bloom and Bonsai. Create stunning quotes and invoices for free.',
-    images: [],
+    images: ['/og-image.svg'],
     creator: '@quotecraft',
   },
   robots: {

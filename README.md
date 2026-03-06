@@ -312,9 +312,7 @@ pnpm db:reset         # Reset database (WARNING: deletes all data)
 
 ```bash
 pnpm test             # Run all tests
-pnpm test:unit        # Run unit tests (Vitest)
 pnpm test:e2e         # Run E2E tests (Playwright)
-pnpm test:coverage    # Run tests with coverage report
 ```
 
 ### Docker

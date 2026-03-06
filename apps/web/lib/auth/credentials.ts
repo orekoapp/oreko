@@ -1,9 +1,20 @@
 import { prisma } from '@quotecraft/database';
 import bcrypt from 'bcryptjs';
+import { checkRateLimit } from '@/lib/rate-limit';
+
+/** Rate limit: 5 login attempts per email per 15 minutes */
+const LOGIN_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 
 export async function verifyCredentials(email: string, password: string) {
+  // Rate limit by email to prevent brute-force attacks
+  const normalizedEmail = email.toLowerCase().trim();
+  const rateLimitResult = checkRateLimit(`login:${normalizedEmail}`, LOGIN_RATE_LIMIT);
+  if (rateLimitResult.limited) {
+    throw new Error('Too many login attempts. Please try again in 15 minutes.');
+  }
+
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
     select: {
       id: true,
       email: true,

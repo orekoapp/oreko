@@ -7,9 +7,9 @@ services:
     container_name: quotecraft-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: quotecraft
-      POSTGRES_PASSWORD: quotecraft
-      POSTGRES_DB: quotecraft
+      POSTGRES_USER: ${POSTGRES_USER:-quotecraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quotecraft_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-quotecraft}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

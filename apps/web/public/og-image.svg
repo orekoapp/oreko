@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.08"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.06"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.06">
+    <line x1="0" y1="0" x2="1200" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="200" y1="0" x2="1400" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="400" y1="0" x2="1600" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="-200" y1="0" x2="1000" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="-400" y1="0" x2="800" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="1200" y1="0" x2="0" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="1000" y1="0" x2="-200" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="1400" y1="0" x2="200" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="800" y1="0" x2="-400" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="1600" y1="0" x2="400" y2="630" stroke="white" stroke-width="0.5"/>
+  </g>
+
+  <!-- Decorative circles -->
+  <circle cx="950" cy="120" r="180" fill="white" opacity="0.04"/>
+  <circle cx="1000" cy="150" r="120" fill="white" opacity="0.04"/>
+  <circle cx="200" cy="500" r="150" fill="white" opacity="0.03"/>
+  <circle cx="160" cy="480" r="80" fill="white" opacity="0.03"/>
+
+  <!-- Shine overlay -->
+  <rect width="1200" height="630" fill="url(#shine)"/>
+
+  <!-- Logo icon (document with checkmark, matching favicon) -->
+  <g transform="translate(100, 200)">
+    <rect width="64" height="64" rx="12" fill="white" opacity="0.15"/>
+    <g transform="translate(16, 16)">
+      <rect x="0" y="0" width="32" height="32" rx="4" fill="white" opacity="0.9"/>
+      <path d="M6 8h20v1.5H6V8zm0 5h14v1.5H6v-1.5zm0 5h20v1.5H6v-1.5z" fill="#3B82F6"/>
+      <circle cx="25" cy="25" r="5" fill="#F59E0B"/>
+      <path d="M23 25l1.2 1.2L26.5 23" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- Title -->
+  <text x="190" y="252" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="72" font-weight="800" fill="white" letter-spacing="-1">
+    QuoteCraft
+  </text>
+
+  <!-- Divider line -->
+  <rect x="105" y="290" width="80" height="4" rx="2" fill="#F59E0B"/>
+
+  <!-- Subtitle -->
+  <text x="105" y="340" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="28" fill="white" opacity="0.85" font-weight="400">
+    Beautiful Invoices. No Expensive Subscription.
+  </text>
+
+  <!-- Feature pills -->
+  <g transform="translate(105, 380)">
+    <rect x="0" y="0" width="160" height="40" rx="20" fill="white" opacity="0.12"/>
+    <text x="80" y="26" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="white" opacity="0.9" text-anchor="middle" font-weight="500">Visual Builder</text>
+
+    <rect x="175" y="0" width="180" height="40" rx="20" fill="white" opacity="0.12"/>
+    <text x="265" y="26" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="white" opacity="0.9" text-anchor="middle" font-weight="500">Quote to Invoice</text>
+
+    <rect x="370" y="0" width="150" height="40" rx="20" fill="white" opacity="0.12"/>
+    <text x="445" y="26" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="white" opacity="0.9" text-anchor="middle" font-weight="500">Self-Hosted</text>
+
+    <rect x="535" y="0" width="150" height="40" rx="20" fill="white" opacity="0.12"/>
+    <text x="610" y="26" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="white" opacity="0.9" text-anchor="middle" font-weight="500">Open Source</text>
+  </g>
+
+  <!-- Decorative document mockup on the right -->
+  <g transform="translate(780, 140)" opacity="0.9">
+    <!-- Shadow -->
+    <rect x="6" y="6" width="300" height="380" rx="12" fill="black" opacity="0.15"/>
+    <!-- Card -->
+    <rect width="300" height="380" rx="12" fill="white" opacity="0.12"/>
+    <rect x="1" y="1" width="298" height="378" rx="11" fill="none" stroke="white" stroke-opacity="0.2" stroke-width="1"/>
+
+    <!-- Mockup header -->
+    <rect x="24" y="24" width="100" height="12" rx="6" fill="white" opacity="0.25"/>
+    <rect x="24" y="44" width="60" height="8" rx="4" fill="white" opacity="0.12"/>
+
+    <!-- Divider -->
+    <rect x="24" y="68" width="252" height="1" fill="white" opacity="0.1"/>
+
+    <!-- Line items mockup -->
+    <rect x="24" y="84" width="160" height="10" rx="5" fill="white" opacity="0.15"/>
+    <rect x="220" y="84" width="56" height="10" rx="5" fill="white" opacity="0.15"/>
+
+    <rect x="24" y="108" width="130" height="10" rx="5" fill="white" opacity="0.12"/>
+    <rect x="220" y="108" width="56" height="10" rx="5" fill="white" opacity="0.12"/>
+
+    <rect x="24" y="132" width="180" height="10" rx="5" fill="white" opacity="0.12"/>
+    <rect x="220" y="132" width="56" height="10" rx="5" fill="white" opacity="0.12"/>
+
+    <rect x="24" y="156" width="110" height="10" rx="5" fill="white" opacity="0.1"/>
+    <rect x="220" y="156" width="56" height="10" rx="5" fill="white" opacity="0.1"/>
+
+    <!-- Divider -->
+    <rect x="24" y="186" width="252" height="1" fill="white" opacity="0.1"/>
+
+    <!-- Total -->
+    <rect x="170" y="200" width="50" height="10" rx="5" fill="white" opacity="0.12"/>
+    <rect x="230" y="196" width="46" height="18" rx="9" fill="#F59E0B" opacity="0.5"/>
+    <text x="253" y="209" font-family="system-ui, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="600">$4,500</text>
+
+    <!-- Chart area mockup -->
+    <g transform="translate(24, 240)">
+      <rect x="0" y="80" width="30" height="40" rx="4" fill="white" opacity="0.1"/>
+      <rect x="40" y="50" width="30" height="70" rx="4" fill="white" opacity="0.12"/>
+      <rect x="80" y="30" width="30" height="90" rx="4" fill="white" opacity="0.15"/>
+      <rect x="120" y="60" width="30" height="60" rx="4" fill="white" opacity="0.12"/>
+      <rect x="160" y="10" width="30" height="110" rx="4" fill="#F59E0B" opacity="0.35"/>
+      <rect x="200" y="40" width="30" height="80" rx="4" fill="white" opacity="0.12"/>
+    </g>
+  </g>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="590" width="1200" height="40" fill="black" opacity="0.15"/>
+  <text x="105" y="616" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="white" opacity="0.6" font-weight="400">
+    github.com/WisdmLabs/quote-software
+  </text>
+  <text x="1095" y="616" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="white" opacity="0.6" font-weight="400" text-anchor="end">
+    Open Source &amp; Self-Hosted
+  </text>
+</svg>

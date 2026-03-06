@@ -191,8 +191,13 @@ describe('moneySchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects decimal (requires cents)', () => {
+  it('accepts decimal amounts (stored in dollars)', () => {
     const result = moneySchema.safeParse(99.99);
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects amounts exceeding maximum', () => {
+    const result = moneySchema.safeParse(9999999999);
     expect(result.success).toBe(false);
   });
 });

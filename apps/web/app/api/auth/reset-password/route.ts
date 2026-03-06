@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { hash } from 'bcryptjs';
 import { prisma } from '@quotecraft/database';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { passwordSchema } from '@/lib/validations/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,17 +33,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Validate password strength using shared schema
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters' },
-        { status: 400 }
-      );
-    }
-
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/.test(password)) {
-      return NextResponse.json(
-        { error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' },
+        { error: passwordResult.error.issues[0]?.message || 'Invalid password' },
         { status: 400 }
       );
     }
