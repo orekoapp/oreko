@@ -19,10 +19,9 @@ describe('invoiceStatusSchema', () => {
     'sent',
     'viewed',
     'paid',
-    'partially_paid',
+    'partial',
     'overdue',
-    'cancelled',
-    'refunded',
+    'voided',
   ];
 
   it.each(validStatuses)('accepts valid status: %s', (status) => {
@@ -37,7 +36,7 @@ describe('invoiceStatusSchema', () => {
 });
 
 describe('paymentMethodSchema', () => {
-  const validMethods = ['stripe', 'bank_transfer', 'check', 'cash', 'other'];
+  const validMethods = ['card', 'bank_transfer', 'check', 'cash', 'other'];
 
   it.each(validMethods)('accepts valid method: %s', (method) => {
     const result = paymentMethodSchema.safeParse(method);

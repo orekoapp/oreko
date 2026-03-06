@@ -28,7 +28,7 @@ describe('quoteStatusSchema', () => {
 
 describe('quoteBlockTypeSchema', () => {
   const validTypes = [
-    'heading',
+    'header',
     'paragraph',
     'line-item',
     'subtotal',

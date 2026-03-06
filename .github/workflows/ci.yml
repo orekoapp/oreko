@@ -53,7 +53,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: pnpm test -- --run
+      - run: pnpm test
 
   build:
     name: Build

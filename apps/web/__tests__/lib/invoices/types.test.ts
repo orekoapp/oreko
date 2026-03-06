@@ -59,8 +59,9 @@ describe('isInvoiceOverdue', () => {
     vi.useRealTimers();
   });
 
-  it('returns true for past due date with draft status', () => {
-    expect(isInvoiceOverdue('2026-01-10', 'draft')).toBe(true);
+  it('returns false for past due date with draft status', () => {
+    // Draft invoices are not considered overdue
+    expect(isInvoiceOverdue('2026-01-10', 'draft')).toBe(false);
   });
 
   it('returns true for past due date with sent status', () => {

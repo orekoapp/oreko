@@ -12,7 +12,7 @@ vi.mock('nodemailer', () => ({
 
 // Mock React Email
 vi.mock('@react-email/render', () => ({
-  render: vi.fn((component) => '<html>Rendered Email</html>'),
+  render: vi.fn((_component: unknown) => '<html>Rendered Email</html>'),
 }));
 
 describe('Email Integration', () => {
@@ -226,9 +226,9 @@ describe('Email Integration', () => {
 
     it('replaces template variables', () => {
       const template = 'Hello {{name}}, your quote {{quoteNumber}} is ready.';
-      const variables = { name: 'John', quoteNumber: 'QT-0001' };
+      const variables: Record<string, string> = { name: 'John', quoteNumber: 'QT-0001' };
 
-      const rendered = template.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] || '');
+      const rendered = template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => variables[key] || '');
 
       expect(rendered).toBe('Hello John, your quote QT-0001 is ready.');
     });

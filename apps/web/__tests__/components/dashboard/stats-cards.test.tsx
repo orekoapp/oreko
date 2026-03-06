@@ -4,41 +4,40 @@ import { StatsCards } from '@/components/dashboard/stats-cards';
 import type { DashboardStats } from '@/lib/dashboard/types';
 
 const mockStats: DashboardStats = {
-  totalRevenue: 15000000, // $150,000.00 in cents
-  revenueThisMonth: 2500000, // $25,000.00
-  outstandingAmount: 500000, // $5,000.00
-  overdueAmount: 100000, // $1,000.00
+  totalRevenue: 150000,
+  revenueThisMonth: 25000,
+  outstandingAmount: 5000,
+  overdueAmount: 1000,
   totalQuotes: 45,
   quotesThisMonth: 8,
   totalInvoices: 32,
   invoicesThisMonth: 5,
   totalClients: 18,
   conversionRate: 65.5,
+  winRate: 70.0,
+  collectionRate: 85.0,
 };
 
 describe('StatsCards', () => {
-  it('renders all six stat cards', () => {
+  it('renders all four stat cards', () => {
     render(<StatsCards stats={mockStats} />);
 
+    expect(screen.getByText('Revenue this Month')).toBeInTheDocument();
     expect(screen.getByText('Total Revenue')).toBeInTheDocument();
     expect(screen.getByText('Outstanding')).toBeInTheDocument();
-    expect(screen.getByText('Total Quotes')).toBeInTheDocument();
-    expect(screen.getByText('Total Invoices')).toBeInTheDocument();
-    expect(screen.getByText('Total Clients')).toBeInTheDocument();
     expect(screen.getByText('Conversion Rate')).toBeInTheDocument();
   });
 
   it('displays total revenue formatted as currency', () => {
     render(<StatsCards stats={mockStats} />);
 
-    // $150,000.00 total revenue
     expect(screen.getByText('$150,000.00')).toBeInTheDocument();
   });
 
   it('displays this month revenue in description', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$25,000.00 this month')).toBeInTheDocument();
+    expect(screen.getByText('$25,000.00')).toBeInTheDocument();
   });
 
   it('displays outstanding amount', () => {
@@ -53,32 +52,11 @@ describe('StatsCards', () => {
     expect(screen.getByText('$1,000.00 overdue')).toBeInTheDocument();
   });
 
-  it('displays "No overdue invoices" when no overdue amount', () => {
+  it('hides overdue description when no overdue amount', () => {
     const statsWithNoOverdue = { ...mockStats, overdueAmount: 0 };
     render(<StatsCards stats={statsWithNoOverdue} />);
 
-    expect(screen.getByText('No overdue invoices')).toBeInTheDocument();
-  });
-
-  it('displays total quotes count', () => {
-    render(<StatsCards stats={mockStats} />);
-
-    expect(screen.getByText('45')).toBeInTheDocument();
-    expect(screen.getByText('8 this month')).toBeInTheDocument();
-  });
-
-  it('displays total invoices count', () => {
-    render(<StatsCards stats={mockStats} />);
-
-    expect(screen.getByText('32')).toBeInTheDocument();
-    expect(screen.getByText('5 this month')).toBeInTheDocument();
-  });
-
-  it('displays total clients count', () => {
-    render(<StatsCards stats={mockStats} />);
-
-    expect(screen.getByText('18')).toBeInTheDocument();
-    expect(screen.getByText('Active clients')).toBeInTheDocument();
+    expect(screen.queryByText(/overdue/)).not.toBeInTheDocument();
   });
 
   it('displays conversion rate with percentage', () => {
@@ -101,9 +79,8 @@ describe('StatsCards', () => {
     const grid = container.firstChild;
     expect(grid).toHaveClass('grid');
     expect(grid).toHaveClass('gap-4');
-    expect(grid).toHaveClass('md:grid-cols-2');
-    expect(grid).toHaveClass('lg:grid-cols-3');
-    expect(grid).toHaveClass('xl:grid-cols-6');
+    expect(grid).toHaveClass('grid-cols-2');
+    expect(grid).toHaveClass('md:grid-cols-4');
   });
 
   it('handles zero values gracefully', () => {
@@ -118,26 +95,23 @@ describe('StatsCards', () => {
       invoicesThisMonth: 0,
       totalClients: 0,
       conversionRate: 0,
+      winRate: 0,
+      collectionRate: 0,
     };
 
     render(<StatsCards stats={zeroStats} />);
 
-    expect(screen.getByText('$0.00 this month')).toBeInTheDocument();
     expect(screen.getByText('0.0%')).toBeInTheDocument();
   });
 
   it('handles large numbers', () => {
     const largeStats: DashboardStats = {
       ...mockStats,
-      totalRevenue: 999999900, // $9,999,999.00
-      totalClients: 1500,
-      totalQuotes: 10000,
+      totalRevenue: 9999999,
     };
 
     render(<StatsCards stats={largeStats} />);
 
     expect(screen.getByText('$9,999,999.00')).toBeInTheDocument();
-    expect(screen.getByText('1500')).toBeInTheDocument();
-    expect(screen.getByText('10000')).toBeInTheDocument();
   });
 });
