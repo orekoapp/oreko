@@ -140,7 +140,7 @@ export interface WorkspaceData {
   id: string;
   name: string;
   slug: string;
-  ownerId: string;
+  ownerId: string | null;
   createdAt: Date;
 }
 
