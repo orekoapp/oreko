@@ -24,6 +24,7 @@ vi.mock('@quotecraft/database', () => ({
   prisma: mockPrisma,
   Prisma: {
     InputJsonValue: {},
+    JsonNull: null,
     Decimal: class { value: number; constructor(v: number) { this.value = v; } toNumber() { return this.value; } },
   },
 }));
