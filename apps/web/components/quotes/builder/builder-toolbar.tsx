@@ -65,10 +65,10 @@ export function BuilderToolbar() {
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     if (!document) {
       toast.error('No document to save');
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -78,7 +78,7 @@ export function BuilderToolbar() {
         if (!document.clientId) {
           toast.error('Please select a client before saving');
           setSaving(false);
-          return;
+          return false;
         }
 
         const result = await createQuote({
@@ -93,10 +93,11 @@ export function BuilderToolbar() {
           markSaved();
           toast.success('Quote created successfully');
           router.replace(`/quotes/${result.quote.id}/builder`);
+          return true;
         } else {
           toast.error(result.error || 'Failed to create quote');
+          return false;
         }
-        return;
       }
 
       // Existing quote: update
@@ -111,12 +112,15 @@ export function BuilderToolbar() {
       if (result.success) {
         markSaved();
         toast.success('Quote saved successfully');
+        return true;
       } else {
-        toast.error('Failed to save quote');
+        toast.error(result.error || 'Failed to save quote');
+        return false;
       }
     } catch (error) {
       console.error('Save error:', error);
       toast.error('Failed to save quote');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -135,7 +139,8 @@ export function BuilderToolbar() {
 
     // Save first if there are unsaved changes
     if (isDirty) {
-      await handleSave();
+      const saved = await handleSave();
+      if (!saved) return;
     }
 
     setIsSendLoading(true);
@@ -150,7 +155,7 @@ export function BuilderToolbar() {
         }
         router.push(`/quotes/${document.id}`);
       } else {
-        toast.error('Failed to send quote');
+        toast.error(result.error || 'Failed to send quote');
       }
     } catch (error) {
       console.error('Send error:', error);

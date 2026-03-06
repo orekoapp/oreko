@@ -184,7 +184,7 @@ export async function updateQuote(
   });
 
   if (!existingQuote) {
-    throw new Error('Quote not found');
+    return { success: false as const, error: 'Quote not found' };
   }
 
   // Extract service items from blocks
@@ -195,10 +195,10 @@ export async function updateQuote(
   if (serviceBlocks) {
     for (const block of serviceBlocks) {
       if (block.content.rate < 0) {
-        throw new Error('Line item rate cannot be negative');
+        return { success: false as const, error: 'Line item rate cannot be negative' };
       }
       if (block.content.quantity < 0) {
-        throw new Error('Line item quantity cannot be negative');
+        return { success: false as const, error: 'Line item quantity cannot be negative' };
       }
     }
   }
@@ -222,47 +222,52 @@ export async function updateQuote(
   const total = subtotal + taxTotal;
 
   // Update quote
-  const quote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    // Delete existing line items if blocks are being updated
-    if (data.blocks) {
-      await tx.quoteLineItem.deleteMany({
-        where: { quoteId },
+  try {
+    const quote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Delete existing line items if blocks are being updated
+      if (data.blocks) {
+        await tx.quoteLineItem.deleteMany({
+          where: { quoteId },
+        });
+      }
+
+      // Update quote with new data
+      return tx.quote.update({
+        where: { id: quoteId },
+        data: {
+          title: data.title,
+          ...(data.projectId !== undefined && { projectId: data.projectId }),
+          notes: data.notes,
+          terms: data.terms,
+          internalNotes: data.internalNotes,
+          ...(data.blocks && {
+            subtotal,
+            taxTotal,
+            total,
+            settings: {
+              ...(existingQuote.settings as object),
+              blocks: data.blocks,
+            } as unknown as Prisma.InputJsonValue,
+            lineItems: {
+              create: lineItems,
+            },
+          }),
+        },
+        include: {
+          lineItems: true,
+          client: true,
+        },
       });
-    }
-
-    // Update quote with new data
-    return tx.quote.update({
-      where: { id: quoteId },
-      data: {
-        title: data.title,
-        ...(data.projectId !== undefined && { projectId: data.projectId }),
-        notes: data.notes,
-        terms: data.terms,
-        internalNotes: data.internalNotes,
-        ...(data.blocks && {
-          subtotal,
-          taxTotal,
-          total,
-          settings: {
-            ...(existingQuote.settings as object),
-            blocks: data.blocks,
-          } as unknown as Prisma.InputJsonValue,
-          lineItems: {
-            create: lineItems,
-          },
-        }),
-      },
-      include: {
-        lineItems: true,
-        client: true,
-      },
     });
-  });
 
-  revalidatePath('/quotes');
-  revalidatePath(`/quotes/${quoteId}`);
+    revalidatePath('/quotes');
+    revalidatePath(`/quotes/${quoteId}`);
 
-  return { success: true, quote };
+    return { success: true as const, quote };
+  } catch (error) {
+    console.error('Failed to update quote:', error);
+    return { success: false as const, error: 'Failed to save quote. Please try again.' };
+  }
 }
 
 /**
