@@ -1,438 +1,301 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock modules before imports
-vi.mock('@/lib/auth', () => ({
-  auth: vi.fn(),
-}));
+const { mockPrisma, mockGetCurrentUserWorkspace } = vi.hoisted(() => {
+  const mockPrisma: Record<string, any> = {
+    workspace: { findUnique: vi.fn() },
+    invoice: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), count: vi.fn() },
+    invoiceLineItem: { deleteMany: vi.fn() },
+    invoiceEvent: { create: vi.fn() },
+    client: { findFirst: vi.fn() },
+    quote: { findFirst: vi.fn(), update: vi.fn() },
+    quoteEvent: { create: vi.fn() },
+    payment: { create: vi.fn(), findMany: vi.fn() },
+    numberSequence: { upsert: vi.fn() },
+    $transaction: vi.fn((fnOrArray: any) => {
+      if (typeof fnOrArray === 'function') return fnOrArray(mockPrisma);
+      return Promise.all(fnOrArray);
+    }),
+  };
+  const mockGetCurrentUserWorkspace = vi.fn();
+  return { mockPrisma, mockGetCurrentUserWorkspace };
+});
 
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}));
-
-// Import mocked modules - must be after vi.mock calls
-import { auth } from '@/lib/auth';
-
-// Mock Prisma
-const mockPrisma = {
-  invoice: {
-    findFirst: vi.fn(),
-    findMany: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    count: vi.fn(),
-    aggregate: vi.fn(),
-  },
-  invoiceLineItem: {
-    deleteMany: vi.fn(),
-  },
-  invoiceEvent: {
-    create: vi.fn(),
-  },
-  payment: {
-    create: vi.fn(),
-    findMany: vi.fn(),
-  },
-  quote: {
-    findFirst: vi.fn(),
-    update: vi.fn(),
-  },
-  quoteEvent: {
-    create: vi.fn(),
-  },
-  workspaceMember: {
-    findFirst: vi.fn(),
-  },
-  $transaction: vi.fn((callbacks) => {
-    if (typeof callbacks === 'function') {
-      return callbacks(mockPrisma);
-    }
-    return Promise.all(callbacks);
-  }),
-};
-
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('@/lib/services/email', () => ({ sendInvoiceSentEmail: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/notifications/actions', () => ({ createNotification: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/utils', () => ({ formatCurrency: vi.fn((v: number) => `$${v.toFixed(2)}`) }));
+vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
+vi.mock('@/lib/invoices/internal', () => ({ generateInvoiceNumber: vi.fn().mockResolvedValue('INV-0001') }));
 vi.mock('@quotecraft/database', () => ({
   prisma: mockPrisma,
-  Prisma: {
-    InputJsonValue: {},
-    InvoiceWhereInput: {},
-    InvoiceUpdateInput: {},
-  },
+  Prisma: { InputJsonValue: {}, TransactionClient: {} },
 }));
+import {
+  createInvoice,
+  getInvoices,
+  deleteInvoice,
+  updateInvoiceStatus,
+  createInvoiceFromQuote,
+} from '@/lib/invoices/actions';
 
 describe('Invoice Actions', () => {
-  const mockSession = {
-    user: { id: 'user-123', email: 'test@example.com' },
-  };
-
-  const mockWorkspace = {
-    id: 'ws-123',
-    name: 'Test Workspace',
-  };
+  const WORKSPACE_ID = 'ws-123';
+  const USER_ID = 'user-123';
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    vi.mocked(auth).mockResolvedValue(mockSession as any);
-
-    mockPrisma.workspaceMember.findFirst.mockResolvedValue({
-      userId: mockSession.user.id,
-      workspaceId: mockWorkspace.id,
-      workspace: mockWorkspace,
+    mockGetCurrentUserWorkspace.mockResolvedValue({
+      workspaceId: WORKSPACE_ID,
+      userId: USER_ID,
     });
-  });
 
-  afterEach(() => {
-    vi.resetAllMocks();
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      id: WORKSPACE_ID,
+      name: 'Test Workspace',
+    });
+
+    mockPrisma.invoiceEvent.create.mockResolvedValue({ id: 'event-1' });
   });
 
   describe('createInvoice', () => {
-    const validInvoiceData = {
-      clientId: 'client-123',
-      title: 'Monthly Services',
-      dueDate: '2024-02-15',
-      lineItems: [
-        { name: 'Service A', description: 'Description', quantity: 2, rate: 100 },
-        { name: 'Service B', quantity: 1, rate: 500, taxRate: 10 },
-      ],
-      notes: 'Payment due upon receipt',
-      terms: 'Net 30',
-    };
-
-    it('generates unique invoice numbers', () => {
-      const lastInvoiceNumber = 'INV-0010';
-      const lastNumber = parseInt(lastInvoiceNumber.replace(/\D/g, ''), 10);
-      const nextNumber = lastNumber + 1;
-      const newInvoiceNumber = `INV-${String(nextNumber).padStart(4, '0')}`;
-
-      expect(newInvoiceNumber).toBe('INV-0011');
-    });
-
-    it('calculates totals correctly', () => {
-      const lineItems = validInvoiceData.lineItems;
-
-      let subtotal = 0;
-      let taxTotal = 0;
-
-      for (const item of lineItems) {
-        const amount = item.quantity * item.rate;
-        subtotal += amount;
-        if (item.taxRate) {
-          taxTotal += amount * (item.taxRate / 100);
-        }
-      }
-
-      const total = subtotal + taxTotal;
-
-      expect(subtotal).toBe(700);
-      expect(taxTotal).toBe(50);
-      expect(total).toBe(750);
-    });
-
-    it('rounds amounts to 2 decimal places', () => {
-      const amount = 33.333333;
-      const rounded = Math.round(amount * 100) / 100;
-
-      expect(rounded).toBe(33.33);
-    });
-
-    it('sets initial status to draft', () => {
-      const newInvoice = {
+    it('creates an invoice with valid data', async () => {
+      mockPrisma.client.findFirst.mockResolvedValue({ id: 'client-1', workspaceId: WORKSPACE_ID });
+      mockPrisma.invoice.findFirst.mockResolvedValue(null);
+      mockPrisma.invoice.create.mockResolvedValue({
+        id: 'inv-1',
+        invoiceNumber: 'INV-0001',
         status: 'draft',
-        amountPaid: 0,
-      };
+        lineItems: [],
+        client: { id: 'client-1' },
+        project: null,
+      });
 
-      expect(newInvoice.status).toBe('draft');
-      expect(newInvoice.amountPaid).toBe(0);
+      const result = await createInvoice({
+        clientId: 'client-1',
+        title: 'Monthly Services',
+        dueDate: '2024-02-15',
+        lineItems: [
+          { name: 'Service A', quantity: 2, rate: 100 },
+        ],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.invoice).toBeDefined();
+      expect(mockPrisma.invoice.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns error when client not found', async () => {
+      mockPrisma.client.findFirst.mockResolvedValue(null);
+
+      const result = await createInvoice({
+        clientId: 'nonexistent',
+        title: 'Test',
+        dueDate: '2024-02-15',
+        lineItems: [{ name: 'Item', quantity: 1, rate: 100 }],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Client not found');
+    });
+
+    it('rejects negative rates', async () => {
+      mockPrisma.client.findFirst.mockResolvedValue({ id: 'client-1', workspaceId: WORKSPACE_ID });
+
+      const result = await createInvoice({
+        clientId: 'client-1',
+        title: 'Test',
+        dueDate: '2024-02-15',
+        lineItems: [{ name: 'Item', quantity: 1, rate: -50 }],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('rate cannot be negative');
+    });
+
+    it('calculates totals from line items', async () => {
+      mockPrisma.client.findFirst.mockResolvedValue({ id: 'client-1', workspaceId: WORKSPACE_ID });
+      mockPrisma.invoice.findFirst.mockResolvedValue(null);
+      mockPrisma.invoice.create.mockImplementation(async ({ data }) => ({
+        id: 'inv-1',
+        ...data,
+        lineItems: [],
+        client: { id: 'client-1' },
+        project: null,
+      }));
+
+      await createInvoice({
+        clientId: 'client-1',
+        title: 'Test',
+        dueDate: '2024-02-15',
+        lineItems: [
+          { name: 'A', quantity: 2, rate: 100, taxRate: 10 },
+          { name: 'B', quantity: 1, rate: 500 },
+        ],
+      });
+
+      const createCall = mockPrisma.invoice.create.mock.calls[0]![0];
+      expect(createCall.data.subtotal).toBe(700);
+      expect(createCall.data.taxTotal).toBe(20);
+      expect(createCall.data.total).toBe(720);
     });
   });
 
   describe('createInvoiceFromQuote', () => {
-    const mockQuote = {
-      id: 'quote-123',
-      workspaceId: 'ws-123',
-      clientId: 'client-123',
-      title: 'Project Quote',
-      subtotal: 5000,
-      taxTotal: 500,
-      total: 5500,
-      discountType: 'percentage',
-      discountValue: 10,
-      discountAmount: 500,
-      notes: 'Quote notes',
-      terms: 'Quote terms',
-      lineItems: [
-        {
-          name: 'Development',
-          description: 'Web development',
-          quantity: 50,
-          rate: 100,
-          amount: 5000,
-          taxRate: 10,
-          taxAmount: 500,
-          sortOrder: 0,
-        },
-      ],
-    };
-
-    it('copies quote data to invoice', () => {
-      const invoiceData = {
-        clientId: mockQuote.clientId,
-        quoteId: mockQuote.id,
-        title: mockQuote.title,
-        subtotal: mockQuote.subtotal,
-        taxTotal: mockQuote.taxTotal,
-        total: mockQuote.total,
-        notes: mockQuote.notes,
-        terms: mockQuote.terms,
-      };
-
-      expect(invoiceData.quoteId).toBe('quote-123');
-      expect(invoiceData.total).toBe(5500);
-    });
-
-    it('sets due date 30 days from now by default', () => {
-      const now = new Date();
-      const dueDate = new Date(now);
-      dueDate.setDate(dueDate.getDate() + 30);
-
-      const daysDiff = Math.round(
-        (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      expect(daysDiff).toBe(30);
-    });
-
-    it('marks quote as converted', () => {
-      const updatedQuoteStatus = 'converted';
-      expect(updatedQuoteStatus).toBe('converted');
-    });
-
-    it('prevents duplicate invoices from same quote', async () => {
-      mockPrisma.invoice.findFirst.mockResolvedValue({
-        id: 'existing-invoice',
-        quoteId: 'quote-123',
+    it('creates invoice from an accepted quote', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        clientId: 'client-1',
+        projectId: null,
+        title: 'Project',
+        subtotal: 1000,
+        taxTotal: 100,
+        total: 1100,
+        discountType: null,
+        discountValue: null,
+        discountAmount: 0,
+        notes: 'notes',
+        terms: 'terms',
+        lineItems: [
+          { name: 'Dev', description: null, quantity: 10, rate: 100, amount: 1000, taxRate: 10, taxAmount: 100, sortOrder: 0 },
+        ],
+        client: { id: 'client-1', name: 'Acme' },
       });
-
-      const existingInvoice = await mockPrisma.invoice.findFirst({
-        where: { quoteId: 'quote-123' },
+      mockPrisma.invoice.findFirst.mockResolvedValue(null); // no existing invoice
+      mockPrisma.invoice.create.mockResolvedValue({
+        id: 'inv-1',
+        invoiceNumber: 'INV-0001',
       });
+      mockPrisma.quote.update.mockResolvedValue({ id: 'quote-1', status: 'converted' });
+      mockPrisma.quoteEvent.create.mockResolvedValue({ id: 'event-1' });
 
-      expect(existingInvoice).toBeDefined();
-      // Should return error: 'Invoice already exists for this quote'
-    });
-  });
+      const result = await createInvoiceFromQuote('quote-1');
 
-  describe('updateInvoice', () => {
-    const existingInvoice = {
-      id: 'inv-123',
-      workspaceId: 'ws-123',
-      status: 'draft',
-      title: 'Original Title',
-      subtotal: 1000,
-      taxTotal: 100,
-      total: 1100,
-      lineItems: [
-        { id: 'li-1', name: 'Item 1', quantity: 1, rate: 1000 },
-      ],
-    };
-
-    it('only allows editing draft invoices', () => {
-      const draftInvoice = { ...existingInvoice, status: 'draft' };
-      const sentInvoice = { ...existingInvoice, status: 'sent' };
-
-      expect(draftInvoice.status).toBe('draft');
-      expect(sentInvoice.status).toBe('sent');
-      // Only draft should be editable
+      expect(result.success).toBe(true);
+      expect(mockPrisma.invoice.create).toHaveBeenCalledTimes(1);
     });
 
-    it('recalculates totals when line items change', () => {
-      const newLineItems = [
-        { name: 'New Item', quantity: 2, rate: 500, taxRate: 8 },
-      ];
+    it('prevents duplicate invoice from same quote', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        clientId: 'client-1',
+        lineItems: [],
+        client: { id: 'client-1' },
+      });
+      mockPrisma.invoice.findFirst.mockResolvedValue({ id: 'existing-inv' }); // already exists
 
-      const subtotal = 1000;
-      const taxTotal = 80;
-      const total = 1080;
+      const result = await createInvoiceFromQuote('quote-1');
 
-      expect(subtotal).toBe(2 * 500);
-      expect(taxTotal).toBe(1000 * 0.08);
-      expect(total).toBe(subtotal + taxTotal);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('already exists');
+    });
+
+    it('returns error when quote not found', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue(null);
+
+      const result = await createInvoiceFromQuote('nonexistent');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Quote not found');
     });
   });
 
   describe('getInvoices', () => {
-    it('filters by status', () => {
-      const status = 'sent';
-      const whereClause = {
-        workspaceId: 'ws-123',
-        deletedAt: null,
-        status,
-      };
-
-      expect(whereClause.status).toBe('sent');
-    });
-
-    it('filters by client', () => {
-      const clientId = 'client-123';
-      const whereClause = {
-        clientId,
-      };
-
-      expect(whereClause.clientId).toBe('client-123');
-    });
-
-    it('identifies overdue invoices', () => {
+    it('returns invoice list', async () => {
       const now = new Date();
-      const pastDueDate = new Date('2024-01-01');
-      const futureDueDate = new Date('2099-12-31');
+      mockPrisma.invoice.findMany.mockResolvedValue([
+        {
+          id: 'inv-1', invoiceNumber: 'INV-0001', title: 'Test', status: 'draft',
+          total: 100, amountPaid: 0, amountDue: 100, issueDate: now, dueDate: now,
+          client: { id: 'c1', name: 'Acme', email: 'a@b.com', company: null }, createdAt: now,
+        },
+      ]);
 
-      const isOverdue1 = pastDueDate < now;
-      const isOverdue2 = futureDueDate < now;
+      const result = await getInvoices();
 
-      expect(isOverdue1).toBe(true);
-      expect(isOverdue2).toBe(false);
+      expect(result.length).toBe(1);
+      expect(result[0]!.invoiceNumber).toBe('INV-0001');
     });
 
-    it('marks sent invoices as overdue when past due date', () => {
-      const invoice = {
-        status: 'sent',
-        dueDate: new Date('2024-01-01'),
-      };
-      const now = new Date();
+    it('filters by status', async () => {
+      mockPrisma.invoice.findMany.mockResolvedValue([]);
 
-      const isOverdue =
-        invoice.status !== 'paid' &&
-        invoice.status !== 'voided' &&
-        invoice.dueDate < now;
+      await getInvoices({ status: 'sent' });
 
-      expect(isOverdue).toBe(true);
+      const findManyCall = mockPrisma.invoice.findMany.mock.calls[0]![0];
+      expect(findManyCall.where.status).toBe('sent');
+    });
+
+    it('marks overdue invoices', async () => {
+      const pastDate = new Date('2020-01-01');
+      mockPrisma.invoice.findMany.mockResolvedValue([
+        {
+          id: 'inv-1', invoiceNumber: 'INV-0001', title: 'Test', status: 'sent',
+          total: 100, amountPaid: 0, amountDue: 100, issueDate: new Date(), dueDate: pastDate,
+          client: { id: 'c1', name: 'Acme', email: null, company: null }, createdAt: new Date(),
+        },
+      ]);
+
+      const result = await getInvoices();
+
+      expect(result[0]!.isOverdue).toBe(true);
+      expect(result[0]!.status).toBe('overdue');
     });
   });
 
   describe('updateInvoiceStatus', () => {
-    it('sets sentAt when status changes to sent', () => {
-      const status = 'sent';
-      const invoice = { sentAt: null };
+    it('updates status from draft to sent', async () => {
+      mockPrisma.invoice.findFirst.mockResolvedValue({
+        id: 'inv-1',
+        workspaceId: WORKSPACE_ID,
+        status: 'draft',
+        sentAt: null,
+        accessToken: 'token-123',
+        client: { email: 'test@test.com' },
+      });
+      mockPrisma.invoice.update.mockResolvedValue({ id: 'inv-1', status: 'sent' });
 
-      if (status === 'sent' && !invoice.sentAt) {
-        invoice.sentAt = new Date() as unknown as null;
-      }
+      const result = await updateInvoiceStatus('inv-1', 'sent');
 
-      expect(invoice.sentAt).toBeDefined();
+      expect(result.success).toBe(true);
     });
 
-    it('sets paidAt and clears amountDue when status is paid', () => {
-      const status = 'paid';
-      const updateData: Record<string, unknown> = { status };
+    it('returns error for non-existent invoice', async () => {
+      mockPrisma.invoice.findFirst.mockResolvedValue(null);
 
-      if (status === 'paid') {
-        updateData.paidAt = new Date();
-        updateData.amountPaid = 1000;
-        updateData.amountDue = 0;
-      }
+      const result = await updateInvoiceStatus('nonexistent', 'sent');
 
-      expect(updateData.paidAt).toBeDefined();
-      expect(updateData.amountDue).toBe(0);
-    });
-
-    it('creates invoice event on status change', () => {
-      const event = {
-        invoiceId: 'inv-123',
-        eventType: 'status_changed_to_sent',
-        actorId: 'user-123',
-        actorType: 'user',
-        metadata: { previousStatus: 'draft' },
-      };
-
-      expect(event.eventType).toBe('status_changed_to_sent');
-      expect(event.metadata.previousStatus).toBe('draft');
-    });
-  });
-
-  describe('recordPayment', () => {
-    const invoice = {
-      id: 'inv-123',
-      status: 'sent',
-      total: 1000,
-      amountPaid: 0,
-      amountDue: 1000,
-    };
-
-    it('calculates new amounts after payment', () => {
-      const paymentAmount = 500;
-      const newAmountPaid = invoice.amountPaid + paymentAmount;
-      const newAmountDue = invoice.total - newAmountPaid;
-
-      expect(newAmountPaid).toBe(500);
-      expect(newAmountDue).toBe(500);
-    });
-
-    it('sets status to paid when fully paid', () => {
-      const paymentAmount = 1000;
-      const newAmountPaid = invoice.amountPaid + paymentAmount;
-
-      const newStatus = newAmountPaid >= invoice.total ? 'paid' : 'partial';
-
-      expect(newStatus).toBe('paid');
-    });
-
-    it('sets status to partial when partially paid', () => {
-      const paymentAmount = 500;
-      const newAmountPaid = invoice.amountPaid + paymentAmount;
-
-      const newStatus = newAmountPaid >= invoice.total ? 'paid' : 'partial';
-
-      expect(newStatus).toBe('partial');
-    });
-
-    it('prevents payment on voided invoices', () => {
-      const voidedInvoice = { ...invoice, status: 'voided' };
-
-      expect(voidedInvoice.status).toBe('voided');
-      // Should return error: 'Cannot record payment for voided invoice'
-    });
-
-    it('creates payment record', () => {
-      const paymentData = {
-        invoiceId: 'inv-123',
-        amount: 500,
-        paymentMethod: 'credit_card',
-        status: 'completed',
-        referenceNumber: 'REF-123',
-        notes: 'Partial payment',
-        processedAt: new Date(),
-      };
-
-      expect(paymentData.status).toBe('completed');
-      expect(paymentData.amount).toBe(500);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not found');
     });
   });
 
   describe('deleteInvoice', () => {
-    it('only allows deleting draft invoices', () => {
-      const draftInvoice = { status: 'draft' };
-      const sentInvoice = { status: 'sent' };
+    it('soft deletes a draft invoice', async () => {
+      mockPrisma.invoice.findFirst.mockResolvedValue({
+        id: 'inv-1',
+        workspaceId: WORKSPACE_ID,
+        status: 'draft',
+      });
+      mockPrisma.invoice.update.mockResolvedValue({ id: 'inv-1', deletedAt: new Date() });
 
-      const canDeleteDraft = draftInvoice.status === 'draft';
-      const canDeleteSent = sentInvoice.status === 'draft';
+      const result = await deleteInvoice('inv-1');
 
-      expect(canDeleteDraft).toBe(true);
-      expect(canDeleteSent).toBe(false);
+      expect(result.success).toBe(true);
     });
 
-    it('performs soft delete', async () => {
-      const deletedAt = new Date();
-
-      mockPrisma.invoice.update.mockResolvedValue({
-        id: 'inv-123',
-        deletedAt,
+    it('prevents deleting non-draft invoices', async () => {
+      mockPrisma.invoice.findFirst.mockResolvedValue({
+        id: 'inv-1',
+        workspaceId: WORKSPACE_ID,
+        status: 'sent',
       });
 
-      const result = await mockPrisma.invoice.update({
-        where: { id: 'inv-123' },
-        data: { deletedAt },
-      });
+      const result = await deleteInvoice('inv-1');
 
-      expect(result.deletedAt).toBeDefined();
+      expect(result.success).toBe(false);
     });
   });
 });
