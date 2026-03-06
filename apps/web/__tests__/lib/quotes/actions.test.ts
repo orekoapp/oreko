@@ -138,7 +138,7 @@ describe('Quote Actions', () => {
 
     it('calculates totals from service item blocks', async () => {
       mockPrisma.client.findFirst.mockResolvedValue({ id: 'client-1', workspaceId: WORKSPACE_ID });
-      mockPrisma.quote.create.mockImplementation(async ({ data }) => ({
+      mockPrisma.quote.create.mockImplementation(async ({ data }: any) => ({
         id: 'quote-1',
         ...data,
         lineItems: [],

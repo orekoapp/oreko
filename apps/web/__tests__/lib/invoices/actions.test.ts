@@ -116,7 +116,7 @@ describe('Invoice Actions', () => {
     it('calculates totals from line items', async () => {
       mockPrisma.client.findFirst.mockResolvedValue({ id: 'client-1', workspaceId: WORKSPACE_ID });
       mockPrisma.invoice.findFirst.mockResolvedValue(null);
-      mockPrisma.invoice.create.mockImplementation(async ({ data }) => ({
+      mockPrisma.invoice.create.mockImplementation(async ({ data }: any) => ({
         id: 'inv-1',
         ...data,
         lineItems: [],
