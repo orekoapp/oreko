@@ -60,7 +60,7 @@ export function useSidebarStyle() {
 }
 
 function applyFontSize(key: FontSizeKey) {
-  const option = FONT_SIZE_OPTIONS.find((o) => o.key === key) ?? FONT_SIZE_OPTIONS[2];
+  const option = FONT_SIZE_OPTIONS.find((o) => o.key === key) ?? FONT_SIZE_OPTIONS[2]!;
   document.documentElement.style.setProperty('--font-size-scale', String(option.scale));
 }
 
