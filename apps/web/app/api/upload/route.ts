@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { uploadFile } from '@/lib/services/storage';
 import { updateBusinessLogo } from '@/lib/settings/actions';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { validateRequestOrigin } from '@/lib/csrf';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
@@ -28,6 +29,11 @@ function validateImageMagicBytes(buffer: Buffer): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  // Bug #14: CSRF origin validation
+  if (!validateRequestOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

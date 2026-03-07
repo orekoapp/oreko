@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoicePaymentIntent } from '@/lib/payments/internal';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { validateRequestOrigin } from '@/lib/csrf';
 
 /**
  * POST /api/checkout/invoice/[invoiceId]
@@ -11,6 +12,11 @@ export async function POST(
   { params }: { params: Promise<{ invoiceId: string }> }
 ) {
   try {
+    // Bug #14: CSRF origin validation
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
     // Rate limit: 10 checkout attempts per minute per IP
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const rateLimitResult = checkRateLimit(`checkout:${clientIp}`, { limit: 10, windowMs: 60000 });

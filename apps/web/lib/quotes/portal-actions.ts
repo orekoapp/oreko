@@ -468,11 +468,17 @@ export async function declineQuote(data: {
         status: true,
         workspaceId: true,
         quoteNumber: true,
+        expirationDate: true,
       },
     });
 
     if (!quote) {
       return { success: false, error: 'Quote not found' };
+    }
+
+    // Bug #20: Check if quote has expired
+    if (quote.expirationDate && new Date(quote.expirationDate) < new Date()) {
+      return { success: false, error: 'This quote has expired' };
     }
 
     // Check if quote can be declined

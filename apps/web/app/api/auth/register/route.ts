@@ -5,6 +5,7 @@ import { prisma } from '@quotecraft/database';
 import { hashPassword } from '@/lib/auth/credentials';
 import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
 import { passwordSchema } from '@/lib/validations/auth';
+import { validateRequestOrigin } from '@/lib/csrf';
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -40,6 +41,11 @@ function generateSlug(name: string): string {
 
 export async function POST(request: Request) {
   try {
+    // Bug #14: CSRF origin validation
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const rateLimitResult = checkRateLimit(`register:${clientIp}`, strictRateLimitOptions);
     if (rateLimitResult.limited) {

@@ -15,6 +15,10 @@ function escapeHtml(str: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Bug #16: Record start time to normalize response timing and prevent email enumeration via timing
+    const startTime = Date.now();
+    const MIN_RESPONSE_TIME = 500; // ms — ensures consistent timing regardless of user existence
+
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const rateLimitResult = checkRateLimit(`forgot-password:${clientIp}`, { limit: 5, windowMs: 300000 }); // 5 requests per 5 minutes
     if (rateLimitResult.limited) {
@@ -34,6 +38,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const successResponse = {
+      success: true,
+      message: 'If an account exists with this email, you will receive a password reset link.',
+    };
+
+    // Bug #16: Helper to enforce minimum response time before returning
+    const delayedResponse = async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_RESPONSE_TIME) {
+        await new Promise(r => setTimeout(r, MIN_RESPONSE_TIME - elapsed));
+      }
+      return NextResponse.json(successResponse);
+    };
+
     // Find user by email
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -41,19 +59,12 @@ export async function POST(request: NextRequest) {
 
     // Always return success to prevent email enumeration
     if (!user) {
-      return NextResponse.json({
-        success: true,
-        message: 'If an account exists with this email, you will receive a password reset link.',
-      });
+      return delayedResponse();
     }
 
     // Check if user has a password (not OAuth-only user)
     if (!user.passwordHash) {
-      // User signed up with OAuth only
-      return NextResponse.json({
-        success: true,
-        message: 'If an account exists with this email, you will receive a password reset link.',
-      });
+      return delayedResponse();
     }
 
     // Delete any existing reset tokens for this user
