@@ -93,7 +93,7 @@ const jsonLd = {
   description:
     'Open-source visual quote and invoice builder for freelancers and small businesses',
   url: process.env.NEXT_PUBLIC_APP_URL || 'https://quote.persuado.tech',
-  downloadUrl: 'https://github.com/quotecraft/quotecraft',
+  downloadUrl: process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/WisdmLabs/quote-software',
   offers: [
     {
       '@type': 'Offer',

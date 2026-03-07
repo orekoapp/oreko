@@ -70,14 +70,37 @@ export function useAutoSave(quoteId: string | null, debounceMs = 2000) {
     };
   }, [isDirty, quoteId, save, debounceMs]);
 
-  // Save on unmount if dirty
+  // Bug #206: Save on unmount if dirty, and backup to sessionStorage on pagehide
   useEffect(() => {
+    const handlePageHide = () => {
+      if (isDirty && quoteId && document) {
+        // Backup unsaved changes to sessionStorage as a last resort
+        try {
+          sessionStorage.setItem(
+            `quotecraft:autosave:${quoteId}`,
+            JSON.stringify({
+              title: document.title,
+              blocks: document.blocks,
+              notes: document.notes,
+              terms: document.terms,
+              internalNotes: document.internalNotes,
+              timestamp: Date.now(),
+            })
+          );
+        } catch {
+          // sessionStorage may be full or unavailable
+        }
+      }
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
     return () => {
+      window.removeEventListener('pagehide', handlePageHide);
       if (isDirty && quoteId) {
         save();
       }
     };
-  }, [isDirty, quoteId, save]);
+  }, [isDirty, quoteId, document, save]);
 
   return { save };
 }
