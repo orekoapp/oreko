@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -20,6 +19,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { updateMemberRole, removeMember, type WorkspaceMemberData, type WorkspaceMemberRole } from '@/lib/settings/actions';
 
 const roleIcons: Record<WorkspaceMemberRole, React.ReactNode> = {
@@ -45,6 +54,8 @@ export function TeamMemberList({ members, currentUserRole }: TeamMemberListProps
   const router = useRouter();
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Bug #80: AlertDialog state instead of window.confirm()
+  const [removeMemberId, setRemoveMemberId] = useState<string | null>(null);
 
   const canManageTeam = currentUserRole === 'owner' || currentUserRole === 'admin';
 
@@ -64,8 +75,6 @@ export function TeamMemberList({ members, currentUserRole }: TeamMemberListProps
   };
 
   const handleRemove = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this member?')) return;
-
     setUpdating(memberId);
     setError(null);
 
@@ -77,6 +86,7 @@ export function TeamMemberList({ members, currentUserRole }: TeamMemberListProps
       router.refresh();
     } finally {
       setUpdating(null);
+      setRemoveMemberId(null);
     }
   };
 
@@ -165,7 +175,7 @@ export function TeamMemberList({ members, currentUserRole }: TeamMemberListProps
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={() => handleRemove(member.id)}
+                      onClick={() => setRemoveMemberId(member.id)}
                       className="text-destructive focus:text-destructive"
                     >
                       Remove from workspace
@@ -183,6 +193,27 @@ export function TeamMemberList({ members, currentUserRole }: TeamMemberListProps
           <p className="text-muted-foreground">No team members yet</p>
         </div>
       )}
+
+      {/* Bug #80: AlertDialog for member removal confirmation */}
+      <AlertDialog open={!!removeMemberId} onOpenChange={(open) => !open && setRemoveMemberId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove team member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this member from the workspace? They will lose access to all workspace data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => removeMemberId && handleRemove(removeMemberId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

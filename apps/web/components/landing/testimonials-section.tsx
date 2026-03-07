@@ -1,5 +1,6 @@
 import { Quote } from 'lucide-react';
 
+// Bug #256: Using initials-based avatars (gradient circles) — no null avatar fields
 const testimonials = [
   {
     quote:
@@ -7,7 +8,6 @@ const testimonials = [
     name: 'Sarah Chen',
     role: 'Freelance Designer',
     handle: '@sarahchendesigns',
-    avatar: null, // Would be a real image URL in production
   },
   {
     quote:
@@ -15,7 +15,6 @@ const testimonials = [
     name: 'Marcus Rivera',
     role: 'Marketing Consultant',
     handle: '@marcusrivera',
-    avatar: null,
   },
   {
     quote:
@@ -23,7 +22,6 @@ const testimonials = [
     name: 'David Kim',
     role: 'Software Developer',
     handle: '@devdavidkim',
-    avatar: null,
   },
   {
     quote:
@@ -31,7 +29,6 @@ const testimonials = [
     name: 'Jennifer Walsh',
     role: 'Interior Designer',
     handle: 'Walsh Interiors',
-    avatar: null,
   },
 ];
 
