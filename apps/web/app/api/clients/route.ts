@@ -1,19 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
+import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
 
 /**
  * GET /api/clients
  * Returns clients for the current user's workspace
  */
 export async function GET(request: NextRequest) {
+  // Bug #56/#59: Apply rate limiting
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+                   request.headers.get('x-real-ip') ||
+                   'unknown';
+  const rateLimitResult = checkRateLimit(`clients:${clientIp}`, defaultRateLimitOptions);
+  const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
+
+  if (rateLimitResult.limited) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders }
+    );
+  }
+
   try {
     let workspaceId: string;
     try {
       const result = await getCurrentUserWorkspace();
       workspaceId = result.workspaceId;
     } catch {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: rateLimitHeaders });
     }
 
     // Parse query params
@@ -68,20 +83,23 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({
-      data,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
+    return NextResponse.json(
+      {
+        data,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
       },
-    });
+      { headers: rateLimitHeaders }
+    );
   } catch (error) {
     console.error('Error fetching clients:', error);
     return NextResponse.json(
       { error: 'Failed to fetch clients' },
-      { status: 500 }
+      { status: 500, headers: rateLimitHeaders }
     );
   }
 }

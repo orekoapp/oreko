@@ -657,6 +657,7 @@ export async function searchClients(query: string, limit = 10): Promise<Array<{
   company: string | null;
 }>> {
   const { workspaceId } = await getCurrentUserWorkspace();
+  const cappedLimit = Math.min(Math.max(1, limit), 50);
 
   const clients = await prisma.client.findMany({
     where: {
@@ -674,7 +675,7 @@ export async function searchClients(query: string, limit = 10): Promise<Array<{
       email: true,
       company: true,
     },
-    take: limit,
+    take: cappedLimit,
     orderBy: { name: 'asc' },
   });
 
