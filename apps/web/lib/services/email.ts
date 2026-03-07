@@ -250,8 +250,9 @@ export async function sendPaymentReceivedEmail(params: {
   businessName: string;
   amount: string;
   receiptUrl?: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, clientName, invoiceNumber, businessName, amount, receiptUrl } = params;
+  const { to, clientName, invoiceNumber, businessName, amount, receiptUrl, rateLimitKey } = params;
 
   const safeClientName = escapeHtml(clientName);
   const safeInvoiceNumber = escapeHtml(invoiceNumber);
@@ -284,7 +285,7 @@ export async function sendPaymentReceivedEmail(params: {
     tags: [
       { name: 'type', value: 'payment_received' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 export async function sendQuoteAcceptedEmail(params: {
@@ -293,8 +294,9 @@ export async function sendQuoteAcceptedEmail(params: {
   clientName: string;
   amount: string;
   quoteUrl: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, quoteName, clientName, amount, quoteUrl } = params;
+  const { to, quoteName, clientName, amount, quoteUrl, rateLimitKey } = params;
 
   const safeClientName = escapeHtml(clientName);
   const safeQuoteName = escapeHtml(quoteName);
@@ -327,7 +329,7 @@ export async function sendQuoteAcceptedEmail(params: {
     tags: [
       { name: 'type', value: 'quote_accepted' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 export async function sendInvoiceReminderEmail(params: {

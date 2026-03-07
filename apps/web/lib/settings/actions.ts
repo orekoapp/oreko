@@ -1332,22 +1332,25 @@ export async function updateInvoiceDefaults(
 ): Promise<{ success: boolean; error?: string }> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
-    select: { settings: true },
-  });
+  // Bug #89: Use transaction to prevent concurrent read-modify-write races
+  await prisma.$transaction(async (tx) => {
+    const workspace = await tx.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { settings: true, updatedAt: true },
+    });
 
-  const currentSettings = (workspace?.settings as Record<string, unknown>) || {};
-  const currentDefaults = (currentSettings.invoiceDefaults as Partial<InvoiceDefaults>) || {};
+    const currentSettings = (workspace?.settings as Record<string, unknown>) || {};
+    const currentDefaults = (currentSettings.invoiceDefaults as Partial<InvoiceDefaults>) || {};
 
-  await prisma.workspace.update({
-    where: { id: workspaceId },
-    data: {
-      settings: {
-        ...currentSettings,
-        invoiceDefaults: { ...currentDefaults, ...input },
+    await tx.workspace.update({
+      where: { id: workspaceId, updatedAt: workspace?.updatedAt },
+      data: {
+        settings: {
+          ...currentSettings,
+          invoiceDefaults: { ...currentDefaults, ...input },
+        },
       },
-    },
+    });
   });
 
   revalidatePath('/settings/invoices');
