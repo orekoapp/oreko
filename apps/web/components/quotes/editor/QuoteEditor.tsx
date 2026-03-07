@@ -220,7 +220,8 @@ export function QuoteEditor() {
   };
 
   const handleSave = async () => {
-    if (!document) return;
+    // Bug #168: Prevent double-submit race condition
+    if (!document || isLoading || isSending) return;
 
     setIsLoading(true);
     try {
@@ -259,7 +260,8 @@ export function QuoteEditor() {
   };
 
   const handleSendQuote = async () => {
-    if (!document || !client) return;
+    // Bug #168: Prevent double-submit race condition
+    if (!document || !client || isSending || isLoading) return;
 
     setIsSending(true);
     try {
