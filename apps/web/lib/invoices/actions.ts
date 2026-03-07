@@ -705,6 +705,11 @@ export async function sendInvoice(invoiceId: string) {
  */
 export async function deleteInvoice(invoiceId: string) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot delete invoices' };
+  }
 
   const invoice = await prisma.invoice.findFirst({
     where: {

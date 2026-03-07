@@ -522,19 +522,15 @@ Reviewers will evaluate:
   - [Ideas](../../discussions/categories/ideas) - Share feature ideas
   - [Show and Tell](../../discussions/categories/show-and-tell) - Share what you've built
 
-- **Discord** - For real-time chat and community interaction
-  - Join our Discord server: [Coming Soon]
-  - Channels: `#general`, `#help`, `#development`, `#contributions`
-
 ### When to Use Each Channel
 
 | Need | Channel |
 |------|---------|
 | Bug reports | GitHub Issues |
 | Feature requests | GitHub Issues |
-| Quick questions | Discord or Discussions |
+| Quick questions | GitHub Discussions |
 | Code review help | Pull Request comments |
-| General discussion | Discord or Discussions |
+| General discussion | GitHub Discussions |
 | Security issues | Email maintainers directly (see SECURITY.md) |
 
 ### Tips for Getting Help

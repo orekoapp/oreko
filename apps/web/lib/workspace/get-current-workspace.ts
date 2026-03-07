@@ -6,13 +6,21 @@ import { auth } from '@/lib/auth';
 
 const ACTIVE_WORKSPACE_COOKIE = 'active-workspace-id';
 
+export type WorkspaceRole = 'owner' | 'admin' | 'editor' | 'viewer';
+
+interface WorkspaceContext {
+  workspaceId: string;
+  userId: string;
+  role: WorkspaceRole;
+}
+
 /**
- * Get the current user's active workspace ID and user ID.
+ * Get the current user's active workspace ID, user ID, and role.
  * This is the shared helper used by all server actions that need workspace context.
  *
  * Respects the active workspace cookie if set, otherwise falls back to the first workspace.
  */
-export async function getCurrentUserWorkspace(): Promise<{ workspaceId: string; userId: string }> {
+export async function getCurrentUserWorkspace(): Promise<WorkspaceContext> {
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
@@ -26,17 +34,17 @@ export async function getCurrentUserWorkspace(): Promise<{ workspaceId: string; 
   if (storedWorkspaceId) {
     const membership = await prisma.workspaceMember.findFirst({
       where: { userId, workspaceId: storedWorkspaceId },
-      select: { workspaceId: true },
+      select: { workspaceId: true, role: true },
     });
     if (membership) {
-      return { workspaceId: storedWorkspaceId, userId };
+      return { workspaceId: storedWorkspaceId, userId, role: membership.role as WorkspaceRole };
     }
   }
 
   // Fall back to first workspace
   const firstMembership = await prisma.workspaceMember.findFirst({
     where: { userId },
-    select: { workspaceId: true },
+    select: { workspaceId: true, role: true },
   });
 
   if (!firstMembership) {
@@ -46,5 +54,29 @@ export async function getCurrentUserWorkspace(): Promise<{ workspaceId: string; 
   return {
     workspaceId: firstMembership.workspaceId,
     userId,
+    role: firstMembership.role as WorkspaceRole,
   };
+}
+
+/**
+ * Role hierarchy for permission checks.
+ * Higher value = more permissions.
+ */
+const ROLE_LEVELS: Record<WorkspaceRole, number> = {
+  viewer: 0,
+  editor: 1,
+  admin: 2,
+  owner: 3,
+};
+
+/**
+ * Check if the current user has the minimum required role.
+ * Throws an error if the user doesn't have sufficient permissions.
+ */
+export async function requireRole(minRole: WorkspaceRole): Promise<WorkspaceContext> {
+  const ctx = await getCurrentUserWorkspace();
+  if (ROLE_LEVELS[ctx.role] < ROLE_LEVELS[minRole]) {
+    throw new Error(`Insufficient permissions. Required: ${minRole}, current: ${ctx.role}`);
+  }
+  return ctx;
 }

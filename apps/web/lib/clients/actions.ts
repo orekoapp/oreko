@@ -458,7 +458,12 @@ export async function updateClient(input: UpdateClientInput): Promise<{ id: stri
 
 // Delete client (soft delete)
 export async function deleteClient(id: string): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Only editors and above can delete clients
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot delete clients');
+  }
 
   // Verify ownership
   const existing = await prisma.client.findFirst({
@@ -483,7 +488,11 @@ export async function deleteClient(id: string): Promise<void> {
 
 // Bulk delete clients
 export async function deleteClients(ids: string[]): Promise<{ deleted: number }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot delete clients');
+  }
 
   const result = await prisma.client.updateMany({
     where: {

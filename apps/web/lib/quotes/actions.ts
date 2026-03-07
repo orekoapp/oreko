@@ -472,6 +472,11 @@ export async function getQuotes(options?: {
  */
 export async function deleteQuote(quoteId: string) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot delete quotes' };
+  }
 
   // Check for linked invoices
   const linkedInvoice = await prisma.invoice.findFirst({
