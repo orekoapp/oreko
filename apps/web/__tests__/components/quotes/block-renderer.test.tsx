@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 // Mock dnd-kit
 vi.mock('@dnd-kit/sortable', () => ({
   useSortable: () => ({
-    attributes: {},
+    attributes: { role: 'button', tabIndex: 0 },
     listeners: {},
     setNodeRef: vi.fn(),
     transform: null,
@@ -26,6 +26,7 @@ const mockSelectBlock = vi.fn();
 const mockRemoveBlock = vi.fn();
 const mockDuplicateBlock = vi.fn();
 const mockSetHoveredBlock = vi.fn();
+const mockUpdateBlock = vi.fn();
 
 vi.mock('@/lib/stores/quote-builder-store', () => ({
   useQuoteBuilderStore: () => ({
@@ -35,20 +36,50 @@ vi.mock('@/lib/stores/quote-builder-store', () => ({
     setHoveredBlock: mockSetHoveredBlock,
     selectedBlockId: null,
     previewMode: false,
-    updateBlock: vi.fn(),
+    updateBlock: mockUpdateBlock,
   }),
 }));
 
-// Mock block components
-vi.mock('../blocks', () => ({
-  HeaderBlockContent: () => <div data-testid="header-block">Header Block</div>,
-  TextBlockContent: () => <div data-testid="text-block">Text Block</div>,
-  ServiceItemBlockContent: () => <div data-testid="service-item-block">Service Item Block</div>,
-  DividerBlockContent: () => <div data-testid="divider-block">Divider Block</div>,
-  SpacerBlockContent: () => <div data-testid="spacer-block">Spacer Block</div>,
-  ImageBlockContent: () => <div data-testid="image-block">Image Block</div>,
-  SignatureBlockContent: () => <div data-testid="signature-block">Signature Block</div>,
+// Mock block components with identifiable content
+vi.mock('@/components/quotes/blocks', () => ({
+  HeaderBlockContent: ({ block }: any) => <div data-testid="header-block">{block.content.text}</div>,
+  TextBlockContent: ({ block }: any) => <div data-testid="text-block">Text Block</div>,
+  ServiceItemBlockContent: ({ block }: any) => <div data-testid="service-item-block">{block.content.name}</div>,
+  ServiceGroupBlockContent: ({ block }: any) => <div data-testid="service-group-block">{block.content.title}</div>,
+  DividerBlockContent: () => <div data-testid="divider-block">Divider</div>,
+  SpacerBlockContent: () => <div data-testid="spacer-block">Spacer</div>,
+  ImageBlockContent: ({ block }: any) => <div data-testid="image-block">{block.content.alt}</div>,
+  ColumnsBlockContent: () => <div data-testid="columns-block">Columns</div>,
+  TableBlockContent: () => <div data-testid="table-block">Table</div>,
+  SignatureBlockContent: () => <div data-testid="signature-block">Signature</div>,
 }));
+
+import { BlockRenderer } from '@/components/quotes/builder/block-renderer';
+import type { QuoteBlock } from '@/lib/quotes/types';
+
+function createTestBlock(type: string, id = 'block-1', contentOverrides = {}): QuoteBlock {
+  const now = new Date().toISOString();
+  const defaults: Record<string, any> = {
+    header: { text: 'Test Header', level: 2, alignment: 'left' },
+    text: { html: '<p>Test text</p>', alignment: 'left' },
+    'service-item': { name: 'Test Service', description: '', quantity: 1, rate: 100, unit: 'hour', taxRate: null, rateCardId: null },
+    'service-group': { title: 'Test Group', description: '', collapsed: false, items: [] },
+    divider: { style: 'solid', thickness: 1, color: '#e5e7eb' },
+    spacer: { height: 'md' },
+    image: { src: '', alt: 'Test image', width: 'full', alignment: 'center', caption: '' },
+    columns: { ratio: '50-50', gap: 'md', leftContent: [], rightContent: [] },
+    table: { headers: ['Col 1'], rows: [['Cell 1']], striped: true, bordered: true },
+    signature: { label: 'Signature', required: true, signatureData: null, signedAt: null, signerName: null },
+  };
+
+  return {
+    id,
+    type,
+    content: { ...defaults[type], ...contentOverrides },
+    createdAt: now,
+    updatedAt: now,
+  } as QuoteBlock;
+}
 
 describe('BlockRenderer', () => {
   beforeEach(() => {
@@ -60,184 +91,136 @@ describe('BlockRenderer', () => {
   });
 
   describe('Block Type Rendering', () => {
-    const createBlock = (type: string, id = 'block-1') => ({
-      id,
-      type,
-      content: {},
-    });
-
     it('renders header block correctly', () => {
-      const block = createBlock('header');
-      expect(block.type).toBe('header');
+      const block = createTestBlock('header', 'h1', { text: 'My Header' });
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('header-block')).toHaveTextContent('My Header');
     });
 
     it('renders text block correctly', () => {
-      const block = createBlock('text');
-      expect(block.type).toBe('text');
+      const block = createTestBlock('text');
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('text-block')).toBeInTheDocument();
     });
 
     it('renders service-item block correctly', () => {
-      const block = createBlock('service-item');
-      expect(block.type).toBe('service-item');
+      const block = createTestBlock('service-item', 'si-1', { name: 'Dev Work' });
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('service-item-block')).toHaveTextContent('Dev Work');
+    });
+
+    it('renders service-group block correctly', () => {
+      const block = createTestBlock('service-group', 'sg-1', { title: 'Phase 1' });
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('service-group-block')).toHaveTextContent('Phase 1');
     });
 
     it('renders divider block correctly', () => {
-      const block = createBlock('divider');
-      expect(block.type).toBe('divider');
+      const block = createTestBlock('divider');
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('divider-block')).toBeInTheDocument();
     });
 
     it('renders spacer block correctly', () => {
-      const block = createBlock('spacer');
-      expect(block.type).toBe('spacer');
+      const block = createTestBlock('spacer');
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('spacer-block')).toBeInTheDocument();
     });
 
     it('renders image block correctly', () => {
-      const block = createBlock('image');
-      expect(block.type).toBe('image');
+      const block = createTestBlock('image', 'img-1', { alt: 'Logo' });
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('image-block')).toHaveTextContent('Logo');
+    });
+
+    it('renders columns block correctly', () => {
+      const block = createTestBlock('columns');
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('columns-block')).toBeInTheDocument();
+    });
+
+    it('renders table block correctly', () => {
+      const block = createTestBlock('table');
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('table-block')).toBeInTheDocument();
     });
 
     it('renders signature block correctly', () => {
-      const block = createBlock('signature');
-      expect(block.type).toBe('signature');
-    });
-
-    it('handles unknown block types gracefully', () => {
-      const block = createBlock('unknown-type');
-      expect(block.type).toBe('unknown-type');
-      // Should render "Unknown block type" message
+      const block = createTestBlock('signature');
+      render(<BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />);
+      expect(screen.getByTestId('signature-block')).toBeInTheDocument();
     });
   });
 
   describe('Block Selection', () => {
     it('calls selectBlock when block is clicked', () => {
-      const blockId = 'block-123';
-
-      // Simulate click handler
-      const handleClick = (e: { stopPropagation: () => void }) => {
-        e.stopPropagation();
-        mockSelectBlock(blockId);
-      };
-
-      handleClick({ stopPropagation: vi.fn() });
-
-      expect(mockSelectBlock).toHaveBeenCalledWith(blockId);
+      const block = createTestBlock('header', 'block-123');
+      const { container } = render(
+        <BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />
+      );
+      fireEvent.click(container.firstChild!);
+      expect(mockSelectBlock).toHaveBeenCalledWith('block-123');
     });
 
     it('does not select block in preview mode', () => {
-      const isPreview = true;
-      const blockId = 'block-123';
-
-      const handleClick = () => {
-        if (!isPreview) {
-          mockSelectBlock(blockId);
-        }
-      };
-
-      handleClick();
-
+      const block = createTestBlock('header', 'block-123');
+      const { container } = render(
+        <BlockRenderer block={block} index={0} isSelected={false} isPreview={true} />
+      );
+      fireEvent.click(container.firstChild!);
       expect(mockSelectBlock).not.toHaveBeenCalled();
-    });
-
-    it('applies selected styles when isSelected is true', () => {
-      const isSelected = true;
-      const classNames = [
-        'ring-2 ring-primary ring-offset-2',
-      ];
-
-      if (isSelected) {
-        expect(classNames[0]).toContain('ring-primary');
-      }
-    });
-  });
-
-  describe('Block Actions', () => {
-    it('duplicates block when duplicate is clicked', () => {
-      const blockId = 'block-123';
-      mockDuplicateBlock(blockId);
-
-      expect(mockDuplicateBlock).toHaveBeenCalledWith(blockId);
-    });
-
-    it('removes block when delete is clicked', () => {
-      const blockId = 'block-123';
-      mockRemoveBlock(blockId);
-
-      expect(mockRemoveBlock).toHaveBeenCalledWith(blockId);
     });
   });
 
   describe('Hover State', () => {
     it('sets hovered block on mouse enter', () => {
-      const blockId = 'block-123';
-      mockSetHoveredBlock(blockId);
-
-      expect(mockSetHoveredBlock).toHaveBeenCalledWith(blockId);
+      const block = createTestBlock('header', 'block-456');
+      const { container } = render(
+        <BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />
+      );
+      fireEvent.mouseEnter(container.firstChild!);
+      expect(mockSetHoveredBlock).toHaveBeenCalledWith('block-456');
     });
 
     it('clears hovered block on mouse leave', () => {
-      mockSetHoveredBlock(null);
-
+      const block = createTestBlock('header', 'block-456');
+      const { container } = render(
+        <BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />
+      );
+      fireEvent.mouseLeave(container.firstChild!);
       expect(mockSetHoveredBlock).toHaveBeenCalledWith(null);
-    });
-  });
-
-  describe('Drag and Drop', () => {
-    it('applies dragging styles when isDragging', () => {
-      const isDragging = true;
-      const draggingClasses = 'z-50 opacity-50';
-
-      expect(isDragging).toBe(true);
-      expect(draggingClasses).toContain('opacity-50');
-    });
-
-    it('disables drag when in preview mode', () => {
-      const isPreview = true;
-      const disabled = isPreview;
-
-      expect(disabled).toBe(true);
-    });
-
-    it('shows drag handle on hover', () => {
-      const isHovered = true;
-      const toolbarVisible = isHovered;
-
-      expect(toolbarVisible).toBe(true);
     });
   });
 
   describe('Preview Mode', () => {
     it('renders simplified view in preview mode', () => {
-      const isPreview = true;
-
-      // In preview mode, should return just the block content
-      // without toolbar, actions, etc.
-      expect(isPreview).toBe(true);
+      const block = createTestBlock('header', 'block-1', { text: 'Preview Header' });
+      const { container } = render(
+        <BlockRenderer block={block} index={0} isSelected={false} isPreview={true} />
+      );
+      // In preview mode, only block content is rendered, no toolbar/actions
+      expect(screen.getByTestId('header-block')).toHaveTextContent('Preview Header');
+      // Should not have the actions dropdown
+      expect(screen.queryByLabelText('Block options')).not.toBeInTheDocument();
     });
 
     it('hides toolbar in preview mode', () => {
-      const isPreview = true;
-      const showToolbar = !isPreview;
-
-      expect(showToolbar).toBe(false);
+      const block = createTestBlock('text');
+      render(
+        <BlockRenderer block={block} index={0} isSelected={false} isPreview={true} />
+      );
+      // No drag handle or action buttons in preview
+      expect(screen.queryByLabelText('Block options')).not.toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('drag handle has correct aria attributes', () => {
-      const buttonProps = {
-        'aria-roledescription': 'draggable',
-        'aria-describedby': 'DndDescribedBy-123',
-      };
-
-      expect(buttonProps['aria-roledescription']).toBe('draggable');
-    });
-
-    it('action buttons have accessible labels', () => {
-      const duplicateLabel = 'Duplicate';
-      const deleteLabel = 'Delete';
-
-      expect(duplicateLabel).toBeDefined();
-      expect(deleteLabel).toBeDefined();
+    it('action menu has accessible label', () => {
+      const block = createTestBlock('text');
+      render(
+        <BlockRenderer block={block} index={0} isSelected={false} isPreview={false} />
+      );
+      expect(screen.getByLabelText('Block options')).toBeInTheDocument();
     });
   });
 });

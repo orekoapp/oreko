@@ -99,38 +99,52 @@ async function deleteLocal(key: string): Promise<void> {
   await unlink(filePath);
 }
 
-// S3 storage implementation (placeholder)
+// S3 storage implementation (stub — install @aws-sdk/client-s3 to enable)
 async function uploadS3(
   buffer: Buffer,
   options: UploadOptions
 ): Promise<UploadResult> {
-  // Implementation would use @aws-sdk/client-s3
-  throw new Error('S3 storage not implemented. Please install @aws-sdk/client-s3');
+  throw new Error(
+    'S3 storage requires @aws-sdk/client-s3. ' +
+    'Install it with `pnpm add @aws-sdk/client-s3` and configure STORAGE_BUCKET, STORAGE_REGION, ' +
+    'and AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) in your environment.'
+  );
 }
 
 async function getS3(key: string): Promise<Buffer> {
-  throw new Error('S3 storage not implemented');
+  throw new Error(
+    'S3 storage requires @aws-sdk/client-s3. See storage configuration docs for setup instructions.'
+  );
 }
 
 async function deleteS3(key: string): Promise<void> {
-  throw new Error('S3 storage not implemented');
+  throw new Error(
+    'S3 storage requires @aws-sdk/client-s3. See storage configuration docs for setup instructions.'
+  );
 }
 
-// Cloudflare R2 implementation (placeholder)
+// Cloudflare R2 implementation (stub — install @aws-sdk/client-s3 to enable)
 async function uploadCloudflare(
   buffer: Buffer,
   options: UploadOptions
 ): Promise<UploadResult> {
-  // Implementation would use @aws-sdk/client-s3 with Cloudflare endpoint
-  throw new Error('Cloudflare R2 storage not implemented');
+  throw new Error(
+    'Cloudflare R2 storage requires @aws-sdk/client-s3 with a Cloudflare endpoint. ' +
+    'Install it with `pnpm add @aws-sdk/client-s3` and configure STORAGE_BUCKET, ' +
+    'CLOUDFLARE_ACCOUNT_ID, and R2 credentials in your environment.'
+  );
 }
 
 async function getCloudflare(key: string): Promise<Buffer> {
-  throw new Error('Cloudflare R2 storage not implemented');
+  throw new Error(
+    'Cloudflare R2 storage requires @aws-sdk/client-s3. See storage configuration docs for setup instructions.'
+  );
 }
 
 async function deleteCloudflare(key: string): Promise<void> {
-  throw new Error('Cloudflare R2 storage not implemented');
+  throw new Error(
+    'Cloudflare R2 storage requires @aws-sdk/client-s3. See storage configuration docs for setup instructions.'
+  );
 }
 
 // Main storage functions
