@@ -61,6 +61,11 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
     });
 
+    // Bug #84: Clean up expired tokens from all users (background housekeeping)
+    prisma.passwordResetToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    }).catch(() => {}); // Fire and forget
+
     // Generate a secure random token (store hash, send raw)
     const rawToken = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
