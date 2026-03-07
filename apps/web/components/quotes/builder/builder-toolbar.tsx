@@ -347,9 +347,13 @@ export function BuilderToolbar() {
             <DropdownMenuItem onClick={handleExportPDF}>
               Export as PDF
             </DropdownMenuItem>
-            <DropdownMenuItem>Export as Image</DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              Export as Image (Coming Soon)
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Copy shareable link</DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              Copy shareable link (Coming Soon)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -364,9 +368,13 @@ export function BuilderToolbar() {
             <DropdownMenuItem onClick={handleExportPDF}>
               Export as PDF
             </DropdownMenuItem>
-            <DropdownMenuItem>Export as Image</DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              Export as Image (Coming Soon)
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Copy shareable link</DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              Copy shareable link (Coming Soon)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
