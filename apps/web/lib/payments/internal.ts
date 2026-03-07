@@ -230,6 +230,86 @@ export async function processAccountUpdate(account: {
 }
 
 /**
+ * Process Stripe charge.refunded webhook.
+ *
+ * NOT a server action - only callable from server-side webhook handler.
+ */
+export async function processRefundWebhook(
+  paymentIntentId: string,
+  amountRefundedCents: number
+): Promise<{ success: boolean }> {
+  try {
+    const payment = await prisma.payment.findFirst({
+      where: { stripePaymentIntentId: paymentIntentId, status: 'completed' },
+      include: { invoice: true },
+    });
+
+    if (!payment) {
+      console.warn('Completed payment not found for refund:', paymentIntentId);
+      return { success: false };
+    }
+
+    const refundAmount = amountRefundedCents / 100; // Convert cents to dollars
+    const isFullRefund = refundAmount >= Number(payment.amount);
+
+    await prisma.$transaction(async (tx) => {
+      // Update payment with refund info
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: isFullRefund ? 'refunded' : 'completed',
+          refundedAt: new Date(),
+          refundAmount,
+          refundReason: 'Refunded via Stripe',
+        },
+      });
+
+      // Recalculate invoice amounts
+      const invoiceTotal = Number(payment.invoice.total);
+      const currentAmountPaid = Number(payment.invoice.amountPaid);
+      const newAmountPaid = Math.max(0, currentAmountPaid - refundAmount);
+      const newAmountDue = Math.max(0, invoiceTotal - newAmountPaid);
+
+      let newStatus = payment.invoice.status;
+      if (newAmountPaid <= 0) {
+        newStatus = 'sent'; // Fully refunded, back to sent
+      } else if (newAmountPaid < invoiceTotal) {
+        newStatus = 'partial';
+      }
+
+      await tx.invoice.update({
+        where: { id: payment.invoiceId },
+        data: {
+          amountPaid: newAmountPaid,
+          amountDue: newAmountDue,
+          status: newStatus,
+          ...(newAmountPaid <= 0 && { paidAt: null }),
+        },
+      });
+
+      // Create audit event
+      await tx.invoiceEvent.create({
+        data: {
+          invoiceId: payment.invoiceId,
+          eventType: 'payment_refunded',
+          actorType: 'system',
+          metadata: {
+            paymentId: payment.id,
+            refundAmount,
+            isFullRefund,
+          },
+        },
+      });
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to process refund webhook:', error);
+    return { success: false };
+  }
+}
+
+/**
  * Process Stripe webhook for payment completion.
  *
  * NOT a server action - only callable from server-side webhook handler.

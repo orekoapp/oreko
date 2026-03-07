@@ -855,6 +855,19 @@ model Notification {
 }
 
 // ============================================
+// STRIPE WEBHOOK EVENTS (Idempotency)
+// ============================================
+
+model StripeWebhookEvent {
+  id          String   @id // Stripe event ID (evt_xxx)
+  type        String   @db.VarChar(100)
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@index([processedAt])
+  @@map("stripe_webhook_events")
+}
+
+// ============================================
 // WORKSPACE SLUG HISTORY
 // ============================================
 

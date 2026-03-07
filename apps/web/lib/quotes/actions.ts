@@ -1,11 +1,17 @@
 'use server';
 
+import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { prisma, type Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 import { sendQuoteSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
+
+/** Generate a cryptographically secure access token (64 hex chars = 256 bits) */
+function generateAccessToken(): string {
+  return randomBytes(32).toString('hex');
+}
 
 /**
  * Get the current user's active workspace with full workspace data
@@ -145,6 +151,7 @@ export async function createQuote(data: {
       quoteNumber,
       title: data.title,
       status: 'draft',
+      accessToken: generateAccessToken(),
       subtotal,
       taxTotal,
       total,
@@ -520,6 +527,7 @@ export async function duplicateQuote(quoteId: string) {
       quoteNumber,
       title: `${original.title || 'Untitled'} (Copy)`,
       status: 'draft',
+      accessToken: generateAccessToken(),
       subtotal: original.subtotal,
       discountType: original.discountType,
       discountValue: original.discountValue,

@@ -3,7 +3,13 @@
  * This file intentionally does NOT have 'use server' directive.
  */
 
+import { randomBytes } from 'crypto';
 import { prisma, type Prisma } from '@quotecraft/database';
+
+/** Generate a cryptographically secure access token */
+function generateAccessToken(): string {
+  return randomBytes(32).toString('hex');
+}
 
 /**
  * Generate next invoice number for a workspace (atomic, race-condition safe).
@@ -81,6 +87,7 @@ export async function createInvoiceFromQuoteInternal(
         quoteId: quote.id,
         invoiceNumber,
         title: quote.title || 'Invoice',
+        accessToken: generateAccessToken(),
         status: 'sent', // Auto-generated from quote acceptance — ready for client payment
         issueDate: new Date(),
         dueDate,

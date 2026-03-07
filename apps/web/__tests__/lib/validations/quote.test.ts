@@ -29,16 +29,14 @@ describe('quoteStatusSchema', () => {
 describe('quoteBlockTypeSchema', () => {
   const validTypes = [
     'header',
-    'paragraph',
-    'line-item',
-    'subtotal',
-    'tax',
-    'discount',
-    'total',
+    'text',
+    'service-item',
+    'service-group',
     'image',
     'divider',
     'spacer',
-    'terms',
+    'columns',
+    'table',
     'signature',
   ];
 

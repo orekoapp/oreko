@@ -12,19 +12,17 @@ export const quoteStatusSchema = z.enum([
   'converted',
 ]);
 
-// Quote block types
+// Quote block types — must match BlockType in quotes/types.ts
 export const quoteBlockTypeSchema = z.enum([
   'header',
-  'paragraph',
-  'line-item',
-  'subtotal',
-  'tax',
-  'discount',
-  'total',
+  'text',
+  'service-item',
+  'service-group',
   'image',
   'divider',
   'spacer',
-  'terms',
+  'columns',
+  'table',
   'signature',
 ]);
 

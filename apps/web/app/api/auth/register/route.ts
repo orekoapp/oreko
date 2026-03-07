@@ -4,11 +4,12 @@ import { z } from 'zod';
 import { prisma } from '@quotecraft/database';
 import { hashPassword } from '@/lib/auth/credentials';
 import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
+import { passwordSchema } from '@/lib/validations/auth';
 
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: passwordSchema,
 });
 
 // Generate a unique workspace slug from name

@@ -1,5 +1,6 @@
 'use server';
 
+import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { prisma, type Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
@@ -13,6 +14,11 @@ import type {
 } from './types';
 import { sendInvoiceSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
+
+/** Generate a cryptographically secure access token (64 hex chars = 256 bits) */
+function generateAccessToken(): string {
+  return randomBytes(32).toString('hex');
+}
 import { formatCurrency } from '@/lib/utils';
 
 /**
@@ -128,6 +134,7 @@ export async function createInvoice(data: CreateInvoiceData) {
       invoiceNumber,
       title: data.title,
       status: 'draft',
+      accessToken: generateAccessToken(),
       issueDate: new Date(),
       dueDate: new Date(data.dueDate),
       subtotal,
@@ -577,6 +584,22 @@ export async function updateInvoiceStatus(
     };
   }
 
+  // Enforce payment constraints for payment-related statuses
+  const amountPaid = Number(invoice.amountPaid);
+  const total = Number(invoice.total);
+  if (status === 'paid' && amountPaid < total) {
+    return {
+      success: false,
+      error: `Cannot mark as paid: amount paid ($${amountPaid.toFixed(2)}) is less than total ($${total.toFixed(2)})`,
+    };
+  }
+  if (status === 'partial' && (amountPaid <= 0 || amountPaid >= total)) {
+    return {
+      success: false,
+      error: 'Cannot mark as partial: amount paid must be between $0 and the total',
+    };
+  }
+
   const updateData: Prisma.InvoiceUpdateInput = {
     status,
   };
@@ -838,6 +861,7 @@ export async function duplicateInvoice(invoiceId: string) {
       invoiceNumber,
       title: `${original.title || 'Invoice'} (Copy)`,
       status: 'draft',
+      accessToken: generateAccessToken(),
       issueDate: new Date(),
       dueDate,
       subtotal: original.subtotal,

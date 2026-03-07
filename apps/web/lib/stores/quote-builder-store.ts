@@ -302,9 +302,9 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
             if (state.document) {
               const index = state.document.blocks.findIndex((b: QuoteBlock) => b.id === blockId);
               if (index !== -1) {
-                const original = state.document.blocks[index];
-                const duplicate = {
-                  ...JSON.parse(JSON.stringify(original)),
+                const original = state.document.blocks[index]!;
+                const duplicate: QuoteBlock = {
+                  ...structuredClone(original) as QuoteBlock,
                   id: crypto.randomUUID(),
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
@@ -405,7 +405,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
               // Remove any future history if we're not at the end
               state.history = state.history.slice(0, state.historyIndex + 1);
               // Add current state
-              state.history.push(JSON.parse(JSON.stringify(state.document.blocks)));
+              state.history.push(structuredClone(state.document.blocks));
               state.historyIndex = state.history.length - 1;
               // Limit history size
               if (state.history.length > 50) {
@@ -420,9 +420,10 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
           set((state) => {
             if (state.document && state.historyIndex > 0) {
               state.historyIndex--;
-              state.document.blocks = JSON.parse(
-                JSON.stringify(state.history[state.historyIndex])
-              );
+              const historyEntry = state.history[state.historyIndex];
+              if (historyEntry) {
+                state.document.blocks = structuredClone(historyEntry);
+              }
               state.isDirty = true;
             }
           });
@@ -433,9 +434,10 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
           set((state) => {
             if (state.document && state.historyIndex < state.history.length - 1) {
               state.historyIndex++;
-              state.document.blocks = JSON.parse(
-                JSON.stringify(state.history[state.historyIndex])
-              );
+              const historyEntry = state.history[state.historyIndex];
+              if (historyEntry) {
+                state.document.blocks = structuredClone(historyEntry);
+              }
               state.isDirty = true;
             }
           });
@@ -450,15 +452,17 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
             let subtotal = 0;
             let taxTotal = 0;
 
-            // Calculate from service items
+            // Calculate from service items (clamp negative values to 0)
             const calculateItems = (blocks: QuoteBlock[]) => {
               for (const block of blocks) {
                 if (block.type === 'service-item') {
                   const item = block as ServiceItemBlock;
-                  const lineTotal = item.content.quantity * item.content.rate;
+                  const quantity = Math.max(0, item.content.quantity || 0);
+                  const rate = Math.max(0, item.content.rate || 0);
+                  const lineTotal = quantity * rate;
                   subtotal += lineTotal;
                   if (item.content.taxRate) {
-                    taxTotal += lineTotal * (item.content.taxRate / 100);
+                    taxTotal += lineTotal * (Math.max(0, item.content.taxRate) / 100);
                   }
                 }
                 if (block.type === 'service-group') {
@@ -469,16 +473,17 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
 
             calculateItems(state.document.blocks);
 
-            // Apply discount
+            // Apply discount (with bounds: percentage 0-100%, fixed 0-subtotal)
             let discountAmount = 0;
             if (
               state.document.totals.discountType &&
               state.document.totals.discountValue
             ) {
+              const discountValue = Math.max(0, state.document.totals.discountValue);
               if (state.document.totals.discountType === 'percentage') {
-                discountAmount = subtotal * (state.document.totals.discountValue / 100);
+                discountAmount = subtotal * (Math.min(100, discountValue) / 100);
               } else {
-                discountAmount = state.document.totals.discountValue;
+                discountAmount = Math.min(subtotal, discountValue);
               }
             }
 
