@@ -1213,11 +1213,53 @@ export async function deleteWorkspace(): Promise<{ success: boolean; error?: str
     select: { name: true },
   });
 
-  // Soft delete workspace
-  await prisma.workspace.update({
-    where: { id: workspaceId },
-    data: { deletedAt: new Date() },
+  // Bug #132: Check for pending/active payments before deletion
+  const activePayments = await prisma.payment.count({
+    where: {
+      invoice: { workspaceId },
+      status: 'pending',
+    },
   });
+  if (activePayments > 0) {
+    return { success: false, error: 'Cannot delete workspace with pending payments. Please resolve all payments first.' };
+  }
+
+  // Bug #87: Cascade soft-delete to all workspace entities
+  const deletedAt = new Date();
+  await prisma.$transaction([
+    prisma.quote.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.invoice.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.client.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.project.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.contract.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.contractInstance.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.rateCard.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { deletedAt },
+    }),
+  ]);
 
   // Create notifications for all members
   try {

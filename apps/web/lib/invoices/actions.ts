@@ -208,6 +208,17 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
 
   const invoiceNumber = await generateInvoiceNumber(workspace.id);
 
+  // Bug #123: Validate discount values from source quote
+  const discountValue = Number(quote.discountValue) || 0;
+  const discountAmount = Number(quote.discountAmount) || 0;
+  const subtotal = Number(quote.subtotal);
+  if (quote.discountType === 'percentage' && (discountValue < 0 || discountValue > 100)) {
+    return { success: false, error: 'Discount percentage must be between 0 and 100' };
+  }
+  if (discountAmount < 0 || discountAmount > subtotal) {
+    return { success: false, error: 'Discount amount cannot be negative or exceed subtotal' };
+  }
+
   // Calculate due date (configurable, default: 30 days from now)
   const dueDays = options?.dueDays ?? 30;
   const dueDate = new Date();
@@ -768,11 +779,22 @@ export async function recordPayment(
     return { success: false, error: 'Cannot record payment for voided invoice' };
   }
 
+  // Bug #125: Prevent payment on already-paid invoices
+  if (invoice.status === 'paid') {
+    return { success: false, error: 'This invoice is already fully paid' };
+  }
+
   if (data.amount <= 0) {
     return { success: false, error: 'Payment amount must be greater than zero' };
   }
 
+  // Bug #125: Prevent overpayment
+  const currentAmountPaid = Number(invoice.amountPaid);
   const total = Number(invoice.total);
+  const maxPayable = total - currentAmountPaid;
+  if (data.amount > maxPayable) {
+    return { success: false, error: `Payment exceeds remaining balance. Maximum payable: $${maxPayable.toFixed(2)}` };
+  }
 
   // Bug #67: Use interactive transaction with atomic increment to prevent race conditions
   await prisma.$transaction(async (tx) => {

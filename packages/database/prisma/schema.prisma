@@ -640,9 +640,9 @@ model Contract {
 
 model ContractInstance {
   id              String    @id @default(uuid())
-  contractId      String    @map("contract_id")
+  contractId      String?   @map("contract_id")
   quoteId         String?   @map("quote_id")
-  clientId        String    @map("client_id")
+  clientId        String?   @map("client_id")
   projectId       String?   @map("project_id")
   workspaceId     String    @map("workspace_id")
   content         String    @db.Text
@@ -659,11 +659,12 @@ model ContractInstance {
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
 
-  contract  Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  quote     Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
-  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // Bug #99-#107: Use SetNull to preserve signed contract instances when parent is deleted
+  contract  Contract?  @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  quote     Quote?     @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  client    Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project   Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([contractId])
   @@index([quoteId])
