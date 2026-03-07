@@ -124,6 +124,14 @@ export async function getInvoiceByAccessToken(
       return { success: false, error: 'Invoice not found' };
     }
 
+    // Bug #22: Reject access to invoices created more than 365 days ago (general expiration)
+    const daysSinceCreated = Math.ceil(
+      (new Date().getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysSinceCreated > 365 && invoice.status !== 'sent' && invoice.status !== 'viewed') {
+      return { success: false, error: 'This invoice link has expired' };
+    }
+
     // Reject access to voided invoices
     if (invoice.status === 'voided') {
       return { success: false, error: 'This invoice has been voided' };

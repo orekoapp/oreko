@@ -10,14 +10,30 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: passwordSchema,
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the terms of service' }),
+  }),
 });
+
+// Reserved slugs that conflict with system routes
+const RESERVED_SLUGS = new Set([
+  'api', 'admin', 'auth', 'login', 'register', 'settings', 'dashboard',
+  'onboarding', 'quotes', 'invoices', 'clients', 'projects', 'analytics',
+  'help', 'templates', 'contracts', 'rate-cards', 'q', 'i', 'p', 'c',
+  'invite', 'verify-email', 'reset-password', 'forgot-password',
+  'public', 'static', 'assets', '_next',
+]);
 
 // Generate a unique workspace slug from name
 function generateSlug(name: string): string {
-  const baseSlug = name
+  let baseSlug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
+  // Ensure slug doesn't collide with reserved routes
+  if (RESERVED_SLUGS.has(baseSlug)) {
+    baseSlug = `ws-${baseSlug}`;
+  }
   const randomSuffix = crypto.randomUUID().substring(0, 8);
   return `${baseSlug}-${randomSuffix}`;
 }

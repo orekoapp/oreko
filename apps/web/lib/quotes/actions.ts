@@ -214,6 +214,11 @@ export async function updateQuote(
     return { success: false as const, error: 'Quote not found' };
   }
 
+  // Bug #11: Prevent modifications to signed/accepted quotes
+  if (['accepted', 'converted'].includes(existingQuote.status) || existingQuote.signedAt) {
+    return { success: false as const, error: 'Cannot modify a quote that has been accepted or signed' };
+  }
+
   // Extract service items from blocks
   const serviceBlocks = data.blocks
     ?.filter((block): block is ServiceItemBlock => block.type === 'service-item');

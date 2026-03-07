@@ -21,6 +21,7 @@ export async function verifyCredentials(email: string, password: string) {
       name: true,
       avatarUrl: true,
       passwordHash: true,
+      emailVerifiedAt: true,
       deletedAt: true,
     },
   });
@@ -38,6 +39,11 @@ export async function verifyCredentials(email: string, password: string) {
 
   if (!isValid) {
     return null;
+  }
+
+  // Bug #17: Enforce email verification before allowing login
+  if (!user.emailVerifiedAt) {
+    throw new Error('Please verify your email before logging in. Check your inbox for a verification link.');
   }
 
   return {

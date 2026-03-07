@@ -42,6 +42,13 @@ export function ResetPasswordForm() {
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isInvalidToken, setIsInvalidToken] = React.useState(!token);
 
+  // Bug #12: Clear token from URL/history to prevent exposure in browser history
+  React.useEffect(() => {
+    if (token) {
+      window.history.replaceState({}, '', '/reset-password');
+    }
+  }, [token]);
+
   const {
     register,
     handleSubmit,

@@ -1127,8 +1127,20 @@ export async function updateWorkspaceSettings(
     return { success: false, error: 'Only owners can update workspace settings' };
   }
 
-  // Check slug uniqueness if changing
+  // Bug #19: Validate slug against reserved system routes
   if (input.slug) {
+    const reservedSlugs = [
+      'api', 'admin', 'auth', 'login', 'register', 'settings', 'dashboard',
+      'onboarding', 'quotes', 'invoices', 'clients', 'projects', 'analytics',
+      'help', 'templates', 'contracts', 'rate-cards', 'q', 'i', 'p', 'c',
+      'invite', 'verify-email', 'reset-password', 'forgot-password',
+      'public', 'static', 'assets', '_next', 'favicon.ico',
+    ];
+    if (reservedSlugs.includes(input.slug.toLowerCase())) {
+      return { success: false, error: 'This slug is reserved and cannot be used' };
+    }
+
+    // Check slug uniqueness if changing
     const existing = await prisma.workspace.findFirst({
       where: { slug: input.slug, id: { not: workspaceId } },
     });

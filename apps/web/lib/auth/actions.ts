@@ -25,7 +25,7 @@ export async function changePassword(input: ChangePasswordInput): Promise<Action
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, passwordHash: true },
+      select: { id: true, passwordHash: true, emailVerifiedAt: true },
     });
 
     if (!user) {
@@ -41,6 +41,11 @@ export async function changePassword(input: ChangePasswordInput): Promise<Action
       const isValid = await compare(input.currentPassword, user.passwordHash);
       if (!isValid) {
         return { success: false, error: 'Current password is incorrect' };
+      }
+    } else {
+      // Bug #13: OAuth users setting a password for the first time must have verified email
+      if (!user.emailVerifiedAt) {
+        return { success: false, error: 'Please verify your email before setting a password' };
       }
     }
 

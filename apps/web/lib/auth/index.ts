@@ -7,7 +7,10 @@ import { authConfig } from './config';
 
 const nextAuth = NextAuth({
   adapter: PrismaAdapter(prisma) as Adapter,
-  session: { strategy: 'jwt' },
+  session: {
+    strategy: 'jwt',
+    maxAge: 7 * 24 * 60 * 60, // 7 days — Bug #15: sessions expire instead of lasting forever
+  },
   trustHost: true,
   ...authConfig,
 });
