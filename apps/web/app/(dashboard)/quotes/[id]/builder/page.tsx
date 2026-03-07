@@ -16,7 +16,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import { createBlock, type BlockType, type QuoteBlock } from '@/lib/quotes/types';
-import { useAutoSave, useBuilderKeyboardShortcuts } from '@/lib/quotes/hooks';
+import { useAutoSave, useBuilderKeyboardShortcuts, useUnsavedChangesWarning } from '@/lib/quotes/hooks';
 import { getQuote } from '@/lib/quotes/actions';
 import { BlocksPanel } from '@/components/quotes/builder/blocks-panel';
 import { RateCardPanel } from '@/components/quotes/builder/rate-card-panel';
@@ -49,6 +49,9 @@ export default function EditQuoteBuilderPage() {
 
   // Keyboard shortcuts
   useBuilderKeyboardShortcuts();
+
+  // Warn before leaving with unsaved changes
+  useUnsavedChangesWarning();
 
   // Hide panels on mobile on first load
   useEffect(() => {

@@ -1,4 +1,8 @@
 import { Resend } from 'resend';
+import { checkRateLimit } from '@/lib/rate-limit';
+
+// Email rate limit: 20 emails per hour per key (workspace or IP)
+const EMAIL_RATE_LIMIT = { limit: 20, windowMs: 60 * 60 * 1000 };
 
 // HTML escape to prevent XSS in email templates
 function escapeHtml(str: string): string {
@@ -71,8 +75,23 @@ export function isEmailEnabled(): boolean {
   return getEmailClient() !== null;
 }
 
-// Send email
-export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
+// Send email (with optional rate limiting by key)
+export async function sendEmail(
+  options: EmailOptions,
+  rateLimitKey?: string
+): Promise<EmailResult> {
+  // Apply rate limit if a key is provided (e.g., workspaceId)
+  if (rateLimitKey) {
+    const rl = checkRateLimit(`email:${rateLimitKey}`, EMAIL_RATE_LIMIT);
+    if (rl.limited) {
+      console.warn(`Email rate limited for key ${rateLimitKey}`);
+      return {
+        success: false,
+        error: 'Email rate limit exceeded. Please try again later.',
+      };
+    }
+  }
+
   const client = getEmailClient();
 
   if (!client) {
@@ -132,8 +151,9 @@ export async function sendQuoteSentEmail(params: {
   businessName: string;
   validUntil?: Date;
   message?: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, clientName, quoteName, quoteUrl, businessName, validUntil, message } = params;
+  const { to, clientName, quoteName, quoteUrl, businessName, validUntil, message, rateLimitKey } = params;
 
   const safeBusinessName = escapeHtml(businessName);
   const safeClientName = escapeHtml(clientName);
@@ -167,7 +187,7 @@ export async function sendQuoteSentEmail(params: {
     tags: [
       { name: 'type', value: 'quote_sent' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 export async function sendInvoiceSentEmail(params: {
@@ -179,8 +199,9 @@ export async function sendInvoiceSentEmail(params: {
   amount: string;
   dueDate: Date;
   message?: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, clientName, invoiceNumber, invoiceUrl, businessName, amount, dueDate, message } = params;
+  const { to, clientName, invoiceNumber, invoiceUrl, businessName, amount, dueDate, message, rateLimitKey } = params;
 
   const safeBusinessName = escapeHtml(businessName);
   const safeClientName = escapeHtml(clientName);
@@ -219,7 +240,7 @@ export async function sendInvoiceSentEmail(params: {
     tags: [
       { name: 'type', value: 'invoice_sent' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 export async function sendPaymentReceivedEmail(params: {
@@ -318,8 +339,9 @@ export async function sendInvoiceReminderEmail(params: {
   amount: string;
   dueDate: Date;
   daysOverdue?: number;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, clientName, invoiceNumber, invoiceUrl, businessName, amount, dueDate, daysOverdue } = params;
+  const { to, clientName, invoiceNumber, invoiceUrl, businessName, amount, dueDate, daysOverdue, rateLimitKey } = params;
 
   const safeClientName = escapeHtml(clientName);
   const safeInvoiceNumber = escapeHtml(invoiceNumber);
@@ -367,7 +389,7 @@ export async function sendInvoiceReminderEmail(params: {
     tags: [
       { name: 'type', value: isOverdue ? 'invoice_overdue' : 'invoice_reminder' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 /**
@@ -379,8 +401,9 @@ export async function sendInvitationEmail(params: {
   inviterName: string;
   role: string;
   inviteUrl: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, workspaceName, inviterName, role, inviteUrl } = params;
+  const { to, workspaceName, inviterName, role, inviteUrl, rateLimitKey } = params;
 
   const safeInviterName = escapeHtml(inviterName);
   const safeWorkspaceName = escapeHtml(workspaceName);
@@ -409,7 +432,7 @@ export async function sendInvitationEmail(params: {
     subject: `You've been invited to ${workspaceName} - QuoteCraft`,
     html,
     tags: [{ name: 'type', value: 'workspace_invitation' }],
-  });
+  }, rateLimitKey);
 }
 
 /**

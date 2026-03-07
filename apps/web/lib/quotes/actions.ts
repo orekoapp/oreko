@@ -694,6 +694,7 @@ export async function sendQuote(quoteId: string) {
       quoteUrl,
       businessName: workspace.name,
       validUntil: quote.expirationDate ?? undefined,
+      rateLimitKey: workspace.id,
     });
     emailSent = emailResult.success;
     if (!emailResult.success) {

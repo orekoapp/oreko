@@ -755,6 +755,7 @@ export async function inviteMember(
         inviterName: currentUser?.name || 'A team member',
         role,
         inviteUrl,
+        rateLimitKey: workspaceId,
       });
     } catch (emailError) {
       console.error('Failed to send invitation email:', emailError);
@@ -954,6 +955,7 @@ export async function resendInvitation(
       inviterName: currentUser?.name || 'A team member',
       role: invitation.role,
       inviteUrl,
+      rateLimitKey: workspaceId,
     });
   } catch (emailError) {
     console.error('Failed to resend invitation email:', emailError);

@@ -49,5 +49,8 @@
     "*.{json,md,yaml,yml}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "isomorphic-dompurify": "^3.0.0"
   }
 }

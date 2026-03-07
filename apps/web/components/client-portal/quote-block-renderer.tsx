@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 import type { QuoteBlock } from '@/lib/quotes/types';
 import type { PublicQuoteData } from '@/lib/quotes/portal-actions';
 
@@ -47,7 +48,7 @@ export function QuoteBlockRenderer({ block, quote }: QuoteBlockRendererProps) {
             block.content.alignment === 'center' && 'text-center',
             block.content.alignment === 'right' && 'text-right'
           )}
-          dangerouslySetInnerHTML={{ __html: block.content.html }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content.html || '') }}
         />
       );
 

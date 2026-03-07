@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Eye } from 'lucide-react';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -236,7 +237,7 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
                     </p>
                     <hr className="my-2" />
                     <div
-                      dangerouslySetInnerHTML={{ __html: previewHtml }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }}
                       className="prose prose-sm max-w-none"
                     />
                   </div>

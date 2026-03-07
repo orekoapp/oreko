@@ -83,6 +83,24 @@ export function useAutoSave(quoteId: string | null, debounceMs = 2000) {
 }
 
 /**
+ * Hook to warn users before leaving with unsaved changes
+ */
+export function useUnsavedChangesWarning() {
+  const { isDirty } = useQuoteBuilderStore();
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+}
+
+/**
  * Hook to handle keyboard shortcuts in the quote builder
  */
 export function useBuilderKeyboardShortcuts() {

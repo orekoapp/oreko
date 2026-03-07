@@ -169,7 +169,7 @@ export function BuilderToolbar() {
     <div className="flex items-center justify-between border-b bg-card px-2 py-2 md:px-4">
       {/* Left section */}
       <div className="flex items-center gap-1 md:gap-2">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Back to quotes">
           <Link href="/quotes">
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -258,6 +258,7 @@ export function BuilderToolbar() {
             className="h-8 w-8"
             onClick={() => setZoom(Math.max(50, zoom - 10))}
             disabled={zoom <= 50}
+            aria-label="Zoom out"
           >
             <ZoomOut className="h-3 w-3" />
           </Button>
@@ -268,6 +269,7 @@ export function BuilderToolbar() {
             className="h-8 w-8"
             onClick={() => setZoom(Math.min(200, zoom + 10))}
             disabled={zoom >= 200}
+            aria-label="Zoom in"
           >
             <ZoomIn className="h-3 w-3" />
           </Button>

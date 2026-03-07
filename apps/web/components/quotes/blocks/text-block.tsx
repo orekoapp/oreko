@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 import type { TextBlock } from '@/lib/quotes/types';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 
@@ -29,9 +30,13 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
 
   const handleBlur = () => {
     if (editorRef.current) {
-      updateBlock(block.id, { html: editorRef.current.innerHTML });
+      // Sanitize user input before storing
+      updateBlock(block.id, { html: sanitizeHtml(editorRef.current.innerHTML) });
     }
   };
+
+  // Sanitize HTML content using DOMPurify (isomorphic-dompurify) to prevent XSS
+  const safeHtml = sanitizeHtml(block.content.html || '');
 
   if (isEditing) {
     return (
@@ -44,7 +49,7 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
           alignmentClass
         )}
         onBlur={handleBlur}
-        dangerouslySetInnerHTML={{ __html: block.content.html }}
+        dangerouslySetInnerHTML={{ __html: safeHtml }}
       />
     );
   }
@@ -52,7 +57,7 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
   return (
     <div
       className={cn('prose prose-sm max-w-none', alignmentClass)}
-      dangerouslySetInnerHTML={{ __html: block.content.html }}
+      dangerouslySetInnerHTML={{ __html: safeHtml }}
     />
   );
 }

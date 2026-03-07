@@ -671,6 +671,7 @@ export async function sendInvoice(invoiceId: string) {
         businessName: workspace.name,
         amount: formatCurrency(Number(invoice.total)),
         dueDate: invoice.dueDate,
+        rateLimitKey: workspace.id,
       });
       emailSent = emailResult.success;
       if (!emailResult.success) {
