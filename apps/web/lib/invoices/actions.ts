@@ -772,23 +772,33 @@ export async function recordPayment(
     return { success: false, error: 'Payment amount must be greater than zero' };
   }
 
-  const currentAmountPaid = Number(invoice.amountPaid);
   const total = Number(invoice.total);
-  const newAmountPaid = currentAmountPaid + data.amount;
-  const newAmountDue = total - newAmountPaid;
 
-  // Determine new status
-  let newStatus: InvoiceStatus;
-  if (newAmountPaid >= total) {
-    newStatus = 'paid';
-  } else if (newAmountPaid > 0) {
-    newStatus = 'partial';
-  } else {
-    newStatus = invoice.status as InvoiceStatus;
-  }
+  // Bug #67: Use interactive transaction with atomic increment to prevent race conditions
+  await prisma.$transaction(async (tx) => {
+    // Atomically increment amountPaid
+    const updated = await tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        amountPaid: { increment: data.amount },
+      },
+      select: { amountPaid: true },
+    });
 
-  await prisma.$transaction([
-    prisma.payment.create({
+    const newAmountPaid = Number(updated.amountPaid);
+    const newAmountDue = total - newAmountPaid;
+
+    // Determine new status
+    let newStatus: InvoiceStatus;
+    if (newAmountPaid >= total) {
+      newStatus = 'paid';
+    } else if (newAmountPaid > 0) {
+      newStatus = 'partial';
+    } else {
+      newStatus = invoice.status as InvoiceStatus;
+    }
+
+    await tx.payment.create({
       data: {
         invoiceId,
         amount: data.amount,
@@ -798,17 +808,18 @@ export async function recordPayment(
         notes: data.notes || null,
         processedAt: new Date(),
       },
-    }),
-    prisma.invoice.update({
+    });
+
+    await tx.invoice.update({
       where: { id: invoiceId },
       data: {
-        amountPaid: newAmountPaid,
         amountDue: Math.max(0, newAmountDue),
         status: newStatus,
         ...(newStatus === 'paid' && { paidAt: new Date() }),
       },
-    }),
-    prisma.invoiceEvent.create({
+    });
+
+    await tx.invoiceEvent.create({
       data: {
         invoiceId,
         eventType: 'payment_recorded',
@@ -821,8 +832,10 @@ export async function recordPayment(
           newAmountDue,
         },
       },
-    }),
-  ]);
+    });
+
+    return { newAmountPaid, newAmountDue, newStatus };
+  });
 
   revalidatePath('/invoices');
   revalidatePath(`/invoices/${invoiceId}`);

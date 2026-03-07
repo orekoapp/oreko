@@ -97,6 +97,16 @@ export async function POST(request: NextRequest) {
       await updateBusinessLogo(result.url);
     }
 
+    // Bug #73: Audit log for file uploads
+    console.info('[AUDIT] File uploaded:', {
+      userId: session.user.id,
+      filename: result.key,
+      size: result.size,
+      contentType: detectedType,
+      purpose: purpose || 'general',
+      timestamp: new Date().toISOString(),
+    });
+
     return NextResponse.json({
       url: result.url,
       key: result.key,

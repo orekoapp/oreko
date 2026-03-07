@@ -2,7 +2,7 @@
 
 import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
-import type { QuoteBlock, QuoteDocument } from './types';
+import type { QuoteBlock } from './types';
 import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
 import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
 
@@ -319,6 +319,8 @@ export async function acceptQuote(data: {
         settings: true,
         workspaceId: true,
         total: true,
+        terms: true,
+        notes: true,
       },
     });
 
@@ -361,6 +363,9 @@ export async function acceptQuote(data: {
           actorType: 'client',
           metadata: {
             signerName: data.signerName,
+            // Bug #76: Snapshot terms at time of acceptance for legal compliance
+            termsSnapshot: quote.terms || '',
+            notesSnapshot: quote.notes || '',
           },
           ipAddress,
           userAgent,

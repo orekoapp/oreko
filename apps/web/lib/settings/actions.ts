@@ -655,9 +655,22 @@ export async function updateMemberRole(
     }
   }
 
+  const oldRole = targetMember.role;
+
   await prisma.workspaceMember.update({
     where: { id: memberId },
     data: { role: newRole },
+  });
+
+  // Bug #74: Audit log for role changes
+  console.info('[AUDIT] Member role changed:', {
+    workspaceId,
+    changedBy: userId,
+    targetMemberId: memberId,
+    targetUserId: targetMember.userId,
+    oldRole,
+    newRole,
+    timestamp: new Date().toISOString(),
   });
 
   revalidatePath('/settings/team');
@@ -1189,11 +1202,43 @@ export async function deleteWorkspace(): Promise<{ success: boolean; error?: str
     return { success: false, error: 'Only owners can delete the workspace' };
   }
 
-  // Soft delete workspace (or implement hard delete with cascading)
+  // Bug #69: Notify all workspace members before deletion
+  const members = await prisma.workspaceMember.findMany({
+    where: { workspaceId },
+    include: { user: { select: { id: true, name: true, email: true } } },
+  });
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { name: true },
+  });
+
+  // Soft delete workspace
   await prisma.workspace.update({
     where: { id: workspaceId },
     data: { deletedAt: new Date() },
   });
+
+  // Create notifications for all members
+  try {
+    const { createNotification } = await import('@/lib/notifications/actions');
+    await Promise.allSettled(
+      members.map((member) =>
+        createNotification({
+          userId: member.userId,
+          workspaceId,
+          type: 'workspace_deleted',
+          title: `Workspace "${workspace?.name}" has been deleted`,
+          message: 'The workspace owner has deleted this workspace.',
+          entityType: 'workspace',
+          entityId: workspaceId,
+          link: '/dashboard',
+        })
+      )
+    );
+  } catch (error) {
+    console.error('Failed to send workspace deletion notifications:', error);
+  }
 
   revalidatePath('/');
 

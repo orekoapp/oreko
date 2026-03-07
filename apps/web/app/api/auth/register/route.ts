@@ -135,6 +135,14 @@ export async function POST(request: Request) {
       console.error('Failed to send verification email:', emailError);
     }
 
+    // Bug #72: Audit log for new account creation
+    console.info('[AUDIT] New account registered:', {
+      userId: result.id,
+      email: result.email,
+      ip: clientIp,
+      timestamp: new Date().toISOString(),
+    });
+
     return NextResponse.json({
       user: result,
       message: 'Account created. Please check your email to verify your account.',
