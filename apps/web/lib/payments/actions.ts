@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import {
   stripe,
   isStripeEnabled,
+  createRefund,
 } from '@/lib/services/stripe';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
@@ -312,4 +313,56 @@ export async function getPaymentById(paymentId: string): Promise<PaymentDetail |
   };
 }
 
-// processAccountUpdate and processPaymentWebhook moved to ./internal.ts (not server actions)
+/**
+ * Refund a payment via Stripe
+ */
+export async function refundPayment(
+  paymentId: string,
+  params?: { amount?: number; reason?: string }
+): Promise<{ success: boolean; error?: string }> {
+  if (!stripe || !isStripeEnabled()) {
+    return { success: false, error: 'Stripe is not configured' };
+  }
+
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  try {
+    const payment = await prisma.payment.findFirst({
+      where: {
+        id: paymentId,
+        status: 'completed',
+        invoice: { workspaceId },
+      },
+      include: { invoice: true },
+    });
+
+    if (!payment) {
+      return { success: false, error: 'Completed payment not found' };
+    }
+
+    if (!payment.stripePaymentIntentId) {
+      return { success: false, error: 'No Stripe payment intent linked to this payment' };
+    }
+
+    // Amount in cents for Stripe (DB stores dollars)
+    const refundAmountCents = params?.amount
+      ? Math.round(params.amount * 100)
+      : undefined; // undefined = full refund
+
+    await createRefund({
+      paymentIntentId: payment.stripePaymentIntentId,
+      amount: refundAmountCents,
+      reason: 'requested_by_customer',
+    });
+
+    // The actual DB update happens via the charge.refunded webhook (processRefundWebhook)
+    // but we can revalidate proactively
+    revalidatePath('/invoices');
+    revalidatePath(`/invoices/${payment.invoiceId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to refund payment:', error);
+    return { success: false, error: 'Failed to process refund' };
+  }
+}

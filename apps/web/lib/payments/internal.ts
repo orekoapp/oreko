@@ -13,6 +13,8 @@ import {
   getOrCreateCustomer,
 } from '@/lib/services/stripe';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
+import { sendPaymentReceivedEmail } from '@/lib/services/email';
+import { formatCurrency } from '@/lib/utils';
 import type { PaymentIntentResult } from './types';
 
 /**
@@ -323,7 +325,14 @@ export async function processPaymentWebhook(
   try {
     const payment = await prisma.payment.findFirst({
       where: { stripePaymentIntentId: paymentIntentId },
-      include: { invoice: true },
+      include: {
+        invoice: {
+          include: {
+            client: { select: { name: true, email: true } },
+            workspace: { select: { name: true } },
+          },
+        },
+      },
     });
 
     if (!payment) {
@@ -390,6 +399,16 @@ export async function processPaymentWebhook(
           },
         });
       });
+      // Send payment confirmation email (fire-and-forget, don't block webhook)
+      sendPaymentReceivedEmail({
+        to: payment.invoice.client.email,
+        clientName: payment.invoice.client.name,
+        invoiceNumber: payment.invoice.invoiceNumber,
+        businessName: payment.invoice.workspace.name,
+        amount: formatCurrency(paymentAmount),
+        receiptUrl: receiptUrl || undefined,
+        rateLimitKey: `workspace:${payment.invoice.workspaceId}`,
+      }).catch((err) => console.error('Failed to send payment confirmation email:', err));
     } else {
       // Payment failed
       await prisma.payment.update({
