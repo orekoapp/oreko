@@ -45,6 +45,11 @@ export async function POST(request: NextRequest) {
     // Hash the token to look up (tokens are stored as hashes)
     const tokenHash = createHash('sha256').update(token).digest('hex');
 
+    // Bug #84: Clean up expired tokens on each request (lazy cleanup)
+    await prisma.passwordResetToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    }).catch(() => {}); // Don't block if cleanup fails
+
     // Find the token
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { token: tokenHash },
