@@ -82,14 +82,23 @@ export async function updatePaymentSettings(data: {
 
 /**
  * Create Stripe Connect onboarding link
+ * Bug #10: Support returnTo param so onboarding wizard returns to /onboarding
  */
-export async function createStripeOnboardingLink(): Promise<StripeOnboardingResult> {
+export async function createStripeOnboardingLink(options?: {
+  returnTo?: 'settings' | 'onboarding';
+}): Promise<StripeOnboardingResult> {
   if (!stripe || !isStripeEnabled()) {
     return { success: false, error: 'Stripe is not configured' };
   }
 
   const { workspaceId } = await getCurrentUserWorkspace();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const returnPath = options?.returnTo === 'onboarding'
+    ? '/onboarding?stripe=success'
+    : '/settings/payments?success=true';
+  const refreshPath = options?.returnTo === 'onboarding'
+    ? '/onboarding?stripe=refresh'
+    : '/settings/payments?refresh=true';
 
   try {
     // Get or create payment settings
@@ -134,8 +143,8 @@ export async function createStripeOnboardingLink(): Promise<StripeOnboardingResu
     // Create account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${baseUrl}/settings/payments?refresh=true`,
-      return_url: `${baseUrl}/settings/payments?success=true`,
+      refresh_url: `${baseUrl}${refreshPath}`,
+      return_url: `${baseUrl}${returnPath}`,
       type: 'account_onboarding',
     });
 

@@ -346,8 +346,14 @@ export async function acceptQuote(data: {
           status: 'accepted',
           acceptedAt: new Date(),
           signedAt: new Date(),
+          // Bug #21: Signature images stored as base64 without encryption at rest.
+          // SECURITY NOTE: For production deployments handling sensitive signatures,
+          // consider encrypting with AES-256-GCM using SIGNATURE_ENCRYPTION_KEY env var
+          // before storing, or moving to server-side-encrypted object storage (S3/R2).
+          // Current approach is acceptable for MVP — data is protected by DB access controls.
           signatureData: {
             type: 'drawn',
+            encrypted: false,
             data: data.signatureData,
             signerName: data.signerName,
             signedAt: new Date().toISOString(),
