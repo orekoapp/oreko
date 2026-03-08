@@ -243,8 +243,8 @@ test.describe('Quote Builder', () => {
         await rateInput.fill('100');
 
         // Total should update
-        await page.waitForTimeout(500);
         const total = page.getByText(/300|total/i);
+        await total.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
         if (await total.isVisible()) {
           await expect(total).toBeVisible();
         }
@@ -576,10 +576,9 @@ test.describe('Quote Builder', () => {
       if (await editor.isVisible()) {
         await editor.fill('Autosave test content');
 
-        // Wait for autosave
-        await page.waitForTimeout(2000);
-
+        // Wait for autosave indicator
         const savedIndicator = page.getByText(/saved/i);
+        await savedIndicator.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
         if (await savedIndicator.isVisible()) {
           await expect(savedIndicator).toBeVisible();
         }

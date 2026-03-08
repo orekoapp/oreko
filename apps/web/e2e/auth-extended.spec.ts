@@ -126,7 +126,7 @@ test.describe('Authentication - Registration', () => {
       await signUpButton.click();
 
       // Should show error for existing email (or redirect if test account exists)
-      await page.waitForTimeout(1000);
+      await page.waitForURL(/register|login|dashboard|onboarding/, { timeout: 5000 }).catch(() => {});
     });
   });
 

@@ -277,9 +277,8 @@ test.describe('Notifications', () => {
 
         const toast = page.locator('[class*="toast"]');
         if (await toast.isVisible()) {
-          // Wait for toast to auto-dismiss (typically 3-5 seconds)
-          await page.waitForTimeout(5000);
-          // Toast may or may not be visible depending on timing
+          // Wait for toast to auto-dismiss
+          await expect(toast).not.toBeVisible({ timeout: 8000 });
         }
       }
     });

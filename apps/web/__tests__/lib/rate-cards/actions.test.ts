@@ -69,7 +69,7 @@ describe('Rate Card Actions', () => {
           id: 'rc-1', name: 'Standard Hourly', description: 'Default rates',
           pricingType: 'hourly', rate: 150, unit: 'hour', isActive: true,
           createdAt: new Date(), updatedAt: new Date(),
-          category: null, taxRate: null, _count: { quotes: 2 },
+          category: null, taxRate: null, _count: { quoteLineItems: 2, invoiceLineItems: 0 },
         },
       ]);
       mockPrisma.rateCard.count.mockResolvedValue(1);
