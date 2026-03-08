@@ -260,7 +260,7 @@ test.describe('Historical Regressions - Email', () => {
       await page.getByRole('button', { name: /save|create/i }).click();
 
       // Wait for redirect or success
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
       const url = page.url();
 
       if (url.includes('/clients/') && !url.includes('/new')) {

@@ -31,7 +31,7 @@ test.describe('Critical Journey: Quote Creation Flow', () => {
       );
 
     // Client selection should be available
-    const hasClientSelection = await clientSelector.isVisible().catch(async () => {
+    await clientSelector.isVisible().catch(async () => {
       // Alternative: Check for client section in properties panel
       const propertiesPanel = page.locator('[data-testid="properties-panel"]');
       return propertiesPanel.getByText(/client/i).isVisible().catch(() => false);
@@ -59,7 +59,7 @@ test.describe('Critical Journey: Quote Creation Flow', () => {
       });
 
       await saveButton.click();
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
 
       // Verify save action occurred
       const urlChanged = !page.url().includes('/new');
@@ -81,7 +81,6 @@ test.describe('Critical Journey: Quote Creation Flow', () => {
     // Navigate to quote builder
     await page.goto('/quotes/new');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
     // Add identifiable content
     const testId = `persist-test-${Date.now()}`;
@@ -90,13 +89,11 @@ test.describe('Critical Journey: Quote Creation Flow', () => {
     if (await editor.isVisible()) {
       await editor.click();
       await editor.fill(testId);
-      await page.waitForTimeout(500);
     }
 
     // Reload page
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
     // Check if content persisted (either in localStorage or autosave)
     const pageContent = await page.content();
@@ -179,7 +176,7 @@ test.describe('Critical Journey: Client Management Flow', () => {
 
     if (await submitButton.isVisible()) {
       await submitButton.click();
-      await page.waitForTimeout(1500);
+      await page.waitForLoadState('networkidle');
 
       // Check for various forms of validation feedback
       const hasFieldError = await page.locator('.text-destructive, [class*="error"], [aria-invalid="true"]').count() > 0;
@@ -263,7 +260,7 @@ test.describe('Critical Journey: Client Management Flow', () => {
     const submitButton = page.getByRole('button', { name: /save|create/i });
     if (await submitButton.isVisible()) {
       await submitButton.click();
-      await page.waitForTimeout(3000);
+      await page.waitForLoadState('networkidle');
 
       // Check for various outcomes
       const urlChanged = !page.url().includes('/new');
@@ -329,7 +326,6 @@ test.describe('Critical Journey: Quote Builder Block Operations', () => {
   test('CJ-009: Block operations (add, duplicate, delete) should work', async ({ page }) => {
     await page.goto('/quotes/new');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
     // Find initial block count
     const blocks = page.locator('[data-testid="block"], [class*="block-wrapper"]');
@@ -339,7 +335,6 @@ test.describe('Critical Journey: Quote Builder Block Operations', () => {
     const addBlockButton = page.getByRole('button', { name: /add.*block|text|heading/i }).first();
     if (await addBlockButton.isVisible()) {
       await addBlockButton.click();
-      await page.waitForTimeout(500);
 
       const afterAddCount = await blocks.count();
       expect(afterAddCount, 'Adding block should increase count').toBeGreaterThanOrEqual(initialCount);
@@ -362,7 +357,6 @@ test.describe('Critical Journey: Quote Builder Block Operations', () => {
       if (await duplicateButton.isVisible()) {
         const beforeDuplicate = await blocks.count();
         await duplicateButton.click();
-        await page.waitForTimeout(500);
 
         const afterDuplicate = await blocks.count();
         expect(afterDuplicate, 'Duplicating block should increase count').toBeGreaterThanOrEqual(beforeDuplicate);
@@ -390,7 +384,7 @@ test.describe('Critical Journey: Theme and UI Settings', () => {
 
       // Toggle
       await themeToggle.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(300);
 
       // Check theme changed
       const htmlAfter = await page.locator('html').getAttribute('class');
@@ -403,7 +397,7 @@ test.describe('Critical Journey: Theme and UI Settings', () => {
 
       // Toggle back
       await themeToggle.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(300);
 
       const htmlFinal = await page.locator('html').getAttribute('class');
       const finalDark = htmlFinal?.includes('dark');
@@ -452,7 +446,6 @@ test.describe('Critical Journey: Help and Support', () => {
     const userMenu = page.getByTestId('user-menu');
     if (await userMenu.isVisible()) {
       await userMenu.click();
-      await page.waitForTimeout(500);
 
       // Click help link - wait for it to be visible in dropdown
       const helpLink = page.getByRole('menuitem', { name: /help/i });
@@ -462,12 +455,10 @@ test.describe('Critical Journey: Help and Support', () => {
         const helpHref = await helpLink.getAttribute('href').catch(() => '/help');
 
         await helpLink.click();
-        await page.waitForTimeout(1000);
         await page.waitForLoadState('networkidle');
 
         // Check if navigation happened
         const currentUrl = page.url();
-        const navigatedToHelp = currentUrl.includes('/help');
         const stayedOnDashboard = currentUrl.includes('/dashboard');
 
         // If still on dashboard (dropdown might have closed), navigate directly
@@ -532,11 +523,6 @@ test.describe('Critical Journey: Dashboard and Layout', () => {
     for (const listPage of listPages) {
       await page.goto(listPage);
       await page.waitForLoadState('networkidle');
-
-      // Check for container/padding classes
-      const hasSpacing = await page.locator(
-        '.container, [class*="p-4"], [class*="p-6"], [class*="px-"], [class*="py-"]'
-      ).count() > 0;
 
       // At minimum, content shouldn't touch viewport edge
       const content = page.locator('main > *, [role="main"] > *').first();

@@ -128,7 +128,7 @@ test.describe('Navigation Validator - Dead Link Prevention', () => {
     const userMenu = page.getByTestId('user-menu').or(page.getByRole('button', { name: /user|profile|account|TU/i })).first();
     if (await userMenu.isVisible({ timeout: 5000 }).catch(() => false)) {
       await userMenu.click();
-      await page.waitForTimeout(500); // Longer wait for dropdown animation
+      await page.waitForTimeout(300); // Dropdown animation
 
       // Collect all hrefs first to avoid stale element issues
       const dropdownLinkElements = page.locator('[role="menu"] a[href^="/"], [role="menuitem"][data-href^="/"]');

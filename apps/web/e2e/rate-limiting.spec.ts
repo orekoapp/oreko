@@ -90,8 +90,6 @@ test.describe('Rate Limiting', () => {
         await emailInput.fill(`test${i}@example.com`);
         await passwordInput.fill('wrongpassword');
         await submitButton.click();
-
-        await page.waitForTimeout(500);
       }
 
       // Should show rate limit message or lockout
@@ -134,8 +132,6 @@ test.describe('Rate Limiting', () => {
 
         const submitButton = page.getByRole('button', { name: /send|reset/i });
         await submitButton.click();
-
-        await page.waitForTimeout(500);
       }
 
       // Should show rate limit message
@@ -162,8 +158,6 @@ test.describe('Rate Limiting', () => {
       await submitButton.click();
       await submitButton.click();
 
-      // Should either succeed once or show error
-      await page.waitForTimeout(1000);
     });
 
     test('should disable button during submission', async ({ page }) => {
@@ -205,7 +199,6 @@ test.describe('Rate Limiting', () => {
               await closeButton.click();
             }
 
-            await page.waitForTimeout(500);
           }
         }
 
@@ -228,7 +221,6 @@ test.describe('Rate Limiting', () => {
         const reminderButton = page.getByRole('button', { name: /remind/i });
         if (await reminderButton.isVisible()) {
           await reminderButton.click();
-          await page.waitForTimeout(500);
           await reminderButton.click();
 
           // Should show limit message
@@ -268,7 +260,6 @@ test.describe('Rate Limiting', () => {
         await searchInput.type('test query here', { delay: 50 });
 
         // Should debounce and not make request for each keystroke
-        await page.waitForTimeout(1000);
       }
     });
   });

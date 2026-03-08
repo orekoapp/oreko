@@ -213,9 +213,6 @@ test.describe('Form Data Fetching - Bug #5/#6 Regression', () => {
     if (await clientSelect.isVisible()) {
       await clientSelect.click();
 
-      // Wait for options to load
-      await page.waitForTimeout(500);
-
       // Should have real client options (not "Client 1", "Client 2" placeholders)
       const options = page.locator('[role="option"], option');
       const optionCount = await options.count();
@@ -254,7 +251,6 @@ test.describe('Form Data Fetching - Bug #5/#6 Regression', () => {
     const templateSelect = page.locator('select, [role="combobox"]').first();
     if (await templateSelect.isVisible()) {
       await templateSelect.click();
-      await page.waitForTimeout(500);
 
       const options = page.locator('[role="option"], option');
       const count = await options.count();
@@ -295,7 +291,6 @@ test.describe('Error Handling Visibility - Bug #1 Regression', () => {
       await submitBtn.click();
 
       // Should show specific error, not generic "Something went wrong"
-      await page.waitForTimeout(1000);
       const genericError = page.getByText('Something went wrong');
       const isGeneric = await genericError.isVisible().catch(() => false);
 
@@ -325,7 +320,7 @@ test.describe('Error Handling Visibility - Bug #1 Regression', () => {
       }
 
       await submitBtn.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('networkidle');
 
       // Should show validation error for missing content
       const errorMessages = page.locator('.text-destructive, [role="alert"], [data-testid*="error"]');
@@ -365,7 +360,7 @@ test.describe('URL Validation - Bug #14 Regression', () => {
       await submitBtn.click();
 
       // Wait for response
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
 
       // Should NOT show URL validation error
       const urlError = page.getByText(/valid url/i);

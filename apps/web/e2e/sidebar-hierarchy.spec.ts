@@ -265,7 +265,7 @@ test.describe('Sidebar Collapse Behavior - FR-P2-002', () => {
         const navButton = sidebar.locator('a, button').first();
 
         await navButton.hover();
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(300);
 
         // Look for tooltip
         const tooltip = page.locator('[role="tooltip"]').first();
@@ -355,7 +355,6 @@ test.describe('Mobile Sidebar Behavior', () => {
       await page.waitForTimeout(300);
 
       // Should show sidebar or sheet
-      const mobileSidebar = page.locator('[role="dialog"], [data-state="open"]').first();
       const navVisible = await page.getByRole('link', { name: /dashboard/i }).isVisible().catch(() => false);
 
       expect(navVisible).toBe(true);

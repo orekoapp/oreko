@@ -113,8 +113,7 @@ test.describe('Global Header & Navigation', () => {
     const href = await firstLink.getAttribute('href');
 
     await firstLink.click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     // Should have navigated to the breadcrumb link target
     if (href) {
@@ -160,7 +159,7 @@ test.describe('Global Header & Navigation', () => {
     }
 
     await logo.click();
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     // Should navigate to home/landing page
     const url = page.url();

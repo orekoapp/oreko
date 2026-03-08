@@ -112,7 +112,6 @@ test.describe('Clients Module', () => {
       const saveButton = page.getByRole('button', { name: /save|create/i }).first();
       if (await saveButton.isVisible()) {
         await saveButton.click();
-        await page.waitForTimeout(500);
       }
 
       // Should either show validation errors or stay on form

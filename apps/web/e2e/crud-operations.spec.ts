@@ -561,7 +561,7 @@ test.describe('CRUD Operations - Invoices', () => {
           await convertButton.click();
 
           // Should navigate to invoice or show success
-          await page.waitForTimeout(2000);
+          await page.waitForLoadState('networkidle');
         }
       }
     });
@@ -730,8 +730,6 @@ test.describe('CRUD Operations - Search and Filter', () => {
     if (await searchInput.isVisible()) {
       await searchInput.fill('test');
 
-      // Should filter results
-      await page.waitForTimeout(500);
     }
   });
 
@@ -741,8 +739,6 @@ test.describe('CRUD Operations - Search and Filter', () => {
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible()) {
       await searchInput.fill('test');
-
-      await page.waitForTimeout(500);
     }
   });
 

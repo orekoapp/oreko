@@ -66,7 +66,7 @@ async function createDraftInvoice(page: import('@playwright/test').Page, title: 
   const saveVisible = await saveButton.isVisible().catch(() => false);
   if (saveVisible) {
     await saveButton.click().catch(() => {});
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
   }
 
   return page.url();

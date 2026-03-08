@@ -153,7 +153,7 @@ test.describe('Error Feedback - All Forms', () => {
     const submitBtn = page.getByRole('button', { name: /save|create/i });
     if (await submitBtn.isVisible()) {
       await submitBtn.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('networkidle');
 
       // Should show at least one validation error
       const errors = page.locator('.text-destructive, [class*="text-red"], [role="alert"]');
@@ -170,7 +170,7 @@ test.describe('Error Feedback - All Forms', () => {
     const submitBtn = page.getByRole('button', { name: /save|create/i });
     if (await submitBtn.isVisible()) {
       await submitBtn.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('networkidle');
 
       // Should show validation errors
       const errors = page.locator('.text-destructive, [class*="text-red"]');
@@ -188,7 +188,7 @@ test.describe('Error Feedback - All Forms', () => {
     const submitBtn = page.getByRole('button', { name: /save|create/i });
     if (await submitBtn.isVisible()) {
       await submitBtn.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('networkidle');
 
       // Name and email are required - should show errors
       const nameError = page.locator('[class*="text-destructive"]');
@@ -223,7 +223,6 @@ test.describe('Data Fetching - No Empty Dropdowns', () => {
     const clientSelect = page.locator('[role="combobox"], select').first();
     if (await clientSelect.isVisible()) {
       await clientSelect.click();
-      await page.waitForTimeout(500);
 
       // Should have at least one option (from seeded data)
       const options = page.locator('[role="option"], option:not([value=""])');

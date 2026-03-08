@@ -32,7 +32,6 @@ test.describe('Search & Filtering', () => {
 
         // Should show results from multiple categories
         const results = page.locator('[class*="search-result"], [class*="result"]');
-        await page.waitForTimeout(500);
         if (await results.count() > 0) {
           await expect(results.first()).toBeVisible();
         }
@@ -59,7 +58,6 @@ test.describe('Search & Filtering', () => {
       const searchInput = page.getByPlaceholder(/search/i).first();
       if (await searchInput.isVisible()) {
         await searchInput.fill('test');
-        await page.waitForTimeout(500);
 
         const result = page.locator('[class*="search-result"] a, [class*="result"] a').first();
         if (await result.isVisible()) {
@@ -75,7 +73,6 @@ test.describe('Search & Filtering', () => {
       const searchInput = page.getByPlaceholder(/search/i).first();
       if (await searchInput.isVisible()) {
         await searchInput.fill('test');
-        await page.waitForTimeout(500);
 
         // Navigate with arrow keys
         await page.keyboard.press('ArrowDown');
@@ -90,7 +87,6 @@ test.describe('Search & Filtering', () => {
       const searchInput = page.getByPlaceholder(/search/i).first();
       if (await searchInput.isVisible()) {
         await searchInput.fill('xyznonexistent123456');
-        await page.waitForTimeout(500);
 
         const noResults = page.getByText(/no results|nothing found|not found/i);
         if (await noResults.isVisible()) {
@@ -126,7 +122,6 @@ test.describe('Search & Filtering', () => {
 
       const searchInput = page.getByPlaceholder(/search/i);
       await searchInput.fill('test');
-      await page.waitForTimeout(500);
 
       // Results should be filtered
       const quoteList = page.locator('a[href^="/quotes/"]');
@@ -145,8 +140,6 @@ test.describe('Search & Filtering', () => {
         if (await draftOption.isVisible()) {
           await draftOption.click();
 
-          // Only draft quotes should show
-          await page.waitForTimeout(500);
         }
       }
     });
@@ -189,7 +182,6 @@ test.describe('Search & Filtering', () => {
       if (await minAmount.isVisible() && await maxAmount.isVisible()) {
         await minAmount.fill('100');
         await maxAmount.fill('1000');
-        await page.waitForTimeout(500);
       }
     });
 
@@ -210,7 +202,6 @@ test.describe('Search & Filtering', () => {
         }
       }
 
-      await page.waitForTimeout(500);
     });
 
     test('should clear all filters', async ({ page }) => {
@@ -237,7 +228,6 @@ test.describe('Search & Filtering', () => {
         if (await draftOption.isVisible()) {
           await draftOption.click();
 
-          await page.waitForTimeout(500);
           const url = page.url();
           expect(url).toMatch(/status|filter/i);
         }
@@ -251,7 +241,6 @@ test.describe('Search & Filtering', () => {
 
       const searchInput = page.getByPlaceholder(/search/i);
       await searchInput.fill('INV-');
-      await page.waitForTimeout(500);
     });
 
     test('should filter invoices by status', async ({ page }) => {
@@ -274,7 +263,6 @@ test.describe('Search & Filtering', () => {
       const overdueFilter = page.getByLabel(/overdue|past due/i);
       if (await overdueFilter.isVisible()) {
         await overdueFilter.check();
-        await page.waitForTimeout(500);
       }
     });
 
@@ -299,7 +287,6 @@ test.describe('Search & Filtering', () => {
 
       const searchInput = page.getByPlaceholder(/search/i);
       await searchInput.fill('John');
-      await page.waitForTimeout(500);
     });
 
     test('should search clients by email', async ({ page }) => {
@@ -307,7 +294,6 @@ test.describe('Search & Filtering', () => {
 
       const searchInput = page.getByPlaceholder(/search/i);
       await searchInput.fill('@example.com');
-      await page.waitForTimeout(500);
     });
 
     test('should search clients by company', async ({ page }) => {
@@ -315,7 +301,6 @@ test.describe('Search & Filtering', () => {
 
       const searchInput = page.getByPlaceholder(/search/i);
       await searchInput.fill('Inc');
-      await page.waitForTimeout(500);
     });
 
     test('should sort clients alphabetically', async ({ page }) => {
@@ -349,7 +334,6 @@ test.describe('Search & Filtering', () => {
       const searchInput = page.getByPlaceholder(/search/i);
       if (await searchInput.isVisible()) {
         await searchInput.fill('standard');
-        await page.waitForTimeout(500);
       }
     });
 
@@ -424,7 +408,6 @@ test.describe('Search & Filtering', () => {
       const nextButton = page.getByRole('button', { name: /next|›/i });
       if (await nextButton.isVisible() && await nextButton.isEnabled()) {
         await nextButton.click();
-        await page.waitForTimeout(500);
 
         const url = page.url();
         expect(url).toMatch(/page=2|offset|skip/i);
@@ -437,7 +420,6 @@ test.describe('Search & Filtering', () => {
       const prevButton = page.getByRole('button', { name: /prev|‹/i });
       if (await prevButton.isVisible() && await prevButton.isEnabled()) {
         await prevButton.click();
-        await page.waitForTimeout(500);
       }
     });
 
@@ -490,7 +472,6 @@ test.describe('Search & Filtering', () => {
       const draftTab = page.getByRole('tab', { name: /draft/i });
       if (await draftTab.isVisible()) {
         await draftTab.click();
-        await page.waitForTimeout(500);
       }
     });
 

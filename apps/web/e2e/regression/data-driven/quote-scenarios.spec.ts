@@ -359,9 +359,6 @@ test.describe('Data-Driven: Search Functionality', () => {
           await searchInput.press('Enter');
         }
 
-        // Wait for results
-        await page.waitForTimeout(500);
-
         // Check results - look for client links or empty state
         const clientLinks = page.locator('a[href^="/clients/"]');
         const emptyState = page.getByText(/no clients|no results/i);

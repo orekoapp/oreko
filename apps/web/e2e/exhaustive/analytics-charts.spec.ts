@@ -15,7 +15,7 @@ test.describe('Analytics Chart Sections', () => {
     await page.goto('/analytics');
     await page.waitForLoadState('networkidle');
     // Allow charts time to render
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
   });
 
   test('should display Client Lifetime Value section', async ({ page }) => {
@@ -28,7 +28,6 @@ test.describe('Analytics Chart Sections', () => {
     if (!(await clvSection.isVisible().catch(() => false))) {
       // May need to scroll down to find the section
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await page.waitForTimeout(500);
     }
 
     if (await clvSection.isVisible().catch(() => false)) {
@@ -58,7 +57,6 @@ test.describe('Analytics Chart Sections', () => {
       const section = page.locator('section:has-text("Conversion"), [class*="conversion"]').first();
       if (await section.isVisible().catch(() => false)) {
         await section.scrollIntoViewIfNeeded();
-        await page.waitForTimeout(500);
       }
     }
 
@@ -89,7 +87,6 @@ test.describe('Analytics Chart Sections', () => {
     if (!(await statusChart.isVisible().catch(() => false))) {
       // Scroll down to find it
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
-      await page.waitForTimeout(500);
     }
 
     if (await statusChart.isVisible().catch(() => false)) {
@@ -121,7 +118,6 @@ test.describe('Analytics Chart Sections', () => {
     if (!(await revenueCompChart.isVisible().catch(() => false))) {
       // Scroll to bottom to find the chart
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await page.waitForTimeout(500);
     }
 
     if (await revenueCompChart.isVisible().catch(() => false)) {
