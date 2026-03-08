@@ -35,7 +35,7 @@ export function StatsCards({ stats, revenueSparkline = [] }: StatsCardsProps) {
     {
       title: 'Revenue this Month',
       value: formatCurrency(stats.revenueThisMonth),
-      description: `${formatCurrency(stats.revenueThisMonth)} this month`,
+      description: undefined,
       icon: DollarSign,
       iconColor: 'text-green-500',
       bgColor: 'bg-green-500/10',
