@@ -258,7 +258,15 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
             if (state.document) {
               const block = state.document.blocks.find((b: QuoteBlock) => b.id === blockId);
               if (block) {
-                block.content = { ...block.content, ...content } as typeof block.content;
+                // Bug #182: Clamp negative quantity and rate at input time
+                const updated = { ...content } as Record<string, unknown>;
+                if ('quantity' in updated && typeof updated.quantity === 'number' && updated.quantity < 0) {
+                  updated.quantity = 0;
+                }
+                if ('rate' in updated && typeof updated.rate === 'number' && updated.rate < 0) {
+                  updated.rate = 0;
+                }
+                block.content = { ...block.content, ...updated } as typeof block.content;
                 block.updatedAt = new Date().toISOString();
                 state.isDirty = true;
               }

@@ -251,7 +251,29 @@ export async function updateQuote(
   // Calculate totals
   const subtotal = lineItems?.reduce((sum, item) => sum + item.amount, 0) || 0;
   const taxTotal = lineItems?.reduce((sum, item) => sum + item.taxAmount, 0) || 0;
-  const total = subtotal + taxTotal;
+
+  // Bug #123: Validate discount values server-side
+  const mergedSettings = { ...(existingQuote.settings as Record<string, unknown>), ...data.settings };
+  const discountType = mergedSettings.discountType as string | undefined;
+  const discountValue = Number(mergedSettings.discountValue) || 0;
+  if (discountValue < 0) {
+    return { success: false as const, error: 'Discount cannot be negative' };
+  }
+  if (discountType === 'percentage' && discountValue > 100) {
+    return { success: false as const, error: 'Discount percentage cannot exceed 100%' };
+  }
+  if (discountType === 'fixed' && discountValue > subtotal) {
+    return { success: false as const, error: 'Discount amount cannot exceed subtotal' };
+  }
+
+  // Apply discount to total
+  let discountAmount = 0;
+  if (discountType === 'percentage') {
+    discountAmount = Math.round(subtotal * (discountValue / 100) * 100) / 100;
+  } else if (discountType === 'fixed') {
+    discountAmount = Math.min(discountValue, subtotal);
+  }
+  const total = subtotal - discountAmount + taxTotal;
 
   // Update quote
   try {
