@@ -10,7 +10,7 @@
 
 QuoteCraft is an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies. It provides a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
 
-<!-- Screenshot: Dashboard (coming soon) -->
+<!-- Screenshots available at the live demo: https://quote-software-gamma.vercel.app -->
 
 ---
 
@@ -35,19 +35,16 @@ QuoteCraft is an open-source, self-hosted visual quote and invoice management to
 
 Create stunning, professional quotes with a drag-and-drop block-based editor. No more spreadsheet-like interfaces.
 
-<!-- Screenshot: Quote Builder (coming soon) -->
 
 ### One-Click Quote-to-Invoice Conversion
 
 Convert accepted quotes to invoices instantly with zero data re-entry. All line items, pricing, and client information transfer automatically.
 
-<!-- Screenshot: Quote to Invoice (coming soon) -->
 
 ### Client Portal
 
 Beautiful, mobile-responsive client-facing pages for viewing, signing, and paying quotes and invoices. No account required for clients.
 
-<!-- Screenshot: Client Portal (coming soon) -->
 
 ### Rate Card System
 

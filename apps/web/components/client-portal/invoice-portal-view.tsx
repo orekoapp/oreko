@@ -278,6 +278,15 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
         </div>
       )}
 
+      {/* Show message when invoice is unpaid but online payment not available */}
+      {!invoice.canPay && !invoice.paymentConfigured && invoice.totals.amountDue > 0 && invoice.status !== 'paid' && invoice.status !== 'voided' && (
+        <div className="flex flex-col items-center gap-2 pt-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            Online payment is not yet available for this invoice. Please contact the sender for payment instructions.
+          </p>
+        </div>
+      )}
+
       {showPaymentForm && (
         <Card>
           <CardHeader>

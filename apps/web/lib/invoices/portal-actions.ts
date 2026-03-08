@@ -66,6 +66,7 @@ export interface PublicInvoiceData {
     processedAt: string | null;
   }>;
   canPay: boolean;
+  paymentConfigured: boolean;
 }
 
 /**
@@ -108,6 +109,7 @@ export async function getInvoiceByAccessToken(
           include: {
             businessProfile: true,
             brandingSettings: true,
+            paymentSettings: { select: { stripeOnboardingComplete: true } },
           },
         },
         lineItems: {
@@ -165,11 +167,13 @@ export async function getInvoiceByAccessToken(
     // Voided invoices owe nothing regardless of DB value
     const amountDue = invoice.status === 'voided' ? 0 : Number(invoice.amountDue);
 
-    // Determine if payment is possible
+    // Determine if online payment is possible
+    const paymentConfigured = !!invoice.workspace.paymentSettings?.stripeOnboardingComplete;
     const canPay =
       invoice.status !== 'paid' &&
       invoice.status !== 'voided' &&
-      amountDue > 0;
+      amountDue > 0 &&
+      paymentConfigured;
 
     const publicInvoice: PublicInvoiceData = {
       id: invoice.id,
@@ -231,6 +235,7 @@ export async function getInvoiceByAccessToken(
         processedAt: payment.processedAt?.toISOString() || null,
       })),
       canPay,
+      paymentConfigured,
     };
 
     return { success: true, invoice: publicInvoice };
