@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Quotes',
+  description: 'Manage and track your quotes',
 };
 
 export default async function QuotesPage() {

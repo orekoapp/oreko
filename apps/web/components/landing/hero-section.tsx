@@ -38,7 +38,7 @@ export function HeroSection() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Link href="/register">
-              <Button size="lg" className="text-lg px-8 py-6 h-auto">
+              <Button size="lg" className="text-lg px-8 py-6 h-auto min-h-[48px]">
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -48,7 +48,7 @@ export function HeroSection() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 h-auto">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6 h-auto min-h-[48px]">
                 <Github className="mr-2 h-5 w-5" />
                 View on GitHub
               </Button>
