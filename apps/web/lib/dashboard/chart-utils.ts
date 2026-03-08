@@ -31,7 +31,6 @@ export const QUOTE_STATUS_COLORS: Record<string, string> = {
   accepted: '#22C55E',  // Green-500
   declined: '#EF4444',  // Red-500
   expired: '#9CA3AF',   // Gray-400
-  signed: '#8B5CF6',    // Violet-500
   converted: '#A855F7', // Purple-500
 };
 
