@@ -44,7 +44,7 @@ export function MarketingHeader() {
           : 'bg-transparent'
       )}
     >
-      <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <nav aria-label="Main navigation" className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Logo href="/" />
 

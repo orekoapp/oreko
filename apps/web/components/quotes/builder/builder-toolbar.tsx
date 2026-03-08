@@ -182,6 +182,7 @@ export function BuilderToolbar() {
           size="icon"
           onClick={toggleBlocksPanel}
           title={showBlocksPanel ? 'Hide blocks panel' : 'Show blocks panel'}
+          aria-label={showBlocksPanel ? 'Hide blocks panel' : 'Show blocks panel'}
         >
           {showBlocksPanel ? (
             <PanelLeftClose className="h-4 w-4" />
@@ -195,6 +196,7 @@ export function BuilderToolbar() {
           size="icon"
           onClick={toggleRateCardPanel}
           title={showRateCardPanel ? 'Hide rate cards' : 'Show rate cards'}
+          aria-label={showRateCardPanel ? 'Hide rate cards' : 'Show rate cards'}
           className="hidden sm:inline-flex"
         >
           <Package className="h-4 w-4" />
@@ -205,6 +207,7 @@ export function BuilderToolbar() {
           size="icon"
           onClick={togglePropertiesPanel}
           title={showPropertiesPanel ? 'Hide properties panel' : 'Show properties panel'}
+          aria-label={showPropertiesPanel ? 'Hide properties panel' : 'Show properties panel'}
         >
           {showPropertiesPanel ? (
             <PanelRightClose className="h-4 w-4" />
@@ -221,6 +224,7 @@ export function BuilderToolbar() {
           onClick={undo}
           disabled={!canUndo}
           title="Undo (Ctrl+Z)"
+          aria-label="Undo"
           className="hidden sm:inline-flex"
         >
           <Undo2 className="h-4 w-4" />
@@ -232,6 +236,7 @@ export function BuilderToolbar() {
           onClick={redo}
           disabled={!canRedo}
           title="Redo (Ctrl+Shift+Z)"
+          aria-label="Redo"
           className="hidden sm:inline-flex"
         >
           <Redo2 className="h-4 w-4" />
@@ -299,6 +304,7 @@ export function BuilderToolbar() {
           variant={previewMode ? 'default' : 'outline'}
           size="icon"
           onClick={togglePreviewMode}
+          aria-label={previewMode ? 'Switch to edit mode' : 'Preview'}
           className="sm:hidden"
         >
           {previewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -327,6 +333,7 @@ export function BuilderToolbar() {
           size="icon"
           onClick={handleSave}
           disabled={isSaving || !isDirty}
+          aria-label="Save"
           className="md:hidden"
         >
           {isSaving ? (
@@ -360,7 +367,7 @@ export function BuilderToolbar() {
         {/* Mobile Export icon-only */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden">
+            <Button variant="outline" size="icon" aria-label="Export" className="md:hidden">
               <Download className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -388,7 +395,7 @@ export function BuilderToolbar() {
         </Button>
 
         {/* Mobile Send icon-only */}
-        <Button size="icon" onClick={handleSend} disabled={isSendLoading} className="md:hidden">
+        <Button size="icon" onClick={handleSend} disabled={isSendLoading} aria-label="Send" className="md:hidden">
           {isSendLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
