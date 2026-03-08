@@ -37,6 +37,35 @@ export interface ClientMetadata {
   tags?: string[];
 }
 
+/**
+ * Bug #136: Safely parse address JSON from DB. Returns typed object with defaults.
+ */
+export function safeParseAddress(raw: unknown): ClientAddress {
+  if (!raw || typeof raw !== 'object') return {};
+  const addr = raw as Record<string, unknown>;
+  return {
+    street: typeof addr.street === 'string' ? addr.street : (typeof addr.line1 === 'string' ? addr.line1 : undefined),
+    city: typeof addr.city === 'string' ? addr.city : undefined,
+    state: typeof addr.state === 'string' ? addr.state : undefined,
+    postalCode: typeof addr.postalCode === 'string' ? addr.postalCode : (typeof addr.zip === 'string' ? addr.zip : undefined),
+    country: typeof addr.country === 'string' ? addr.country : undefined,
+  };
+}
+
+/**
+ * Bug #139: Safely parse client metadata from DB JSON. Returns typed object with defaults.
+ */
+export function safeParseMetadata(raw: unknown): ClientMetadata {
+  if (!raw || typeof raw !== 'object') return { type: 'individual', tags: [], contacts: [] };
+  const meta = raw as Record<string, unknown>;
+  return {
+    type: (meta.type === 'company' || meta.type === 'individual') ? meta.type : 'individual',
+    website: typeof meta.website === 'string' ? meta.website : undefined,
+    tags: Array.isArray(meta.tags) ? meta.tags.filter((t): t is string => typeof t === 'string') : [],
+    contacts: Array.isArray(meta.contacts) ? meta.contacts as ClientContact[] : [],
+  };
+}
+
 // Client list item (for list views)
 export interface ClientListItem {
   id: string;

@@ -1176,6 +1176,13 @@ export async function updateWorkspaceSettings(
           oldSlug: currentWorkspace.slug,
         },
       });
+
+      // Bug #81: Clean up old slug history entries (keep last 90 days only)
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      await prisma.workspaceSlugHistory.deleteMany({
+        where: { workspaceId, changedAt: { lt: cutoff } },
+      }).catch(() => { /* non-critical cleanup */ });
     }
   }
 

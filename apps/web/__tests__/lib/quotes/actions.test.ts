@@ -12,7 +12,7 @@ const { mockPrisma, mockGetCurrentUserWorkspace } = vi.hoisted(() => {
       count: vi.fn(),
     },
     quoteLineItem: { deleteMany: vi.fn() },
-    quoteEvent: { create: vi.fn() },
+    quoteEvent: { create: vi.fn(), updateMany: vi.fn() },
     invoice: { findFirst: vi.fn() },
     numberSequence: { upsert: vi.fn() },
     client: { findFirst: vi.fn() },

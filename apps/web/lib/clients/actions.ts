@@ -18,6 +18,7 @@ import type {
   ClientAddress,
   ClientMetadata,
 } from './types';
+import { safeParseAddress, safeParseMetadata } from './types';
 import { nanoid } from 'nanoid';
 
 // Helper to convert Decimal to number
@@ -104,7 +105,7 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
 
   // Transform to list items
   const data: ClientListItem[] = clients.map((client) => {
-    const metadata = (client.metadata as ClientMetadata) || {};
+    const metadata = safeParseMetadata(client.metadata);
     return {
       id: client.id,
       name: client.name,
@@ -179,7 +180,7 @@ export async function getClientById(id: string): Promise<ClientDetail> {
   const totalInvoiced = toNumber(totals._sum?.total);
   const outstandingAmount = totalInvoiced - totalRevenue;
 
-  const metadata = (client.metadata as ClientMetadata) || {};
+  const metadata = safeParseMetadata(client.metadata);
 
   return {
     id: client.id,
@@ -188,7 +189,7 @@ export async function getClientById(id: string): Promise<ClientDetail> {
     email: client.email,
     phone: client.phone,
     company: client.company,
-    address: (client.address as ClientAddress) || null,
+    address: safeParseAddress(client.address),
     billingAddress: (client.billingAddress as ClientAddress) || null,
     taxId: client.taxId,
     notes: client.notes,
@@ -414,7 +415,7 @@ export async function updateClient(input: UpdateClientInput): Promise<{ id: stri
   }
 
   // Merge metadata
-  const existingMetadata = (existing.metadata as ClientMetadata) || {};
+  const existingMetadata = safeParseMetadata(existing.metadata);
   const metadata: ClientMetadata = {
     ...existingMetadata,
     ...(input.type !== undefined && { type: input.type }),
@@ -536,7 +537,7 @@ export async function getClientStats(): Promise<ClientStats> {
   let withUnpaidInvoices = 0;
 
   for (const client of clients) {
-    const metadata = (client.metadata as ClientMetadata) || {};
+    const metadata = safeParseMetadata(client.metadata);
     const clientType = metadata.type || (client.company ? 'company' : 'individual');
     if (clientType === 'company') {
       companies++;

@@ -2,11 +2,31 @@
 
 import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
-import { prisma, type Prisma } from '@quotecraft/database';
+import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 import { sendQuoteSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
+
+/**
+ * Bug #134: Safely parse quote settings from JSON with runtime validation.
+ * Returns typed defaults for any missing or invalid fields.
+ */
+function safeParseQuoteSettings(raw: unknown) {
+  const settings = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  return {
+    blocks: (Array.isArray(settings.blocks) ? settings.blocks : []) as QuoteBlock[],
+    requireSignature: typeof settings.requireSignature === 'boolean' ? settings.requireSignature : true,
+    autoConvertToInvoice: typeof settings.autoConvertToInvoice === 'boolean' ? settings.autoConvertToInvoice : false,
+    depositRequired: typeof settings.depositRequired === 'boolean' ? settings.depositRequired : false,
+    depositType: (settings.depositType === 'percentage' || settings.depositType === 'fixed' ? settings.depositType : 'percentage') as 'percentage' | 'fixed',
+    depositValue: typeof settings.depositValue === 'number' ? settings.depositValue : 50,
+    showLineItemPrices: typeof settings.showLineItemPrices === 'boolean' ? settings.showLineItemPrices : true,
+    allowPartialAcceptance: typeof settings.allowPartialAcceptance === 'boolean' ? settings.allowPartialAcceptance : false,
+    currency: typeof settings.currency === 'string' ? settings.currency : 'USD',
+    taxInclusive: typeof settings.taxInclusive === 'boolean' ? settings.taxInclusive : false,
+  };
+}
 
 /** Generate a cryptographically secure access token (64 hex chars = 256 bits) */
 function generateAccessToken(): string {
@@ -39,6 +59,8 @@ async function getActiveWorkspace() {
  */
 async function generateQuoteNumber(workspaceId: string): Promise<string> {
   // Use upsert to atomically create or increment the sequence (race-condition safe)
+  // Bug #82: Counter uses Int (max ~2.1B). Safe for any realistic business use case.
+  // At 1000 quotes/day, this supports ~5,800 years of operation.
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.numberSequence.upsert({
       where: { workspaceId_type: { workspaceId, type: 'quote' } },
@@ -51,6 +73,11 @@ async function generateQuoteNumber(workspaceId: string): Promise<string> {
         padding: 4,
       },
     });
+
+    if (updated.currentValue > 2_000_000_000) {
+      throw new Error('Quote number sequence approaching overflow. Contact support.');
+    }
+
     return {
       prefix: updated.prefix || 'QT',
       suffix: updated.suffix,
@@ -357,8 +384,9 @@ export async function getQuote(quoteId: string) {
   }
 
   // Convert to QuoteDocument format for the builder
-  const settings = quote.settings as Record<string, unknown>;
-  let blocks = (settings.blocks as QuoteBlock[]) || [];
+  // Bug #134: Use safe parser instead of raw casts
+  const parsedSettings = safeParseQuoteSettings(quote.settings);
+  let blocks = parsedSettings.blocks;
 
   // If blocks are empty but lineItems exist, construct blocks from lineItems
   if (blocks.length === 0 && quote.lineItems.length > 0) {
@@ -392,15 +420,15 @@ export async function getQuote(quoteId: string) {
     expirationDate: quote.expirationDate?.toISOString().split('T')[0] ?? null,
     blocks,
     settings: {
-      requireSignature: (settings.requireSignature as boolean) ?? true,
-      autoConvertToInvoice: (settings.autoConvertToInvoice as boolean) ?? false,
-      depositRequired: (settings.depositRequired as boolean) ?? false,
-      depositType: (settings.depositType as 'percentage' | 'fixed') ?? 'percentage',
-      depositValue: (settings.depositValue as number) ?? 50,
-      showLineItemPrices: (settings.showLineItemPrices as boolean) ?? true,
-      allowPartialAcceptance: (settings.allowPartialAcceptance as boolean) ?? false,
-      currency: (settings.currency as string) ?? 'USD',
-      taxInclusive: (settings.taxInclusive as boolean) ?? false,
+      requireSignature: parsedSettings.requireSignature,
+      autoConvertToInvoice: parsedSettings.autoConvertToInvoice,
+      depositRequired: parsedSettings.depositRequired,
+      depositType: parsedSettings.depositType,
+      depositValue: parsedSettings.depositValue,
+      showLineItemPrices: parsedSettings.showLineItemPrices,
+      allowPartialAcceptance: parsedSettings.allowPartialAcceptance,
+      currency: parsedSettings.currency,
+      taxInclusive: parsedSettings.taxInclusive,
     },
     totals: {
       subtotal: Number(quote.subtotal),
@@ -514,14 +542,21 @@ export async function deleteQuote(quoteId: string) {
     return { success: false, error: 'Cannot delete a quote that has a linked invoice. Delete or void the invoice first.' };
   }
 
-  await prisma.quote.update({
-    where: {
-      id: quoteId,
-      workspaceId: workspace.id,
-    },
-    data: {
-      deletedAt: new Date(),
-    },
+  // Bug #79: Clean up signature data before soft-deleting
+  // Clear any stored signature data (base64 in quoteEvent metadata) to free space
+  await prisma.$transaction(async (tx) => {
+    await tx.quoteEvent.updateMany({
+      where: { quoteId, eventType: 'signed' },
+      data: { metadata: {} },
+    });
+
+    await tx.quote.update({
+      where: { id: quoteId, workspaceId: workspace.id },
+      data: {
+        deletedAt: new Date(),
+        signatureData: Prisma.JsonNull,
+      },
+    });
   });
 
   revalidatePath('/quotes');

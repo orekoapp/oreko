@@ -16,6 +16,31 @@ import type {
 } from './types';
 
 /**
+ * Bug #85: Sanitize Stripe errors — never expose raw Stripe messages to end users.
+ * Returns a user-friendly message while logging the full error server-side.
+ */
+function sanitizeStripeError(error: unknown): string {
+  if (error && typeof error === 'object' && 'type' in error) {
+    const stripeError = error as { type: string; code?: string };
+    switch (stripeError.type) {
+      case 'StripeCardError':
+        return 'The payment card was declined. Please try a different payment method.';
+      case 'StripeRateLimitError':
+        return 'Too many requests. Please try again in a moment.';
+      case 'StripeInvalidRequestError':
+        return 'The payment request was invalid. Please contact support.';
+      case 'StripeAuthenticationError':
+        return 'Payment service configuration error. Please contact the site administrator.';
+      case 'StripeConnectionError':
+        return 'Unable to connect to payment service. Please try again.';
+      default:
+        return 'A payment error occurred. Please try again or contact support.';
+    }
+  }
+  return 'An unexpected error occurred. Please try again.';
+}
+
+/**
  * Get payment settings for workspace
  */
 export async function getPaymentSettings(): Promise<PaymentSettingsData | null> {
@@ -76,7 +101,7 @@ export async function updatePaymentSettings(data: {
     return { success: true };
   } catch (error) {
     console.error('Failed to update payment settings:', error);
-    return { success: false, error: 'Failed to update payment settings' };
+    return { success: false, error: sanitizeStripeError(error) };
   }
 }
 
@@ -151,7 +176,7 @@ export async function createStripeOnboardingLink(options?: {
     return { success: true, url: accountLink.url };
   } catch (error) {
     console.error('Failed to create Stripe onboarding link:', error);
-    return { success: false, error: 'Failed to create onboarding link' };
+    return { success: false, error: sanitizeStripeError(error) };
   }
 }
 
@@ -372,6 +397,6 @@ export async function refundPayment(
     return { success: true };
   } catch (error) {
     console.error('Failed to refund payment:', error);
-    return { success: false, error: 'Failed to process refund' };
+    return { success: false, error: sanitizeStripeError(error) };
   }
 }

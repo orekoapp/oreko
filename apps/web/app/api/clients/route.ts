@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
+import { safeParseAddress } from '@/lib/clients/types';
 
 /**
  * GET /api/clients
@@ -63,20 +64,20 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Transform to API response shape
+    // Bug #136: Safely parse address JSON instead of raw casts
     const data = clients.map((client) => {
-      // Address is stored as JSON
-      const address = (client.address as Record<string, string> | null) || {};
+      const addr = safeParseAddress(client.address);
       return {
         id: client.id,
         name: client.name,
         email: client.email,
         phone: client.phone || '',
         company: client.company || '',
-        address: address.street || address.line1 || '',
-        city: address.city || '',
-        state: address.state || '',
-        postalCode: address.postalCode || address.zip || '',
-        country: address.country || '',
+        address: addr.street || '',
+        city: addr.city || '',
+        state: addr.state || '',
+        postalCode: addr.postalCode || '',
+        country: addr.country || '',
         notes: client.notes || '',
         createdAt: client.createdAt.toISOString(),
         updatedAt: client.updatedAt.toISOString(),
