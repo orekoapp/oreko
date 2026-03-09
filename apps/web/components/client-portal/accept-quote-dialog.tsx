@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SignaturePad } from './signature-pad';
+import { SigningOtpGate } from './signing-otp-gate';
 import { acceptQuote, type PublicQuoteData } from '@/lib/quotes/portal-actions';
 import { calculateDepositAmount } from '@/lib/quotes/utils';
 import { toast } from 'sonner';
@@ -38,6 +39,7 @@ export function AcceptQuoteDialog({
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isIdentityVerified, setIsIdentityVerified] = useState(false);
 
   const requiresSignature = quote.settings.requireSignature;
   const hasTerms = !!quote.terms;
@@ -93,6 +95,7 @@ export function AcceptQuoteDialog({
       setSignerName('');
       setSignatureData(null);
       setAgreedToTerms(false);
+      setIsIdentityVerified(false);
       onOpenChange(false);
     }
   };
@@ -133,45 +136,60 @@ export function AcceptQuoteDialog({
             )}
           </div>
 
-          {/* Signer Name */}
-          <div className="space-y-2">
-            <Label htmlFor="signer-name">Your Name</Label>
-            <Input
-              id="signer-name"
-              placeholder="Enter your full name"
-              value={signerName}
-              onChange={(e) => setSignerName(e.target.value)}
-              disabled={isSubmitting}
+          {/* Email OTP Verification Gate */}
+          {requiresSignature && !isIdentityVerified && (
+            <SigningOtpGate
+              type="quote"
+              accessToken={accessToken}
+              clientEmail={quote.client.email}
+              onVerified={() => setIsIdentityVerified(true)}
             />
-          </div>
-
-          {/* Signature Pad */}
-          {requiresSignature && (
-            <div className="space-y-2">
-              <Label>Your Signature</Label>
-              <SignaturePad onChange={setSignatureData} />
-            </div>
           )}
 
-          {/* Terms Agreement */}
-          {hasTerms && (
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="agree-terms"
-                checked={agreedToTerms}
-                onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
-                disabled={isSubmitting}
-              />
-              <div className="grid gap-1.5 leading-none">
-                <Label
-                  htmlFor="agree-terms"
-                  className="text-sm font-normal leading-snug"
-                >
-                  I have read and agree to the terms and conditions outlined in
-                  this quote.
-                </Label>
+          {/* Show signing form only after identity verification (or if no signature required) */}
+          {(!requiresSignature || isIdentityVerified) && (
+            <>
+              {/* Signer Name */}
+              <div className="space-y-2">
+                <Label htmlFor="signer-name">Your Name</Label>
+                <Input
+                  id="signer-name"
+                  placeholder="Enter your full name"
+                  value={signerName}
+                  onChange={(e) => setSignerName(e.target.value)}
+                  disabled={isSubmitting}
+                />
               </div>
-            </div>
+
+              {/* Signature Pad */}
+              {requiresSignature && (
+                <div className="space-y-2">
+                  <Label>Your Signature</Label>
+                  <SignaturePad onChange={setSignatureData} />
+                </div>
+              )}
+
+              {/* Terms Agreement */}
+              {hasTerms && (
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="agree-terms"
+                    checked={agreedToTerms}
+                    onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                    disabled={isSubmitting}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <Label
+                      htmlFor="agree-terms"
+                      className="text-sm font-normal leading-snug"
+                    >
+                      I have read and agree to the terms and conditions outlined in
+                      this quote.
+                    </Label>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 

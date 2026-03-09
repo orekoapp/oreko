@@ -127,8 +127,16 @@ export function BuilderToolbar() {
   };
 
   const handleExportPDF = async () => {
-    // TODO: Implement PDF export
-    toast.info('PDF export coming soon');
+    if (!document || !document.id) {
+      toast.error('Please save the quote first');
+      return;
+    }
+    try {
+      toast.info('Generating PDF...');
+      window.open(`/api/download/quote/${document.id}`, '_blank');
+    } catch {
+      toast.error('Failed to export PDF');
+    }
   };
 
   const handleSend = async () => {

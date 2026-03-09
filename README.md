@@ -10,7 +10,7 @@
 
 QuoteCraft is an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies. It provides a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
 
-<!-- Screenshots available at the live demo: https://quote-software-gamma.vercel.app -->
+**[Live Demo](https://quote-software-gamma.vercel.app)** — Try QuoteCraft instantly with the demo account.
 
 ---
 
@@ -50,7 +50,6 @@ Beautiful, mobile-responsive client-facing pages for viewing, signing, and payin
 
 Advanced rate card management for quick quote creation with predefined services and pricing tiers. A key differentiator from competitors.
 
-<!-- Screenshot: Rate Cards (coming soon) -->
 
 ### Additional Features
 
@@ -361,6 +360,18 @@ We welcome contributions from the community! Please read our [Contributing Guide
 - `fix/` - Bug fixes
 - `chore/` - Maintenance tasks
 - `docs/` - Documentation updates
+
+---
+
+## Known Limitations
+
+| Area | Detail |
+|------|--------|
+| **Database CHECK constraints** | Prisma ORM does not support native CHECK constraints. All monetary and quantity validations are enforced at the application level. |
+| **Data retention** | No automated archiving or purging of old records. Soft-deleted data accumulates. For large deployments, implement a periodic cleanup cron job against the `deletedAt IS NOT NULL` records. |
+| **Signature encryption** | E-signature images are stored as base64 in the database without at-rest encryption. Database-level access controls apply. For sensitive deployments, consider server-side encryption or encrypted object storage. |
+| **Cloud storage** | S3 and Cloudflare R2 providers are stubbed but not implemented. Local file storage is the default. |
+| **next-auth** | Uses NextAuth.js v5 beta. Pin the exact version in `package.json` and test before upgrading. |
 
 ---
 

@@ -113,7 +113,6 @@ export async function ensureTestUserExists(page: any): Promise<void> {
 
   // Wait for navigation or error
   await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1000);
 
   // Check if login succeeded
   const currentUrl = page.url();

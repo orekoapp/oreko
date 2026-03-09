@@ -52,6 +52,11 @@ export const ROUTES = {
   settingsEmails: '/settings/emails',
   settingsAppearance: '/settings/appearance',
   settingsBilling: '/settings/billing',
+  settingsBusiness: '/settings/business',
+  settingsBranding: '/settings/branding',
+  settingsPayments: '/settings/payments',
+  settingsQuotes: '/settings/quotes',
+  settingsWorkspace: '/settings/workspace',
 
   // Help
   help: '/help',

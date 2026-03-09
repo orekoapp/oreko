@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import type { QuoteBlock } from './types';
 import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
 import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
+import { computeQuoteDocumentHash } from '@/lib/signing/document-hash';
 
 /**
  * Public quote data for client portal (subset of full quote)
@@ -309,7 +310,7 @@ export async function acceptQuote(data: {
       return { success: false, error: 'You must agree to the terms' };
     }
 
-    // Find the quote
+    // Find the quote with line items for document hash
     const quote = await prisma.quote.findUnique({
       where: { accessToken: data.accessToken },
       select: {
@@ -318,9 +319,20 @@ export async function acceptQuote(data: {
         expirationDate: true,
         settings: true,
         workspaceId: true,
+        subtotal: true,
         total: true,
         terms: true,
         notes: true,
+        lineItems: {
+          select: {
+            name: true,
+            description: true,
+            quantity: true,
+            rate: true,
+            amount: true,
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
     });
 
@@ -338,27 +350,43 @@ export async function acceptQuote(data: {
       return { success: false, error: 'This quote has expired' };
     }
 
+    // Compute document hash for tamper-proofing
+    const signedAt = new Date();
+    const signedAtISO = signedAt.toISOString();
+    const documentHash = computeQuoteDocumentHash({
+      quoteId: quote.id,
+      lineItems: quote.lineItems.map((item) => ({
+        name: item.name,
+        description: item.description,
+        quantity: Number(item.quantity),
+        rate: Number(item.rate),
+        amount: Number(item.amount),
+      })),
+      terms: quote.terms || '',
+      notes: quote.notes || '',
+      subtotal: Number(quote.subtotal),
+      total: Number(quote.total),
+      signerName: data.signerName,
+      signedAt: signedAtISO,
+    });
+
     // Update quote with acceptance
     await prisma.$transaction([
       prisma.quote.update({
         where: { accessToken: data.accessToken },
         data: {
           status: 'accepted',
-          acceptedAt: new Date(),
-          signedAt: new Date(),
-          // Bug #21: Signature images stored as base64 without encryption at rest.
-          // SECURITY NOTE: For production deployments handling sensitive signatures,
-          // consider encrypting with AES-256-GCM using SIGNATURE_ENCRYPTION_KEY env var
-          // before storing, or moving to server-side-encrypted object storage (S3/R2).
-          // Current approach is acceptable for MVP — data is protected by DB access controls.
+          acceptedAt: signedAt,
+          signedAt,
           signatureData: {
             type: 'drawn',
             encrypted: false,
             data: data.signatureData,
             signerName: data.signerName,
-            signedAt: new Date().toISOString(),
+            signedAt: signedAtISO,
             ipAddress,
             userAgent,
+            documentHash,
           },
         },
       }),
@@ -369,9 +397,9 @@ export async function acceptQuote(data: {
           actorType: 'client',
           metadata: {
             signerName: data.signerName,
-            // Bug #76: Snapshot terms at time of acceptance for legal compliance
             termsSnapshot: quote.terms || '',
             notesSnapshot: quote.notes || '',
+            documentHash,
           },
           ipAddress,
           userAgent,

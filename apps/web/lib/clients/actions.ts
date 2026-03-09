@@ -19,6 +19,7 @@ import type {
   ClientMetadata,
 } from './types';
 import { safeParseAddress, safeParseMetadata } from './types';
+import { ROUTES } from '@/lib/routes';
 import { nanoid } from 'nanoid';
 
 // Helper to convert Decimal to number
@@ -392,7 +393,7 @@ export async function createClient(input: CreateClientInput): Promise<{ id: stri
     },
   });
 
-  revalidatePath('/clients');
+  revalidatePath(ROUTES.clients);
 
   return { id: client.id };
 }
@@ -451,8 +452,8 @@ export async function updateClient(input: UpdateClientInput): Promise<{ id: stri
     data: updateData,
   });
 
-  revalidatePath('/clients');
-  revalidatePath(`/clients/${input.id}`);
+  revalidatePath(ROUTES.clients);
+  revalidatePath(ROUTES.clientDetail(input.id));
 
   return { id: client.id };
 }
@@ -484,7 +485,7 @@ export async function deleteClient(id: string): Promise<void> {
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath('/clients');
+  revalidatePath(ROUTES.clients);
 }
 
 // Bulk delete clients
@@ -504,7 +505,7 @@ export async function deleteClients(ids: string[]): Promise<{ deleted: number }>
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath('/clients');
+  revalidatePath(ROUTES.clients);
 
   return { deleted: result.count };
 }
@@ -645,7 +646,7 @@ export async function importClients(
     }
   }
 
-  revalidatePath('/clients');
+  revalidatePath(ROUTES.clients);
 
   return result;
 }

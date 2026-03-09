@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { prisma } from '@quotecraft/database';
 import { getQuotePdfData } from '@/lib/pdf/actions';
 import { generateQuotePdfHtml } from '@/lib/pdf/templates';
 import { generatePdfFromHtml } from '@/lib/services/pdf';
@@ -38,6 +39,19 @@ export async function GET(
     });
 
     const filename = `Quote-${data.quoteNumber.replace(/[^a-zA-Z0-9\-_]/g, '')}.pdf`;
+
+    // Audit trail: log PDF download event
+    prisma.quoteEvent.create({
+      data: {
+        quoteId,
+        eventType: 'pdf_downloaded',
+        actorType: 'user',
+        actorId: session.user.id,
+        metadata: { format: 'pdf', filename },
+        ipAddress: _request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
+        userAgent: _request.headers.get('user-agent') || null,
+      },
+    }).catch(() => {}); // Fire and forget — don't block download
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

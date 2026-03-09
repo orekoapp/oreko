@@ -14,6 +14,7 @@ import type {
 import { sendInvoiceSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
 import { formatCurrency } from '@/lib/utils';
+import { ROUTES } from '@/lib/routes';
 import { generateInvoiceNumber } from './internal';
 
 /** Generate a cryptographically secure access token (64 hex chars = 256 bits) */
@@ -166,7 +167,7 @@ export async function createInvoice(data: CreateInvoiceData) {
     },
   });
 
-  revalidatePath('/invoices');
+  revalidatePath(ROUTES.invoices);
 
   return { success: true, invoice };
 }
@@ -303,9 +304,9 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
     return newInvoice;
   });
 
-  revalidatePath('/invoices');
-  revalidatePath('/quotes');
-  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath(ROUTES.invoices);
+  revalidatePath(ROUTES.quotes);
+  revalidatePath(ROUTES.quoteDetail(quoteId));
 
   return { success: true, invoice };
 }
@@ -405,8 +406,8 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
     });
   });
 
-  revalidatePath('/invoices');
-  revalidatePath(`/invoices/${invoiceId}`);
+  revalidatePath(ROUTES.invoices);
+  revalidatePath(ROUTES.invoiceDetail(invoiceId));
 
   return { success: true, invoice };
 }
@@ -661,8 +662,8 @@ export async function updateInvoiceStatus(
     }),
   ]);
 
-  revalidatePath('/invoices');
-  revalidatePath(`/invoices/${invoiceId}`);
+  revalidatePath(ROUTES.invoices);
+  revalidatePath(ROUTES.invoiceDetail(invoiceId));
 
   return { success: true };
 }
@@ -761,7 +762,7 @@ export async function deleteInvoice(invoiceId: string) {
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath('/invoices');
+  revalidatePath(ROUTES.invoices);
 
   return { success: true };
 }
@@ -887,8 +888,8 @@ export async function recordPayment(
     return { newAmountPaid, newAmountDue, newStatus };
   });
 
-  revalidatePath('/invoices');
-  revalidatePath(`/invoices/${invoiceId}`);
+  revalidatePath(ROUTES.invoices);
+  revalidatePath(ROUTES.invoiceDetail(invoiceId));
 
   return { success: true };
 }
@@ -965,7 +966,7 @@ export async function duplicateInvoice(invoiceId: string) {
     },
   });
 
-  revalidatePath('/invoices');
+  revalidatePath(ROUTES.invoices);
 
   return { success: true, invoiceId: duplicate.id };
 }

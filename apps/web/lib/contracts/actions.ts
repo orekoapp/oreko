@@ -21,6 +21,7 @@ import type {
 } from './types';
 import { sendEmail } from '@/lib/services/email';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { computeContractDocumentHash } from '@/lib/signing/document-hash';
 
 // HTML escape for safe email template interpolation
 function escapeHtml(str: string): string {
@@ -264,7 +265,7 @@ export async function getContractInstances(
       where,
       include: {
         contract: { select: { name: true, variables: true } },
-        client: { select: { name: true, company: true } },
+        client: { select: { name: true, email: true, company: true } },
         quote: { select: { title: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -308,7 +309,7 @@ export async function getContractInstanceById(id: string): Promise<ContractInsta
     where: { id, workspaceId },
     include: {
       contract: { select: { name: true } },
-      client: { select: { name: true, company: true } },
+      client: { select: { name: true, email: true, company: true } },
       quote: { select: { title: true } },
     },
   });
@@ -323,6 +324,7 @@ export async function getContractInstanceById(id: string): Promise<ContractInsta
     contractName: instance.contract.name,
     clientId: instance.clientId,
     clientName: instance.client.company || instance.client.name,
+    clientEmail: instance.client.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -346,7 +348,7 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
     where: { accessToken: token },
     include: {
       contract: { select: { name: true } },
-      client: { select: { name: true, company: true } },
+      client: { select: { name: true, email: true, company: true } },
       quote: { select: { title: true } },
       workspace: {
         select: {
@@ -379,6 +381,7 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
     contractName: instance.contract.name,
     clientId: instance.clientId,
     clientName: instance.client.company || instance.client.name,
+    clientEmail: instance.client.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -463,7 +466,7 @@ export async function createContractInstance(
     },
     include: {
       contract: { select: { name: true } },
-      client: { select: { name: true, company: true } },
+      client: { select: { name: true, email: true, company: true } },
       quote: { select: { title: true } },
     },
   });
@@ -476,6 +479,7 @@ export async function createContractInstance(
     contractName: instance.contract.name,
     clientId: instance.clientId,
     clientName: instance.client.company || instance.client.name,
+    clientEmail: instance.client.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -589,7 +593,7 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
 }
 
 // Sign a contract (called from public client view)
-export async function signContract(input: SignContractInput, ipAddress?: string): Promise<void> {
+export async function signContract(input: SignContractInput, ipAddress?: string, userAgent?: string): Promise<void> {
   const instance = await prisma.contractInstance.findUnique({
     where: { accessToken: input.token },
   });
@@ -602,13 +606,30 @@ export async function signContract(input: SignContractInput, ipAddress?: string)
     throw new Error('Contract already signed');
   }
 
+  // Compute document hash for tamper-proofing
+  const signedAt = new Date();
+  const signerName = input.signatureData.name || 'Unknown';
+  const documentHash = computeContractDocumentHash({
+    contractInstanceId: instance.id,
+    content: instance.content,
+    signerName,
+    signedAt: signedAt.toISOString(),
+  });
+
+  // Attach the document hash to the signature data
+  const signatureWithHash = {
+    ...input.signatureData,
+    documentHash,
+  };
+
   await prisma.contractInstance.update({
     where: { id: instance.id },
     data: {
       status: 'signed',
-      signedAt: new Date(),
-      signatureData: input.signatureData as unknown as Prisma.InputJsonValue,
+      signedAt,
+      signatureData: signatureWithHash as unknown as Prisma.InputJsonValue,
       signerIpAddress: ipAddress || null,
+      signerUserAgent: userAgent || null,
     },
   });
 

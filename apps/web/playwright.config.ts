@@ -50,6 +50,7 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/error-boundaries.spec.ts',
         '**/session-persistence.spec.ts',
+        '**/security/*.spec.ts',
       ],
       use: { ...devices['Desktop Chrome'] },
     },

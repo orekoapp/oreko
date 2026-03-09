@@ -7,6 +7,7 @@ import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 import { sendQuoteSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
+import { ROUTES } from '@/lib/routes';
 
 /**
  * Bug #134: Safely parse quote settings from JSON with runtime validation.
@@ -112,6 +113,12 @@ export async function createQuote(data: {
   blocks?: QuoteBlock[];
 }) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot create quotes
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot create quotes' };
+  }
 
   // Validate title
   if (!data.title || data.title.length > 500) {
@@ -207,7 +214,7 @@ export async function createQuote(data: {
     },
   });
 
-  revalidatePath('/quotes');
+  revalidatePath(ROUTES.quotes);
 
   return { success: true, quote };
 }
@@ -228,6 +235,12 @@ export async function updateQuote(
   }
 ) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot update quotes
+  if (role === 'viewer') {
+    return { success: false as const, error: 'Insufficient permissions: viewers cannot edit quotes' };
+  }
 
   // Verify quote belongs to workspace
   const existingQuote = await prisma.quote.findFirst({
@@ -341,7 +354,7 @@ export async function updateQuote(
       });
     });
 
-    revalidatePath('/quotes');
+    revalidatePath(ROUTES.quotes);
     revalidatePath(`/quotes/${quoteId}`);
 
     return { success: true as const, quote };
@@ -559,7 +572,7 @@ export async function deleteQuote(quoteId: string) {
     });
   });
 
-  revalidatePath('/quotes');
+  revalidatePath(ROUTES.quotes);
 
   return { success: true };
 }
@@ -569,6 +582,12 @@ export async function deleteQuote(quoteId: string) {
  */
 export async function duplicateQuote(quoteId: string) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot duplicate quotes
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot duplicate quotes' };
+  }
 
   const original = await prisma.quote.findFirst({
     where: {
@@ -619,7 +638,7 @@ export async function duplicateQuote(quoteId: string) {
     },
   });
 
-  revalidatePath('/quotes');
+  revalidatePath(ROUTES.quotes);
 
   return { success: true, quoteId: duplicate.id };
 }
@@ -632,6 +651,12 @@ export async function updateQuoteStatus(
   status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired'
 ) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot change quote status
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot change quote status' };
+  }
 
   // Validate state transitions
   const validTransitions: Record<string, string[]> = {
@@ -685,8 +710,8 @@ export async function updateQuoteStatus(
     },
   });
 
-  revalidatePath('/quotes');
-  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath(ROUTES.quotes);
+  revalidatePath(ROUTES.quoteDetail(quoteId));
 
   return { success: true };
 }
@@ -697,6 +722,12 @@ export async function updateQuoteStatus(
  */
 export async function sendQuote(quoteId: string) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot send quotes
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot send quotes' };
+  }
 
   // Get quote with client details
   const quote = await prisma.quote.findFirst({
@@ -783,8 +814,8 @@ export async function sendQuote(quoteId: string) {
     link: `/quotes/${quoteId}`,
   }).catch(() => {});
 
-  revalidatePath('/quotes');
-  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath(ROUTES.quotes);
+  revalidatePath(ROUTES.quoteDetail(quoteId));
 
   return { success: true, recipientEmail: quote.client.email, emailSent };
 }

@@ -21,6 +21,7 @@ import type {
   UpdateNumberSequenceInput,
   Address,
 } from './types';
+import { ROUTES } from '@/lib/routes';
 
 // Helper to convert Prisma Decimal to number
 function toNumber(value: Prisma.Decimal | number | null | undefined): number {
@@ -63,7 +64,7 @@ export async function updateWorkspaceName(name: string): Promise<void> {
     data: { name },
   });
 
-  revalidatePath('/settings');
+  revalidatePath(ROUTES.settings);
 }
 
 // ============================================
@@ -137,8 +138,8 @@ export async function updateBusinessProfile(
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/business');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsBusiness);
 }
 
 // Update business logo
@@ -164,8 +165,8 @@ export async function updateBusinessLogo(logoUrl: string | null): Promise<void> 
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/business');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsBusiness);
 }
 
 // ============================================
@@ -233,8 +234,8 @@ export async function updateBrandingSettings(
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/branding');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsBranding);
 }
 
 // ============================================
@@ -299,8 +300,8 @@ export async function updatePaymentSettings(
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/payments');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsPayments);
 }
 
 // ============================================
@@ -353,7 +354,7 @@ export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: st
     },
   });
 
-  revalidatePath('/settings/tax-rates');
+  revalidatePath(ROUTES.settings);
 
   return { id: taxRate.id };
 }
@@ -391,7 +392,7 @@ export async function updateTaxRate(input: UpdateTaxRateInput): Promise<void> {
     },
   });
 
-  revalidatePath('/settings/tax-rates');
+  revalidatePath(ROUTES.settings);
 }
 
 // Delete tax rate
@@ -421,7 +422,7 @@ export async function deleteTaxRate(id: string): Promise<void> {
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath('/settings/tax-rates');
+  revalidatePath(ROUTES.settings);
 }
 
 // ============================================
@@ -529,9 +530,9 @@ export async function updateNumberSequence(
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/invoices');
-  revalidatePath('/settings/quotes');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsInvoice);
+  revalidatePath(ROUTES.settingsQuotes);
 }
 
 // ============================================
@@ -673,7 +674,7 @@ export async function updateMemberRole(
     timestamp: new Date().toISOString(),
   });
 
-  revalidatePath('/settings/team');
+  revalidatePath(ROUTES.settingsTeam);
 
   return { success: true };
 }
@@ -774,7 +775,7 @@ export async function inviteMember(
       console.error('Failed to send invitation email:', emailError);
     }
 
-    revalidatePath('/settings/team');
+    revalidatePath(ROUTES.settingsTeam);
     return { success: true };
   }
 
@@ -801,7 +802,7 @@ export async function inviteMember(
     },
   });
 
-  revalidatePath('/settings/team');
+  revalidatePath(ROUTES.settingsTeam);
 
   return { success: true };
 }
@@ -847,7 +848,7 @@ export async function removeMember(
     where: { id: memberId },
   });
 
-  revalidatePath('/settings/team');
+  revalidatePath(ROUTES.settingsTeam);
 
   return { success: true };
 }
@@ -912,7 +913,7 @@ export async function cancelInvitation(
     where: { id: invitationId },
     data: { cancelledAt: new Date() },
   });
-  revalidatePath('/settings/team');
+  revalidatePath(ROUTES.settingsTeam);
   return { success: true };
 }
 
@@ -974,7 +975,7 @@ export async function resendInvitation(
     console.error('Failed to resend invitation email:', emailError);
   }
 
-  revalidatePath('/settings/team');
+  revalidatePath(ROUTES.settingsTeam);
   return { success: true };
 }
 
@@ -1062,7 +1063,7 @@ export async function acceptInvitation(
     }),
   ]);
 
-  revalidatePath('/settings/team');
+  revalidatePath(ROUTES.settingsTeam);
   return { success: true, workspaceId: invitation.workspaceId };
 }
 
@@ -1194,7 +1195,7 @@ export async function updateWorkspaceSettings(
     },
   });
 
-  revalidatePath('/settings/workspace');
+  revalidatePath(ROUTES.settingsWorkspace);
 
   return { success: true };
 }
@@ -1360,7 +1361,7 @@ export async function updateInvoiceDefaults(
     });
   });
 
-  revalidatePath('/settings/invoices');
+  revalidatePath(ROUTES.settingsInvoice);
 
   return { success: true };
 }

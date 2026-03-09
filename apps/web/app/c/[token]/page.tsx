@@ -21,6 +21,7 @@ export default async function ContractSigningPage({ params }: PageProps) {
   const headersList = await headers();
   const forwardedFor = headersList.get('x-forwarded-for');
   const ipAddress = forwardedFor?.split(',')[0]?.trim() || 'unknown';
+  const userAgent = headersList.get('user-agent') || 'unknown';
 
   const instance = await getContractInstanceByToken(token);
 
@@ -33,6 +34,7 @@ export default async function ContractSigningPage({ params }: PageProps) {
       contract={instance}
       token={token}
       ipAddress={ipAddress}
+      userAgent={userAgent}
     />
   );
 }

@@ -14,6 +14,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ContractEditor } from '@/components/contracts/contract-editor';
 import { SignaturePad } from '@/components/contracts/signature-pad';
+import { SigningOtpGate } from '@/components/client-portal/signing-otp-gate';
 import { signContract } from '@/lib/contracts/actions';
 import { formatDate } from '@/lib/utils';
 import type { ContractInstanceDetail, SignatureData } from '@/lib/contracts/types';
@@ -22,18 +23,21 @@ interface ContractSigningViewProps {
   contract: ContractInstanceDetail;
   token: string;
   ipAddress: string;
+  userAgent: string;
 }
 
 export function ContractSigningView({
   contract,
   token,
   ipAddress,
+  userAgent,
 }: ContractSigningViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [signature, setSignature] = useState<SignatureData | null>(null);
   const [isSigned, setIsSigned] = useState(contract.status === 'signed');
   const [signError, setSignError] = useState<string | null>(null);
+  const [isIdentityVerified, setIsIdentityVerified] = useState(false);
 
   const handleSign = () => {
     if (!signature) return;
@@ -41,7 +45,7 @@ export function ContractSigningView({
 
     startTransition(async () => {
       try {
-        await signContract({ token, signatureData: signature }, ipAddress);
+        await signContract({ token, signatureData: signature }, ipAddress, userAgent);
         setIsSigned(true);
         router.refresh();
       } catch (error) {
@@ -162,44 +166,58 @@ export function ContractSigningView({
             </CardContent>
           </Card>
 
-          {/* Signature */}
-          <SignaturePad
-            onSignatureChange={setSignature}
-            signerName={contract.clientName}
-          />
-
-          {/* Sign Button */}
-          {signError && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-              <p className="text-sm text-destructive">{signError}</p>
-            </div>
+          {/* Email OTP Verification Gate */}
+          {!isIdentityVerified && contract.clientEmail && (
+            <SigningOtpGate
+              type="contract"
+              accessToken={token}
+              clientEmail={contract.clientEmail}
+              onVerified={() => setIsIdentityVerified(true)}
+            />
           )}
-          <div className="flex justify-end">
-            <Button
-              size="lg"
-              onClick={handleSign}
-              disabled={!signature || isPending}
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Sign Contract
-                </>
-              )}
-            </Button>
-          </div>
 
-          {/* Legal Notice */}
-          <p className="text-xs text-center text-muted-foreground">
-            By signing this contract, you agree to all terms and conditions
-            stated above. Your signature, timestamp, and IP address will be
-            recorded for verification purposes.
-          </p>
+          {/* Signature — only after identity verification */}
+          {(isIdentityVerified || !contract.clientEmail) && (
+            <>
+              <SignaturePad
+                onSignatureChange={setSignature}
+                signerName={contract.clientName}
+              />
+
+              {/* Sign Button */}
+              {signError && (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                  <p className="text-sm text-destructive">{signError}</p>
+                </div>
+              )}
+              <div className="flex justify-end">
+                <Button
+                  size="lg"
+                  onClick={handleSign}
+                  disabled={!signature || isPending}
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Sign Contract
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Legal Notice */}
+              <p className="text-xs text-center text-muted-foreground">
+                By signing this contract, you agree to all terms and conditions
+                stated above. Your signature, timestamp, and IP address will be
+                recorded for verification purposes.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
