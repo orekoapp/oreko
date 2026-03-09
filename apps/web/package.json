@@ -10,6 +10,7 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "test": "vitest",
+    "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "e2e:seed": "npx tsx e2e/utils/seed-e2e-data.ts",
     "e2e:cleanup": "CLEANUP=true npx tsx e2e/utils/seed-e2e-data.ts",

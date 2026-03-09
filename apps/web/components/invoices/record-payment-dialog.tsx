@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { DollarSign, Loader2, CreditCard, Building2, Banknote, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,6 +85,7 @@ export function RecordPaymentDialog({
       });
 
       if (result.success) {
+        toast.success('Payment recorded successfully');
         setOpen(false);
         router.refresh();
         // Reset form

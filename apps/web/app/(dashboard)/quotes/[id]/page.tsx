@@ -14,8 +14,13 @@ interface QuoteDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function generateMetadata({ params }: QuoteDetailPageProps) {
   const { id } = await params;
+  if (!UUID_REGEX.test(id)) {
+    return { title: 'Quote Not Found' };
+  }
   try {
     const quote = await getQuote(id);
     return { title: quote ? `${quote.title} - ${quote.quoteNumber}` : 'Quote Details' };
@@ -36,6 +41,9 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 
 export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) {
   const { id } = await params;
+  if (!UUID_REGEX.test(id)) {
+    notFound();
+  }
   const quote = await getQuote(id);
 
   if (!quote) {

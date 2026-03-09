@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { notFound } from 'next/navigation';
+
 import { getQuoteByAccessToken, trackQuoteView, type PublicQuoteData } from '@/lib/quotes/portal-actions';
 import { QuotePortalView } from '@/components/client-portal/quote-portal-view';
 import { QuotePortalHeader } from '@/components/client-portal/quote-portal-header';

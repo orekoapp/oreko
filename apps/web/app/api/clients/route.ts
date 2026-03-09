@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
 
     // Parse query params
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10) || 20));
     const search = searchParams.get('search');
 
     // Build where clause
@@ -49,7 +49,10 @@ export async function GET(request: NextRequest) {
     // Transform to API response shape
     const data = clients.map((client) => {
       // Address is stored as JSON
-      const address = (client.address as Record<string, string> | null) || {};
+      const raw = client.address;
+      const address: Record<string, string> = (raw && typeof raw === 'object' && !Array.isArray(raw))
+        ? (raw as Record<string, string>)
+        : {};
       return {
         id: client.id,
         name: client.name,

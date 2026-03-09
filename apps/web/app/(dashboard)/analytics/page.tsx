@@ -1,7 +1,5 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
 import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard';
 import { AnalyticsSkeleton } from '@/components/analytics/analytics-skeleton';
 import {
@@ -59,12 +57,6 @@ async function AnalyticsContent() {
 }
 
 export default async function AnalyticsPage() {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect('/login');
-  }
-
   return (
     <div className="space-y-6">
       <div>

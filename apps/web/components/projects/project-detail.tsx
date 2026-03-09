@@ -306,8 +306,8 @@ export function ProjectDetail({ project, stats }: ProjectDetailProps) {
             <CardContent>
               <Tabs defaultValue="quotes">
                 <TabsList>
-                  <TabsTrigger value="quotes">Quotes ({project.quotes?.length || 0})</TabsTrigger>
-                  <TabsTrigger value="invoices">Invoices ({project.invoices?.length || 0})</TabsTrigger>
+                  <TabsTrigger value="quotes">Quotes ({project._count?.quotes || 0})</TabsTrigger>
+                  <TabsTrigger value="invoices">Invoices ({project._count?.invoices || 0})</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="quotes" className="mt-4">

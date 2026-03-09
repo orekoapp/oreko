@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createBlock, BLOCK_TEMPLATES } from '@/lib/quotes/types';
-import type { HeaderBlock, TextBlock, ServiceItemBlock } from '@/lib/quotes/types';
 
 // Mock crypto.randomUUID
 beforeEach(() => {
@@ -78,43 +77,51 @@ describe('BLOCK_TEMPLATES', () => {
 
 describe('createBlock', () => {
   it('creates a header block with default content', () => {
-    const block = createBlock<HeaderBlock>('header');
+    const block = createBlock('header');
 
     expect(block.id).toBe('test-uuid-1234');
     expect(block.type).toBe('header');
-    expect(block.content.text).toBe('Section Title');
-    expect(block.content.level).toBe(2);
-    expect(block.content.alignment).toBe('left');
+    if (block.type === 'header') {
+      expect(block.content.text).toBe('Section Title');
+      expect(block.content.level).toBe(2);
+      expect(block.content.alignment).toBe('left');
+    }
     expect(block.createdAt).toBeDefined();
     expect(block.updatedAt).toBeDefined();
   });
 
   it('creates a text block with default content', () => {
-    const block = createBlock<TextBlock>('text');
+    const block = createBlock('text');
 
     expect(block.type).toBe('text');
-    expect(block.content.html).toBe('<p>Enter your text here...</p>');
-    expect(block.content.alignment).toBe('left');
+    if (block.type === 'text') {
+      expect(block.content.html).toBe('<p>Enter your text here...</p>');
+      expect(block.content.alignment).toBe('left');
+    }
   });
 
   it('creates a service-item block with default content', () => {
-    const block = createBlock<ServiceItemBlock>('service-item');
+    const block = createBlock('service-item');
 
     expect(block.type).toBe('service-item');
-    expect(block.content.name).toBe('Service Name');
-    expect(block.content.quantity).toBe(1);
-    expect(block.content.rate).toBe(0);
+    if (block.type === 'service-item') {
+      expect(block.content.name).toBe('Service Name');
+      expect(block.content.quantity).toBe(1);
+      expect(block.content.rate).toBe(0);
+    }
   });
 
   it('allows overriding default content', () => {
-    const block = createBlock<HeaderBlock>('header', {
+    const block = createBlock('header', {
       text: 'Custom Title',
       level: 1,
     });
 
-    expect(block.content.text).toBe('Custom Title');
-    expect(block.content.level).toBe(1);
-    expect(block.content.alignment).toBe('left'); // Default preserved
+    if (block.type === 'header') {
+      expect(block.content.text).toBe('Custom Title');
+      expect(block.content.level).toBe(1);
+      expect(block.content.alignment).toBe('left'); // Default preserved
+    }
   });
 
   it('throws error for unknown block type', () => {
@@ -126,7 +133,7 @@ describe('createBlock', () => {
 
   it('sets timestamps on creation', () => {
     const before = new Date().toISOString();
-    const block = createBlock<HeaderBlock>('header');
+    const block = createBlock('header');
     const after = new Date().toISOString();
 
     expect(block.createdAt >= before).toBe(true);
@@ -137,7 +144,7 @@ describe('createBlock', () => {
 
 describe('Block type discrimination', () => {
   it('can discriminate header block', () => {
-    const block = createBlock<HeaderBlock>('header');
+    const block = createBlock('header');
 
     if (block.type === 'header') {
       expect(block.content.level).toBeDefined();
@@ -146,7 +153,7 @@ describe('Block type discrimination', () => {
   });
 
   it('can discriminate service-item block', () => {
-    const block = createBlock<ServiceItemBlock>('service-item');
+    const block = createBlock('service-item');
 
     if (block.type === 'service-item') {
       expect(block.content.quantity).toBeDefined();

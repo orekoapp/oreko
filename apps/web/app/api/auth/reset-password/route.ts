@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import { prisma } from '@quotecraft/database';
+import { passwordSchema } from '@/lib/validations/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,24 +15,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!password || typeof password !== 'string') {
+    try {
+      passwordSchema.parse(password);
+    } catch {
       return NextResponse.json(
-        { error: 'Password is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate password strength
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters' },
-        { status: 400 }
-      );
-    }
-
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/.test(password)) {
-      return NextResponse.json(
-        { error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' },
+        { error: 'Password must be at least 8 characters and contain an uppercase letter, lowercase letter, and number' },
         { status: 400 }
       );
     }

@@ -128,11 +128,11 @@ export async function createInvoice(data: CreateInvoiceData) {
   const lineItems = data.lineItems.map((item, index) => ({
     name: item.name,
     description: item.description || null,
-    quantity: item.quantity,
+    quantity: Math.round(item.quantity * 100) / 100,
     rate: item.rate,
-    amount: item.quantity * item.rate,
+    amount: Math.round(item.quantity * item.rate * 100) / 100,
     taxRate: item.taxRate || null,
-    taxAmount: item.taxRate ? item.quantity * item.rate * (item.taxRate / 100) : 0,
+    taxAmount: item.taxRate ? Math.round(item.quantity * item.rate * (item.taxRate / 100) * 100) / 100 : 0,
     sortOrder: index,
   }));
 

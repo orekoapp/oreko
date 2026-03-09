@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   FileText,
   Receipt,
@@ -54,6 +55,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
         setResults(data);
       } catch {
         setResults([]);
+        toast.error('Search failed. Please try again.');
       } finally {
         setIsSearching(false);
       }

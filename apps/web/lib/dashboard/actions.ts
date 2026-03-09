@@ -577,8 +577,8 @@ export async function getAnalyticsStats(): Promise<AnalyticsStats> {
   const { workspaceId } = await getCurrentUserWorkspace();
   const now = new Date();
   const startOfCurrentMonth = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
-  const startOfPrevMonth = startOfDay(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-  const endOfPrevMonth = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+  const startOfPrevMonth = startOfDay(subMonths(startOfCurrentMonth, 1));
+  const endOfPrevMonth = startOfCurrentMonth;
 
   // Get base dashboard stats
   const baseStats = await getDashboardStats();

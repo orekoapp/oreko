@@ -40,7 +40,7 @@ export function ServiceGroupBlockContent({ block }: ServiceGroupBlockContentProp
   };
 
   const handleAddItem = () => {
-    const newItem = createBlock<ServiceItemBlock>('service-item', {
+    const newItem = createBlock('service-item', {
       name: 'New Service',
       description: '',
       quantity: 1,

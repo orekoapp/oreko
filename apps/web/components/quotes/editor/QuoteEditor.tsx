@@ -144,7 +144,7 @@ export function QuoteEditor() {
             });
           }
         })
-        .catch(console.error);
+        .catch(() => toast.error('Failed to load client details'));
     }
   }, [clientId]);
 
@@ -195,6 +195,10 @@ export function QuoteEditor() {
 
     setIsUploadingLogo(true);
     try {
+      // Revoke previous object URL to prevent memory leak
+      if (logoUrl && logoUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(logoUrl);
+      }
       // Create a local preview URL
       const url = URL.createObjectURL(file);
       setLogoUrl(url);
@@ -466,7 +470,9 @@ export function QuoteEditor() {
                     )}
                   >
                     {isUploadingLogo ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      <div role="status" aria-label="Uploading logo">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
                     ) : logoUrl ? (
                       <div className="relative h-12 w-32">
                         <Image
@@ -488,6 +494,7 @@ export function QuoteEditor() {
                       accept="image/png,image/jpeg,image/jpg"
                       onChange={handleLogoUpload}
                       className="hidden"
+                      aria-label="Upload business logo"
                     />
                   </label>
                 </div>

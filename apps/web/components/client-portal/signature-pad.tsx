@@ -68,6 +68,8 @@ export function SignaturePad({ onChange, className }: SignaturePadProps) {
     <div className={cn('space-y-2', className)}>
       <div
         ref={containerRef}
+        role="application"
+        aria-label="Signature pad — draw your signature here"
         className="relative overflow-hidden rounded-lg border-2 border-dashed border-primary/30 bg-white"
       >
         <SignatureCanvas
@@ -75,6 +77,7 @@ export function SignaturePad({ onChange, className }: SignaturePadProps) {
           penColor="black"
           canvasProps={{
             className: 'w-full touch-none',
+            'aria-label': 'Signature drawing area',
             style: { height: '200px', width: '100%' },
           }}
           onEnd={handleEnd}
@@ -82,7 +85,7 @@ export function SignaturePad({ onChange, className }: SignaturePadProps) {
         />
 
         {/* Signature line hint */}
-        <div className="pointer-events-none absolute bottom-8 left-4 right-4">
+        <div className="pointer-events-none absolute bottom-8 left-4 right-4" aria-hidden="true">
           <div className="border-b border-gray-300" />
           <p className="mt-1 text-center text-xs text-muted-foreground">
             Sign above

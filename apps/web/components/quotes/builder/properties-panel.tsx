@@ -1,7 +1,7 @@
 'use client';
 
 import { AlignLeft, AlignCenter, AlignRight, AlignJustify, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import type { QuoteBlock, BlockType } from '@/lib/quotes/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -274,7 +274,7 @@ function ServiceItemProperties({
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Line Total</span>
           <span className="font-semibold">
-            ${(block.content.quantity * block.content.rate).toFixed(2)}
+            {formatCurrency(block.content.quantity * block.content.rate, document?.settings?.currency ?? 'USD')}
           </span>
         </div>
       </div>

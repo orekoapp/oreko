@@ -20,6 +20,13 @@ import type {
 } from './types';
 import { nanoid } from 'nanoid';
 
+function parseClientMetadata(metadata: unknown): ClientMetadata {
+  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+    return metadata as ClientMetadata;
+  }
+  return {};
+}
+
 // Helper to convert Decimal to number
 function toNumber(value: unknown): number {
   if (value === null || value === undefined) return 0;
@@ -43,17 +50,20 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
     sortOrder = 'desc',
   } = filter;
 
+  // Cap search length to prevent oversized strings hitting the DB
+  const safeSearch = search?.slice(0, 200);
+
   // Build where clause
   const where: Prisma.ClientWhereInput = {
     workspaceId,
     deletedAt: null,
   };
 
-  if (search) {
+  if (safeSearch) {
     where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { email: { contains: search, mode: 'insensitive' } },
-      { company: { contains: search, mode: 'insensitive' } },
+      { name: { contains: safeSearch, mode: 'insensitive' } },
+      { email: { contains: safeSearch, mode: 'insensitive' } },
+      { company: { contains: safeSearch, mode: 'insensitive' } },
     ];
   }
 
@@ -94,13 +104,13 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
     orderBy: {
       [sortBy]: sortOrder,
     },
-    skip: (page - 1) * limit,
-    take: limit,
+    skip: (Math.max(1, page) - 1) * Math.max(1, limit),
+    take: Math.max(1, limit),
   });
 
   // Transform to list items
   const data: ClientListItem[] = clients.map((client) => {
-    const metadata = (client.metadata as ClientMetadata) || {};
+    const metadata = parseClientMetadata(client.metadata);
     return {
       id: client.id,
       name: client.name,
@@ -175,7 +185,7 @@ export async function getClientById(id: string): Promise<ClientDetail> {
   const totalInvoiced = toNumber(totals._sum?.total);
   const outstandingAmount = totalInvoiced - totalRevenue;
 
-  const metadata = (client.metadata as ClientMetadata) || {};
+  const metadata = parseClientMetadata(client.metadata);
 
   return {
     id: client.id,
@@ -192,8 +202,8 @@ export async function getClientById(id: string): Promise<ClientDetail> {
     createdAt: client.createdAt,
     updatedAt: client.updatedAt,
     deletedAt: client.deletedAt,
-    quotes: client.quotes,
-    invoices: client.invoices,
+    quotes: client.quotes ?? [],
+    invoices: client.invoices ?? [],
     _count: client._count,
     // Computed fields from metadata
     contacts: metadata.contacts || [],
@@ -410,7 +420,7 @@ export async function updateClient(input: UpdateClientInput): Promise<{ id: stri
   }
 
   // Merge metadata
-  const existingMetadata = (existing.metadata as ClientMetadata) || {};
+  const existingMetadata = parseClientMetadata(existing.metadata);
   const metadata: ClientMetadata = {
     ...existingMetadata,
     ...(input.type !== undefined && { type: input.type }),
@@ -523,7 +533,7 @@ export async function getClientStats(): Promise<ClientStats> {
   let withUnpaidInvoices = 0;
 
   for (const client of clients) {
-    const metadata = (client.metadata as ClientMetadata) || {};
+    const metadata = parseClientMetadata(client.metadata);
     const clientType = metadata.type || (client.company ? 'company' : 'individual');
     if (clientType === 'company') {
       companies++;

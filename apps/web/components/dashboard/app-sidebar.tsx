@@ -157,14 +157,14 @@ export function AppSidebar({ user, workspaces, activeWorkspace }: AppSidebarProp
     return items.some((item) => isActive(item.href));
   };
 
-  const userInitials = user?.name
+  const userInitials = React.useMemo(() => user?.name
     ? user.name
         .split(' ')
         .map((n) => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2)
-    : 'U';
+    : 'U', [user?.name]);
 
   return (
     <Sidebar collapsible="icon">

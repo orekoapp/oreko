@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@quotecraft/database';
 import { hashPassword } from '@/lib/auth/credentials';
+import { passwordSchema } from '@/lib/validations/auth';
 
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: passwordSchema,
 });
 
 // Generate a unique workspace slug from name
@@ -23,10 +24,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { name, email, password } = registerSchema.parse(body);
+    const normalizedEmail = email.toLowerCase();
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -45,7 +47,7 @@ export async function POST(request: Request) {
       const user = await tx.user.create({
         data: {
           name,
-          email,
+          email: normalizedEmail,
           passwordHash,
         },
         select: {

@@ -26,10 +26,22 @@ export function WorkspaceSettingsForm({ initialData }: WorkspaceSettingsFormProp
     setSuccess(false);
     setIsSubmitting(true);
 
+    if (name.trim().length < 1) {
+      setError('Workspace name is required');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      setError('Slug must be lowercase letters, numbers, and hyphens only');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const result = await updateWorkspaceSettings({ name, slug });
+      const result = await updateWorkspaceSettings({ name: name.trim(), slug });
       if (result.success) {
         setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
         router.refresh();
       } else {
         setError(result.error || 'Failed to update workspace settings');

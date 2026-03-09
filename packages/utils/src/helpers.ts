@@ -16,19 +16,20 @@ export function generateRandomString(length: number = 32): string {
  * Generate a URL-safe slug from a string
  */
 export function generateSlug(str: string): string {
-  return str
+  const slug = str
     .toLowerCase()
     .trim()
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
+  return slug || `item-${Date.now()}`;
 }
 
 /**
  * Deep clone an object
  */
 export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
+  return structuredClone(obj);
 }
 
 /**

@@ -2,22 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { sendEmail } from '@/lib/services/email';
+import { emailSchema } from '@/lib/validations/common';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email } = body;
 
-    if (!email || typeof email !== 'string') {
+    let validEmail: string;
+    try {
+      validEmail = emailSchema.parse(email);
+    } catch {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Please enter a valid email address' },
         { status: 400 }
       );
     }
 
     // Find user by email
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: validEmail.toLowerCase() },
     });
 
     // Always return success to prevent email enumeration

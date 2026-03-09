@@ -41,7 +41,7 @@ export const invoiceSettingsSchema = z.object({
   showLogo: z.boolean().default(true),
   showPaymentInfo: z.boolean().default(true),
   autoReminders: z.boolean().default(true),
-  reminderDays: z.array(z.number().int().min(1).max(90)).max(5).default([7, 3, 1]),
+  reminderDays: z.array(z.number().int().min(1).max(90)).max(5).default([7, 3, 1]).transform((days) => [...new Set(days)]),
 });
 
 // Quote settings schema

@@ -90,7 +90,7 @@ export function ItemsSection({
       const rc = rateCards.find((r) => r.id === id);
       if (!rc) continue;
 
-      const block = createBlock<ServiceItemBlock>('service-item', {
+      const block = createBlock('service-item', {
         name: rc.name,
         description: rc.description || '',
         rate: rc.rate,

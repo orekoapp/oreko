@@ -43,6 +43,7 @@ export const emailSchema = z
 export const phoneSchema = z
   .string()
   .regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/, 'Please enter a valid phone number')
+  .refine((val) => val.replace(/\D/g, '').length >= 7, 'Phone number must contain at least 7 digits')
   .optional()
   .or(z.literal(''));
 
@@ -74,7 +75,8 @@ export const percentageSchema = z
 // Color hex schema
 export const hexColorSchema = z
   .string()
-  .regex(/^#[0-9A-Fa-f]{6}$/, 'Please enter a valid hex color (e.g., #3B82F6)');
+  .regex(/^#[0-9A-Fa-f]{6}$/, 'Please enter a valid hex color (e.g., #3B82F6)')
+  .transform((val) => val.toUpperCase());
 
 // Slug schema
 export const slugSchema = z

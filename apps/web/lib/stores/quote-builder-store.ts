@@ -304,7 +304,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
               if (index !== -1) {
                 const original = state.document.blocks[index];
                 const duplicate = {
-                  ...JSON.parse(JSON.stringify(original)),
+                  ...structuredClone(original),
                   id: crypto.randomUUID(),
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
@@ -405,7 +405,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
               // Remove any future history if we're not at the end
               state.history = state.history.slice(0, state.historyIndex + 1);
               // Add current state
-              state.history.push(JSON.parse(JSON.stringify(state.document.blocks)));
+              state.history.push(structuredClone(state.document.blocks));
               state.historyIndex = state.history.length - 1;
               // Limit history size
               if (state.history.length > 50) {
@@ -420,9 +420,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
           set((state) => {
             if (state.document && state.historyIndex > 0) {
               state.historyIndex--;
-              state.document.blocks = JSON.parse(
-                JSON.stringify(state.history[state.historyIndex])
-              );
+              state.document.blocks = structuredClone(state.history[state.historyIndex]);
               state.isDirty = true;
             }
           });
@@ -433,9 +431,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
           set((state) => {
             if (state.document && state.historyIndex < state.history.length - 1) {
               state.historyIndex++;
-              state.document.blocks = JSON.parse(
-                JSON.stringify(state.history[state.historyIndex])
-              );
+              state.document.blocks = structuredClone(state.history[state.historyIndex]);
               state.isDirty = true;
             }
           });

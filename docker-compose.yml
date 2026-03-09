@@ -37,6 +37,7 @@ services:
       retries: 5
 
   # Mailpit for email testing in development
+  # NOTE: Dev-only — do NOT use in production. Insecure auth is enabled for local testing.
   mailpit:
     image: axllent/mailpit:latest
     container_name: quotecraft-mailpit
@@ -45,8 +46,8 @@ services:
       - '8025:8025' # Web UI
       - '1025:1025' # SMTP
     environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+      MP_SMTP_AUTH_ACCEPT_ANY: 1        # Dev-only: accept any SMTP credentials
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1    # Dev-only: allow plaintext auth
 
 volumes:
   postgres_data:

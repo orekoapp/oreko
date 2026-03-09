@@ -16,7 +16,12 @@ const businessSchema = z.object({
   businessName: z.string().min(1, 'Business name is required'),
   email: z.string().email('Valid email is required'),
   phone: z.string().optional(),
-  website: z.string().url().optional().or(z.literal('')),
+  website: z.string().transform((val) => {
+    if (val && !val.startsWith('http://') && !val.startsWith('https://')) {
+      return `https://${val}`;
+    }
+    return val;
+  }).pipe(z.string().url('Please enter a valid URL')).optional().or(z.literal('')),
   street: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),

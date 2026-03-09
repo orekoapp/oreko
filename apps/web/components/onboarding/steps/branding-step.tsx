@@ -21,8 +21,14 @@ export function OnboardingBrandingStep({ onNext, onSkip, onBack }: OnboardingBra
   const [accentColor, setAccentColor] = useState('#10B981');
   const [error, setError] = useState<string | null>(null);
 
+  const isValidHex = (color: string) => /^#[0-9A-Fa-f]{6}$/.test(color);
+
   const handleSave = () => {
     setError(null);
+    if (!isValidHex(primaryColor) || !isValidHex(accentColor)) {
+      setError('Please enter valid hex colors (e.g., #3B82F6)');
+      return;
+    }
     startTransition(async () => {
       try {
         await updateBrandingSettings({

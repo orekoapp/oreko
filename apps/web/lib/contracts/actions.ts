@@ -22,6 +22,15 @@ import type {
 import { sendEmail } from '@/lib/services/email';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
 
+function parseContractVariables(variables: unknown): ContractVariable[] {
+  try {
+    const parsed = typeof variables === 'string' ? JSON.parse(variables) : variables;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 // Get all contract templates
 export async function getContractTemplates(
   filter: ContractFilter = {}
@@ -103,7 +112,7 @@ export async function getContractTemplateById(id: string): Promise<ContractTempl
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
+    variables: parseContractVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -140,7 +149,7 @@ export async function createContractTemplate(
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
+    variables: parseContractVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -187,7 +196,7 @@ export async function updateContractTemplate(
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
+    variables: parseContractVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -420,7 +429,8 @@ export async function createContractInstance(
       const varKey = variable.key || variable.name || '';
       if (!varKey) continue;
       const value = input.variableValues[varKey] || variable.defaultValue || '';
-      content = content.replace(new RegExp(`{{${varKey}}}`, 'g'), value);
+      const escapedKey = varKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      content = content.replace(new RegExp(`{{${escapedKey}}}`, 'g'), value);
     }
   }
 
@@ -646,7 +656,7 @@ export async function duplicateContractTemplate(id: string): Promise<ContractTem
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: (typeof contract.variables === 'string' ? JSON.parse(contract.variables) : contract.variables) as ContractVariable[],
+    variables: parseContractVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,

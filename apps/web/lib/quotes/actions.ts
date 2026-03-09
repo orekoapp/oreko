@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+
 import { prisma, type Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
@@ -274,8 +274,10 @@ export async function getQuote(quoteId: string) {
   }
 
   // Convert to QuoteDocument format for the builder
-  const settings = quote.settings as Record<string, unknown>;
-  let blocks = (settings.blocks as QuoteBlock[]) || [];
+  const settings = (quote.settings && typeof quote.settings === 'object' && !Array.isArray(quote.settings))
+    ? (quote.settings as Record<string, unknown>)
+    : {};
+  let blocks = Array.isArray(settings.blocks) ? (settings.blocks as QuoteBlock[]) : [];
 
   // If blocks are empty but lineItems exist, construct blocks from lineItems
   if (blocks.length === 0 && quote.lineItems.length > 0) {
@@ -594,7 +596,7 @@ export async function sendQuote(quoteId: string) {
   }
 
   // Prevent sending empty quotes
-  if (Number(quote.total) === 0) {
+  if (Math.abs(Number(quote.total)) < 0.01) {
     return { success: false, error: 'Cannot send a quote with zero total. Add line items first.' };
   }
 

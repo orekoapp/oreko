@@ -22,7 +22,7 @@ test.describe('Authentication', () => {
 
     // Click submit to trigger form validation
     await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     // Should show validation error or stay on login page
     const validationError = page.getByText(/valid email|invalid|error/i);

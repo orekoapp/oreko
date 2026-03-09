@@ -271,7 +271,7 @@ describe('Email Integration', () => {
 
       await expect(
         mockTransporter.sendMail({})
-      ).rejects.toThrow('Too many emails');
+      ).rejects.toThrow('Too many emails sent');
     });
 
     it('retries on temporary failures', async () => {
