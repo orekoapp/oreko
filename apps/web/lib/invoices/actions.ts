@@ -10,16 +10,16 @@ import type {
   InvoiceStatus,
   CreateInvoiceData,
   UpdateInvoiceData,
-  DEFAULT_INVOICE_SETTINGS,
 } from './types';
 import { sendInvoiceSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
+import { formatCurrency } from '@/lib/utils';
+import { generateInvoiceNumber } from './internal';
 
 /** Generate a cryptographically secure access token (64 hex chars = 256 bits) */
 function generateAccessToken(): string {
   return randomBytes(32).toString('hex');
 }
-import { formatCurrency } from '@/lib/utils';
 
 /**
  * Get the current user's active workspace with full workspace data
@@ -40,13 +40,6 @@ async function getActiveWorkspace() {
     workspace,
   };
 }
-
-/**
- * Generate the next invoice number for a workspace
- * Uses atomic increment on NumberSequence table to prevent race conditions
- */
-// Import from internal module (not a server action)
-import { generateInvoiceNumber } from './internal';
 
 /**
  * Calculate totals from line items
@@ -77,6 +70,12 @@ function calculateTotals(
  */
 export async function createInvoice(data: CreateInvoiceData) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot create invoices
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot create invoices' };
+  }
 
   // Verify client belongs to workspace
   const client = await prisma.client.findFirst({
@@ -177,6 +176,12 @@ export async function createInvoice(data: CreateInvoiceData) {
  */
 export async function createInvoiceFromQuote(quoteId: string, options?: { dueDays?: number }) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot convert quotes to invoices
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot create invoices' };
+  }
 
   // Get the quote with line items
   const quote = await prisma.quote.findFirst({
@@ -310,7 +315,13 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
  * Update an existing invoice
  */
 export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot update invoices
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot edit invoices' };
+  }
 
   const existingInvoice = await prisma.invoice.findFirst({
     where: {
@@ -404,7 +415,7 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
  * Get a single invoice by ID
  */
 export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | null> {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
 
   const invoice = await prisma.invoice.findFirst({
     where: {
@@ -493,7 +504,7 @@ export async function getInvoices(filters?: {
   clientId?: string;
   search?: string;
 }): Promise<InvoiceListItem[]> {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
 
   const where: Prisma.InvoiceWhereInput = {
     workspaceId: workspace.id,
@@ -563,6 +574,12 @@ export async function updateInvoiceStatus(
   status: InvoiceStatus
 ) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot change invoice status
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot change invoice status' };
+  }
 
   const invoice = await prisma.invoice.findFirst({
     where: {
@@ -715,7 +732,7 @@ export async function sendInvoice(invoiceId: string) {
  * Delete (soft delete) an invoice
  */
 export async function deleteInvoice(invoiceId: string) {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
   const { role } = await getCurrentUserWorkspace();
 
   if (role === 'viewer') {
@@ -762,6 +779,12 @@ export async function recordPayment(
   }
 ) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot record payments
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot record payments' };
+  }
 
   const invoice = await prisma.invoice.findFirst({
     where: {
@@ -786,6 +809,11 @@ export async function recordPayment(
 
   if (data.amount <= 0) {
     return { success: false, error: 'Payment amount must be greater than zero' };
+  }
+
+  // Bug #130: Validate amount is a finite number (prevents NaN, Infinity)
+  if (!Number.isFinite(data.amount)) {
+    return { success: false, error: 'Payment amount must be a valid number' };
   }
 
   // Bug #125: Prevent overpayment
@@ -869,7 +897,13 @@ export async function recordPayment(
  * Duplicate an invoice
  */
 export async function duplicateInvoice(invoiceId: string) {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot duplicate invoices
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot duplicate invoices' };
+  }
 
   const original = await prisma.invoice.findFirst({
     where: {
