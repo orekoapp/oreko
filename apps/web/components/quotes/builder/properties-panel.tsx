@@ -191,6 +191,7 @@ function ServiceItemProperties({
   block: Extract<QuoteBlock, { type: 'service-item' }>;
   onUpdate: (updates: Partial<typeof block.content>) => void;
 }) {
+  const { document } = useQuoteBuilderStore();
   return (
     <>
       <div className="space-y-2">
