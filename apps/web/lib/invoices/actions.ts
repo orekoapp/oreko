@@ -16,6 +16,7 @@ import { createNotification } from '@/lib/notifications/actions';
 import { formatCurrency } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { generateInvoiceNumber } from './internal';
+import { domainEvents } from '@/lib/events/emitter';
 
 /** Generate a cryptographically secure access token (64 hex chars = 256 bits) */
 function generateAccessToken(): string {
@@ -101,6 +102,16 @@ export async function createInvoice(data: CreateInvoiceData) {
     invoiceNumber = await generateInvoiceNumber(workspace.id);
   }
 
+  // Determine currency: use provided value, or fall back to workspace BusinessProfile, then 'USD'
+  let currency = data.currency || 'USD';
+  if (!data.currency) {
+    const profile = await prisma.businessProfile.findUnique({
+      where: { workspaceId: workspace.id },
+      select: { currency: true },
+    });
+    currency = profile?.currency || 'USD';
+  }
+
   // Validate line item values
   for (const item of data.lineItems) {
     if (item.rate < 0) {
@@ -134,6 +145,7 @@ export async function createInvoice(data: CreateInvoiceData) {
       invoiceNumber,
       title: data.title,
       status: 'draft',
+      currency,
       accessToken: generateAccessToken(),
       issueDate: new Date(),
       dueDate: new Date(data.dueDate),
@@ -168,6 +180,10 @@ export async function createInvoice(data: CreateInvoiceData) {
   });
 
   revalidatePath(ROUTES.invoices);
+
+  try {
+    domainEvents.emit({ type: 'invoice.created', payload: { invoiceId: invoice.id, workspaceId: workspace.id } });
+  } catch {}
 
   return { success: true, invoice };
 }
@@ -241,6 +257,7 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
         invoiceNumber,
         title: quote.title || 'Invoice',
         status: 'draft',
+        currency: quote.currency,
         issueDate: new Date(),
         dueDate,
         subtotal: quote.subtotal,
@@ -307,6 +324,10 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
   revalidatePath(ROUTES.invoices);
   revalidatePath(ROUTES.quotes);
   revalidatePath(ROUTES.quoteDetail(quoteId));
+
+  try {
+    domainEvents.emit({ type: 'invoice.created', payload: { invoiceId: invoice.id, workspaceId: workspace.id } });
+  } catch {}
 
   return { success: true, invoice };
 }
@@ -450,6 +471,7 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
     accessToken: invoice.accessToken,
     status: invoice.status as InvoiceStatus,
     title: invoice.title || 'Invoice',
+    currency: invoice.currency || 'USD',
     issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
     dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
     lineItems: invoice.lineItems.map((item: (typeof invoice.lineItems)[number]) => ({
@@ -551,6 +573,7 @@ export async function getInvoices(filters?: {
       invoiceNumber: invoice.invoiceNumber,
       status: (isOverdue && invoice.status !== 'partial' ? 'overdue' : invoice.status) as InvoiceStatus,
       title: invoice.title || 'Invoice',
+      currency: invoice.currency || 'USD',
       issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
       dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
       total: Number(invoice.total),
@@ -602,7 +625,7 @@ export async function updateInvoiceStatus(
     partial: ['paid', 'voided'],
     paid: ['voided'],
     overdue: ['paid', 'partial', 'voided'],
-    voided: ['draft'],
+    voided: [],
   };
 
   const allowed = allowedTransitions[invoice.status];
@@ -665,6 +688,14 @@ export async function updateInvoiceStatus(
   revalidatePath(ROUTES.invoices);
   revalidatePath(ROUTES.invoiceDetail(invoiceId));
 
+  try {
+    if (status === 'paid') {
+      domainEvents.emit({ type: 'invoice.paid', payload: { invoiceId, amount: Number(invoice.total) } });
+    } else if (status === 'voided') {
+      domainEvents.emit({ type: 'invoice.voided', payload: { invoiceId } });
+    }
+  } catch {}
+
   return { success: true };
 }
 
@@ -725,6 +756,12 @@ export async function sendInvoice(invoiceId: string) {
       link: `/invoices/${invoiceId}`,
     }).catch(() => {});
   }
+
+  try {
+    if (invoice?.client?.email) {
+      domainEvents.emit({ type: 'invoice.sent', payload: { invoiceId, clientEmail: invoice.client.email } });
+    }
+  } catch {}
 
   return { success: true, emailSent };
 }
@@ -937,6 +974,7 @@ export async function duplicateInvoice(invoiceId: string) {
       invoiceNumber,
       title: `${original.title || 'Invoice'} (Copy)`,
       status: 'draft',
+      currency: original.currency,
       accessToken: generateAccessToken(),
       issueDate: new Date(),
       dueDate,

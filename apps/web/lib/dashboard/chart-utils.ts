@@ -74,24 +74,29 @@ export const CHART_PALETTE = [
  * Format number as currency for chart display
  * Values are already in dollars (not cents)
  */
-export function formatChartCurrency(value: number): string {
+export function formatChartCurrency(value: number, currency: string = 'USD'): string {
+  // For compact display, use symbol prefix from Intl
+  const symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
+    .formatToParts(0)
+    .find(p => p.type === 'currency')?.value ?? '$';
+
   if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
+    return `${symbol}${(value / 1000000).toFixed(1)}M`;
   }
   if (value >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`;
+    return `${symbol}${(value / 1000).toFixed(1)}K`;
   }
-  return `$${value.toFixed(0)}`;
+  return `${symbol}${value.toFixed(0)}`;
 }
 
 /**
  * Format number as full currency for tooltips
  * Values are already in dollars (not cents)
  */
-export function formatFullCurrency(value: number): string {
+export function formatFullCurrency(value: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 2,
   }).format(value);
 }

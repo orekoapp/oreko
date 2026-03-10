@@ -45,6 +45,39 @@ export async function generateInvoiceNumber(workspaceId: string): Promise<string
 }
 
 /**
+ * Generate next credit note number for a workspace (atomic, race-condition safe).
+ */
+export async function generateCreditNoteNumber(workspaceId: string): Promise<string> {
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.numberSequence.upsert({
+      where: { workspaceId_type: { workspaceId, type: 'credit_note' } },
+      update: { currentValue: { increment: 1 } },
+      create: {
+        workspaceId,
+        type: 'credit_note',
+        prefix: 'CN',
+        currentValue: 1,
+        padding: 4,
+      },
+    });
+    return {
+      prefix: updated.prefix || 'CN',
+      suffix: updated.suffix,
+      value: updated.currentValue,
+      padding: updated.padding,
+    };
+  });
+
+  const paddedValue = String(result.value).padStart(result.padding, '0');
+  const prefix = result.prefix.replace(/-$/, '');
+  const parts = [prefix, paddedValue];
+  if (result.suffix) {
+    parts.push(result.suffix);
+  }
+  return parts.join('-');
+}
+
+/**
  * Create invoice from quote without requiring auth context.
  * Used by the public portal when auto-invoice is enabled on quote acceptance.
  *

@@ -8,6 +8,7 @@ import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 import { sendQuoteSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
 import { ROUTES } from '@/lib/routes';
+import { domainEvents } from '@/lib/events/emitter';
 
 /**
  * Bug #134: Safely parse quote settings from JSON with runtime validation.
@@ -110,6 +111,7 @@ export async function createQuote(data: {
   title: string;
   clientId: string;
   projectId?: string | null;
+  currency?: string;
   blocks?: QuoteBlock[];
 }) {
   const { userId, workspace } = await getActiveWorkspace();
@@ -140,6 +142,16 @@ export async function createQuote(data: {
   });
   if (!client) {
     return { success: false, error: 'Client not found' };
+  }
+
+  // Determine currency: use provided value, or fall back to workspace BusinessProfile, then 'USD'
+  let currency = data.currency || 'USD';
+  if (!data.currency) {
+    const profile = await prisma.businessProfile.findUnique({
+      where: { workspaceId: workspace.id },
+      select: { currency: true },
+    });
+    currency = profile?.currency || 'USD';
   }
 
   const quoteNumber = await generateQuoteNumber(workspace.id);
@@ -185,6 +197,7 @@ export async function createQuote(data: {
       quoteNumber,
       title: data.title,
       status: 'draft',
+      currency,
       accessToken: generateAccessToken(),
       subtotal,
       taxTotal,
@@ -215,6 +228,10 @@ export async function createQuote(data: {
   });
 
   revalidatePath(ROUTES.quotes);
+
+  try {
+    domainEvents.emit({ type: 'quote.created', payload: { quoteId: quote.id, workspaceId: workspace.id } });
+  } catch {}
 
   return { success: true, quote };
 }
@@ -521,6 +538,7 @@ export async function getQuotes(options?: {
       title: quote.title,
       status: quote.status,
       total: Number(quote.total),
+      currency: quote.currency || 'USD',
       issueDate: quote.issueDate.toISOString().split('T')[0],
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] || null,
       client: quote.client ? {
@@ -613,6 +631,7 @@ export async function duplicateQuote(quoteId: string) {
       quoteNumber,
       title: `${original.title || 'Untitled'} (Copy)`,
       status: 'draft',
+      currency: original.currency,
       accessToken: generateAccessToken(),
       subtotal: original.subtotal,
       discountType: original.discountType,
@@ -712,6 +731,14 @@ export async function updateQuoteStatus(
 
   revalidatePath(ROUTES.quotes);
   revalidatePath(ROUTES.quoteDetail(quoteId));
+
+  try {
+    if (status === 'accepted') {
+      domainEvents.emit({ type: 'quote.accepted', payload: { quoteId } });
+    } else if (status === 'declined') {
+      domainEvents.emit({ type: 'quote.declined', payload: { quoteId } });
+    }
+  } catch {}
 
   return { success: true };
 }
@@ -816,6 +843,10 @@ export async function sendQuote(quoteId: string) {
 
   revalidatePath(ROUTES.quotes);
   revalidatePath(ROUTES.quoteDetail(quoteId));
+
+  try {
+    domainEvents.emit({ type: 'quote.sent', payload: { quoteId, clientEmail: quote.client.email } });
+  } catch {}
 
   return { success: true, recipientEmail: quote.client.email, emailSent };
 }

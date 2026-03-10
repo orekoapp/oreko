@@ -378,6 +378,7 @@ export interface QuoteListItem {
   title: string;
   status: QuoteStatus;
   total: number;
+  currency: string;
   issueDate: string;
   expirationDate: string | null;
   client: {

@@ -16,6 +16,7 @@ import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { sendPaymentReceivedEmail } from '@/lib/services/email';
 import { formatCurrency } from '@/lib/utils';
 import type { PaymentIntentResult } from './types';
+import { domainEvents } from '@/lib/events/emitter';
 
 /**
  * Create payment intent for invoice (called from checkout API route).
@@ -127,9 +128,9 @@ export async function createInvoicePaymentIntent(
       }
     }
 
-    // Get currency from invoice settings
+    // Get currency from invoice model (falls back to settings for legacy data)
     const settings = invoice.settings as Record<string, unknown>;
-    const currency = (settings?.currency as string) ?? 'USD';
+    const currency = invoice.currency || (settings?.currency as string) ?? 'USD';
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer({
@@ -304,6 +305,13 @@ export async function processRefundWebhook(
       });
     });
 
+    try {
+      domainEvents.emit({
+        type: 'payment.refunded',
+        payload: { paymentId: payment.id, amount: refundAmount },
+      });
+    } catch {}
+
     return { success: true };
   } catch (error) {
     console.error('Failed to process refund webhook:', error);
@@ -399,6 +407,13 @@ export async function processPaymentWebhook(
           },
         });
       });
+      try {
+        domainEvents.emit({
+          type: 'payment.received',
+          payload: { paymentId: payment.id, invoiceId: payment.invoiceId, amount: paymentAmount },
+        });
+      } catch {}
+
       // Send payment confirmation email (fire-and-forget, don't block webhook)
       sendPaymentReceivedEmail({
         to: payment.invoice.client.email,
