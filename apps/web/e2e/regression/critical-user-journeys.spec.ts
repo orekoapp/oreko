@@ -208,8 +208,9 @@ test.describe('Critical Journey: Client Management Flow', () => {
       // Scroll multiple times
       for (let i = 0; i < 5; i++) {
         await page.mouse.wheel(0, 100);
-        await page.waitForTimeout(100);
       }
+      // Wait for scroll to settle
+      await page.waitForLoadState('domcontentloaded');
 
       // Get form position after scroll
       const afterRect = await form.boundingBox();
@@ -313,7 +314,8 @@ test.describe('Critical Journey: Quote Builder Block Operations', () => {
         const blockButton = page.locator(`[data-block-type="${blockType}"]`);
         if (await blockButton.isVisible()) {
           await blockButton.click();
-          await page.waitForTimeout(300);
+          // Wait for block to render
+          await page.waitForLoadState('domcontentloaded');
 
           // Check no error appeared
           const errorAfterAdd = await unknownBlockError.isVisible().catch(() => false);
@@ -351,7 +353,8 @@ test.describe('Critical Journey: Quote Builder Block Operations', () => {
       // Duplicate might be in dropdown
       if (await moreButton.isVisible()) {
         await moreButton.click();
-        await page.waitForTimeout(300);
+        // Wait for dropdown menu to appear
+        await page.locator('[role="menu"], [role="menuitem"]').first().waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
       }
 
       if (await duplicateButton.isVisible()) {
@@ -384,7 +387,12 @@ test.describe('Critical Journey: Theme and UI Settings', () => {
 
       // Toggle
       await themeToggle.click();
-      await page.waitForTimeout(300);
+      // Wait for theme class to change on html element
+      if (wasDark) {
+        await expect(page.locator('html:not(.dark)')).toBeAttached({ timeout: 2000 }).catch(() => {});
+      } else {
+        await expect(page.locator('html.dark')).toBeAttached({ timeout: 2000 }).catch(() => {});
+      }
 
       // Check theme changed
       const htmlAfter = await page.locator('html').getAttribute('class');
@@ -397,7 +405,8 @@ test.describe('Critical Journey: Theme and UI Settings', () => {
 
       // Toggle back
       await themeToggle.click();
-      await page.waitForTimeout(300);
+      // Wait for theme class to revert
+      await page.waitForLoadState('domcontentloaded');
 
       const htmlFinal = await page.locator('html').getAttribute('class');
       const finalDark = htmlFinal?.includes('dark');

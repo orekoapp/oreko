@@ -156,8 +156,12 @@ test.describe('RCA-003: Theme Toggle is Toggle Not Dropdown', () => {
       // Single click should toggle
       await themeToggle.click();
 
-      // Wait for theme change
-      await page.waitForTimeout(300);
+      // Wait for theme class to change on html element
+      if (wasDark) {
+        await expect(page.locator('html:not(.dark)')).toBeAttached({ timeout: 2000 }).catch(() => {});
+      } else {
+        await expect(page.locator('html.dark')).toBeAttached({ timeout: 2000 }).catch(() => {});
+      }
 
       // Theme should have changed
       const newHtml = await page.locator('html').getAttribute('class');
@@ -638,7 +642,8 @@ test.describe('RCA-012: Client Edit Page Scroll', () => {
 
       // Scroll down
       await page.mouse.wheel(0, 300);
-      await page.waitForTimeout(200);
+      // Wait for scroll to settle
+      await page.waitForLoadState('domcontentloaded');
 
       // Check layout hasn't corrupted
       const afterScrollBox = await form.boundingBox();

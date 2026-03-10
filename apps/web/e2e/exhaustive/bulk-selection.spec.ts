@@ -24,7 +24,9 @@ test.describe('Bulk Selection', () => {
 
       // Click the row checkbox
       await rowCheckbox.click();
-      await page.waitForTimeout(200);
+
+      // Wait for checked state to update
+      await expect(rowCheckbox).toBeChecked({ timeout: 2000 }).catch(() => {});
 
       // Verify it's checked
       const isChecked = await rowCheckbox.isChecked().catch(() => false);
@@ -44,7 +46,9 @@ test.describe('Bulk Selection', () => {
       }
 
       await rowCheckbox.click();
-      await page.waitForTimeout(200);
+
+      // Wait for checked state to update
+      await expect(rowCheckbox).toBeChecked({ timeout: 2000 }).catch(() => {});
 
       const isChecked = await rowCheckbox.isChecked().catch(() => false);
       const hasAriaChecked = await rowCheckbox.getAttribute('aria-checked');
@@ -64,7 +68,9 @@ test.describe('Bulk Selection', () => {
       }
 
       await rowCheckbox.click();
-      await page.waitForTimeout(200);
+
+      // Wait for checked state to update
+      await expect(rowCheckbox).toBeChecked({ timeout: 2000 }).catch(() => {});
 
       const isChecked = await rowCheckbox.isChecked().catch(() => false);
       const hasAriaChecked = await rowCheckbox.getAttribute('aria-checked');
@@ -85,7 +91,9 @@ test.describe('Bulk Selection', () => {
       }
 
       await selectAll.click();
-      await page.waitForTimeout(300);
+
+      // Wait for select-all to propagate to row checkboxes
+      await expect(selectAll).toBeChecked({ timeout: 2000 }).catch(() => {});
 
       // All row checkboxes should now be checked
       const rowCheckboxes = page.locator('tbody td input[type="checkbox"], tbody [role="checkbox"]');
@@ -113,7 +121,9 @@ test.describe('Bulk Selection', () => {
       }
 
       await selectAll.click();
-      await page.waitForTimeout(300);
+
+      // Wait for select-all to propagate to row checkboxes
+      await expect(selectAll).toBeChecked({ timeout: 2000 }).catch(() => {});
 
       const rowCheckboxes = page.locator('tbody td input[type="checkbox"], tbody [role="checkbox"]');
       const rowCount = await rowCheckboxes.count();
@@ -139,7 +149,9 @@ test.describe('Bulk Selection', () => {
       }
 
       await selectAll.click();
-      await page.waitForTimeout(300);
+
+      // Wait for select-all to propagate to row checkboxes
+      await expect(selectAll).toBeChecked({ timeout: 2000 }).catch(() => {});
 
       const rowCheckboxes = page.locator('tbody td input[type="checkbox"], tbody [role="checkbox"]');
       const rowCount = await rowCheckboxes.count();

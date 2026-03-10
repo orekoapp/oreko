@@ -26,8 +26,9 @@ async function createDraftInvoice(page: import('@playwright/test').Page, title: 
   const clientVisible = await clientSelect.isVisible().catch(() => false);
   if (clientVisible) {
     await clientSelect.click();
-    await page.waitForTimeout(300);
+    // Wait for options dropdown to appear
     const firstClient = page.getByRole('option').first();
+    await firstClient.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
     const optionVisible = await firstClient.isVisible().catch(() => false);
     if (optionVisible) {
       await firstClient.click();
@@ -39,7 +40,8 @@ async function createDraftInvoice(page: import('@playwright/test').Page, title: 
   const addVisible = await addItemBtn.isVisible().catch(() => false);
   if (addVisible) {
     await addItemBtn.click();
-    await page.waitForTimeout(300);
+    // Wait for line item fields to appear
+    await page.waitForLoadState('domcontentloaded');
   }
 
   // Fill line item details

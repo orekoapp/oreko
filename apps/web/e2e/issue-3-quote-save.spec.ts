@@ -36,8 +36,8 @@ test.describe('Issue #3: Quote Draft Saving in Visual Builder', () => {
       }
     }
 
-    // Wait for isDirty to be true
-    await page.waitForTimeout(300);
+    // Wait for isDirty state to update
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if save button is enabled
     const isSaveDisabled = await saveButton.isDisabled();

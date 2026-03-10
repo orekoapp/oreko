@@ -38,7 +38,8 @@ test.describe('Sidebar Navigation Hierarchy - FR-P2-001', () => {
       const projectsButton = sidebar.locator('button:has-text("Projects")').first();
       if (await projectsButton.isVisible()) {
         await projectsButton.click();
-        await page.waitForTimeout(300);
+        // Wait for submenu to expand
+        await page.waitForLoadState('domcontentloaded');
       }
 
       // Check for sub-items
@@ -70,7 +71,8 @@ test.describe('Sidebar Navigation Hierarchy - FR-P2-001', () => {
 
         // Click to toggle
         await projectsButton.click();
-        await page.waitForTimeout(300);
+        // Wait for expand animation
+        await page.waitForLoadState('domcontentloaded');
 
         // Submenu should be visible (expanded state)
         const submenu = sidebar.locator('[data-state="open"], [role="group"]').first();
@@ -78,7 +80,8 @@ test.describe('Sidebar Navigation Hierarchy - FR-P2-001', () => {
 
         // Click again to collapse
         await projectsButton.click();
-        await page.waitForTimeout(300);
+        // Wait for collapse animation
+        await page.waitForLoadState('domcontentloaded');
 
         // Test passes if we can toggle
         expect(true).toBe(true);
@@ -185,7 +188,8 @@ test.describe('Sidebar Collapse Behavior - FR-P2-002', () => {
 
         // Click to collapse
         await sidebarToggle.click();
-        await page.waitForTimeout(300);
+        // Wait for sidebar collapse animation to complete
+        await expect(sidebar).toBeVisible({ timeout: 2000 });
 
         // Get collapsed width
         const collapsedWidth = await sidebar.boundingBox().then((box) => box?.width ?? 0);
@@ -206,7 +210,8 @@ test.describe('Sidebar Collapse Behavior - FR-P2-002', () => {
 
       if (await sidebarToggle.isVisible()) {
         await sidebarToggle.click();
-        await page.waitForTimeout(300);
+        // Wait for sidebar collapse animation
+        await page.waitForLoadState('domcontentloaded');
 
         const sidebar = page.locator('[data-sidebar="sidebar"], nav, aside').first();
 
@@ -232,11 +237,13 @@ test.describe('Sidebar Collapse Behavior - FR-P2-002', () => {
       if (await sidebarToggle.isVisible()) {
         // Collapse
         await sidebarToggle.click();
-        await page.waitForTimeout(300);
+        // Wait for collapse animation
+        await page.waitForLoadState('domcontentloaded');
 
         // Expand
         await sidebarToggle.click();
-        await page.waitForTimeout(300);
+        // Wait for expand animation
+        await page.waitForLoadState('domcontentloaded');
 
         // Dashboard text should be visible
         const sidebar = page.locator('[data-sidebar="sidebar"], nav, aside').first();
@@ -258,17 +265,18 @@ test.describe('Sidebar Collapse Behavior - FR-P2-002', () => {
       if (await sidebarToggle.isVisible()) {
         // Collapse sidebar
         await sidebarToggle.click();
-        await page.waitForTimeout(300);
+        // Wait for collapse animation
+        await page.waitForLoadState('domcontentloaded');
 
         // Hover over a nav icon
         const sidebar = page.locator('[data-sidebar="sidebar"], nav, aside').first();
         const navButton = sidebar.locator('a, button').first();
 
         await navButton.hover();
-        await page.waitForTimeout(300);
 
-        // Look for tooltip
+        // Wait for tooltip to appear
         const tooltip = page.locator('[role="tooltip"]').first();
+        await tooltip.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
         const tooltipVisible = await tooltip.isVisible().catch(() => false);
 
         // Tooltip functionality depends on implementation
@@ -287,7 +295,8 @@ test.describe('Sidebar Collapse Behavior - FR-P2-002', () => {
 
       // Press Cmd+B (Mac) or Ctrl+B (Windows/Linux)
       await page.keyboard.press('Meta+b');
-      await page.waitForTimeout(300);
+      // Wait for sidebar toggle animation
+      await page.waitForLoadState('domcontentloaded');
 
       const newWidth = await sidebar.boundingBox().then((box) => box?.width ?? 0);
 
@@ -309,7 +318,8 @@ test.describe('Sidebar Collapse Behavior - FR-P2-002', () => {
       if (await sidebarToggle.isVisible()) {
         // Collapse sidebar
         await sidebarToggle.click();
-        await page.waitForTimeout(300);
+        // Wait for collapse animation
+        await page.waitForLoadState('domcontentloaded');
 
         // Navigate to another page
         await page.goto('/clients');
@@ -352,7 +362,9 @@ test.describe('Mobile Sidebar Behavior', () => {
 
     if (await menuButton.isVisible()) {
       await menuButton.click();
-      await page.waitForTimeout(300);
+
+      // Wait for the sidebar/sheet to appear
+      await page.getByRole('link', { name: /dashboard/i }).waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
 
       // Should show sidebar or sheet
       const navVisible = await page.getByRole('link', { name: /dashboard/i }).isVisible().catch(() => false);

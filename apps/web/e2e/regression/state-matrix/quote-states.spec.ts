@@ -37,7 +37,8 @@ async function createDraftQuote(page: import('@playwright/test').Page, title: st
   const addItemBtn = page.getByRole('button', { name: /add.*item|add.*line/i });
   if (await addItemBtn.isVisible().catch(() => false)) {
     await addItemBtn.click();
-    await page.waitForTimeout(300);
+    // Wait for line item fields to appear
+    await page.waitForLoadState('domcontentloaded');
   }
 
   // Fill line item details

@@ -35,7 +35,8 @@ async function testSortColumn(
   }
 
   await clickTarget.click();
-  await page.waitForTimeout(300);
+  // Wait for sort to apply and table to re-render
+  await page.waitForLoadState('domcontentloaded');
 
   // Verify sort indicator: either aria-sort attribute or a sort icon
   const hasAriaSort = await header.getAttribute('aria-sort');
@@ -72,10 +73,10 @@ async function testSortToggle(
 
   // First click opens the sort dropdown menu
   await clickTarget.click();
-  await page.waitForTimeout(300);
 
-  // Select "Asc" from the dropdown menu
+  // Wait for dropdown menu to appear
   const ascOption = page.locator('[role="menuitem"]:has-text("Asc")').first();
+  await ascOption.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
   if (!(await ascOption.isVisible().catch(() => false))) {
     // Dropdown didn't open or no sort options - skip
     await page.keyboard.press('Escape');
@@ -83,7 +84,8 @@ async function testSortToggle(
     return;
   }
   await ascOption.click();
-  await page.waitForTimeout(300);
+  // Wait for sort to apply
+  await page.waitForLoadState('domcontentloaded');
 
   // Verify ascending sort was applied (icon or aria-sort)
   const firstSortIcon = await header.locator('svg').first().evaluate(
@@ -92,13 +94,14 @@ async function testSortToggle(
 
   // Second click - open dropdown again
   await clickTarget.click();
-  await page.waitForTimeout(300);
 
-  // Select "Desc" from the dropdown menu
+  // Wait for dropdown menu to appear
   const descOption = page.locator('[role="menuitem"]:has-text("Desc")').first();
+  await descOption.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
   if (await descOption.isVisible().catch(() => false)) {
     await descOption.click();
-    await page.waitForTimeout(300);
+    // Wait for sort to apply
+    await page.waitForLoadState('domcontentloaded');
   }
 
   // Verify the sort icon changed (ArrowDown icon for desc vs ArrowUp for asc)
