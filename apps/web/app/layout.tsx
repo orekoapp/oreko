@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { Toaster } from 'sonner';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { FontSizeProvider } from '@/components/providers/font-size-provider';
 import { SessionProvider } from '@/components/providers/session-provider';
@@ -43,9 +45,10 @@ export const metadata: Metadata = {
     title: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
     description:
       'The open-source alternative to Bloom and Bonsai. Visual quote builder, e-signatures, one-click invoice conversion. Free self-hosted or $9/mo cloud.',
+    // Bug #395: OG image auto-discovered from opengraph-image.tsx (PNG)
     images: [
       {
-        url: '/og-image.svg',
+        url: '/opengraph-image',
         width: 1200,
         height: 630,
         alt: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
@@ -57,7 +60,8 @@ export const metadata: Metadata = {
     title: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
     description:
       'The open-source alternative to Bloom and Bonsai. Create stunning quotes and invoices for free.',
-    images: ['/og-image.svg'],
+    // Bug #396: Twitter image auto-discovered from twitter-image.tsx (PNG)
+    images: ['/twitter-image'],
     creator: '@quotecraft',
   },
   robots: {
@@ -124,9 +128,12 @@ const jsonLd = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/site.webmanifest" />
@@ -143,17 +150,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to main content
         </a>
         <SessionProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <FontSizeProvider>
-              {children}
-              <Toaster richColors position="top-right" />
-            </FontSizeProvider>
-          </ThemeProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <FontSizeProvider>
+                {children}
+                <Toaster richColors position="top-right" />
+              </FontSizeProvider>
+            </ThemeProvider>
+          </NextIntlClientProvider>
         </SessionProvider>
       </body>
     </html>

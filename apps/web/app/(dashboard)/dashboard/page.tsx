@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { FileText, Receipt } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatsCards } from '@/components/dashboard/stats-cards';
@@ -11,10 +12,13 @@ import { getDashboardData, getConversionFunnelData } from '@/lib/dashboard/actio
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'Dashboard',
-  description: 'Your QuoteCraft dashboard',
-};
+export async function generateMetadata() {
+  const t = await getTranslations('dashboard');
+  return {
+    title: t('title'),
+    description: t('subtitle'),
+  };
+}
 
 async function DashboardContent() {
   const [data, conversionFunnelData] = await Promise.all([
@@ -81,27 +85,29 @@ function DashboardSkeleton() {
   );
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const t = await getTranslations('dashboard');
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">
-            Track your business performance and recent activity.
+            {t('subtitle')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
             <Link href="/quotes/new">
               <FileText className="mr-2 h-4 w-4" />
-              New Quote
+              {t('newQuote')}
             </Link>
           </Button>
           <Button size="sm" asChild className="flex-1 sm:flex-none">
             <Link href="/invoices/new">
               <Receipt className="mr-2 h-4 w-4" />
-              New Invoice
+              {t('newInvoice')}
             </Link>
           </Button>
         </div>
