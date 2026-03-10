@@ -90,7 +90,7 @@ export default function AboutPage() {
           <div className="flex justify-center gap-4">
             <Button asChild variant="outline">
               <a
-                href="https://github.com/quotecraft/quotecraft"
+                href="https://github.com/WisdmLabs/quote-software"
                 target="_blank"
                 rel="noopener noreferrer"
               >

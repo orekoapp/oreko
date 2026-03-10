@@ -61,7 +61,7 @@ export function MarketingHeader() {
             </a>
           ))}
           <a
-            href="https://github.com/quotecraft/quotecraft"
+            href="https://github.com/WisdmLabs/quote-software"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-medium"
@@ -111,7 +111,7 @@ export function MarketingHeader() {
               </a>
             ))}
             <a
-              href="https://github.com/quotecraft/quotecraft"
+              href="https://github.com/WisdmLabs/quote-software"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-medium py-2"
