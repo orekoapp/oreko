@@ -125,10 +125,8 @@ export async function POST(request: NextRequest) {
       tags: [{ name: 'type', value: 'password_reset' }],
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'If an account exists with this email, you will receive a password reset link.',
-    });
+    // Bug #16: Use same timing-normalized response as non-existent user path
+    return delayedResponse();
   } catch (error) {
     console.error('Forgot password error:', error);
     return NextResponse.json(

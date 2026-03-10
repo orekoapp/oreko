@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'sonner';
 import { Loader2, Play } from 'lucide-react';
 
@@ -15,13 +14,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { DEMO_CONFIG } from '@/lib/demo/constants';
+import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+// Bug #448: Use shared login schema from lib/validations/auth.ts
+type LoginFormData = LoginInput;
 
 export function LoginForm() {
   const router = useRouter();
