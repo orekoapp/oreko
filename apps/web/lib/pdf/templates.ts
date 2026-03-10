@@ -1,4 +1,4 @@
-import type { QuotePdfData, InvoicePdfData } from './types';
+import type { QuotePdfData, InvoicePdfData, CreditNotePdfData } from './types';
 
 /**
  * Escape HTML special characters to prevent XSS in PDF templates
@@ -792,6 +792,132 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
             <div class="terms">
               <div class="terms-title">Payment Terms</div>
               <div class="terms-content">${escapeHtml(data.terms)}</div>
+            </div>
+          `
+              : ''
+          }
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Generate credit note PDF HTML
+ */
+export function generateCreditNotePdfHtml(data: CreditNotePdfData): string {
+  const primaryColor = sanitizeColor(data.branding?.primaryColor || '#3B82F6');
+
+  const lineItemsHtml = data.lineItems
+    .map(
+      (item) => `
+      <tr>
+        <td>
+          <div class="item-name">${escapeHtml(item.name)}</div>
+          ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
+        </td>
+        <td>${item.quantity}</td>
+        <td>${formatCurrency(item.rate, data.currency)}</td>
+        <td>${formatCurrency(item.amount, data.currency)}</td>
+      </tr>
+    `
+    )
+    .join('');
+
+  const safeCreditNoteNumber = escapeHtml(data.creditNoteNumber);
+  const safeInvoiceNumber = escapeHtml(data.originalInvoiceNumber);
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Credit Note ${safeCreditNoteNumber}</title>
+        <style>${getBaseStyles(primaryColor)}</style>
+      </head>
+      <body>
+        <div class="print-bar">
+          <span>Credit Note ${safeCreditNoteNumber}</span>
+          <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+        <div class="container">
+          <div class="header">
+            <div class="business-info">
+              ${data.business.logoUrl && isSafeUrl(data.business.logoUrl) ? `<img src="${escapeHtml(data.business.logoUrl)}" alt="${escapeHtml(data.business.name)}" class="logo" />` : `<div class="party-name">${escapeHtml(data.business.name)}</div>`}
+            </div>
+            <div class="document-title">
+              <h1>Credit Note</h1>
+              <div class="document-number">${safeCreditNoteNumber}</div>
+            </div>
+          </div>
+
+          <div class="parties">
+            <div class="party">
+              <div class="party-label">From</div>
+              <div class="party-name">${escapeHtml(data.business.name)}</div>
+              ${data.business.email ? `<div class="party-detail">${escapeHtml(data.business.email)}</div>` : ''}
+              ${data.business.phone ? `<div class="party-detail">${escapeHtml(data.business.phone)}</div>` : ''}
+              ${data.business.address ? `<div class="party-detail">${formatAddress(data.business.address)}</div>` : ''}
+            </div>
+            <div class="party">
+              <div class="party-label">Credit To</div>
+              <div class="party-name">${escapeHtml(data.client.company || data.client.name)}</div>
+              ${data.client.company ? `<div class="party-detail">${escapeHtml(data.client.name)}</div>` : ''}
+              <div class="party-detail">${escapeHtml(data.client.email)}</div>
+              ${data.client.phone ? `<div class="party-detail">${escapeHtml(data.client.phone)}</div>` : ''}
+              ${data.client.address ? `<div class="party-detail">${formatAddress(data.client.address)}</div>` : ''}
+            </div>
+          </div>
+
+          <div class="meta-info">
+            <div class="meta-item">
+              <div class="meta-label">Original Invoice</div>
+              <div class="meta-value">${safeInvoiceNumber}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Date</div>
+              <div class="meta-value">${data.issuedAt ? formatDate(data.issuedAt) : formatDate(data.createdAt)}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Status</div>
+              <div class="meta-value">
+                <span class="status-badge status-${escapeHtml(data.status)}">${escapeHtml(data.status)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 24px; padding: 12px 16px; background-color: #fef3c7; border-radius: 8px;">
+            <div style="font-weight: 600; font-size: 12px; color: #92400e; margin-bottom: 4px;">Reason</div>
+            <div style="color: #78350f;">${escapeHtml(data.reason)}</div>
+          </div>
+
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lineItemsHtml}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="totals-row total">
+              <span class="totals-label">Credit Total</span>
+              <span class="totals-value">${formatCurrency(data.totals.total, data.currency)}</span>
+            </div>
+          </div>
+
+          ${
+            data.notes
+              ? `
+            <div class="notes">
+              <div class="notes-title">Notes</div>
+              <div class="notes-content">${escapeHtml(data.notes)}</div>
             </div>
           `
               : ''
