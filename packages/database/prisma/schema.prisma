@@ -22,6 +22,7 @@ model User {
   name            String?
   avatarUrl       String?   @map("avatar_url")
   emailVerifiedAt DateTime? @map("email_verified_at")
+  locale          String    @default("en") @db.VarChar(10)
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
@@ -36,6 +37,7 @@ model User {
   workspaceInvites    WorkspaceInvitation[] @relation("InvitedBy")
   quoteEvents         QuoteEvent[]
   invoiceEvents       InvoiceEvent[]
+  creditNoteEvents    CreditNoteEvent[]
   attachments         Attachment[]
   notifications       Notification[]
 
@@ -144,6 +146,7 @@ model Workspace {
   rateCards          RateCard[]
   quotes             Quote[]
   invoices           Invoice[]
+  creditNotes        CreditNote[]
   contracts          Contract[]
   contractInstances  ContractInstance[]
   emailTemplates     EmailTemplate[]
@@ -155,6 +158,7 @@ model Workspace {
   attachments        Attachment[]
   notifications      Notification[]
   slugHistory        WorkspaceSlugHistory[]
+  webhookEndpoints   WebhookEndpoint[]
 
   @@index([slug])
   @@index([ownerId])
@@ -211,6 +215,7 @@ model BusinessProfile {
   taxId        String?  @map("tax_id") @db.VarChar(100)
   currency     String   @default("USD") @db.VarChar(3)
   timezone     String   @default("UTC") @db.VarChar(50)
+  locale       String   @default("en") @db.VarChar(10)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -387,6 +392,7 @@ model Quote {
   acceptedAt           DateTime? @map("accepted_at")
   declinedAt           DateTime? @map("declined_at")
   signedAt             DateTime? @map("signed_at")
+  currency             String    @default("USD") @db.VarChar(3)
   signatureData        Json?     @map("signature_data")
   convertedToInvoiceId String?   @map("converted_to_invoice_id")
   pdfUrl               String?   @map("pdf_url")
@@ -480,6 +486,7 @@ model Invoice {
   total          Decimal   @default(0) @db.Decimal(12, 2)
   amountPaid     Decimal   @default(0) @map("amount_paid") @db.Decimal(12, 2)
   amountDue      Decimal   @default(0) @map("amount_due") @db.Decimal(12, 2)
+  currency       String    @default("USD") @db.VarChar(3)
   notes          String?   @db.Text
   terms          String?   @db.Text
   internalNotes  String?   @map("internal_notes") @db.Text
@@ -504,6 +511,7 @@ model Invoice {
   events           InvoiceEvent[]
   payments         Payment[]
   paymentSchedules PaymentSchedule[]
+  creditNotes      CreditNote[]
 
   @@unique([workspaceId, invoiceNumber])
   @@index([workspaceId])
@@ -883,4 +891,106 @@ model WorkspaceSlugHistory {
   @@index([oldSlug])
   @@index([workspaceId])
   @@map("workspace_slug_histories")
+}
+
+// ============================================
+// CREDIT NOTES
+// ============================================
+
+model CreditNote {
+  id              String   @id @default(uuid())
+  workspaceId     String   @map("workspace_id")
+  invoiceId       String   @map("invoice_id")
+  creditNoteNumber String  @map("credit_note_number") @db.VarChar(50)
+  reason          String   @db.Text
+  amount          Decimal  @db.Decimal(12, 2)
+  currency        String   @default("USD") @db.VarChar(3)
+  status          String   @default("draft") @db.VarChar(20)
+  issuedAt        DateTime? @map("issued_at")
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  lineItems CreditNoteLineItem[]
+  events    CreditNoteEvent[]
+
+  @@unique([workspaceId, creditNoteNumber])
+  @@index([workspaceId])
+  @@index([invoiceId])
+  @@map("credit_notes")
+}
+
+model CreditNoteLineItem {
+  id           String  @id @default(uuid())
+  creditNoteId String  @map("credit_note_id")
+  name         String
+  description  String? @db.Text
+  quantity     Decimal @default(1) @db.Decimal(10, 2)
+  rate         Decimal @db.Decimal(12, 2)
+  amount       Decimal @db.Decimal(12, 2)
+  sortOrder    Int     @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([creditNoteId])
+  @@map("credit_note_line_items")
+}
+
+model CreditNoteEvent {
+  id           String   @id @default(uuid())
+  creditNoteId String   @map("credit_note_id")
+  eventType    String   @map("event_type") @db.VarChar(50)
+  actorId      String?  @map("actor_id")
+  actorType    String   @default("user") @map("actor_type") @db.VarChar(20)
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  actor      User?      @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([creditNoteId])
+  @@map("credit_note_events")
+}
+
+// ============================================
+// OUTBOUND WEBHOOKS
+// ============================================
+
+model WebhookEndpoint {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  url         String   @db.VarChar(500)
+  secret      String   @db.VarChar(100)
+  events      String[] @default([])
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace  Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([workspaceId])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id         String    @id @default(uuid())
+  endpointId String    @map("endpoint_id")
+  eventType  String    @map("event_type") @db.VarChar(50)
+  payload    Json
+  status     String    @default("pending") @db.VarChar(20)
+  statusCode Int?      @map("status_code")
+  response   String?   @db.Text
+  attempts   Int       @default(0)
+  nextRetry  DateTime? @map("next_retry")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId])
+  @@index([status, nextRetry])
+  @@map("webhook_deliveries")
 }
