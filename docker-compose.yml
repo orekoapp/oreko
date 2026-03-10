@@ -20,22 +20,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis for caching and sessions
-  redis:
-    image: redis:7-alpine
-    container_name: quotecraft-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    ports:
-      - '6379:6379'
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Mailpit for email testing in development
   mailpit:
     image: axllent/mailpit:latest
@@ -50,7 +34,6 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
 
 networks:
   default:
