@@ -12,6 +12,7 @@ import {
   Wallet,
   UserCircle,
   SunMoon,
+  Webhook,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -91,6 +92,12 @@ const settingsLinks = [
     icon: CreditCard,
     title: 'Payment Settings',
     description: 'Stripe Connect and payment processing options',
+  },
+  {
+    href: '/settings/webhooks',
+    icon: Webhook,
+    title: 'Webhooks',
+    description: 'Configure outbound webhooks for external integrations',
   },
 ];
 

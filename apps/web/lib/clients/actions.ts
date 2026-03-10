@@ -21,6 +21,7 @@ import type {
 import { safeParseAddress, safeParseMetadata } from './types';
 import { ROUTES } from '@/lib/routes';
 import { nanoid } from 'nanoid';
+import { domainEvents } from '@/lib/events/emitter';
 
 // Helper to convert Decimal to number
 function toNumber(value: unknown): number {
@@ -394,6 +395,10 @@ export async function createClient(input: CreateClientInput): Promise<{ id: stri
   });
 
   revalidatePath(ROUTES.clients);
+
+  try {
+    domainEvents.emit({ type: 'client.created', payload: { clientId: client.id, workspaceId } });
+  } catch {}
 
   return { id: client.id };
 }
