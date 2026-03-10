@@ -70,11 +70,26 @@ export function useAutoSave(quoteId: string | null, debounceMs = 2000) {
     };
   }, [isDirty, quoteId, save, debounceMs]);
 
-  // Bug #206: Save on unmount if dirty, and backup to sessionStorage on pagehide
+  // Bug #206: Save on unmount if dirty, use sendBeacon on pagehide for reliability
   useEffect(() => {
     const handlePageHide = () => {
       if (isDirty && quoteId && document) {
-        // Backup unsaved changes to sessionStorage as a last resort
+        // Use sendBeacon for reliable delivery during page unload
+        const payload = JSON.stringify({
+          quoteId,
+          title: document.title,
+          blocks: document.blocks,
+          notes: document.notes,
+          terms: document.terms,
+          internalNotes: document.internalNotes,
+        });
+        if (typeof navigator.sendBeacon === 'function') {
+          navigator.sendBeacon(
+            `/api/quotes/${quoteId}/autosave`,
+            new Blob([payload], { type: 'application/json' }),
+          );
+        }
+        // Also backup to sessionStorage as a fallback
         try {
           sessionStorage.setItem(
             `quotecraft:autosave:${quoteId}`,
