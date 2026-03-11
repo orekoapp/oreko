@@ -1,24 +1,19 @@
 'use client';
 
 import { useMemo } from 'react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { ChartCard } from './chart-card';
-import { RevenueTooltip } from './chart-tooltip';
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
-  CHART_COLORS,
-  formatChartCurrency,
-  formatChartDate,
-  formatFullCurrency,
-} from '@/lib/dashboard/chart-utils';
-import type { RevenueDataPoint, DashboardPeriod } from '@/lib/dashboard/types';
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 import {
   Select,
   SelectContent,
@@ -26,6 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  formatChartCurrency,
+  formatChartDate,
+  formatFullCurrency,
+} from '@/lib/dashboard/chart-utils';
+import type { RevenueDataPoint, DashboardPeriod } from '@/lib/dashboard/types';
 
 interface RevenueChartProps {
   data: RevenueDataPoint[];
@@ -33,9 +34,15 @@ interface RevenueChartProps {
   onPeriodChange?: (period: DashboardPeriod) => void;
   isLoading?: boolean;
   showPeriodSelector?: boolean;
-  height?: number;
   className?: string;
 }
+
+const chartConfig = {
+  revenue: {
+    label: 'Revenue',
+    color: 'var(--primary-500)',
+  },
+} satisfies ChartConfig;
 
 const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
   { value: '7d', label: '7 Days' },
@@ -50,10 +57,9 @@ export function RevenueChart({
   onPeriodChange,
   isLoading = false,
   showPeriodSelector = true,
-  height = 300,
   className,
 }: RevenueChartProps) {
-  // Filter data based on selected period and aggregate as needed
+  // Filter data based on selected period
   const filteredData = useMemo(() => {
     const now = new Date();
     let cutoff: Date;
@@ -114,12 +120,10 @@ export function RevenueChart({
     return filtered;
   }, [data, period]);
 
-  // Calculate total revenue for the filtered period
   const totalRevenue = useMemo(() => {
     return filteredData.reduce((sum, point) => sum + point.revenue, 0);
   }, [filteredData]);
 
-  // Format data for chart axis labels
   const chartData = useMemo(() => {
     return filteredData.map((point) => ({
       ...point,
@@ -129,71 +133,81 @@ export function RevenueChart({
 
   const isEmpty = chartData.length === 0;
 
-  const periodSelector = showPeriodSelector && onPeriodChange && (
-    <Select value={period} onValueChange={(v) => onPeriodChange(v as DashboardPeriod)}>
-      <SelectTrigger className="w-[100px] h-8" data-testid="period-selector">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {PERIOD_OPTIONS.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-
   return (
-    <ChartCard
-      title="Revenue Trend"
-      description={isEmpty ? undefined : `Last ${PERIOD_OPTIONS.find(o => o.value === period)?.label ?? period}: ${formatFullCurrency(totalRevenue)}`}
-      className={className}
-      isLoading={isLoading}
-      isEmpty={isEmpty}
-      emptyMessage="No revenue data for this period"
-      actions={periodSelector}
-    >
-      <div style={{ height }} data-testid="revenue-chart">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={chartData}
-            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis
-              dataKey="formattedDate"
-              tick={{ fontSize: 12 }}
-              tickLine={false}
-              axisLine={false}
-              className="text-muted-foreground"
-            />
-            <YAxis
-              tickFormatter={formatChartCurrency}
-              tick={{ fontSize: 12 }}
-              tickLine={false}
-              axisLine={false}
-              width={60}
-              className="text-muted-foreground"
-            />
-            <Tooltip content={<RevenueTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              stroke={CHART_COLORS.primary}
-              strokeWidth={2}
-              fill="url(#revenueGradient)"
-              animationDuration={500}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </ChartCard>
+    <Card className={className}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div>
+          <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+          {!isEmpty && (
+            <p className="text-2xl font-semibold tracking-tight mt-1">
+              {formatFullCurrency(totalRevenue)}
+            </p>
+          )}
+        </div>
+        {showPeriodSelector && onPeriodChange && (
+          <Select value={period} onValueChange={(v) => onPeriodChange(v as DashboardPeriod)}>
+            <SelectTrigger className="h-7 w-[100px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIOD_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </CardHeader>
+      <CardContent className="pt-0">
+        {isEmpty ? (
+          <div className="flex h-[280px] items-center justify-center">
+            <p className="text-sm text-muted-foreground">No revenue data for this period</p>
+          </div>
+        ) : (
+          <ChartContainer config={chartConfig} className="h-[280px] w-full">
+            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--color-revenue)" stopOpacity={0.3} />
+                  <stop offset="40%" stopColor="var(--color-revenue)" stopOpacity={0.08} />
+                  <stop offset="100%" stopColor="var(--color-revenue)" stopOpacity={0.01} />
+                </linearGradient>
+                <linearGradient id="strokeRevenue" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="var(--primary-400)" />
+                  <stop offset="100%" stopColor="var(--primary-600)" />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+              <XAxis
+                dataKey="formattedDate"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                className="text-[11px]"
+              />
+              <YAxis
+                tickFormatter={formatChartCurrency}
+                tickLine={false}
+                axisLine={false}
+                width={50}
+                className="text-[11px]"
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" />}
+              />
+              <Area
+                type="natural"
+                dataKey="revenue"
+                stroke="url(#strokeRevenue)"
+                strokeWidth={2}
+                fill="url(#fillRevenue)"
+              />
+            </AreaChart>
+          </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
   );
 }

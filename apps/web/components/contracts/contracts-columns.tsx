@@ -4,9 +4,9 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
-import { DataTableRowActions } from '@/components/ui/data-table/data-table-row-actions';
+import { DataTableRowActions, RowAction } from '@/components/ui/data-table/data-table-row-actions';
 import { ContractInstanceListItem } from '@/lib/contracts/types';
-import { FileText, Mail, Eye, CheckCircle2, Clock, Send, Variable } from 'lucide-react';
+import { FileText, Mail, Eye, CheckCircle2, Clock, Hourglass, Pencil, Send, Link2, Download, Trash2, PenLine, RefreshCw } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 const statusConfig: Record<
@@ -28,6 +28,11 @@ const statusConfig: Record<
     className: 'border-yellow-300 text-yellow-700 bg-yellow-50 dark:border-yellow-600 dark:text-yellow-400 dark:bg-yellow-950',
     icon: <Eye className="h-3 w-3" />,
   },
+  pending: {
+    label: 'Pending',
+    className: 'border-amber-300 text-amber-600 bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:bg-amber-950',
+    icon: <Hourglass className="h-3 w-3" />,
+  },
   signed: {
     label: 'Signed',
     className: 'border-green-300 text-green-600 bg-green-50 dark:border-green-600 dark:text-green-400 dark:bg-green-950',
@@ -42,14 +47,19 @@ const statusConfig: Record<
 
 interface ContractColumnsOptions {
   onView?: (contract: ContractInstanceListItem) => void;
+  onEdit?: (contract: ContractInstanceListItem) => void;
   onSend?: (contract: ContractInstanceListItem) => void;
+  onCountersign?: (contract: ContractInstanceListItem) => void;
+  onResend?: (contract: ContractInstanceListItem) => void;
+  onCopyLink?: (contract: ContractInstanceListItem) => void;
+  onDownload?: (contract: ContractInstanceListItem) => void;
   onDelete?: (contract: ContractInstanceListItem) => void;
 }
 
 export function getContractColumns(
   options: ContractColumnsOptions = {}
 ): ColumnDef<ContractInstanceListItem>[] {
-  const { onView, onSend, onDelete } = options;
+  const { onView, onEdit, onSend, onCountersign, onResend, onCopyLink, onDownload, onDelete } = options;
 
   return [
     {
@@ -82,51 +92,24 @@ export function getContractColumns(
         <DataTableColumnHeader column={column} title="Contract" />
       ),
       cell: ({ row }) => {
+        const quoteName = row.original.quoteName;
         return (
-          <div className="font-medium">{row.getValue('contractName')}</div>
+          <div>
+            <div className="font-medium text-primary">
+              {row.getValue('contractName')}
+            </div>
+            {quoteName && (
+              <div className="text-sm text-muted-foreground">{quoteName}</div>
+            )}
+          </div>
         );
       },
       filterFn: (row, id, value) => {
         const searchValue = value.toLowerCase();
         const contractName = (row.getValue('contractName') as string).toLowerCase();
         const clientName = row.original.clientName.toLowerCase();
-        return contractName.includes(searchValue) || clientName.includes(searchValue);
-      },
-    },
-    {
-      accessorKey: 'clientName',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Client" />
-      ),
-      cell: ({ row }) => {
-        const clientName = row.getValue('clientName') as string;
-        const initials = clientName
-          .split(' ')
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2);
-
-        return (
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-              {initials}
-            </div>
-            <div className="font-medium">{clientName}</div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: 'quoteName',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Quote" />
-      ),
-      cell: ({ row }) => {
-        const quoteName = row.getValue('quoteName') as string | null;
-        return (
-          <div className="text-muted-foreground">{quoteName || '-'}</div>
-        );
+        const clientEmail = row.original.clientEmail?.toLowerCase() ?? '';
+        return contractName.includes(searchValue) || clientName.includes(searchValue) || clientEmail.includes(searchValue);
       },
     },
     {
@@ -154,30 +137,31 @@ export function getContractColumns(
       },
     },
     {
-      accessorKey: 'variablesCount',
+      accessorKey: 'clientName',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Variables" />
+        <DataTableColumnHeader column={column} title="Client" />
       ),
       cell: ({ row }) => {
-        const count = row.getValue('variablesCount') as number;
+        const clientName = row.getValue('clientName') as string;
+        const clientEmail = row.original.clientEmail;
+        const initials = clientName
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2);
+
         return (
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Variable className="h-3.5 w-3.5" />
-            <span>{count}</span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: 'signedAt',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Signed" />
-      ),
-      cell: ({ row }) => {
-        const signedAt = row.getValue('signedAt') as Date | null;
-        return (
-          <div className="text-muted-foreground">
-            {signedAt ? formatDate(signedAt) : '-'}
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+              {initials}
+            </div>
+            <div>
+              <div className="font-medium">{clientName}</div>
+              {clientEmail && (
+                <div className="text-sm text-muted-foreground">{clientEmail}</div>
+              )}
+            </div>
           </div>
         );
       },
@@ -199,45 +183,76 @@ export function getContractColumns(
       id: 'actions',
       cell: ({ row }) => {
         const contract = row.original;
-        const isDraft = contract.status === 'draft';
+        const actions: RowAction<ContractInstanceListItem>[] = [];
+
+        if (onView) {
+          actions.push({
+            label: 'View',
+            icon: <Eye className="mr-2 h-4 w-4" />,
+            onClick: onView,
+          });
+        }
+        if (onEdit && contract.status === 'draft') {
+          actions.push({
+            label: 'Edit',
+            icon: <Pencil className="mr-2 h-4 w-4" />,
+            onClick: onEdit,
+          });
+        }
+        if (onCountersign && contract.status === 'pending') {
+          actions.push({
+            label: 'Countersign',
+            icon: <PenLine className="mr-2 h-4 w-4" />,
+            onClick: onCountersign,
+            separator: true,
+          });
+        }
+        if (onSend && contract.status === 'draft') {
+          actions.push({
+            label: 'Send Contract',
+            icon: <Send className="mr-2 h-4 w-4" />,
+            onClick: onSend,
+            separator: true,
+          });
+        }
+        if (onResend && contract.status !== 'draft' && contract.status !== 'signed') {
+          actions.push({
+            label: 'Resend',
+            icon: <RefreshCw className="mr-2 h-4 w-4" />,
+            onClick: onResend,
+          });
+        }
+        if (onCopyLink) {
+          actions.push({
+            label: 'Copy Link',
+            icon: <Link2 className="mr-2 h-4 w-4" />,
+            onClick: onCopyLink,
+          });
+        }
+        if (onDownload) {
+          actions.push({
+            label: 'Download PDF',
+            icon: <Download className="mr-2 h-4 w-4" />,
+            onClick: onDownload,
+            separator: true,
+          });
+        }
+        if (onDelete) {
+          actions.push({
+            label: 'Delete',
+            icon: <Trash2 className="mr-2 h-4 w-4" />,
+            onClick: onDelete,
+            variant: 'destructive',
+            separator: true,
+          });
+        }
 
         return (
           <DataTableRowActions
             row={contract}
+            actions={actions}
             onView={onView}
             onDelete={onDelete}
-            actions={[
-              ...(onView
-                ? [
-                    {
-                      label: 'View',
-                      icon: <Eye className="mr-2 h-4 w-4" />,
-                      onClick: onView,
-                    },
-                  ]
-                : []),
-              ...(isDraft && onSend
-                ? [
-                    {
-                      label: 'Send to Client',
-                      icon: <Send className="mr-2 h-4 w-4" />,
-                      onClick: onSend,
-                      separator: true,
-                    },
-                  ]
-                : []),
-              ...(isDraft && onDelete
-                ? [
-                    {
-                      label: 'Delete',
-                      icon: <span className="mr-2 h-4 w-4">🗑️</span>,
-                      onClick: onDelete,
-                      variant: 'destructive' as const,
-                      separator: true,
-                    },
-                  ]
-                : []),
-            ]}
           />
         );
       },
@@ -249,6 +264,7 @@ export const contractStatusOptions = [
   { value: 'draft', label: 'Draft' },
   { value: 'sent', label: 'Sent' },
   { value: 'viewed', label: 'Viewed' },
+  { value: 'pending', label: 'Pending Countersign' },
   { value: 'signed', label: 'Signed' },
   { value: 'expired', label: 'Expired' },
 ];

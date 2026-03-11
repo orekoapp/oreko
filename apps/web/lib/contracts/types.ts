@@ -56,6 +56,7 @@ export interface ContractInstanceListItem {
   id: string;
   contractName: string;
   clientName: string;
+  clientEmail: string | null;
   quoteName: string | null;
   status: string;
   variablesCount: number;
@@ -152,6 +153,11 @@ export interface PaginatedContracts {
     total: number;
     totalPages: number;
   };
+}
+
+// Contract settings
+export interface ContractSettingsData {
+  autoCountersign: boolean;
 }
 
 // Paginated contract instances

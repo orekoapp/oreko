@@ -7,3 +7,7 @@ export { InviteMemberButton } from './invite-member-button';
 export { WorkspaceSettingsForm } from './workspace-settings-form';
 export { DangerZone } from './danger-zone';
 export { InvoiceDefaultsForm } from './invoice-defaults-form';
+export { CustomFieldsManager } from './custom-fields-manager';
+export { ContractSettingsForm } from './contract-settings-form';
+export { WebhooksManager } from './webhooks-manager';
+export { IntegrationsManager } from './integrations-manager';

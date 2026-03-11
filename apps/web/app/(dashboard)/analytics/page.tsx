@@ -58,11 +58,11 @@ async function AnalyticsContent() {
 
 export default async function AnalyticsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground">
-          Track your business performance with detailed insights and reports.
+        <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Detailed insights into your business performance.
         </p>
       </div>
 

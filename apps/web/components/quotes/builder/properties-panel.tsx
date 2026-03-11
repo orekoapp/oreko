@@ -1,6 +1,7 @@
 'use client';
 
-import { AlignLeft, AlignCenter, AlignRight, AlignJustify, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AlignLeft, AlignCenter, AlignRight, AlignJustify, X, FileText } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import type { QuoteBlock, BlockType } from '@/lib/quotes/types';
@@ -18,9 +19,17 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getContractTemplates } from '@/lib/contracts/actions';
 
 export function PropertiesPanel() {
   const { document, selectedBlockId, updateBlock, togglePropertiesPanel } = useQuoteBuilderStore();
+  const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    getContractTemplates().then((result) => {
+      setContractTemplates(result.data.map((t) => ({ id: t.id, name: t.name })));
+    });
+  }, []);
 
   const selectedBlock = document?.blocks.find((b) => b.id === selectedBlockId);
 
@@ -30,7 +39,7 @@ export function PropertiesPanel() {
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div>
             <h2 className="font-semibold">Properties</h2>
-            <p className="text-xs text-muted-foreground">Select a block to edit</p>
+            <p className="text-xs text-muted-foreground">Document Settings</p>
           </div>
           <Button
             variant="ghost"
@@ -41,11 +50,11 @@ export function PropertiesPanel() {
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <div className="flex flex-1 items-center justify-center p-4">
-          <p className="text-center text-sm text-muted-foreground">
-            No block selected. Click on a block in the canvas to edit its properties.
-          </p>
-        </div>
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-4">
+            <DocumentSettingsPanel contractTemplates={contractTemplates} />
+          </div>
+        </ScrollArea>
       </div>
     );
   }
@@ -74,6 +83,62 @@ export function PropertiesPanel() {
           <BlockProperties block={selectedBlock} onUpdate={updateBlock} />
         </div>
       </ScrollArea>
+    </div>
+  );
+}
+
+// Document Settings Panel (shown when no block is selected)
+function DocumentSettingsPanel({ contractTemplates }: { contractTemplates: { id: string; name: string }[] }) {
+  const { document, updateSettings } = useQuoteBuilderStore();
+
+  if (!document) return null;
+
+  const contractTemplateId = document.contractTemplateId || '';
+  const selectedTemplate = contractTemplates.find((t) => t.id === contractTemplateId);
+
+  const handleContractChange = (value: string) => {
+    // Store on document directly via the store
+    useQuoteBuilderStore.setState((state) => {
+      if (state.document) {
+        state.document.contractTemplateId = value === 'none' ? null : value;
+        state.isDirty = true;
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Contract Template */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-muted-foreground" />
+          <Label className="text-sm font-medium">Contract</Label>
+        </div>
+        <Select value={contractTemplateId || 'none'} onValueChange={handleContractChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a contract template..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No contract</SelectItem>
+            {contractTemplates.map((template) => (
+              <SelectItem key={template.id} value={template.id}>
+                {template.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedTemplate && (
+          <p className="text-xs text-muted-foreground">
+            This contract will be attached to the quote when sent.
+          </p>
+        )}
+      </div>
+
+      {!selectedTemplate && (
+        <p className="text-center text-xs text-muted-foreground pt-4">
+          Click on a block in the canvas to edit its properties.
+        </p>
+      )}
     </div>
   );
 }

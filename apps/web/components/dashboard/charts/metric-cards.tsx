@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -24,16 +23,14 @@ interface RadialProgressProps {
   strokeWidth?: number;
   gradientId: string;
   label: string;
-  sublabel?: string;
 }
 
 function RadialProgress({
   value,
-  size = 140,
-  strokeWidth = 10,
+  size = 80,
+  strokeWidth = 6,
   gradientId,
   label,
-  sublabel,
 }: RadialProgressProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -46,10 +43,9 @@ function RadialProgress({
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="var(--primary-400)" />
-            <stop offset="100%" stopColor="var(--primary-700)" />
+            <stop offset="100%" stopColor="var(--primary-600)" />
           </linearGradient>
         </defs>
-        {/* Background track */}
         <circle
           cx={center}
           cy={center}
@@ -59,7 +55,6 @@ function RadialProgress({
           strokeWidth={strokeWidth}
           className="dark:stroke-[var(--primary-950)]"
         />
-        {/* Progress arc */}
         <circle
           cx={center}
           cy={center}
@@ -73,12 +68,8 @@ function RadialProgress({
           className="transition-all duration-700 ease-out"
         />
       </svg>
-      {/* Center label */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold tabular-nums">{label}</span>
-        {sublabel && (
-          <span className="text-[10px] text-muted-foreground">{sublabel}</span>
-        )}
+        <span className="text-lg font-semibold tabular-nums">{label}</span>
       </div>
     </div>
   );
@@ -101,20 +92,18 @@ export function WinRateCard({ data, className }: WinRateCardProps) {
   }, [data]);
 
   return (
-    <Card className={`h-full ${className || ''}`}>
-      <CardContent className="flex h-full items-center gap-5 p-5">
+    <Card className={className}>
+      <CardContent className="flex items-center gap-5 p-5">
         <RadialProgress
           value={winRate}
-          size={100}
-          strokeWidth={8}
           gradientId="winRateGradient"
           label={`${winRate.toFixed(0)}%`}
         />
         <div className="min-w-0">
-          <p className="text-base font-medium">Win Rate</p>
+          <p className="text-sm font-medium">Win Rate</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {total > 0
-              ? `${accepted} won of ${total} decided quotes`
+              ? `${accepted} of ${total} decided`
               : 'No decided quotes yet'}
           </p>
         </div>
@@ -140,20 +129,18 @@ export function CollectionRateCard({ data, className }: CollectionRateCardProps)
   }, [data]);
 
   return (
-    <Card className={`h-full ${className || ''}`}>
-      <CardContent className="flex h-full items-center gap-5 p-5">
+    <Card className={className}>
+      <CardContent className="flex items-center gap-5 p-5">
         <RadialProgress
           value={collectionRate}
-          size={100}
-          strokeWidth={8}
           gradientId="collectionRateGradient"
           label={`${collectionRate.toFixed(0)}%`}
         />
         <div className="min-w-0">
-          <p className="text-base font-medium">Collection Rate</p>
+          <p className="text-sm font-medium">Collection Rate</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {billable > 0
-              ? `${paid} collected of ${billable} billed invoices`
+              ? `${paid} of ${billable} collected`
               : 'No billed invoices yet'}
           </p>
         </div>
@@ -180,7 +167,6 @@ const PIPELINE_STAGES = [
   { key: 'invoicesPaid', label: 'Paid' },
 ] as const;
 
-// Gradient cascade from dark to light primary
 const PIPELINE_OPACITIES = [1, 0.85, 0.7, 0.55, 0.42, 0.3];
 
 export function PipelineCard({ data, className }: PipelineCardProps) {
@@ -203,21 +189,23 @@ export function PipelineCard({ data, className }: PipelineCardProps) {
 
   return (
     <Card className={className}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">Quote-to-Cash Pipeline</CardTitle>
-        <CardDescription className="text-xs">
-          {isEmpty
-            ? 'No pipeline data'
-            : `${overallConversion.toFixed(0)}% end-to-end conversion`}
-        </CardDescription>
+      <CardHeader className="pb-2 p-5">
+        <div className="flex items-baseline justify-between">
+          <CardTitle className="text-sm font-medium">Pipeline</CardTitle>
+          {!isEmpty && (
+            <span className="text-xs text-muted-foreground">
+              {overallConversion.toFixed(0)}% end-to-end
+            </span>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="pt-2 pb-4">
+      <CardContent className="pt-0 px-5 pb-5">
         {isEmpty ? (
-          <div className="flex h-[160px] items-center justify-center">
+          <div className="flex h-[100px] items-center justify-center">
             <p className="text-sm text-muted-foreground">No pipeline data</p>
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {stages.map((stage) => (
               <div key={stage.key} className="space-y-0.5">
                 <div className="flex items-center justify-between text-[11px]">

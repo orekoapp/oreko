@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -37,16 +36,11 @@ const statusDot: Record<string, string> = {
 
 export function RecentQuotes({ quotes }: RecentQuotesProps) {
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-0">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-medium">Recent Quotes</CardTitle>
-            <CardDescription className="text-xs">
-              Your latest {quotes.length} quotes
-            </CardDescription>
-          </div>
-          <Button variant="ghost" size="sm" className="h-8 text-xs" asChild>
+          <CardTitle className="text-sm font-medium">Recent Quotes</CardTitle>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" asChild>
             <Link href="/quotes">
               View all
               <ArrowUpRight className="ml-1 h-3 w-3" />
@@ -54,32 +48,32 @@ export function RecentQuotes({ quotes }: RecentQuotesProps) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-3 flex-1 overflow-y-auto">
         {quotes.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             No quotes yet
           </p>
         ) : (
           <div className="space-y-0">
-            {quotes.map((quote, i) => (
+            {quotes.map((quote) => (
               <Link
                 key={quote.id}
                 href={`/quotes/${quote.id}`}
-                className="group flex items-center justify-between py-3 border-t first:border-t-0 transition-colors hover:bg-muted/40 -mx-6 px-6"
+                className="group flex items-center justify-between py-2.5 border-t first:border-t-0 transition-colors hover:bg-muted/40 -mx-6 px-6"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${statusDot[quote.status] || 'bg-muted-foreground/30'}`} />
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[quote.status] || 'bg-muted-foreground/30'}`} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                       {quote.title}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-muted-foreground/70 truncate">
                       {quote.clientName}
                     </p>
                   </div>
                 </div>
                 <div className="ml-3 flex items-center gap-3 shrink-0">
-                  <span className="text-sm font-medium tabular-nums">
+                  <span className="text-sm tabular-nums text-muted-foreground">
                     {formatCurrency(quote.total)}
                   </span>
                   <Badge
@@ -100,16 +94,11 @@ export function RecentQuotes({ quotes }: RecentQuotesProps) {
 
 export function RecentInvoices({ invoices }: RecentInvoicesProps) {
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-0">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-medium">Recent Invoices</CardTitle>
-            <CardDescription className="text-xs">
-              Your latest {invoices.length} invoices
-            </CardDescription>
-          </div>
-          <Button variant="ghost" size="sm" className="h-8 text-xs" asChild>
+          <CardTitle className="text-sm font-medium">Recent Invoices</CardTitle>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" asChild>
             <Link href="/invoices">
               View all
               <ArrowUpRight className="ml-1 h-3 w-3" />
@@ -117,7 +106,7 @@ export function RecentInvoices({ invoices }: RecentInvoicesProps) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-3 flex-1 overflow-y-auto">
         {invoices.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             No invoices yet
@@ -128,29 +117,24 @@ export function RecentInvoices({ invoices }: RecentInvoicesProps) {
               <Link
                 key={invoice.id}
                 href={`/invoices/${invoice.id}`}
-                className="group flex items-center justify-between py-3 border-t first:border-t-0 transition-colors hover:bg-muted/40 -mx-6 px-6"
+                className="group flex items-center justify-between py-2.5 border-t first:border-t-0 transition-colors hover:bg-muted/40 -mx-6 px-6"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${statusDot[invoice.status] || 'bg-muted-foreground/30'}`} />
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[invoice.status] || 'bg-muted-foreground/30'}`} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                       {invoice.invoiceNumber}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {invoice.clientName} &middot; Due {formatDate(invoice.dueDate)}
+                    <p className="text-xs text-muted-foreground/70 truncate">
+                      {invoice.clientName}
                     </p>
                   </div>
                 </div>
                 <div className="ml-3 flex items-center gap-3 shrink-0">
                   <div className="text-right">
-                    <span className="text-sm font-medium tabular-nums">
+                    <span className="text-sm tabular-nums text-muted-foreground">
                       {formatCurrency(invoice.total)}
                     </span>
-                    {invoice.amountPaid > 0 && invoice.amountPaid < invoice.total && (
-                      <p className="text-[10px] text-muted-foreground tabular-nums">
-                        Paid {formatCurrency(invoice.amountPaid)}
-                      </p>
-                    )}
                   </div>
                   <Badge
                     variant="outline"

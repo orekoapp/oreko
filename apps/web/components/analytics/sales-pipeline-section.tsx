@@ -1,39 +1,82 @@
 'use client';
 
 import { useMemo } from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  PieChart,
-  Pie,
-  Legend,
-} from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { DateRange } from 'react-day-picker';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { QuoteStatusCounts, ConversionFunnelData } from '@/lib/dashboard/types';
 
 interface SalesPipelineSectionProps {
+  dateRange?: DateRange;
   conversionRate: number;
   avgDealValue: number;
   quoteStatusCounts: QuoteStatusCounts;
   conversionFunnel: ConversionFunnelData;
 }
 
-// Format as currency (values are already in dollars)
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
 }
+
+function RadialProgress({ value, label }: { value: number; label: string }) {
+  const size = 100;
+  const strokeWidth = 8;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(value, 100) / 100) * circumference;
+  const center = size / 2;
+
+  return (
+    <div className="relative flex flex-col items-center">
+      <svg width={size} height={size} className="-rotate-90">
+        <defs>
+          <linearGradient id="pipelineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="var(--primary-400)" />
+            <stop offset="100%" stopColor="var(--primary-600)" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="var(--primary-100)"
+          strokeWidth={strokeWidth}
+          className="dark:stroke-[var(--primary-950)]"
+        />
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="url(#pipelineGradient)"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-xl font-semibold tabular-nums">{label}</span>
+      </div>
+    </div>
+  );
+}
+
+const STATUS_ITEMS = [
+  { key: 'draft', label: 'Draft', color: 'bg-slate-400' },
+  { key: 'sent', label: 'Sent', color: 'bg-blue-500' },
+  { key: 'viewed', label: 'Viewed', color: 'bg-amber-400' },
+  { key: 'accepted', label: 'Accepted', color: 'bg-emerald-500' },
+  { key: 'declined', label: 'Declined', color: 'bg-red-500' },
+  { key: 'expired', label: 'Expired', color: 'bg-orange-400' },
+] as const;
 
 export function SalesPipelineSection({
   conversionRate,
@@ -41,131 +84,71 @@ export function SalesPipelineSection({
   quoteStatusCounts,
   conversionFunnel,
 }: SalesPipelineSectionProps) {
-  // Build quotes by status from real data
-  const quotesByStatus = useMemo(() => [
-    { status: 'Draft', count: quoteStatusCounts.draft, color: '#94A3B8' },
-    { status: 'Sent', count: quoteStatusCounts.sent, color: '#3B82F6' },
-    { status: 'Viewed', count: quoteStatusCounts.viewed, color: '#FACC15' },
-    { status: 'Accepted', count: quoteStatusCounts.accepted, color: '#22C55E' },
-    { status: 'Declined', count: quoteStatusCounts.declined, color: '#EF4444' },
-    { status: 'Expired', count: quoteStatusCounts.expired, color: '#F97316' },
-  ], [quoteStatusCounts]);
-
   const totalQuotes = conversionFunnel.quotesCreated;
   const acceptedQuotes = conversionFunnel.quotesAccepted;
-
-  // Calculate radial chart data
-  const radialData = useMemo(() => {
-    return [
-      { name: 'Conversion', value: conversionRate, fill: '#22C55E' },
-      { name: 'Remaining', value: 100 - conversionRate, fill: '#E5E7EB' },
-    ];
-  }, [conversionRate]);
+  const maxCount = useMemo(() => {
+    return Math.max(
+      quoteStatusCounts.draft,
+      quoteStatusCounts.sent,
+      quoteStatusCounts.viewed,
+      quoteStatusCounts.accepted,
+      quoteStatusCounts.declined,
+      quoteStatusCounts.expired,
+      1
+    );
+  }, [quoteStatusCounts]);
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Sales Pipeline</CardTitle>
-        <CardDescription>
-          Quote conversion efficiency and pipeline analysis
-        </CardDescription>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-sm font-medium">Sales Pipeline</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Conversion Rate Radial + Metrics */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Radial Chart */}
-          <div className="flex flex-col items-center justify-center">
-            <div className="relative h-[160px] w-[160px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={radialData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={2}
-                    dataKey="value"
-                    startAngle={90}
-                    endAngle={-270}
-                  >
-                    {radialData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold">{conversionRate.toFixed(1)}%</span>
-                <span className="text-xs text-muted-foreground">Conversion</span>
+        {/* Conversion + Key Metrics */}
+        <div className="flex items-center gap-6">
+          <RadialProgress
+            value={conversionRate}
+            label={`${conversionRate.toFixed(0)}%`}
+          />
+          <div className="flex-1 space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Avg Deal</p>
+              <p className="text-lg font-semibold">{formatCurrency(avgDealValue)}</p>
+            </div>
+            <div className="flex gap-6">
+              <div>
+                <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Quotes</p>
+                <p className="text-lg font-semibold">{totalQuotes}</p>
               </div>
-            </div>
-          </div>
-
-          {/* Key Metrics */}
-          <div className="flex flex-col justify-center space-y-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Average Deal Value</p>
-              <p className="text-xl font-bold">{formatCurrency(avgDealValue)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Total Quotes</p>
-              <p className="text-xl font-bold">{totalQuotes}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Accepted Quotes</p>
-              <p className="text-xl font-bold text-green-600">{acceptedQuotes}</p>
+              <div>
+                <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Won</p>
+                <p className="text-lg font-semibold text-emerald-600">{acceptedQuotes}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Quotes by Status Bar Chart */}
-        <div>
-          <h4 className="mb-4 text-sm font-medium">Quotes by Status</h4>
-          <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={quotesByStatus}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
-              >
-                <XAxis type="number" tickLine={false} axisLine={false} allowDecimals={false} />
-                <YAxis
-                  dataKey="status"
-                  type="category"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 12 }}
-                  width={70}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload || !payload[0]) return null;
-                    const item = payload[0].payload;
-                    return (
-                      <div className="rounded-lg border bg-background px-3 py-2 shadow-md">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: item.color }}
-                          />
-                          <span className="font-medium">{item.status}</span>
-                        </div>
-                        <p className="text-sm">
-                          Count: <span className="font-medium">{item.count}</span>
-                        </p>
-                      </div>
-                    );
-                  }}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]} animationDuration={500}>
-                  {quotesByStatus.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Quotes by Status - Horizontal Bars */}
+        <div className="space-y-2.5">
+          <h4 className="text-xs text-muted-foreground/70 uppercase tracking-wider">By Status</h4>
+          {STATUS_ITEMS.map((item) => {
+            const count = quoteStatusCounts[item.key] ?? 0;
+            const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+            return (
+              <div key={item.key} className="space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">{item.label}</span>
+                  <span className="font-medium tabular-nums">{count}</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ease-out ${item.color}`}
+                    style={{ width: `${Math.max(pct, count > 0 ? 3 : 0)}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

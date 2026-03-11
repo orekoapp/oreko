@@ -18,6 +18,7 @@ import type {
   PaginatedContracts,
   PaginatedContractInstances,
   SignatureData,
+  ContractSettingsData,
 } from './types';
 import { sendEmail } from '@/lib/services/email';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
@@ -253,7 +254,7 @@ export async function getContractInstances(
       where,
       include: {
         contract: { select: { name: true, variables: true } },
-        client: { select: { name: true, company: true } },
+        client: { select: { name: true, company: true, email: true } },
         quote: { select: { title: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -271,6 +272,7 @@ export async function getContractInstances(
         id: i.id,
         contractName: i.contract.name,
         clientName: i.client.company || i.client.name,
+        clientEmail: i.client.email || null,
         quoteName: i.quote?.title || null,
         status: i.status,
         variablesCount,
@@ -621,6 +623,27 @@ export async function deleteContractInstance(id: string): Promise<void> {
   });
 
   revalidatePath('/contracts');
+}
+
+// ============================================
+// CONTRACT SETTINGS (STUB)
+// ============================================
+
+// Get contract settings
+export async function getContractSettings(): Promise<ContractSettingsData> {
+  // TODO: Wire up to database when contract settings table is added
+  return {
+    autoCountersign: false,
+  };
+}
+
+// Update contract settings
+export async function updateContractSettings(
+  input: Partial<ContractSettingsData>
+): Promise<void> {
+  // TODO: Wire up to database when contract settings table is added
+  console.log('updateContractSettings stub called with:', input);
+  revalidatePath('/settings/contracts');
 }
 
 // Duplicate a contract template

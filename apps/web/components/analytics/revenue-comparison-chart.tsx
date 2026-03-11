@@ -38,14 +38,15 @@ export function RevenueComparisonChart({ data: propData }: RevenueComparisonChar
       lastYear: item.prevYearRevenue ?? 0,
     }));
   }, [propData]);
+
   if (chartData.length === 0) {
     return (
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-4">
           <CardTitle className="text-sm font-medium">Revenue Comparison</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+          <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
             No revenue comparison data available
           </div>
         </CardContent>
@@ -55,38 +56,38 @@ export function RevenueComparisonChart({ data: propData }: RevenueComparisonChar
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-4">
         <CardTitle className="text-sm font-medium">Revenue Comparison</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[200px]">
+        <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
               <XAxis
                 dataKey="month"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11 }}
+                className="text-[11px]"
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11 }}
+                className="text-[11px]"
                 tickFormatter={(value) => `$${value / 1000}k`}
-                width={45}
+                width={50}
               />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (!active || !payload) return null;
                   return (
-                    <div className="rounded-lg border bg-background px-3 py-2 shadow-md">
-                      <p className="mb-1 font-medium">{label}</p>
+                    <div className="rounded-lg border bg-card px-3 py-2 shadow-sm">
+                      <p className="text-xs font-medium mb-1">{label}</p>
                       {payload.map((entry, index) => (
-                        <p key={index} className="text-sm" style={{ color: entry.color }}>
+                        <p key={index} className="text-xs" style={{ color: entry.color }}>
                           {entry.name}: {formatCurrency(entry.value as number)}
                         </p>
                       ))}
@@ -97,28 +98,28 @@ export function RevenueComparisonChart({ data: propData }: RevenueComparisonChar
               <Bar
                 dataKey="thisYear"
                 name="This Year"
-                fill="#3B82F6"
-                radius={[4, 4, 0, 0]}
+                fill="var(--primary-500)"
+                radius={[3, 3, 0, 0]}
                 barSize={12}
               />
               <Bar
                 dataKey="lastYear"
                 name="Last Year"
-                fill="#94A3B8"
-                radius={[4, 4, 0, 0]}
+                fill="var(--primary-200)"
+                radius={[3, 3, 0, 0]}
                 barSize={12}
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="mt-3 flex items-center justify-center gap-6 text-xs">
+        <div className="mt-3 flex items-center justify-center gap-6 text-xs text-muted-foreground/70">
           <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded bg-blue-500" />
-            <span className="text-muted-foreground">This Year</span>
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--primary-500)' }} />
+            <span>This Year</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded bg-slate-400" />
-            <span className="text-muted-foreground">Last Year</span>
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--primary-200)' }} />
+            <span>Last Year</span>
           </div>
         </div>
       </CardContent>

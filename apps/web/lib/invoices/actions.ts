@@ -857,3 +857,102 @@ export async function duplicateInvoice(invoiceId: string) {
 
   return { success: true, invoiceId: duplicate.id };
 }
+
+// ============================================
+// INVOICE TEMPLATES (STUB)
+// ============================================
+
+export interface InvoiceTemplateListItem {
+  id: string;
+  name: string;
+  description: string;
+  paymentTerms: string;
+  currency: string;
+  usageCount: number;
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function getInvoiceTemplates(filter?: { search?: string; page?: number }) {
+  // TODO: Wire up to database when invoice templates table is added
+  const templates: InvoiceTemplateListItem[] = [
+    {
+      id: 'inv-tmpl-001',
+      name: 'Standard Invoice',
+      description: 'Default invoice template with standard terms',
+      paymentTerms: 'net30',
+      currency: 'USD',
+      usageCount: 24,
+      isDefault: true,
+      createdAt: new Date('2025-12-01'),
+      updatedAt: new Date('2026-02-15'),
+    },
+    {
+      id: 'inv-tmpl-002',
+      name: 'Rush Service Invoice',
+      description: 'Template for rush/expedited service billing',
+      paymentTerms: 'due_on_receipt',
+      currency: 'USD',
+      usageCount: 8,
+      isDefault: false,
+      createdAt: new Date('2026-01-10'),
+      updatedAt: new Date('2026-02-10'),
+    },
+    {
+      id: 'inv-tmpl-003',
+      name: 'Web Development Project',
+      description: 'Multi-phase web development project invoice',
+      paymentTerms: 'net15',
+      currency: 'USD',
+      usageCount: 12,
+      isDefault: false,
+      createdAt: new Date('2025-11-20'),
+      updatedAt: new Date('2026-01-28'),
+    },
+    {
+      id: 'inv-tmpl-004',
+      name: 'Monthly Retainer',
+      description: 'Recurring monthly retainer invoice',
+      paymentTerms: 'net7',
+      currency: 'USD',
+      usageCount: 36,
+      isDefault: false,
+      createdAt: new Date('2025-10-15'),
+      updatedAt: new Date('2026-03-01'),
+    },
+  ];
+
+  return {
+    data: templates,
+    meta: { page: 1, limit: 10, total: templates.length, totalPages: 1 },
+  };
+}
+
+export async function deleteInvoiceTemplate(id: string) {
+  // TODO: Wire up to database
+  console.log('deleteInvoiceTemplate stub called with:', id);
+  revalidatePath('/templates/invoices');
+  return { success: true };
+}
+
+export async function duplicateInvoiceTemplate(id: string) {
+  // TODO: Wire up to database
+  console.log('duplicateInvoiceTemplate stub called with:', id);
+  revalidatePath('/templates/invoices');
+  return { success: true, id: 'inv-tmpl-dup' };
+}
+
+export async function updateInvoiceTemplate(data: {
+  id: string;
+  name: string;
+  description: string;
+  paymentTerms: string;
+  currency: string;
+  isDefault: boolean;
+}) {
+  // TODO: Wire up to database
+  console.log('updateInvoiceTemplate stub called with:', data);
+  revalidatePath('/templates/invoices');
+  return { success: true };
+}

@@ -48,7 +48,7 @@ export function ServiceGroupBlockContent({ block }: ServiceGroupBlockContentProp
       unit: 'unit',
       taxRate: null,
       rateCardId: null,
-    }) as ServiceItemBlock;
+    });
     updateBlock(block.id, { items: [...block.content.items, newItem] });
   };
 

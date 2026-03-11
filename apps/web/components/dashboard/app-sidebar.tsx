@@ -9,11 +9,9 @@ import {
   Receipt,
   Users,
   FolderKanban,
-  CreditCard,
   Settings,
   FileStack,
   HelpCircle,
-  Plus,
   ChevronRight,
   BarChart3,
   ScrollText,
@@ -39,7 +37,6 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
@@ -68,8 +65,7 @@ interface NavItemWithSub extends NavItem {
   items?: NavItem[];
 }
 
-// Main navigation items with hierarchical structure
-const mainNavItems: NavItemWithSub[] = [
+const reportingNavItems: NavItemWithSub[] = [
   {
     title: 'Dashboard',
     href: '/dashboard',
@@ -80,6 +76,9 @@ const mainNavItems: NavItemWithSub[] = [
     href: '/analytics',
     icon: BarChart3,
   },
+];
+
+const workspaceNavItems: NavItemWithSub[] = [
   {
     title: 'Clients',
     href: '/clients',
@@ -91,14 +90,14 @@ const mainNavItems: NavItemWithSub[] = [
     icon: FolderKanban,
   },
   {
-    title: 'Quotes',
-    href: '/quotes',
-    icon: FileText,
-  },
-  {
     title: 'Invoices',
     href: '/invoices',
     icon: Receipt,
+  },
+  {
+    title: 'Quotes',
+    href: '/quotes',
+    icon: FileText,
   },
   {
     title: 'Contracts',
@@ -107,29 +106,21 @@ const mainNavItems: NavItemWithSub[] = [
   },
 ];
 
-const resourceNavItems: NavItem[] = [
-  {
-    title: 'Rate Cards',
-    href: '/rate-cards',
-    icon: CreditCard,
-  },
+const resourceNavItems: NavItemWithSub[] = [
   {
     title: 'Templates',
     href: '/templates',
     icon: FileStack,
   },
-];
-
-const settingsNavItems: NavItem[] = [
-  {
-    title: 'Settings',
-    href: '/settings',
-    icon: Settings,
-  },
   {
     title: 'Help & Support',
     href: '/help',
     icon: HelpCircle,
+  },
+  {
+    title: 'Settings',
+    href: '/settings',
+    icon: Settings,
   },
 ];
 
@@ -157,14 +148,14 @@ export function AppSidebar({ user, workspaces, activeWorkspace }: AppSidebarProp
     return items.some((item) => isActive(item.href));
   };
 
-  const userInitials = React.useMemo(() => user?.name
+  const userInitials = user?.name
     ? user.name
         .split(' ')
         .map((n) => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2)
-    : 'U', [user?.name]);
+    : 'U';
 
   return (
     <Sidebar collapsible="icon">
@@ -182,24 +173,35 @@ export function AppSidebar({ user, workspaces, activeWorkspace }: AppSidebarProp
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Quick Action */}
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+        {/* Reporting */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Reporting</SidebarGroupLabel>
           <SidebarGroupContent>
-            <Button className="w-full gap-2" size="sm" asChild>
-              <Link href="/quotes/new">
-                <Plus className="size-4" />
-                New Quote
-              </Link>
-            </Button>
+            <SidebarMenu>
+              {reportingNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.href)}
+                    tooltip={item.title}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="size-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Platform Navigation with Hierarchical Items */}
+        {/* Workspace */}
         <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) =>
+              {workspaceNavItems.map((item) =>
                 item.items ? (
                   <Collapsible
                     key={item.href}
@@ -267,29 +269,6 @@ export function AppSidebar({ user, workspaces, activeWorkspace }: AppSidebarProp
           <SidebarGroupContent>
             <SidebarMenu>
               {resourceNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.href)}
-                    tooltip={item.title}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Settings */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Settings</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
@@ -380,4 +359,4 @@ export function AppSidebar({ user, workspaces, activeWorkspace }: AppSidebarProp
   );
 }
 
-export { mainNavItems, resourceNavItems, settingsNavItems };
+export { reportingNavItems, workspaceNavItems, resourceNavItems };

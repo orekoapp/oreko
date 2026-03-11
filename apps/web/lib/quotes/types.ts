@@ -392,10 +392,10 @@ export interface QuoteListItem {
 /**
  * Helper to create a new block with defaults
  */
-export function createBlock(
-  type: QuoteBlock['type'],
-  overrides?: Record<string, unknown>
-): QuoteBlock {
+export function createBlock<T extends QuoteBlock>(
+  type: T['type'],
+  overrides?: Partial<T['content']>
+): T {
   const template = BLOCK_TEMPLATES.find((t) => t.type === type);
   if (!template) {
     throw new Error(`Unknown block type: ${type}`);
@@ -409,5 +409,5 @@ export function createBlock(
     content: { ...template.defaultContent, ...overrides },
     createdAt: now,
     updatedAt: now,
-  } as QuoteBlock;
+  } as T;
 }

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { z } from 'zod';
+import type { ProjectActivity, ProjectNote, ProjectContract } from './types';
 
 // Constants
 const DEFAULT_PAGE_SIZE = 25;
@@ -459,4 +460,160 @@ export async function getProjectSummaryStats() {
     totalQuotes,
     totalInvoices,
   };
+}
+
+/**
+ * Get project activity timeline
+ * Derives activity from quotes and invoices associated with the project
+ */
+export async function getProjectActivity(projectId: string): Promise<ProjectActivity[]> {
+  const { workspace } = await getActiveWorkspace();
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+    include: {
+      quotes: {
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          quoteNumber: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          sentAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+      invoices: {
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          total: true,
+          amountPaid: true,
+          createdAt: true,
+          sentAt: true,
+          paidAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  });
+
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const activities: ProjectActivity[] = [];
+
+  // Derive activities from quotes
+  for (const quote of project.quotes) {
+    if (quote.status === 'accepted') {
+      activities.push({
+        id: `qa-${quote.id}`,
+        type: 'quote_accepted',
+        title: `Quote ${quote.quoteNumber} accepted`,
+        amount: Number(quote.total),
+        date: quote.createdAt,
+      });
+    }
+    if (quote.sentAt) {
+      activities.push({
+        id: `qs-${quote.id}`,
+        type: 'quote_sent',
+        title: `Quote ${quote.quoteNumber} sent`,
+        amount: Number(quote.total),
+        date: quote.sentAt,
+      });
+    }
+  }
+
+  // Derive activities from invoices
+  for (const invoice of project.invoices) {
+    activities.push({
+      id: `ic-${invoice.id}`,
+      type: 'invoice_created',
+      title: `Invoice ${invoice.invoiceNumber} created`,
+      amount: Number(invoice.total),
+      date: invoice.createdAt,
+    });
+    if (invoice.sentAt) {
+      activities.push({
+        id: `is-${invoice.id}`,
+        type: 'invoice_sent',
+        title: `Invoice ${invoice.invoiceNumber} sent`,
+        amount: Number(invoice.total),
+        date: invoice.sentAt,
+      });
+    }
+    if (invoice.paidAt) {
+      activities.push({
+        id: `ip-${invoice.id}`,
+        type: 'invoice_paid',
+        title: `Invoice ${invoice.invoiceNumber} paid`,
+        amount: Number(invoice.amountPaid),
+        date: invoice.paidAt,
+      });
+    }
+  }
+
+  // Sort by date descending
+  activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  return activities;
+}
+
+/**
+ * Get project notes
+ * Currently returns empty array — notes feature not yet implemented in DB
+ */
+export async function getProjectNotes(projectId: string): Promise<ProjectNote[]> {
+  // Notes are not yet modeled in the Prisma schema.
+  // Return empty array until the feature is built.
+  return [];
+}
+
+/**
+ * Get project contracts
+ * Derives from contractInstances relation on the project
+ */
+export async function getProjectContracts(projectId: string): Promise<ProjectContract[]> {
+  const { workspace } = await getActiveWorkspace();
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      workspaceId: workspace.id,
+      deletedAt: null,
+    },
+    include: {
+      contractInstances: {
+        include: {
+          contract: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  });
+
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  return project.contractInstances.map((ci) => ({
+    id: ci.id,
+    name: ci.contract.name,
+    addedAt: ci.createdAt,
+    isSigned: ci.status === 'signed',
+    linkedInvoiceId: undefined,
+  }));
 }

@@ -19,6 +19,9 @@ import type {
   UpdatePaymentSettingsInput,
   UpdateNumberSequenceInput,
   Address,
+  CustomFieldData,
+  IntegrationData,
+  WebhookData,
 } from './types';
 
 // Helper to convert Prisma Decimal to number
@@ -956,6 +959,145 @@ export async function updateInvoiceDefaults(
   revalidatePath('/settings/invoices');
 
   return { success: true };
+}
+
+// ============================================
+// COMBINED SETTINGS
+// ============================================
+
+// ============================================
+// CUSTOM FIELDS (STUB)
+// ============================================
+
+export async function getCustomFields(): Promise<CustomFieldData[]> {
+  // TODO: Wire up to database when custom fields table is added
+  return [];
+}
+
+export async function createCustomField(input: {
+  name: string;
+  fieldType: string;
+  appliesTo: string[];
+  isRequired?: boolean;
+  options?: string[];
+}): Promise<{ id: string }> {
+  // TODO: Wire up to database
+  console.log('createCustomField stub called with:', input);
+  revalidatePath('/settings/custom-fields');
+  return { id: crypto.randomUUID() };
+}
+
+export async function updateCustomField(input: {
+  id: string;
+  name?: string;
+  fieldType?: string;
+  appliesTo?: string[];
+  isRequired?: boolean;
+  isActive?: boolean;
+  options?: string[];
+  sortOrder?: number;
+}): Promise<void> {
+  // TODO: Wire up to database
+  console.log('updateCustomField stub called with:', input);
+  revalidatePath('/settings/custom-fields');
+}
+
+export async function deleteCustomField(id: string): Promise<void> {
+  // TODO: Wire up to database
+  console.log('deleteCustomField stub called with:', id);
+  revalidatePath('/settings/custom-fields');
+}
+
+// ============================================
+// INTEGRATIONS (STUB)
+// ============================================
+
+export async function getIntegrations(): Promise<IntegrationData[]> {
+  // TODO: Wire up to real integration providers
+  return [
+    {
+      id: 'quickbooks',
+      name: 'QuickBooks',
+      provider: 'quickbooks',
+      description: 'Sync invoices and payments with QuickBooks Online.',
+      isConnected: false,
+      isAvailable: false,
+      connectedAt: null,
+      config: {},
+    },
+    {
+      id: 'xero',
+      name: 'Xero',
+      provider: 'xero',
+      description: 'Sync invoices and payments with Xero.',
+      isConnected: false,
+      isAvailable: false,
+      connectedAt: null,
+      config: {},
+    },
+    {
+      id: 'slack',
+      name: 'Slack',
+      provider: 'slack',
+      description: 'Get notifications in your Slack workspace.',
+      isConnected: false,
+      isAvailable: false,
+      connectedAt: null,
+      config: {},
+    },
+  ];
+}
+
+export async function connectIntegration(id: string): Promise<void> {
+  // TODO: Wire up to real OAuth flow
+  console.log('connectIntegration stub called with:', id);
+  revalidatePath('/settings/integrations');
+}
+
+export async function disconnectIntegration(id: string): Promise<void> {
+  // TODO: Wire up to real disconnect flow
+  console.log('disconnectIntegration stub called with:', id);
+  revalidatePath('/settings/integrations');
+}
+
+// ============================================
+// WEBHOOKS (STUB)
+// ============================================
+
+export async function getWebhooks(): Promise<WebhookData[]> {
+  // TODO: Wire up to database when webhooks table is added
+  return [];
+}
+
+export async function createWebhook(input: {
+  name: string;
+  url: string;
+  events: string[];
+  secret?: string;
+}): Promise<{ id: string }> {
+  // TODO: Wire up to database
+  console.log('createWebhook stub called with:', input);
+  revalidatePath('/settings/webhooks');
+  return { id: crypto.randomUUID() };
+}
+
+export async function updateWebhook(input: {
+  id: string;
+  name?: string;
+  url?: string;
+  events?: string[];
+  secret?: string;
+  isActive?: boolean;
+}): Promise<void> {
+  // TODO: Wire up to database
+  console.log('updateWebhook stub called with:', input);
+  revalidatePath('/settings/webhooks');
+}
+
+export async function deleteWebhook(id: string): Promise<void> {
+  // TODO: Wire up to database
+  console.log('deleteWebhook stub called with:', id);
+  revalidatePath('/settings/webhooks');
 }
 
 // ============================================
