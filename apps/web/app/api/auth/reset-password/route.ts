@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { hash } from 'bcryptjs';
 import { prisma } from '@quotecraft/database';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { passwordSchema } from '@/lib/validations/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimitResult = checkRateLimit(`reset-password:${clientIp}`, { limit: 5, windowMs: 300000 }); // 5 requests per 5 minutes
+    if (rateLimitResult.limited) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const body = await request.json();
     const { token, password } = body;
 
@@ -15,18 +26,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    try {
-      passwordSchema.parse(password);
-    } catch {
+    if (!password || typeof password !== 'string') {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters and contain an uppercase letter, lowercase letter, and number' },
+        { error: 'Password is required' },
         { status: 400 }
       );
     }
 
+    // Validate password strength using shared schema
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
+      return NextResponse.json(
+        { error: passwordResult.error.issues[0]?.message || 'Invalid password' },
+        { status: 400 }
+      );
+    }
+
+    // Hash the token to look up (tokens are stored as hashes)
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+
+    // Bug #84: Clean up expired tokens on each request (lazy cleanup)
+    await prisma.passwordResetToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    }).catch(() => {}); // Don't block if cleanup fails
+
     // Find the token
     const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { token: tokenHash },
       include: { user: true },
     });
 

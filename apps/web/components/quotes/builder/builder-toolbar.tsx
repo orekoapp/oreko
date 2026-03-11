@@ -65,10 +65,10 @@ export function BuilderToolbar() {
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     if (!document) {
       toast.error('No document to save');
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -78,7 +78,7 @@ export function BuilderToolbar() {
         if (!document.clientId) {
           toast.error('Please select a client before saving');
           setSaving(false);
-          return;
+          return false;
         }
 
         const result = await createQuote({
@@ -93,10 +93,11 @@ export function BuilderToolbar() {
           markSaved();
           toast.success('Quote created successfully');
           router.replace(`/quotes/${result.quote.id}/builder`);
+          return true;
         } else {
           toast.error(result.error || 'Failed to create quote');
+          return false;
         }
-        return;
       }
 
       // Existing quote: update
@@ -111,20 +112,31 @@ export function BuilderToolbar() {
       if (result.success) {
         markSaved();
         toast.success('Quote saved successfully');
+        return true;
       } else {
-        toast.error('Failed to save quote');
+        toast.error(result.error || 'Failed to save quote');
+        return false;
       }
     } catch (error) {
       console.error('Save error:', error);
       toast.error('Failed to save quote');
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
   const handleExportPDF = async () => {
-    // TODO: Implement PDF export
-    toast.info('PDF export coming soon');
+    if (!document || !document.id) {
+      toast.error('Please save the quote first');
+      return;
+    }
+    try {
+      toast.info('Generating PDF...');
+      window.open(`/api/download/quote/${document.id}`, '_blank');
+    } catch {
+      toast.error('Failed to export PDF');
+    }
   };
 
   const handleSend = async () => {
@@ -135,7 +147,8 @@ export function BuilderToolbar() {
 
     // Save first if there are unsaved changes
     if (isDirty) {
-      await handleSave();
+      const saved = await handleSave();
+      if (!saved) return;
     }
 
     setIsSendLoading(true);
@@ -150,7 +163,7 @@ export function BuilderToolbar() {
         }
         router.push(`/quotes/${document.id}`);
       } else {
-        toast.error('Failed to send quote');
+        toast.error(result.error || 'Failed to send quote');
       }
     } catch (error) {
       console.error('Send error:', error);
@@ -164,7 +177,7 @@ export function BuilderToolbar() {
     <div className="flex items-center justify-between border-b bg-card px-2 py-2 md:px-4">
       {/* Left section */}
       <div className="flex items-center gap-1 md:gap-2">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Back to quotes">
           <Link href="/quotes">
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -177,6 +190,7 @@ export function BuilderToolbar() {
           size="icon"
           onClick={toggleBlocksPanel}
           title={showBlocksPanel ? 'Hide blocks panel' : 'Show blocks panel'}
+          aria-label={showBlocksPanel ? 'Hide blocks panel' : 'Show blocks panel'}
         >
           {showBlocksPanel ? (
             <PanelLeftClose className="h-4 w-4" />
@@ -190,6 +204,7 @@ export function BuilderToolbar() {
           size="icon"
           onClick={toggleRateCardPanel}
           title={showRateCardPanel ? 'Hide rate cards' : 'Show rate cards'}
+          aria-label={showRateCardPanel ? 'Hide rate cards' : 'Show rate cards'}
           className="hidden sm:inline-flex"
         >
           <Package className="h-4 w-4" />
@@ -200,6 +215,7 @@ export function BuilderToolbar() {
           size="icon"
           onClick={togglePropertiesPanel}
           title={showPropertiesPanel ? 'Hide properties panel' : 'Show properties panel'}
+          aria-label={showPropertiesPanel ? 'Hide properties panel' : 'Show properties panel'}
         >
           {showPropertiesPanel ? (
             <PanelRightClose className="h-4 w-4" />
@@ -216,6 +232,7 @@ export function BuilderToolbar() {
           onClick={undo}
           disabled={!canUndo}
           title="Undo (Ctrl+Z)"
+          aria-label="Undo"
           className="hidden sm:inline-flex"
         >
           <Undo2 className="h-4 w-4" />
@@ -227,6 +244,7 @@ export function BuilderToolbar() {
           onClick={redo}
           disabled={!canRedo}
           title="Redo (Ctrl+Shift+Z)"
+          aria-label="Redo"
           className="hidden sm:inline-flex"
         >
           <Redo2 className="h-4 w-4" />
@@ -253,6 +271,7 @@ export function BuilderToolbar() {
             className="h-8 w-8"
             onClick={() => setZoom(Math.max(50, zoom - 10))}
             disabled={zoom <= 50}
+            aria-label="Zoom out"
           >
             <ZoomOut className="h-3 w-3" />
           </Button>
@@ -263,6 +282,7 @@ export function BuilderToolbar() {
             className="h-8 w-8"
             onClick={() => setZoom(Math.min(200, zoom + 10))}
             disabled={zoom >= 200}
+            aria-label="Zoom in"
           >
             <ZoomIn className="h-3 w-3" />
           </Button>
@@ -292,6 +312,7 @@ export function BuilderToolbar() {
           variant={previewMode ? 'default' : 'outline'}
           size="icon"
           onClick={togglePreviewMode}
+          aria-label={previewMode ? 'Switch to edit mode' : 'Preview'}
           className="sm:hidden"
         >
           {previewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -320,6 +341,7 @@ export function BuilderToolbar() {
           size="icon"
           onClick={handleSave}
           disabled={isSaving || !isDirty}
+          aria-label="Save"
           className="md:hidden"
         >
           {isSaving ? (
@@ -340,16 +362,20 @@ export function BuilderToolbar() {
             <DropdownMenuItem onClick={handleExportPDF}>
               Export as PDF
             </DropdownMenuItem>
-            <DropdownMenuItem>Export as Image</DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              Export as Image (Coming Soon)
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Copy shareable link</DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              Copy shareable link (Coming Soon)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
         {/* Mobile Export icon-only */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden">
+            <Button variant="outline" size="icon" aria-label="Export" className="md:hidden">
               <Download className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -357,9 +383,13 @@ export function BuilderToolbar() {
             <DropdownMenuItem onClick={handleExportPDF}>
               Export as PDF
             </DropdownMenuItem>
-            <DropdownMenuItem>Export as Image</DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              Export as Image (Coming Soon)
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Copy shareable link</DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              Copy shareable link (Coming Soon)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -373,7 +403,7 @@ export function BuilderToolbar() {
         </Button>
 
         {/* Mobile Send icon-only */}
-        <Button size="icon" onClick={handleSend} disabled={isSendLoading} className="md:hidden">
+        <Button size="icon" onClick={handleSend} disabled={isSendLoading} aria-label="Send" className="md:hidden">
           {isSendLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (

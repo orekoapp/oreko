@@ -3,14 +3,14 @@
 **The open-source alternative to Bloom and Bonsai**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/your-org/quote-software/releases)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/your-org/quote-software/actions)
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/WisdmLabs/quote-software/releases)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/WisdmLabs/quote-software/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black.svg)](https://nextjs.org/)
 
 QuoteCraft is an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies. It provides a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
 
-![QuoteCraft Dashboard](docs/screenshots/dashboard-placeholder.png)
+**[Live Demo](https://quote-software-gamma.vercel.app)** — Try QuoteCraft instantly with the demo account.
 
 ---
 
@@ -35,25 +35,21 @@ QuoteCraft is an open-source, self-hosted visual quote and invoice management to
 
 Create stunning, professional quotes with a drag-and-drop block-based editor. No more spreadsheet-like interfaces.
 
-![Quote Builder](docs/screenshots/quote-builder-placeholder.png)
 
 ### One-Click Quote-to-Invoice Conversion
 
 Convert accepted quotes to invoices instantly with zero data re-entry. All line items, pricing, and client information transfer automatically.
 
-![Quote to Invoice](docs/screenshots/quote-to-invoice-placeholder.png)
 
 ### Client Portal
 
 Beautiful, mobile-responsive client-facing pages for viewing, signing, and paying quotes and invoices. No account required for clients.
 
-![Client Portal](docs/screenshots/client-portal-placeholder.png)
 
 ### Rate Card System
 
 Advanced rate card management for quick quote creation with predefined services and pricing tiers. A key differentiator from competitors.
 
-![Rate Cards](docs/screenshots/rate-cards-placeholder.png)
 
 ### Additional Features
 
@@ -112,7 +108,7 @@ The fastest way to get QuoteCraft running is with Docker Compose.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-org/quote-software.git
+git clone https://github.com/WisdmLabs/quote-software.git
 cd quote-software
 ```
 
@@ -168,7 +164,7 @@ For development or custom deployment scenarios.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-org/quote-software.git
+git clone https://github.com/WisdmLabs/quote-software.git
 cd quote-software
 ```
 
@@ -312,9 +308,7 @@ pnpm db:reset         # Reset database (WARNING: deletes all data)
 
 ```bash
 pnpm test             # Run all tests
-pnpm test:unit        # Run unit tests (Vitest)
 pnpm test:e2e         # Run E2E tests (Playwright)
-pnpm test:coverage    # Run tests with coverage report
 ```
 
 ### Docker
@@ -369,6 +363,18 @@ We welcome contributions from the community! Please read our [Contributing Guide
 
 ---
 
+## Known Limitations
+
+| Area | Detail |
+|------|--------|
+| **Database CHECK constraints** | Prisma ORM does not support native CHECK constraints. All monetary and quantity validations are enforced at the application level. |
+| **Data retention** | No automated archiving or purging of old records. Soft-deleted data accumulates. For large deployments, implement a periodic cleanup cron job against the `deletedAt IS NOT NULL` records. |
+| **Signature encryption** | E-signature images are stored as base64 in the database without at-rest encryption. Database-level access controls apply. For sensitive deployments, consider server-side encryption or encrypted object storage. |
+| **Cloud storage** | S3 and Cloudflare R2 providers are stubbed but not implemented. Local file storage is the default. |
+| **next-auth** | Uses NextAuth.js v5 beta. Pin the exact version in `package.json` and test before upgrading. |
+
+---
+
 ## License
 
 QuoteCraft is open-source software licensed under the [MIT License](LICENSE).
@@ -402,8 +408,8 @@ SOFTWARE.
 ## Support
 
 - **Documentation:** [docs/](docs/)
-- **Issues:** [GitHub Issues](https://github.com/your-org/quote-software/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/your-org/quote-software/discussions)
+- **Issues:** [GitHub Issues](https://github.com/WisdmLabs/quote-software/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/WisdmLabs/quote-software/discussions)
 
 ---
 

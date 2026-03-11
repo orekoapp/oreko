@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { prisma } from '@quotecraft/database';
 import { getInvoicePdfData } from '@/lib/pdf/actions';
 import { generateInvoicePdfHtml } from '@/lib/pdf/templates';
 import { generatePdfFromHtml } from '@/lib/services/pdf';
@@ -37,13 +38,28 @@ export async function GET(
       `,
     });
 
-    const filename = `Invoice-${data.invoiceNumber}.pdf`;
+    const filename = `Invoice-${data.invoiceNumber.replace(/[^a-zA-Z0-9\-_]/g, '')}.pdf`;
+
+    // Audit trail: log PDF download event
+    prisma.invoiceEvent.create({
+      data: {
+        invoiceId,
+        eventType: 'pdf_downloaded',
+        actorType: 'user',
+        actorId: session.user.id,
+        metadata: { format: 'pdf', filename },
+        ipAddress: _request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
+        userAgent: _request.headers.get('user-agent') || null,
+      },
+    }).catch(() => {}); // Fire and forget — don't block download
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Length': pdfBuffer.length.toString(),
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {

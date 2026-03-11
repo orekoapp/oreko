@@ -39,7 +39,6 @@ async function completeOnboardingIfNeeded(page: import('@playwright/test').Page)
 
     // Wait for page to stabilize
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
 
     // Try different button patterns - be more flexible with name matching
     const buttonPatterns = [
@@ -68,12 +67,12 @@ async function completeOnboardingIfNeeded(page: import('@playwright/test').Page)
     }
 
     if (!clickedButton) {
-      // No known buttons found, wait and try again
-      await page.waitForTimeout(1000);
+      // No known buttons found, wait for load state and try again
+      await page.waitForLoadState('networkidle');
     }
 
-    // Wait for any navigation
-    await page.waitForTimeout(500);
+    // Wait for any navigation to settle
+    await page.waitForLoadState('networkidle');
   }
 
   // Wait for dashboard
@@ -152,14 +151,12 @@ async function globalSetup(config: FullConfig) {
 
       // Wait for page to fully stabilize (handles layout-level redirects)
       await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(1000); // Extra buffer for client-side redirects
 
       console.log('✓ Login successful');
       console.log(`📍 Current URL: ${page.url()}`);
 
       // Wait for page to fully stabilize including server-side redirects
-      await page.waitForTimeout(3000);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
 
       console.log(`📍 After stabilization: ${page.url()}`);
 
@@ -176,8 +173,6 @@ async function globalSetup(config: FullConfig) {
       // Navigate to dashboard and verify we can access it properly
       console.log('🏠 Navigating to dashboard...');
       await page.goto(`${appUrl}/dashboard`, { waitUntil: 'networkidle' });
-      await page.waitForTimeout(2000);
-      await page.waitForLoadState('networkidle');
 
       // Check again if we got redirected to onboarding
       const stillOnOnboarding = page.url().includes('/onboarding') ||
@@ -189,7 +184,6 @@ async function globalSetup(config: FullConfig) {
 
         // Try navigating to dashboard again
         await page.goto(`${appUrl}/dashboard`, { waitUntil: 'networkidle' });
-        await page.waitForTimeout(2000);
 
         // Final check
         const finalCheck = page.url().includes('/onboarding') ||

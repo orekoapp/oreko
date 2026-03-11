@@ -16,7 +16,6 @@ import { test, expect } from '@playwright/test';
 async function createDraftQuote(page: import('@playwright/test').Page, title: string) {
   await page.goto('/quotes/new');
   await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1000); // Wait for page to fully load
 
   // Fill title using various possible selectors
   const titleInput = page.locator('#title, input[name="title"], [data-testid="quote-title"]').first();
@@ -38,7 +37,8 @@ async function createDraftQuote(page: import('@playwright/test').Page, title: st
   const addItemBtn = page.getByRole('button', { name: /add.*item|add.*line/i });
   if (await addItemBtn.isVisible().catch(() => false)) {
     await addItemBtn.click();
-    await page.waitForTimeout(300);
+    // Wait for line item fields to appear
+    await page.waitForLoadState('domcontentloaded');
   }
 
   // Fill line item details
@@ -64,7 +64,7 @@ async function createDraftQuote(page: import('@playwright/test').Page, title: st
     const isEnabled = await saveButton.isEnabled().catch(() => false);
     if (isEnabled) {
       await saveButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('networkidle');
     }
   }
 

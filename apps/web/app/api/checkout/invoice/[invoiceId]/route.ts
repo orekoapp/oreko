@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createInvoicePaymentIntent } from '@/lib/payments/actions';
+import { createInvoicePaymentIntent } from '@/lib/payments/internal';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { validateRequestOrigin } from '@/lib/csrf';
 
 /**
  * POST /api/checkout/invoice/[invoiceId]
@@ -10,16 +12,36 @@ export async function POST(
   { params }: { params: Promise<{ invoiceId: string }> }
 ) {
   try {
+    // Bug #14: CSRF origin validation
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
+    // Rate limit: 10 checkout attempts per minute per IP
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimitResult = checkRateLimit(`checkout:${clientIp}`, { limit: 10, windowMs: 60000 });
+    if (rateLimitResult.limited) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const { invoiceId } = await params;
-    const body = await request.json().catch(() => ({}));
-    const amount = body.amount ? Number(body.amount) : undefined;
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
     const accessToken = body.accessToken as string | undefined;
 
     if (!accessToken) {
       return NextResponse.json({ error: 'Access token is required' }, { status: 400 });
     }
 
-    const result = await createInvoicePaymentIntent(invoiceId, amount, accessToken);
+    // Amount is determined server-side from the invoice record, not client input
+    const result = await createInvoicePaymentIntent(invoiceId, accessToken);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });

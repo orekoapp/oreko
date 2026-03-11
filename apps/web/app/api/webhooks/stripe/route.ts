@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { constructWebhookEvent, isStripeEnabled } from '@/lib/services/stripe';
-import { processPaymentWebhook } from '@/lib/payments/actions';
+import { processPaymentWebhook, processAccountUpdate, processRefundWebhook } from '@/lib/payments/internal';
+import { prisma } from '@quotecraft/database';
 import type Stripe from 'stripe';
 
 /**
@@ -29,6 +30,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Idempotency check: skip already-processed events
+    const existing = await prisma.stripeWebhookEvent.findUnique({
+      where: { id: event.id },
+    });
+    if (existing) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+
+    // Record event before processing to prevent concurrent duplicates
+    await prisma.stripeWebhookEvent.create({
+      data: { id: event.id, type: event.type },
+    });
+
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
@@ -51,11 +65,20 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        const paymentIntentId = typeof charge.payment_intent === 'string'
+          ? charge.payment_intent
+          : charge.payment_intent?.id;
+        if (paymentIntentId) {
+          await processRefundWebhook(paymentIntentId, charge.amount_refunded);
+        }
+        break;
+      }
+
       case 'account.updated': {
-        // Handle Stripe Connect account updates
         const account = event.data.object as Stripe.Account;
-        console.log('Stripe Connect account updated:', account.id);
-        // Could update payment settings status here
+        await processAccountUpdate(account);
         break;
       }
 

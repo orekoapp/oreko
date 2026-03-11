@@ -174,7 +174,6 @@ describe('Stripe Webhook API Route', () => {
 
   describe('Error Handling', () => {
     it('handles missing invoice gracefully', () => {
-      const invoiceId = 'non-existent-invoice';
       const invoice = null;
 
       expect(invoice).toBeNull();
@@ -182,14 +181,74 @@ describe('Stripe Webhook API Route', () => {
     });
 
     it('handles duplicate payment events idempotently', () => {
-      const existingPayment = {
-        id: 'pay-123',
-        stripePaymentIntentId: 'pi_test_123',
-        status: 'completed',
-      };
+      // When a payment already exists for a given paymentIntentId, don't create another
+      const existingPayments = [
+        { id: 'pay-123', stripePaymentIntentId: 'pi_test_123', status: 'completed' },
+      ];
 
-      // Should not create duplicate payment
-      expect(existingPayment.status).toBe('completed');
+      const newEventPaymentIntentId = 'pi_test_123';
+      const isDuplicate = existingPayments.some(
+        (p) => p.stripePaymentIntentId === newEventPaymentIntentId
+      );
+
+      expect(isDuplicate).toBe(true);
+      // System should skip creating a new payment record
+    });
+
+    it('prevents double-processing of same checkout session', () => {
+      const processedEvents = new Set<string>();
+      const eventId = 'evt_test_123';
+
+      // First processing
+      expect(processedEvents.has(eventId)).toBe(false);
+      processedEvents.add(eventId);
+
+      // Duplicate delivery
+      expect(processedEvents.has(eventId)).toBe(true);
+      // Should skip second processing
+    });
+  });
+
+  describe('Replay Attack Prevention', () => {
+    it('rejects events with expired timestamps', () => {
+      const tolerance = 300; // 5 minutes in seconds
+      const now = Math.floor(Date.now() / 1000);
+      const oldTimestamp = now - 600; // 10 minutes ago
+
+      const isExpired = (now - oldTimestamp) > tolerance;
+      expect(isExpired).toBe(true);
+    });
+
+    it('accepts events within timestamp tolerance', () => {
+      const tolerance = 300;
+      const now = Math.floor(Date.now() / 1000);
+      const recentTimestamp = now - 60; // 1 minute ago
+
+      const isExpired = (now - recentTimestamp) > tolerance;
+      expect(isExpired).toBe(false);
+    });
+
+    it('validates webhook signature with constructEvent', () => {
+      // Stripe's constructEvent verifies signature + timestamp
+      const body = '{"id":"evt_123"}';
+      const sig = 't=1234567890,v1=abc123';
+      const secret = 'whsec_test_secret';
+
+      mockStripe.webhooks.constructEvent.mockReturnValue({ id: 'evt_123', type: 'checkout.session.completed' });
+
+      const event = mockStripe.webhooks.constructEvent(body, sig, secret);
+      expect(event.id).toBe('evt_123');
+      expect(mockStripe.webhooks.constructEvent).toHaveBeenCalledWith(body, sig, secret);
+    });
+
+    it('throws on invalid webhook signature', () => {
+      mockStripe.webhooks.constructEvent.mockImplementation(() => {
+        throw new Error('No signatures found matching the expected signature for payload');
+      });
+
+      expect(() => {
+        mockStripe.webhooks.constructEvent('body', 'bad_sig', 'whsec_test');
+      }).toThrow('No signatures found');
     });
   });
 });

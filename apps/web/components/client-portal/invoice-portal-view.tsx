@@ -1,10 +1,12 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { CreditCard, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { PublicInvoiceData } from '@/lib/invoices/portal-actions';
+import { PaymentForm } from './payment-form';
 
 interface InvoicePortalViewProps {
   invoice: PublicInvoiceData;
@@ -64,6 +66,7 @@ const statusConfig: Record<string, { bg: string; text: string; icon: React.React
 };
 
 export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewProps) {
+  const router = useRouter();
   const primaryColor = invoice.branding?.primaryColor || '#3B82F6';
   const defaultConfig = {
     bg: 'bg-blue-50',
@@ -74,10 +77,15 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
   };
   const config = statusConfig[invoice.status] ?? defaultConfig;
 
-  const [paymentMessage, setPaymentMessage] = React.useState<string | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = React.useState(false);
 
   const handlePayment = () => {
-    setPaymentMessage('Online payment is not yet available for this invoice. Please contact the business directly for payment options.');
+    setShowPaymentForm(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentForm(false);
+    router.refresh();
   };
 
   return (
@@ -255,8 +263,8 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
         </Card>
       )}
 
-      {/* Pay Button */}
-      {invoice.canPay && (
+      {/* Payment Section */}
+      {invoice.canPay && !showPaymentForm && (
         <div className="flex flex-col items-center gap-3 pt-4">
           <Button
             size="lg"
@@ -267,12 +275,34 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
             <CreditCard className="mr-2 h-5 w-5" />
             Pay {formatCurrency(invoice.totals.amountDue, invoice.settings.currency)}
           </Button>
-          {paymentMessage && (
-            <p className="text-sm text-muted-foreground text-center max-w-md">
-              {paymentMessage}
-            </p>
-          )}
         </div>
+      )}
+
+      {/* Show message when invoice is unpaid but online payment not available */}
+      {!invoice.canPay && !invoice.paymentConfigured && invoice.totals.amountDue > 0 && invoice.status !== 'paid' && invoice.status !== 'voided' && (
+        <div className="flex flex-col items-center gap-2 pt-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            Online payment is not yet available for this invoice. Please contact the sender for payment instructions.
+          </p>
+        </div>
+      )}
+
+      {showPaymentForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PaymentForm
+              invoiceId={invoice.id}
+              accessToken={accessToken}
+              amountDue={invoice.totals.amountDue}
+              currency={invoice.settings.currency}
+              onSuccess={handlePaymentSuccess}
+              onCancel={() => setShowPaymentForm(false)}
+            />
+          </CardContent>
+        </Card>
       )}
 
       {/* Billed To */}

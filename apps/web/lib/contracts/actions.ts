@@ -22,6 +22,27 @@ import type {
 } from './types';
 import { sendEmail } from '@/lib/services/email';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { computeContractDocumentHash } from '@/lib/signing/document-hash';
+
+// HTML escape for safe email template interpolation
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeParseVariables(variables: unknown): ContractVariable[] {
+  try {
+    if (Array.isArray(variables)) return variables;
+    if (typeof variables === 'string') return JSON.parse(variables);
+    return [];
+  } catch {
+    return [];
+  }
+}
 
 function parseContractVariables(variables: unknown): ContractVariable[] {
   try {
@@ -74,7 +95,7 @@ export async function getContractTemplates(
       id: c.id,
       name: c.name,
       isTemplate: c.isTemplate,
-      variables: (typeof c.variables === 'string' ? JSON.parse(c.variables) : c.variables) as ContractVariable[],
+      variables: safeParseVariables(c.variables),
       instanceCount: c._count.instances,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
@@ -113,7 +134,7 @@ export async function getContractTemplateById(id: string): Promise<ContractTempl
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: parseContractVariables(contract.variables),
+    variables: safeParseVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -150,7 +171,7 @@ export async function createContractTemplate(
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: parseContractVariables(contract.variables),
+    variables: safeParseVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -197,7 +218,7 @@ export async function updateContractTemplate(
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: parseContractVariables(contract.variables),
+    variables: safeParseVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,
@@ -254,7 +275,7 @@ export async function getContractInstances(
       where,
       include: {
         contract: { select: { name: true, variables: true } },
-        client: { select: { name: true, company: true, email: true } },
+        client: { select: { name: true, email: true, company: true } },
         quote: { select: { title: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -299,7 +320,7 @@ export async function getContractInstanceById(id: string): Promise<ContractInsta
     where: { id, workspaceId },
     include: {
       contract: { select: { name: true } },
-      client: { select: { name: true, company: true } },
+      client: { select: { name: true, email: true, company: true } },
       quote: { select: { title: true } },
     },
   });
@@ -314,6 +335,7 @@ export async function getContractInstanceById(id: string): Promise<ContractInsta
     contractName: instance.contract.name,
     clientId: instance.clientId,
     clientName: instance.client.company || instance.client.name,
+    clientEmail: instance.client.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -337,7 +359,7 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
     where: { accessToken: token },
     include: {
       contract: { select: { name: true } },
-      client: { select: { name: true, company: true } },
+      client: { select: { name: true, email: true, company: true } },
       quote: { select: { title: true } },
       workspace: {
         select: {
@@ -370,6 +392,7 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
     contractName: instance.contract.name,
     clientId: instance.clientId,
     clientName: instance.client.company || instance.client.name,
+    clientEmail: instance.client.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -425,12 +448,13 @@ export async function createContractInstance(
   // Process template content with variable values
   let content = input.content || template.content;
   if (input.variableValues) {
-    const variables = (typeof template.variables === 'string' ? JSON.parse(template.variables) : template.variables) as Array<ContractVariable & { name?: string }>;
+    const variables = safeParseVariables(template.variables) as Array<ContractVariable & { name?: string }>;
     for (const variable of variables) {
       // Support both 'key' (type definition) and 'name' (seed data) fields
       const varKey = variable.key || variable.name || '';
       if (!varKey) continue;
       const value = input.variableValues[varKey] || variable.defaultValue || '';
+      // Escape regex special characters in variable key to prevent regex injection
       const escapedKey = varKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       content = content.replace(new RegExp(`{{${escapedKey}}}`, 'g'), value);
     }
@@ -453,7 +477,7 @@ export async function createContractInstance(
     },
     include: {
       contract: { select: { name: true } },
-      client: { select: { name: true, company: true } },
+      client: { select: { name: true, email: true, company: true } },
       quote: { select: { title: true } },
     },
   });
@@ -466,6 +490,7 @@ export async function createContractInstance(
     contractName: instance.contract.name,
     clientId: instance.clientId,
     clientName: instance.client.company || instance.client.name,
+    clientEmail: instance.client.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -499,6 +524,11 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
     throw new Error('Contract instance not found');
   }
 
+  // Prevent sending already-signed or voided contracts
+  if (instance.status === 'signed' || instance.status === 'voided') {
+    throw new Error(`Cannot send a contract that is already ${instance.status}`);
+  }
+
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
   });
@@ -519,24 +549,28 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
     const contractName = instance.contract?.name || 'Contract';
 
     try {
+      const safeWorkspaceName = escapeHtml(workspace.name);
+      const safeClientName = escapeHtml(instance.client.name);
+      const safeContractName = escapeHtml(contractName);
+
       const emailResult = await sendEmail({
         to: instance.client.email,
         subject: `Contract: ${contractName} from ${workspace.name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Contract from ${workspace.name}</h2>
-            <p>Hi ${instance.client.name},</p>
-            <p>${workspace.name} has sent you a contract: <strong>${contractName}</strong></p>
+            <h2>Contract from ${safeWorkspaceName}</h2>
+            <p>Hi ${safeClientName},</p>
+            <p>${safeWorkspaceName} has sent you a contract: <strong>${safeContractName}</strong></p>
             <p>Please review and sign at your earliest convenience.</p>
             <p style="margin: 24px 0;">
               <a href="${contractUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Review & Sign Contract
+                Review &amp; Sign Contract
               </a>
             </p>
             <p>Or copy this link: ${contractUrl}</p>
             <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
             <p style="color: #666; font-size: 14px;">
-              Sent via QuoteCraft on behalf of ${workspace.name}
+              Sent via QuoteCraft on behalf of ${safeWorkspaceName}
             </p>
           </div>
         `,
@@ -570,7 +604,7 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
 }
 
 // Sign a contract (called from public client view)
-export async function signContract(input: SignContractInput, ipAddress?: string): Promise<void> {
+export async function signContract(input: SignContractInput, ipAddress?: string, userAgent?: string): Promise<void> {
   const instance = await prisma.contractInstance.findUnique({
     where: { accessToken: input.token },
   });
@@ -583,13 +617,30 @@ export async function signContract(input: SignContractInput, ipAddress?: string)
     throw new Error('Contract already signed');
   }
 
+  // Compute document hash for tamper-proofing
+  const signedAt = new Date();
+  const signerName = input.signatureData.name || 'Unknown';
+  const documentHash = computeContractDocumentHash({
+    contractInstanceId: instance.id,
+    content: instance.content,
+    signerName,
+    signedAt: signedAt.toISOString(),
+  });
+
+  // Attach the document hash to the signature data
+  const signatureWithHash = {
+    ...input.signatureData,
+    documentHash,
+  };
+
   await prisma.contractInstance.update({
     where: { id: instance.id },
     data: {
       status: 'signed',
-      signedAt: new Date(),
-      signatureData: input.signatureData as unknown as Prisma.InputJsonValue,
+      signedAt,
+      signatureData: signatureWithHash as unknown as Prisma.InputJsonValue,
       signerIpAddress: ipAddress || null,
+      signerUserAgent: userAgent || null,
     },
   });
 
@@ -679,7 +730,7 @@ export async function duplicateContractTemplate(id: string): Promise<ContractTem
     name: contract.name,
     content: contract.content,
     isTemplate: contract.isTemplate,
-    variables: parseContractVariables(contract.variables),
+    variables: safeParseVariables(contract.variables),
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     deletedAt: contract.deletedAt,

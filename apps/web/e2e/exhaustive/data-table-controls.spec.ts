@@ -43,7 +43,6 @@ test.describe('Data Table Controls', () => {
 
         // Click the selector to open options
         await pageSizeSelector.click();
-        await page.waitForTimeout(200);
 
         // Try to select a different page size option
         const options = page.locator('[role="option"], option, [role="menuitem"]');
@@ -52,7 +51,6 @@ test.describe('Data Table Controls', () => {
         if (optionCount > 1) {
           // Click the last option (usually a larger page size)
           await options.last().click();
-          await page.waitForTimeout(500);
 
           // Table should still be visible after changing page size
           const table = page.locator('table, [role="table"]').first();
@@ -92,7 +90,6 @@ test.describe('Data Table Controls', () => {
 
         // Click column settings
         await columnSettingsBtn.click();
-        await page.waitForTimeout(300);
 
         // A dropdown/popover should appear with column checkboxes
         const dropdown = page.locator(
@@ -111,11 +108,9 @@ test.describe('Data Table Controls', () => {
           if (await toggles.count() > 0) {
             // Toggle the first option
             await toggles.first().click();
-            await page.waitForTimeout(300);
 
             // Close the dropdown by clicking elsewhere
             await page.locator('body').click({ position: { x: 0, y: 0 } });
-            await page.waitForTimeout(300);
 
             // Column count should have changed
             const newColumns = await page.locator('thead th').count();
@@ -150,7 +145,6 @@ test.describe('Data Table Controls', () => {
       }
 
       await page2Button.click();
-      await page.waitForTimeout(500);
 
       // Table should still be visible
       const table = page.locator('table, [role="table"]').first();

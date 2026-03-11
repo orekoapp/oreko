@@ -1,11 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Receipt,
   Edit,
   Send,
-  Download,
-  Copy,
   ExternalLink,
   DollarSign,
   AlertCircle,
@@ -14,6 +11,7 @@ import {
   Ban,
 } from 'lucide-react';
 import { getInvoice } from '@/lib/invoices/actions';
+import { getCreditNotesForInvoice } from '@/lib/credit-notes/actions';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { Button } from '@/components/ui/button';
@@ -21,6 +19,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { isInvoiceOverdue, getDaysUntilDue } from '@/lib/invoices/types';
 import { InvoiceActions } from '@/components/invoices/invoice-actions';
 import { RecordPaymentButton } from '@/components/invoices/record-payment-button';
+import { CreditNoteDialog } from '@/components/invoices/credit-note-dialog';
+import { CreditNotesList } from '@/components/invoices/credit-notes-list';
 
 interface InvoiceDetailPageProps {
   params: Promise<{ id: string }>;
@@ -87,6 +87,8 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   if (!invoice) {
     notFound();
   }
+
+  const creditNotes = await getCreditNotesForInvoice(invoice.id);
 
   const isOverdue = isInvoiceOverdue(invoice.dueDate, invoice.status);
   const daysUntilDue = getDaysUntilDue(invoice.dueDate);
@@ -334,6 +336,30 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   amountDue={invoice.totals.amountDue}
                   currency={invoice.settings.currency}
                 />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Credit Notes */}
+          {invoice.status !== 'draft' && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Credit Notes</CardTitle>
+                  <CreditNoteDialog
+                    invoiceId={invoice.id}
+                    invoiceLineItems={invoice.lineItems}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {creditNotes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No credit notes issued for this invoice.
+                  </p>
+                ) : (
+                  <CreditNotesList creditNotes={creditNotes} />
+                )}
               </CardContent>
             </Card>
           )}

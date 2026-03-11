@@ -27,7 +27,7 @@ test.describe('Global Header & Navigation', () => {
       const sidebar = page.locator('aside [data-sidebar="content"], aside').first();
       if (await sidebar.isVisible().catch(() => false)) {
         await sidebar.evaluate((el) => el.scrollTop = el.scrollHeight);
-        await page.waitForTimeout(300);
+        await helpLink.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
       }
     }
 
@@ -69,7 +69,6 @@ test.describe('Global Header & Navigation', () => {
     }
 
     await userAvatar.click();
-    await page.waitForTimeout(300);
 
     // A dropdown menu should appear with profile options
     const dropdown = page.locator(
@@ -79,7 +78,7 @@ test.describe('Global Header & Navigation', () => {
       has: page.locator('a, button'),
     }).first();
 
-    await expect(dropdown).toBeVisible();
+    await expect(dropdown).toBeVisible({ timeout: 3000 });
 
     // Should contain common user menu items
     const menuItems = dropdown.locator('a, button, [role="menuitem"]');
@@ -113,8 +112,7 @@ test.describe('Global Header & Navigation', () => {
     const href = await firstLink.getAttribute('href');
 
     await firstLink.click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     // Should have navigated to the breadcrumb link target
     if (href) {
@@ -139,7 +137,9 @@ test.describe('Global Header & Navigation', () => {
     }
 
     await profileButton.click();
-    await page.waitForTimeout(300);
+
+    // Wait for menu to appear or navigation to occur
+    await page.locator('[role="menu"], [class*="popover"], [class*="dropdown"]').first().waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
 
     // Should open a menu or navigate to profile
     const hasMenu = await page.locator('[role="menu"], [class*="popover"], [class*="dropdown"]').first().isVisible().catch(() => false);
@@ -160,7 +160,7 @@ test.describe('Global Header & Navigation', () => {
     }
 
     await logo.click();
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     // Should navigate to home/landing page
     const url = page.url();

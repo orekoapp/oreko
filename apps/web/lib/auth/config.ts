@@ -2,12 +2,7 @@ import type { NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import GitHub from 'next-auth/providers/github';
-import { z } from 'zod';
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
+import { loginSchema } from '@/lib/validations/auth';
 
 export const authConfig: NextAuthConfig = {
   pages: {
@@ -79,10 +74,7 @@ export const authConfig: NextAuthConfig = {
     },
     session({ session, token }) {
       if (token && session.user) {
-        if (typeof token.id !== 'string' || !token.id) {
-          return session;
-        }
-        session.user.id = token.id;
+        session.user.id = typeof token.id === 'string' ? token.id : String(token.id ?? '');
         session.user.email = typeof token.email === 'string' ? token.email : '';
         session.user.name = typeof token.name === 'string' ? token.name : '';
         session.user.avatarUrl = typeof token.avatarUrl === 'string' ? token.avatarUrl : null;

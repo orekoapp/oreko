@@ -22,7 +22,9 @@ test.describe('Authentication', () => {
 
     // Click submit to trigger form validation
     await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForLoadState('networkidle');
+
+    // Bug #314: Wait for validation response instead of fixed timeout
+    await page.waitForURL(/login/, { timeout: 5000 }).catch(() => {});
 
     // Should show validation error or stay on login page
     const validationError = page.getByText(/valid email|invalid|error/i);

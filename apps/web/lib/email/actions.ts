@@ -219,14 +219,25 @@ export async function deleteEmailTemplate(id: string): Promise<void> {
   revalidatePath('/settings/emails');
 }
 
+// HTML escape to prevent XSS in email templates
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Process template with variables
 function processTemplate(template: string, variables: EmailVariables): string {
   let result = template;
 
-  // Replace simple variables
+  // Replace simple variables (HTML-escaped to prevent XSS)
   Object.entries(variables).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
-      result = result.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      result = result.replace(new RegExp(`{{${escapedKey}}}`, 'g'), escapeHtml(String(value)));
     }
   });
 
@@ -275,7 +286,7 @@ export async function sendTemplatedEmail(params: {
       ${processedBody}
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${variables.businessName}
+        Sent via QuoteCraft on behalf of ${escapeHtml(String(variables.businessName || ''))}
       </p>
     </div>
   `;

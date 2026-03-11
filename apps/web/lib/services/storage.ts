@@ -1,7 +1,17 @@
 import { writeFile, readFile, unlink, mkdir } from 'fs/promises';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { existsSync } from 'fs';
 import crypto from 'crypto';
+
+// Validate that resolved path stays within base directory (prevents path traversal)
+function assertSafePath(basePath: string, key: string): string {
+  const resolvedBase = resolve(basePath);
+  const resolvedPath = resolve(join(basePath, key));
+  if (!resolvedPath.startsWith(resolvedBase + '/') && resolvedPath !== resolvedBase) {
+    throw new Error('Invalid file path: path traversal detected');
+  }
+  return resolvedPath;
+}
 
 // Storage configuration
 export interface StorageConfig {
@@ -56,7 +66,7 @@ async function uploadLocal(
   const filename = options.filename || generateFilename('upload');
   const folder = options.folder || 'files';
   const key = `${folder}/${filename}`;
-  const filePath = join(config.basePath || './uploads', key);
+  const filePath = assertSafePath(config.basePath || './uploads', key);
 
   // Ensure directory exists
   const dir = dirname(filePath);
@@ -78,49 +88,63 @@ async function uploadLocal(
 // Get file from local storage
 async function getLocal(key: string): Promise<Buffer> {
   const config = getStorageConfig();
-  const filePath = join(config.basePath || './uploads', key);
+  const filePath = assertSafePath(config.basePath || './uploads', key);
   return readFile(filePath);
 }
 
 // Delete file from local storage
 async function deleteLocal(key: string): Promise<void> {
   const config = getStorageConfig();
-  const filePath = join(config.basePath || './uploads', key);
+  const filePath = assertSafePath(config.basePath || './uploads', key);
   await unlink(filePath);
 }
 
-// S3 storage implementation (placeholder)
+// S3 storage implementation (stub — install @aws-sdk/client-s3 to enable)
 async function uploadS3(
   buffer: Buffer,
   options: UploadOptions
 ): Promise<UploadResult> {
-  // Implementation would use @aws-sdk/client-s3
-  throw new Error('S3 storage not implemented. Please install @aws-sdk/client-s3');
+  throw new Error(
+    'S3 storage requires @aws-sdk/client-s3. ' +
+    'Install it with `pnpm add @aws-sdk/client-s3` and configure STORAGE_BUCKET, STORAGE_REGION, ' +
+    'and AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) in your environment.'
+  );
 }
 
 async function getS3(key: string): Promise<Buffer> {
-  throw new Error('S3 storage not implemented');
+  throw new Error(
+    'S3 storage requires @aws-sdk/client-s3. See storage configuration docs for setup instructions.'
+  );
 }
 
 async function deleteS3(key: string): Promise<void> {
-  throw new Error('S3 storage not implemented');
+  throw new Error(
+    'S3 storage requires @aws-sdk/client-s3. See storage configuration docs for setup instructions.'
+  );
 }
 
-// Cloudflare R2 implementation (placeholder)
+// Cloudflare R2 implementation (stub — install @aws-sdk/client-s3 to enable)
 async function uploadCloudflare(
   buffer: Buffer,
   options: UploadOptions
 ): Promise<UploadResult> {
-  // Implementation would use @aws-sdk/client-s3 with Cloudflare endpoint
-  throw new Error('Cloudflare R2 storage not implemented');
+  throw new Error(
+    'Cloudflare R2 storage requires @aws-sdk/client-s3 with a Cloudflare endpoint. ' +
+    'Install it with `pnpm add @aws-sdk/client-s3` and configure STORAGE_BUCKET, ' +
+    'CLOUDFLARE_ACCOUNT_ID, and R2 credentials in your environment.'
+  );
 }
 
 async function getCloudflare(key: string): Promise<Buffer> {
-  throw new Error('Cloudflare R2 storage not implemented');
+  throw new Error(
+    'Cloudflare R2 storage requires @aws-sdk/client-s3. See storage configuration docs for setup instructions.'
+  );
 }
 
 async function deleteCloudflare(key: string): Promise<void> {
-  throw new Error('Cloudflare R2 storage not implemented');
+  throw new Error(
+    'Cloudflare R2 storage requires @aws-sdk/client-s3. See storage configuration docs for setup instructions.'
+  );
 }
 
 // Main storage functions

@@ -70,16 +70,72 @@ export function useAutoSave(quoteId: string | null, debounceMs = 2000) {
     };
   }, [isDirty, quoteId, save, debounceMs]);
 
-  // Save on unmount if dirty
+  // Bug #206: Save on unmount if dirty, use sendBeacon on pagehide for reliability
   useEffect(() => {
+    const handlePageHide = () => {
+      if (isDirty && quoteId && document) {
+        // Use sendBeacon for reliable delivery during page unload
+        const payload = JSON.stringify({
+          quoteId,
+          title: document.title,
+          blocks: document.blocks,
+          notes: document.notes,
+          terms: document.terms,
+          internalNotes: document.internalNotes,
+        });
+        if (typeof navigator.sendBeacon === 'function') {
+          navigator.sendBeacon(
+            `/api/quotes/${quoteId}/autosave`,
+            new Blob([payload], { type: 'application/json' }),
+          );
+        }
+        // Also backup to sessionStorage as a fallback
+        try {
+          sessionStorage.setItem(
+            `quotecraft:autosave:${quoteId}`,
+            JSON.stringify({
+              title: document.title,
+              blocks: document.blocks,
+              notes: document.notes,
+              terms: document.terms,
+              internalNotes: document.internalNotes,
+              timestamp: Date.now(),
+            })
+          );
+        } catch {
+          // sessionStorage may be full or unavailable
+        }
+      }
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
     return () => {
+      window.removeEventListener('pagehide', handlePageHide);
       if (isDirty && quoteId) {
         save();
       }
     };
-  }, [isDirty, quoteId, save]);
+  }, [isDirty, quoteId, document, save]);
 
   return { save };
+}
+
+/**
+ * Hook to warn users before leaving with unsaved changes
+ */
+export function useUnsavedChangesWarning() {
+  const { isDirty } = useQuoteBuilderStore();
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 }
 
 /**

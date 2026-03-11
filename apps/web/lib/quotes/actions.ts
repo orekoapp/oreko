@@ -1,12 +1,39 @@
 'use server';
 
+import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
-
-import { prisma, type Prisma } from '@quotecraft/database';
+import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 import { sendQuoteSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
+import { ROUTES } from '@/lib/routes';
+import { domainEvents } from '@/lib/events/emitter';
+
+/**
+ * Bug #134: Safely parse quote settings from JSON with runtime validation.
+ * Returns typed defaults for any missing or invalid fields.
+ */
+function safeParseQuoteSettings(raw: unknown) {
+  const settings = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  return {
+    blocks: (Array.isArray(settings.blocks) ? settings.blocks : []) as QuoteBlock[],
+    requireSignature: typeof settings.requireSignature === 'boolean' ? settings.requireSignature : true,
+    autoConvertToInvoice: typeof settings.autoConvertToInvoice === 'boolean' ? settings.autoConvertToInvoice : false,
+    depositRequired: typeof settings.depositRequired === 'boolean' ? settings.depositRequired : false,
+    depositType: (settings.depositType === 'percentage' || settings.depositType === 'fixed' ? settings.depositType : 'percentage') as 'percentage' | 'fixed',
+    depositValue: typeof settings.depositValue === 'number' ? settings.depositValue : 50,
+    showLineItemPrices: typeof settings.showLineItemPrices === 'boolean' ? settings.showLineItemPrices : true,
+    allowPartialAcceptance: typeof settings.allowPartialAcceptance === 'boolean' ? settings.allowPartialAcceptance : false,
+    currency: typeof settings.currency === 'string' ? settings.currency : 'USD',
+    taxInclusive: typeof settings.taxInclusive === 'boolean' ? settings.taxInclusive : false,
+  };
+}
+
+/** Generate a cryptographically secure access token (64 hex chars = 256 bits) */
+function generateAccessToken(): string {
+  return randomBytes(32).toString('hex');
+}
 
 /**
  * Get the current user's active workspace with full workspace data
@@ -34,6 +61,8 @@ async function getActiveWorkspace() {
  */
 async function generateQuoteNumber(workspaceId: string): Promise<string> {
   // Use upsert to atomically create or increment the sequence (race-condition safe)
+  // Bug #82: Counter uses Int (max ~2.1B). Safe for any realistic business use case.
+  // At 1000 quotes/day, this supports ~5,800 years of operation.
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.numberSequence.upsert({
       where: { workspaceId_type: { workspaceId, type: 'quote' } },
@@ -46,6 +75,11 @@ async function generateQuoteNumber(workspaceId: string): Promise<string> {
         padding: 4,
       },
     });
+
+    if (updated.currentValue > 2_000_000_000) {
+      throw new Error('Quote number sequence approaching overflow. Contact support.');
+    }
+
     return {
       prefix: updated.prefix || 'QT',
       suffix: updated.suffix,
@@ -64,6 +98,12 @@ async function generateQuoteNumber(workspaceId: string): Promise<string> {
   return parts.join('-');
 }
 
+/** Allowed block types for server-side validation */
+const VALID_BLOCK_TYPES = new Set([
+  'header', 'text', 'service-item', 'service-group',
+  'image', 'divider', 'spacer', 'columns', 'table', 'signature',
+]);
+
 /**
  * Create a new quote
  */
@@ -71,9 +111,30 @@ export async function createQuote(data: {
   title: string;
   clientId: string;
   projectId?: string | null;
+  currency?: string;
   blocks?: QuoteBlock[];
 }) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot create quotes
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot create quotes' };
+  }
+
+  // Validate title
+  if (!data.title || data.title.length > 500) {
+    return { success: false, error: 'Title is required and must be under 500 characters' };
+  }
+
+  // Validate block types server-side
+  if (data.blocks) {
+    for (const block of data.blocks) {
+      if (!VALID_BLOCK_TYPES.has(block.type)) {
+        return { success: false, error: `Invalid block type: ${block.type}` };
+      }
+    }
+  }
 
   // Verify client belongs to workspace
   const client = await prisma.client.findFirst({
@@ -83,23 +144,45 @@ export async function createQuote(data: {
     return { success: false, error: 'Client not found' };
   }
 
+  // Determine currency: use provided value, or fall back to workspace BusinessProfile, then 'USD'
+  let currency = data.currency || 'USD';
+  if (!data.currency) {
+    const profile = await prisma.businessProfile.findUnique({
+      where: { workspaceId: workspace.id },
+      select: { currency: true },
+    });
+    currency = profile?.currency || 'USD';
+  }
+
   const quoteNumber = await generateQuoteNumber(workspace.id);
 
   // Extract service items from blocks to create line items
-  const lineItems = data.blocks
-    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item')
+  const serviceItems = data.blocks
+    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item') || [];
+
+  // Validate line item values
+  for (const block of serviceItems) {
+    if (block.content.rate < 0) {
+      return { success: false, error: 'Line item rate cannot be negative' };
+    }
+    if (block.content.quantity < 0) {
+      return { success: false, error: 'Line item quantity cannot be negative' };
+    }
+  }
+
+  const lineItems = serviceItems
     .map((block, index) => ({
       name: block.content.name,
       description: block.content.description || null,
       quantity: block.content.quantity,
       rate: block.content.rate,
-      amount: block.content.quantity * block.content.rate,
+      amount: Math.round(block.content.quantity * block.content.rate * 100) / 100,
       taxRate: block.content.taxRate,
       taxAmount: block.content.taxRate
-        ? block.content.quantity * block.content.rate * (block.content.taxRate / 100)
+        ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
         : 0,
       sortOrder: index,
-    })) || [];
+    }));
 
   // Calculate totals
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
@@ -114,6 +197,8 @@ export async function createQuote(data: {
       quoteNumber,
       title: data.title,
       status: 'draft',
+      currency,
+      accessToken: generateAccessToken(),
       subtotal,
       taxTotal,
       total,
@@ -142,7 +227,11 @@ export async function createQuote(data: {
     },
   });
 
-  revalidatePath('/quotes');
+  revalidatePath(ROUTES.quotes);
+
+  try {
+    domainEvents.emit({ type: 'quote.created', payload: { quoteId: quote.id, workspaceId: workspace.id } });
+  } catch {}
 
   return { success: true, quote };
 }
@@ -163,6 +252,12 @@ export async function updateQuote(
   }
 ) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot update quotes
+  if (role === 'viewer') {
+    return { success: false as const, error: 'Insufficient permissions: viewers cannot edit quotes' };
+  }
 
   // Verify quote belongs to workspace
   const existingQuote = await prisma.quote.findFirst({
@@ -173,72 +268,117 @@ export async function updateQuote(
   });
 
   if (!existingQuote) {
-    throw new Error('Quote not found');
+    return { success: false as const, error: 'Quote not found' };
+  }
+
+  // Bug #11: Prevent modifications to signed/accepted quotes
+  if (['accepted', 'converted'].includes(existingQuote.status) || existingQuote.signedAt) {
+    return { success: false as const, error: 'Cannot modify a quote that has been accepted or signed' };
   }
 
   // Extract service items from blocks
-  const lineItems = data.blocks
-    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item')
-    .map((block, index) => ({
-      name: block.content.name,
-      description: block.content.description || null,
-      quantity: block.content.quantity,
-      rate: block.content.rate,
-      amount: block.content.quantity * block.content.rate,
-      taxRate: block.content.taxRate,
-      taxAmount: block.content.taxRate
-        ? block.content.quantity * block.content.rate * (block.content.taxRate / 100)
-        : 0,
-      sortOrder: index,
-    }));
+  const serviceBlocks = data.blocks
+    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item');
+
+  // Validate line item values
+  if (serviceBlocks) {
+    for (const block of serviceBlocks) {
+      if (block.content.rate < 0) {
+        return { success: false as const, error: 'Line item rate cannot be negative' };
+      }
+      if (block.content.quantity < 0) {
+        return { success: false as const, error: 'Line item quantity cannot be negative' };
+      }
+    }
+  }
+
+  const lineItems = serviceBlocks?.map((block, index) => ({
+    name: block.content.name,
+    description: block.content.description || null,
+    quantity: block.content.quantity,
+    rate: block.content.rate,
+    amount: Math.round(block.content.quantity * block.content.rate * 100) / 100,
+    taxRate: block.content.taxRate,
+    taxAmount: block.content.taxRate
+      ? Math.round(block.content.quantity * block.content.rate * (block.content.taxRate / 100) * 100) / 100
+      : 0,
+    sortOrder: index,
+  }));
 
   // Calculate totals
   const subtotal = lineItems?.reduce((sum, item) => sum + item.amount, 0) || 0;
   const taxTotal = lineItems?.reduce((sum, item) => sum + item.taxAmount, 0) || 0;
-  const total = subtotal + taxTotal;
+
+  // Bug #123: Validate discount values server-side
+  const mergedSettings = { ...(existingQuote.settings as Record<string, unknown>), ...data.settings };
+  const discountType = mergedSettings.discountType as string | undefined;
+  const discountValue = Number(mergedSettings.discountValue) || 0;
+  if (discountValue < 0) {
+    return { success: false as const, error: 'Discount cannot be negative' };
+  }
+  if (discountType === 'percentage' && discountValue > 100) {
+    return { success: false as const, error: 'Discount percentage cannot exceed 100%' };
+  }
+  if (discountType === 'fixed' && discountValue > subtotal) {
+    return { success: false as const, error: 'Discount amount cannot exceed subtotal' };
+  }
+
+  // Apply discount to total
+  let discountAmount = 0;
+  if (discountType === 'percentage') {
+    discountAmount = Math.round(subtotal * (discountValue / 100) * 100) / 100;
+  } else if (discountType === 'fixed') {
+    discountAmount = Math.min(discountValue, subtotal);
+  }
+  const total = subtotal - discountAmount + taxTotal;
 
   // Update quote
-  const quote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    // Delete existing line items if blocks are being updated
-    if (data.blocks) {
-      await tx.quoteLineItem.deleteMany({
-        where: { quoteId },
+  try {
+    const quote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Delete existing line items if blocks are being updated
+      if (data.blocks) {
+        await tx.quoteLineItem.deleteMany({
+          where: { quoteId },
+        });
+      }
+
+      // Update quote with new data
+      return tx.quote.update({
+        where: { id: quoteId },
+        data: {
+          title: data.title,
+          ...(data.projectId !== undefined && { projectId: data.projectId }),
+          notes: data.notes,
+          terms: data.terms,
+          internalNotes: data.internalNotes,
+          ...(data.blocks && {
+            subtotal,
+            taxTotal,
+            total,
+            settings: {
+              ...(existingQuote.settings as object),
+              blocks: data.blocks,
+            } as unknown as Prisma.InputJsonValue,
+            lineItems: {
+              create: lineItems,
+            },
+          }),
+        },
+        include: {
+          lineItems: true,
+          client: true,
+        },
       });
-    }
-
-    // Update quote with new data
-    return tx.quote.update({
-      where: { id: quoteId },
-      data: {
-        title: data.title,
-        ...(data.projectId !== undefined && { projectId: data.projectId }),
-        notes: data.notes,
-        terms: data.terms,
-        internalNotes: data.internalNotes,
-        ...(data.blocks && {
-          subtotal,
-          taxTotal,
-          total,
-          settings: {
-            ...(existingQuote.settings as object),
-            blocks: data.blocks,
-          } as unknown as Prisma.InputJsonValue,
-          lineItems: {
-            create: lineItems,
-          },
-        }),
-      },
-      include: {
-        lineItems: true,
-        client: true,
-      },
     });
-  });
 
-  revalidatePath('/quotes');
-  revalidatePath(`/quotes/${quoteId}`);
+    revalidatePath(ROUTES.quotes);
+    revalidatePath(`/quotes/${quoteId}`);
 
-  return { success: true, quote };
+    return { success: true as const, quote };
+  } catch (error) {
+    console.error('Failed to update quote:', error);
+    return { success: false as const, error: 'Failed to save quote. Please try again.' };
+  }
 }
 
 /**
@@ -274,10 +414,9 @@ export async function getQuote(quoteId: string) {
   }
 
   // Convert to QuoteDocument format for the builder
-  const settings = (quote.settings && typeof quote.settings === 'object' && !Array.isArray(quote.settings))
-    ? (quote.settings as Record<string, unknown>)
-    : {};
-  let blocks = Array.isArray(settings.blocks) ? (settings.blocks as QuoteBlock[]) : [];
+  // Bug #134: Use safe parser instead of raw casts
+  const parsedSettings = safeParseQuoteSettings(quote.settings);
+  let blocks = parsedSettings.blocks;
 
   // If blocks are empty but lineItems exist, construct blocks from lineItems
   if (blocks.length === 0 && quote.lineItems.length > 0) {
@@ -311,15 +450,15 @@ export async function getQuote(quoteId: string) {
     expirationDate: quote.expirationDate?.toISOString().split('T')[0] ?? null,
     blocks,
     settings: {
-      requireSignature: (settings.requireSignature as boolean) ?? true,
-      autoConvertToInvoice: (settings.autoConvertToInvoice as boolean) ?? false,
-      depositRequired: (settings.depositRequired as boolean) ?? false,
-      depositType: (settings.depositType as 'percentage' | 'fixed') ?? 'percentage',
-      depositValue: (settings.depositValue as number) ?? 50,
-      showLineItemPrices: (settings.showLineItemPrices as boolean) ?? true,
-      allowPartialAcceptance: (settings.allowPartialAcceptance as boolean) ?? false,
-      currency: (settings.currency as string) ?? 'USD',
-      taxInclusive: (settings.taxInclusive as boolean) ?? false,
+      requireSignature: parsedSettings.requireSignature,
+      autoConvertToInvoice: parsedSettings.autoConvertToInvoice,
+      depositRequired: parsedSettings.depositRequired,
+      depositType: parsedSettings.depositType,
+      depositValue: parsedSettings.depositValue,
+      showLineItemPrices: parsedSettings.showLineItemPrices,
+      allowPartialAcceptance: parsedSettings.allowPartialAcceptance,
+      currency: parsedSettings.currency,
+      taxInclusive: parsedSettings.taxInclusive,
     },
     totals: {
       subtotal: Number(quote.subtotal),
@@ -399,6 +538,7 @@ export async function getQuotes(options?: {
       title: quote.title,
       status: quote.status,
       total: Number(quote.total),
+      currency: quote.currency || 'USD',
       issueDate: quote.issueDate.toISOString().split('T')[0],
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] || null,
       client: quote.client ? {
@@ -418,6 +558,11 @@ export async function getQuotes(options?: {
  */
 export async function deleteQuote(quoteId: string) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot delete quotes' };
+  }
 
   // Check for linked invoices
   const linkedInvoice = await prisma.invoice.findFirst({
@@ -428,17 +573,24 @@ export async function deleteQuote(quoteId: string) {
     return { success: false, error: 'Cannot delete a quote that has a linked invoice. Delete or void the invoice first.' };
   }
 
-  await prisma.quote.update({
-    where: {
-      id: quoteId,
-      workspaceId: workspace.id,
-    },
-    data: {
-      deletedAt: new Date(),
-    },
+  // Bug #79: Clean up signature data before soft-deleting
+  // Clear any stored signature data (base64 in quoteEvent metadata) to free space
+  await prisma.$transaction(async (tx) => {
+    await tx.quoteEvent.updateMany({
+      where: { quoteId, eventType: 'signed' },
+      data: { metadata: {} },
+    });
+
+    await tx.quote.update({
+      where: { id: quoteId, workspaceId: workspace.id },
+      data: {
+        deletedAt: new Date(),
+        signatureData: Prisma.JsonNull,
+      },
+    });
   });
 
-  revalidatePath('/quotes');
+  revalidatePath(ROUTES.quotes);
 
   return { success: true };
 }
@@ -448,6 +600,12 @@ export async function deleteQuote(quoteId: string) {
  */
 export async function duplicateQuote(quoteId: string) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot duplicate quotes
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot duplicate quotes' };
+  }
 
   const original = await prisma.quote.findFirst({
     where: {
@@ -473,6 +631,8 @@ export async function duplicateQuote(quoteId: string) {
       quoteNumber,
       title: `${original.title || 'Untitled'} (Copy)`,
       status: 'draft',
+      currency: original.currency,
+      accessToken: generateAccessToken(),
       subtotal: original.subtotal,
       discountType: original.discountType,
       discountValue: original.discountValue,
@@ -497,7 +657,7 @@ export async function duplicateQuote(quoteId: string) {
     },
   });
 
-  revalidatePath('/quotes');
+  revalidatePath(ROUTES.quotes);
 
   return { success: true, quoteId: duplicate.id };
 }
@@ -510,6 +670,12 @@ export async function updateQuoteStatus(
   status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired'
 ) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot change quote status
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot change quote status' };
+  }
 
   // Validate state transitions
   const validTransitions: Record<string, string[]> = {
@@ -563,8 +729,16 @@ export async function updateQuoteStatus(
     },
   });
 
-  revalidatePath('/quotes');
-  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath(ROUTES.quotes);
+  revalidatePath(ROUTES.quoteDetail(quoteId));
+
+  try {
+    if (status === 'accepted') {
+      domainEvents.emit({ type: 'quote.accepted', payload: { quoteId } });
+    } else if (status === 'declined') {
+      domainEvents.emit({ type: 'quote.declined', payload: { quoteId } });
+    }
+  } catch {}
 
   return { success: true };
 }
@@ -575,6 +749,12 @@ export async function updateQuoteStatus(
  */
 export async function sendQuote(quoteId: string) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #455: RBAC — viewers cannot send quotes
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot send quotes' };
+  }
 
   // Get quote with client details
   const quote = await prisma.quote.findFirst({
@@ -639,6 +819,7 @@ export async function sendQuote(quoteId: string) {
       quoteUrl,
       businessName: workspace.name,
       validUntil: quote.expirationDate ?? undefined,
+      rateLimitKey: workspace.id,
     });
     emailSent = emailResult.success;
     if (!emailResult.success) {
@@ -660,8 +841,12 @@ export async function sendQuote(quoteId: string) {
     link: `/quotes/${quoteId}`,
   }).catch(() => {});
 
-  revalidatePath('/quotes');
-  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath(ROUTES.quotes);
+  revalidatePath(ROUTES.quoteDetail(quoteId));
+
+  try {
+    domainEvents.emit({ type: 'quote.sent', payload: { quoteId, clientEmail: quote.client.email } });
+  } catch {}
 
   return { success: true, recipientEmail: quote.client.email, emailSent };
 }

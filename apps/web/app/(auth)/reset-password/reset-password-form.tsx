@@ -13,17 +13,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { passwordSchema } from '@/lib/validations/auth';
 
+// Bug #448: Use shared password schema from lib/validations/auth.ts
 const resetPasswordSchema = z
   .object({
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .max(128, 'Password must be less than 128 characters')
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/,
-        'Password must contain at least one uppercase letter, one lowercase letter, and one number'
-      ),
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -41,6 +36,13 @@ export function ResetPasswordForm() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isInvalidToken, setIsInvalidToken] = React.useState(!token);
+
+  // Bug #12: Clear token from URL/history to prevent exposure in browser history
+  React.useEffect(() => {
+    if (token) {
+      window.history.replaceState({}, '', '/reset-password');
+    }
+  }, [token]);
 
   const {
     register,

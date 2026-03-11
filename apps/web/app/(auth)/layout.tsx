@@ -11,9 +11,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </header>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col items-center justify-center pb-16">
+      <main id="main-content" className="flex flex-1 flex-col items-center justify-center pb-16">
         <div className="w-full max-w-md px-4">{children}</div>
-      </div>
+      </main>
     </div>
   );
 }

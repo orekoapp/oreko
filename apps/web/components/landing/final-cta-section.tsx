@@ -36,7 +36,7 @@ export function FinalCTASection() {
               </Button>
             </Link>
             <a
-              href="https://github.com/quotecraft/quotecraft"
+              href="https://github.com/WisdmLabs/quote-software"
               target="_blank"
               rel="noopener noreferrer"
             >

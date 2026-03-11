@@ -5,17 +5,40 @@ import { revalidatePath } from 'next/cache';
 import {
   stripe,
   isStripeEnabled,
-  createPaymentIntent,
-  getOrCreateCustomer,
+  createRefund,
 } from '@/lib/services/stripe';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
   PaymentListItem,
   PaymentDetail,
   PaymentSettingsData,
-  PaymentIntentResult,
   StripeOnboardingResult,
 } from './types';
+
+/**
+ * Bug #85: Sanitize Stripe errors — never expose raw Stripe messages to end users.
+ * Returns a user-friendly message while logging the full error server-side.
+ */
+function sanitizeStripeError(error: unknown): string {
+  if (error && typeof error === 'object' && 'type' in error) {
+    const stripeError = error as { type: string; code?: string };
+    switch (stripeError.type) {
+      case 'StripeCardError':
+        return 'The payment card was declined. Please try a different payment method.';
+      case 'StripeRateLimitError':
+        return 'Too many requests. Please try again in a moment.';
+      case 'StripeInvalidRequestError':
+        return 'The payment request was invalid. Please contact support.';
+      case 'StripeAuthenticationError':
+        return 'Payment service configuration error. Please contact the site administrator.';
+      case 'StripeConnectionError':
+        return 'Unable to connect to payment service. Please try again.';
+      default:
+        return 'A payment error occurred. Please try again or contact support.';
+    }
+  }
+  return 'An unexpected error occurred. Please try again.';
+}
 
 /**
  * Get payment settings for workspace
@@ -78,20 +101,29 @@ export async function updatePaymentSettings(data: {
     return { success: true };
   } catch (error) {
     console.error('Failed to update payment settings:', error);
-    return { success: false, error: 'Failed to update payment settings' };
+    return { success: false, error: sanitizeStripeError(error) };
   }
 }
 
 /**
  * Create Stripe Connect onboarding link
+ * Bug #10: Support returnTo param so onboarding wizard returns to /onboarding
  */
-export async function createStripeOnboardingLink(): Promise<StripeOnboardingResult> {
+export async function createStripeOnboardingLink(options?: {
+  returnTo?: 'settings' | 'onboarding';
+}): Promise<StripeOnboardingResult> {
   if (!stripe || !isStripeEnabled()) {
     return { success: false, error: 'Stripe is not configured' };
   }
 
   const { workspaceId } = await getCurrentUserWorkspace();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const returnPath = options?.returnTo === 'onboarding'
+    ? '/onboarding?stripe=success'
+    : '/settings/payments?success=true';
+  const refreshPath = options?.returnTo === 'onboarding'
+    ? '/onboarding?stripe=refresh'
+    : '/settings/payments?refresh=true';
 
   try {
     // Get or create payment settings
@@ -136,15 +168,15 @@ export async function createStripeOnboardingLink(): Promise<StripeOnboardingResu
     // Create account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${baseUrl}/settings/payments?refresh=true`,
-      return_url: `${baseUrl}/settings/payments?success=true`,
+      refresh_url: `${baseUrl}${refreshPath}`,
+      return_url: `${baseUrl}${returnPath}`,
       type: 'account_onboarding',
     });
 
     return { success: true, url: accountLink.url };
   } catch (error) {
     console.error('Failed to create Stripe onboarding link:', error);
-    return { success: false, error: 'Failed to create onboarding link' };
+    return { success: false, error: sanitizeStripeError(error) };
   }
 }
 
@@ -183,6 +215,8 @@ export async function checkStripeAccountStatus(): Promise<{
       data: {
         stripeAccountStatus: status,
         stripeOnboardingComplete: onboardingComplete,
+        chargesEnabled: account.charges_enabled ?? false,
+        payoutsEnabled: account.payouts_enabled ?? false,
       },
     });
 
@@ -198,111 +232,7 @@ export async function checkStripeAccountStatus(): Promise<{
   }
 }
 
-/**
- * Create payment intent for invoice (client-facing)
- */
-export async function createInvoicePaymentIntent(
-  invoiceId: string,
-  amount?: number,
-  accessToken?: string
-): Promise<PaymentIntentResult> {
-  if (!stripe || !isStripeEnabled()) {
-    return { success: false, error: 'Stripe payments are not available' };
-  }
-
-  try {
-    // Use accessToken for public checkout (unauthenticated), or workspace-scoped query for authenticated users
-    let invoice;
-    if (accessToken) {
-      invoice = await prisma.invoice.findFirst({
-        where: { id: invoiceId, accessToken, deletedAt: null },
-        include: {
-          client: true,
-          workspace: { include: { paymentSettings: true } },
-        },
-      });
-    } else {
-      // Authenticated path: require workspace scope
-      const { workspaceId } = await getCurrentUserWorkspace();
-      invoice = await prisma.invoice.findFirst({
-        where: { id: invoiceId, workspaceId, deletedAt: null },
-        include: {
-          client: true,
-          workspace: { include: { paymentSettings: true } },
-        },
-      });
-    }
-
-    if (!invoice) {
-      return { success: false, error: 'Invoice not found' };
-    }
-
-    if (invoice.status === 'paid') {
-      return { success: false, error: 'Invoice is already paid' };
-    }
-
-    if (invoice.status === 'voided') {
-      return { success: false, error: 'Invoice has been voided' };
-    }
-
-    const amountToPay = amount ?? Number(invoice.amountDue);
-    if (amountToPay <= 0) {
-      return { success: false, error: 'Invalid payment amount' };
-    }
-
-    // Get currency from invoice settings
-    const settings = invoice.settings as Record<string, unknown>;
-    const currency = (settings?.currency as string) ?? 'USD';
-
-    // Get or create Stripe customer
-    const customer = await getOrCreateCustomer({
-      email: invoice.client.email,
-      name: invoice.client.company || invoice.client.name,
-      metadata: {
-        clientId: invoice.client.id,
-        workspaceId: invoice.workspaceId,
-      },
-    });
-
-    // Create payment intent
-    const paymentIntent = await createPaymentIntent({
-      amount: Math.round(amountToPay * 100), // Convert to cents
-      currency,
-      invoiceId: invoice.id,
-      customerId: customer?.id,
-      metadata: {
-        workspaceId: invoice.workspaceId,
-        invoiceNumber: invoice.invoiceNumber,
-        clientId: invoice.clientId,
-      },
-    });
-
-    if (!paymentIntent) {
-      return { success: false, error: 'Failed to create payment intent' };
-    }
-
-    // Create pending payment record
-    await prisma.payment.create({
-      data: {
-        invoiceId: invoice.id,
-        amount: amountToPay,
-        currency,
-        paymentMethod: 'card',
-        status: 'pending',
-        stripePaymentIntentId: paymentIntent.id,
-      },
-    });
-
-    return {
-      success: true,
-      clientSecret: paymentIntent.client_secret ?? undefined,
-      paymentIntentId: paymentIntent.id,
-    };
-  } catch (error) {
-    console.error('Failed to create payment intent:', error);
-    return { success: false, error: 'Failed to create payment' };
-  }
-}
+// createInvoicePaymentIntent moved to ./internal.ts (not a server action)
 
 /**
  * Get payments for workspace
@@ -418,80 +348,55 @@ export async function getPaymentById(paymentId: string): Promise<PaymentDetail |
 }
 
 /**
- * Process Stripe webhook for payment completion
+ * Refund a payment via Stripe
  */
-export async function processPaymentWebhook(
-  paymentIntentId: string,
-  status: 'succeeded' | 'failed',
-  chargeId?: string,
-  receiptUrl?: string
-): Promise<{ success: boolean }> {
+export async function refundPayment(
+  paymentId: string,
+  params?: { amount?: number; reason?: string }
+): Promise<{ success: boolean; error?: string }> {
+  if (!stripe || !isStripeEnabled()) {
+    return { success: false, error: 'Stripe is not configured' };
+  }
+
+  const { workspaceId } = await getCurrentUserWorkspace();
+
   try {
     const payment = await prisma.payment.findFirst({
-      where: { stripePaymentIntentId: paymentIntentId },
+      where: {
+        id: paymentId,
+        status: 'completed',
+        invoice: { workspaceId },
+      },
       include: { invoice: true },
     });
 
     if (!payment) {
-      console.warn('Payment not found for payment intent:', paymentIntentId);
-      return { success: false };
+      return { success: false, error: 'Completed payment not found' };
     }
 
-    if (status === 'succeeded') {
-      const currentAmountPaid = Number(payment.invoice.amountPaid);
-      const newAmountPaid = currentAmountPaid + Number(payment.amount);
-      const total = Number(payment.invoice.total);
-      const newAmountDue = total - newAmountPaid;
-
-      // Determine new status
-      const newInvoiceStatus = newAmountPaid >= total ? 'paid' : 'partial';
-
-      await prisma.$transaction([
-        // Update payment
-        prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: 'completed',
-            processedAt: new Date(),
-            stripeChargeId: chargeId,
-            stripeReceiptUrl: receiptUrl,
-          },
-        }),
-        // Update invoice
-        prisma.invoice.update({
-          where: { id: payment.invoiceId },
-          data: {
-            amountPaid: newAmountPaid,
-            amountDue: Math.max(0, newAmountDue),
-            status: newInvoiceStatus,
-            ...(newInvoiceStatus === 'paid' && { paidAt: new Date() }),
-          },
-        }),
-        // Create event
-        prisma.invoiceEvent.create({
-          data: {
-            invoiceId: payment.invoiceId,
-            eventType: 'payment_received',
-            actorType: 'system',
-            metadata: {
-              paymentId: payment.id,
-              amount: Number(payment.amount),
-              method: 'stripe',
-            },
-          },
-        }),
-      ]);
-    } else {
-      // Payment failed
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: { status: 'failed' },
-      });
+    if (!payment.stripePaymentIntentId) {
+      return { success: false, error: 'No Stripe payment intent linked to this payment' };
     }
+
+    // Amount in cents for Stripe (DB stores dollars)
+    const refundAmountCents = params?.amount
+      ? Math.round(params.amount * 100)
+      : undefined; // undefined = full refund
+
+    await createRefund({
+      paymentIntentId: payment.stripePaymentIntentId,
+      amount: refundAmountCents,
+      reason: 'requested_by_customer',
+    });
+
+    // The actual DB update happens via the charge.refunded webhook (processRefundWebhook)
+    // but we can revalidate proactively
+    revalidatePath('/invoices');
+    revalidatePath(`/invoices/${payment.invoiceId}`);
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to process payment webhook:', error);
-    return { success: false };
+    console.error('Failed to refund payment:', error);
+    return { success: false, error: sanitizeStripeError(error) };
   }
 }

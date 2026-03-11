@@ -1,18 +1,21 @@
 import Link from 'next/link';
 import { Github, Twitter, MessageCircle, Linkedin, Heart } from 'lucide-react';
 
+// Bug #415: Use configurable base URL for social/repo links
+const GITHUB_URL = process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/WisdmLabs/quote-software';
+
 const footerLinks = {
   product: [
     { label: 'Features', href: '#features' },
     { label: 'Pricing', href: '#pricing' },
     { label: 'Changelog', href: '/changelog' },
-    { label: 'Roadmap', href: 'https://github.com/quotecraft/quotecraft/projects' },
+    { label: 'Roadmap', href: `${GITHUB_URL}/projects` },
   ],
   resources: [
     { label: 'Documentation', href: '/docs' },
     { label: 'API Reference', href: '/docs/api' },
-    { label: 'GitHub', href: 'https://github.com/quotecraft/quotecraft' },
-    { label: 'Discord', href: 'https://discord.gg/quotecraft' },
+    { label: 'GitHub', href: GITHUB_URL },
+    { label: 'Community', href: `${GITHUB_URL}/discussions` },
   ],
   company: [
     { label: 'About', href: '/about' },
@@ -28,10 +31,10 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { label: 'GitHub', href: 'https://github.com/quotecraft/quotecraft', icon: Github },
-  { label: 'Twitter', href: 'https://twitter.com/quotecraft', icon: Twitter },
-  { label: 'Discord', href: 'https://discord.gg/quotecraft', icon: MessageCircle },
-  { label: 'LinkedIn', href: 'https://linkedin.com/company/quotecraft', icon: Linkedin },
+  { label: 'GitHub', href: GITHUB_URL, icon: Github },
+  { label: 'Twitter', href: process.env.NEXT_PUBLIC_TWITTER_URL || '#', icon: Twitter },
+  { label: 'Discord', href: process.env.NEXT_PUBLIC_DISCORD_URL || '#', icon: MessageCircle },
+  { label: 'LinkedIn', href: process.env.NEXT_PUBLIC_LINKEDIN_URL || '#', icon: Linkedin },
 ];
 
 export function MarketingFooter() {

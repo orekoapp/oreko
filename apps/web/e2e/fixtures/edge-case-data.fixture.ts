@@ -110,7 +110,7 @@ export const test = base.extend<EdgeCaseFixtures>({
         const searchInput = page.getByPlaceholder(/search/i);
         if (await searchInput.isVisible({ timeout: 2000 })) {
           await searchInput.fill(EDGE_CASE_IDS.QUOTE_NUMBER_DELETED_CLIENT);
-          await page.waitForTimeout(500);
+          await page.waitForLoadState('networkidle');
 
           // Check if the quote appears
           const quoteRow = page.getByText(EDGE_CASE_IDS.QUOTE_NUMBER_DELETED_CLIENT);

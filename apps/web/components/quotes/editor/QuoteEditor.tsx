@@ -156,6 +156,15 @@ export function QuoteEditor() {
     }
   }, [document]);
 
+  // Cleanup blob URL on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (logoUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(logoUrl);
+      }
+    };
+  }, [logoUrl]);
+
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
     updateTitle(newTitle);
@@ -196,7 +205,7 @@ export function QuoteEditor() {
     setIsUploadingLogo(true);
     try {
       // Revoke previous object URL to prevent memory leak
-      if (logoUrl && logoUrl.startsWith('blob:')) {
+      if (logoUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(logoUrl);
       }
       // Create a local preview URL
@@ -211,7 +220,8 @@ export function QuoteEditor() {
   };
 
   const handleSave = async () => {
-    if (!document) return;
+    // Bug #168: Prevent double-submit race condition
+    if (!document || isLoading || isSending) return;
 
     setIsLoading(true);
     try {
@@ -250,7 +260,8 @@ export function QuoteEditor() {
   };
 
   const handleSendQuote = async () => {
-    if (!document || !client) return;
+    // Bug #168: Prevent double-submit race condition
+    if (!document || !client || isSending || isLoading) return;
 
     setIsSending(true);
     try {

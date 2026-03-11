@@ -18,14 +18,10 @@ import type {
   ClientAddress,
   ClientMetadata,
 } from './types';
+import { safeParseAddress, safeParseMetadata } from './types';
+import { ROUTES } from '@/lib/routes';
 import { nanoid } from 'nanoid';
-
-function parseClientMetadata(metadata: unknown): ClientMetadata {
-  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
-    return metadata as ClientMetadata;
-  }
-  return {};
-}
+import { domainEvents } from '@/lib/events/emitter';
 
 // Helper to convert Decimal to number
 function toNumber(value: unknown): number {
@@ -42,16 +38,17 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
   const { workspaceId } = await getCurrentUserWorkspace();
 
   const {
-    search,
+    search: rawSearch,
     type,
-    page = 1,
-    limit = 20,
+    page: rawPage = 1,
+    limit: rawLimit = 20,
     sortBy = 'createdAt',
     sortOrder = 'desc',
   } = filter;
 
-  // Cap search length to prevent oversized strings hitting the DB
-  const safeSearch = search?.slice(0, 200);
+  const search = rawSearch ? rawSearch.slice(0, 200) : undefined;
+  const page = Math.max(1, rawPage);
+  const limit = Math.min(100, Math.max(1, rawLimit));
 
   // Build where clause
   const where: Prisma.ClientWhereInput = {
@@ -59,11 +56,11 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
     deletedAt: null,
   };
 
-  if (safeSearch) {
+  if (search) {
     where.OR = [
-      { name: { contains: safeSearch, mode: 'insensitive' } },
-      { email: { contains: safeSearch, mode: 'insensitive' } },
-      { company: { contains: safeSearch, mode: 'insensitive' } },
+      { name: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+      { company: { contains: search, mode: 'insensitive' } },
     ];
   }
 
@@ -104,13 +101,13 @@ export async function getClients(filter: ClientFilter = {}): Promise<PaginatedCl
     orderBy: {
       [sortBy]: sortOrder,
     },
-    skip: (Math.max(1, page) - 1) * Math.max(1, limit),
-    take: Math.max(1, limit),
+    skip: (page - 1) * limit,
+    take: limit,
   });
 
   // Transform to list items
   const data: ClientListItem[] = clients.map((client) => {
-    const metadata = parseClientMetadata(client.metadata);
+    const metadata = safeParseMetadata(client.metadata);
     return {
       id: client.id,
       name: client.name,
@@ -185,7 +182,7 @@ export async function getClientById(id: string): Promise<ClientDetail> {
   const totalInvoiced = toNumber(totals._sum?.total);
   const outstandingAmount = totalInvoiced - totalRevenue;
 
-  const metadata = parseClientMetadata(client.metadata);
+  const metadata = safeParseMetadata(client.metadata);
 
   return {
     id: client.id,
@@ -194,7 +191,7 @@ export async function getClientById(id: string): Promise<ClientDetail> {
     email: client.email,
     phone: client.phone,
     company: client.company,
-    address: (client.address as ClientAddress) || null,
+    address: safeParseAddress(client.address),
     billingAddress: (client.billingAddress as ClientAddress) || null,
     taxId: client.taxId,
     notes: client.notes,
@@ -397,7 +394,11 @@ export async function createClient(input: CreateClientInput): Promise<{ id: stri
     },
   });
 
-  revalidatePath('/clients');
+  revalidatePath(ROUTES.clients);
+
+  try {
+    domainEvents.emit({ type: 'client.created', payload: { clientId: client.id, workspaceId } });
+  } catch {}
 
   return { id: client.id };
 }
@@ -420,7 +421,7 @@ export async function updateClient(input: UpdateClientInput): Promise<{ id: stri
   }
 
   // Merge metadata
-  const existingMetadata = parseClientMetadata(existing.metadata);
+  const existingMetadata = safeParseMetadata(existing.metadata);
   const metadata: ClientMetadata = {
     ...existingMetadata,
     ...(input.type !== undefined && { type: input.type }),
@@ -456,15 +457,20 @@ export async function updateClient(input: UpdateClientInput): Promise<{ id: stri
     data: updateData,
   });
 
-  revalidatePath('/clients');
-  revalidatePath(`/clients/${input.id}`);
+  revalidatePath(ROUTES.clients);
+  revalidatePath(ROUTES.clientDetail(input.id));
 
   return { id: client.id };
 }
 
 // Delete client (soft delete)
 export async function deleteClient(id: string): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Only editors and above can delete clients
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot delete clients');
+  }
 
   // Verify ownership
   const existing = await prisma.client.findFirst({
@@ -484,12 +490,16 @@ export async function deleteClient(id: string): Promise<void> {
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath('/clients');
+  revalidatePath(ROUTES.clients);
 }
 
 // Bulk delete clients
 export async function deleteClients(ids: string[]): Promise<{ deleted: number }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot delete clients');
+  }
 
   const result = await prisma.client.updateMany({
     where: {
@@ -500,7 +510,7 @@ export async function deleteClients(ids: string[]): Promise<{ deleted: number }>
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath('/clients');
+  revalidatePath(ROUTES.clients);
 
   return { deleted: result.count };
 }
@@ -533,7 +543,7 @@ export async function getClientStats(): Promise<ClientStats> {
   let withUnpaidInvoices = 0;
 
   for (const client of clients) {
-    const metadata = parseClientMetadata(client.metadata);
+    const metadata = safeParseMetadata(client.metadata);
     const clientType = metadata.type || (client.company ? 'company' : 'individual');
     if (clientType === 'company') {
       companies++;
@@ -641,7 +651,7 @@ export async function importClients(
     }
   }
 
-  revalidatePath('/clients');
+  revalidatePath(ROUTES.clients);
 
   return result;
 }
@@ -654,6 +664,7 @@ export async function searchClients(query: string, limit = 10): Promise<Array<{
   company: string | null;
 }>> {
   const { workspaceId } = await getCurrentUserWorkspace();
+  const cappedLimit = Math.min(Math.max(1, limit), 50);
 
   const clients = await prisma.client.findMany({
     where: {
@@ -671,7 +682,7 @@ export async function searchClients(query: string, limit = 10): Promise<Array<{
       email: true,
       company: true,
     },
-    take: limit,
+    take: cappedLimit,
     orderBy: { name: 'asc' },
   });
 

@@ -63,6 +63,7 @@ export interface InvoiceDocument {
   accessToken: string | null;
   status: InvoiceStatus;
   title: string;
+  currency: string;
   issueDate: string;
   dueDate: string;
   lineItems: InvoiceLineItem[];
@@ -79,6 +80,7 @@ export interface InvoiceListItem {
   invoiceNumber: string;
   status: InvoiceStatus;
   title: string;
+  currency: string;
   issueDate: string;
   dueDate: string;
   total: number;
@@ -98,6 +100,7 @@ export interface CreateInvoiceData {
   projectId?: string | null;
   title: string;
   invoiceNumber?: string;
+  currency?: string;
   dueDate: string;
   lineItems: Array<{
     name: string;

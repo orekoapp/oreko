@@ -20,6 +20,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Clients',
+  description: 'Manage your client database and relationships',
 };
 
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {

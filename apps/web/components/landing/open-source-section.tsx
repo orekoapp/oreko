@@ -13,22 +13,22 @@ const benefits = [
 const links = [
   {
     label: 'Star on GitHub',
-    href: 'https://github.com/quotecraft/quotecraft',
+    href: 'https://github.com/WisdmLabs/quote-software',
     icon: Github,
   },
   {
-    label: 'Join Discord',
-    href: 'https://discord.gg/quotecraft',
+    label: 'Discussions',
+    href: 'https://github.com/WisdmLabs/quote-software/discussions',
     icon: MessageCircle,
   },
   {
     label: 'Contribute',
-    href: 'https://github.com/quotecraft/quotecraft/blob/main/CONTRIBUTING.md',
+    href: 'https://github.com/WisdmLabs/quote-software/blob/main/CONTRIBUTING.md',
     icon: Code,
   },
   {
     label: 'Docker Hub',
-    href: 'https://hub.docker.com/r/quotecraft/quotecraft',
+    href: 'https://hub.docker.com/r/wisdmlabs/quotecraft',
     icon: Container,
   },
 ];

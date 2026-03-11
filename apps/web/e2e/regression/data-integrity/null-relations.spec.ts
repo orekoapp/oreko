@@ -65,7 +65,7 @@ test.describe('Data Integrity: Null Client Relations', () => {
     const getErrors = monitorConsoleErrors(page);
 
     // Wait for any async loading
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     // Should not have TypeError console errors
     const errors = getErrors();
@@ -101,7 +101,6 @@ test.describe('Data Integrity: Null Client Relations', () => {
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible()) {
       await searchInput.fill(EDGE_CASE_IDS.QUOTE_NUMBER_DELETED_CLIENT);
-      await page.waitForTimeout(500);
     }
 
     // If the quote is found, verify it doesn't show "undefined" or "null"
@@ -125,7 +124,6 @@ test.describe('Data Integrity: Null Client Relations', () => {
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible()) {
       await searchInput.fill(EDGE_CASE_IDS.QUOTE_NUMBER_NO_COMPANY);
-      await page.waitForTimeout(500);
     }
 
     // Verify no crashes
@@ -206,7 +204,6 @@ test.describe('Data Integrity: Null Client Relations', () => {
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible()) {
       await searchInput.fill(EDGE_CASE_IDS.INVOICE_NUMBER_DELETED_CLIENT);
-      await page.waitForTimeout(500);
     }
 
     // Verify no crashes
@@ -269,7 +266,6 @@ test.describe('Data Integrity: Null Client Relations', () => {
     if (await searchInput.isVisible()) {
       // Search for "EDGE" which should match our edge case quote numbers
       await searchInput.fill('EDGE');
-      await page.waitForTimeout(500);
 
       // Should not crash
       await assertNoServerComponentCrash(page, 'Search results with edge case data');
@@ -293,7 +289,6 @@ test.describe('Data Integrity: Clients with Edge Cases', () => {
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible()) {
       await searchInput.fill('Deleted Client Corp');
-      await page.waitForTimeout(500);
 
       // Should NOT find the deleted client
       const deletedClient = page.getByText('Deleted Client Corp');
@@ -311,7 +306,6 @@ test.describe('Data Integrity: Clients with Edge Cases', () => {
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible()) {
       await searchInput.fill('Individual Freelancer');
-      await page.waitForTimeout(500);
 
       const client = page.getByText('Individual Freelancer');
       if (await client.isVisible({ timeout: 2000 })) {

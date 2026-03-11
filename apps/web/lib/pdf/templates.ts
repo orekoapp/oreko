@@ -1,4 +1,30 @@
-import type { QuotePdfData, InvoicePdfData } from './types';
+import type { QuotePdfData, InvoicePdfData, CreditNotePdfData } from './types';
+
+/**
+ * Escape HTML special characters to prevent XSS in PDF templates
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Validate and sanitize CSS color value (hex only)
+ */
+function sanitizeColor(color: string, fallback: string = '#3B82F6'): string {
+  return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : fallback;
+}
+
+/**
+ * Validate URL is http/https (prevents javascript: protocol injection)
+ */
+function isSafeUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
 
 /**
  * Format currency for display
@@ -34,9 +60,12 @@ function formatAddress(address: unknown): string {
     country?: string;
   };
   const parts = [
-    addr.street,
-    [addr.city, addr.state, addr.zipCode].filter(Boolean).join(', '),
-    addr.country,
+    addr.street ? escapeHtml(addr.street) : '',
+    [addr.city, addr.state, addr.zipCode]
+      .filter(Boolean)
+      .map((s) => escapeHtml(s!))
+      .join(', '),
+    addr.country ? escapeHtml(addr.country) : '',
   ].filter(Boolean);
   return parts.join('<br/>');
 }
@@ -407,15 +436,15 @@ function getBaseStyles(primaryColor: string = '#3B82F6'): string {
  * Generate quote PDF HTML
  */
 export function generateQuotePdfHtml(data: QuotePdfData): string {
-  const primaryColor = data.branding?.primaryColor || '#3B82F6';
+  const primaryColor = sanitizeColor(data.branding?.primaryColor || '#3B82F6');
 
   const lineItemsHtml = data.lineItems
     .map(
       (item) => `
       <tr>
         <td>
-          <div class="item-name">${item.name}</div>
-          ${item.description ? `<div class="item-description">${item.description}</div>` : ''}
+          <div class="item-name">${escapeHtml(item.name)}</div>
+          ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
         </td>
         <td>${item.quantity}</td>
         <td>${formatCurrency(item.rate, data.currency)}</td>
@@ -431,52 +460,54 @@ export function generateQuotePdfHtml(data: QuotePdfData): string {
       <div class="signature-section">
         <div class="signature-box">
           <div class="signature-label">Client Signature</div>
-          <img src="${data.signature.data}" alt="Signature" class="signature-image" />
-          <div class="signature-name">${data.signature.signerName}</div>
+          ${data.signature.data.startsWith('data:image/png;base64,') ? `<img src="${escapeHtml(data.signature.data)}" alt="Signature" class="signature-image" />` : ''}
+          <div class="signature-name">${escapeHtml(data.signature.signerName)}</div>
           <div class="signature-date">Signed on ${formatDate(data.signature.signedAt)}</div>
         </div>
       </div>
     `
     : '';
 
+  const safeQuoteNumber = escapeHtml(data.quoteNumber);
+
   return `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
-        <title>Quote ${data.quoteNumber}</title>
+        <title>Quote ${safeQuoteNumber}</title>
         <style>${getBaseStyles(primaryColor)}</style>
       </head>
       <body>
         <div class="print-bar">
-          <span>Quote ${data.quoteNumber}</span>
+          <span>Quote ${safeQuoteNumber}</span>
           <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
         </div>
         <div class="container">
           <div class="header">
             <div class="business-info">
-              ${data.business.logoUrl ? `<img src="${data.business.logoUrl}" alt="${data.business.name}" class="logo" />` : `<div class="party-name">${data.business.name}</div>`}
+              ${data.business.logoUrl && isSafeUrl(data.business.logoUrl) ? `<img src="${escapeHtml(data.business.logoUrl)}" alt="${escapeHtml(data.business.name)}" class="logo" />` : `<div class="party-name">${escapeHtml(data.business.name)}</div>`}
             </div>
             <div class="document-title">
               <h1>Quote</h1>
-              <div class="document-number">${data.quoteNumber}</div>
+              <div class="document-number">${safeQuoteNumber}</div>
             </div>
           </div>
 
           <div class="parties">
             <div class="party">
               <div class="party-label">From</div>
-              <div class="party-name">${data.business.name}</div>
-              ${data.business.email ? `<div class="party-detail">${data.business.email}</div>` : ''}
-              ${data.business.phone ? `<div class="party-detail">${data.business.phone}</div>` : ''}
+              <div class="party-name">${escapeHtml(data.business.name)}</div>
+              ${data.business.email ? `<div class="party-detail">${escapeHtml(data.business.email)}</div>` : ''}
+              ${data.business.phone ? `<div class="party-detail">${escapeHtml(data.business.phone)}</div>` : ''}
               ${data.business.address ? `<div class="party-detail">${formatAddress(data.business.address)}</div>` : ''}
             </div>
             <div class="party">
               <div class="party-label">To</div>
-              <div class="party-name">${data.client.company || data.client.name}</div>
-              ${data.client.company ? `<div class="party-detail">${data.client.name}</div>` : ''}
-              <div class="party-detail">${data.client.email}</div>
-              ${data.client.phone ? `<div class="party-detail">${data.client.phone}</div>` : ''}
+              <div class="party-name">${escapeHtml(data.client.company || data.client.name)}</div>
+              ${data.client.company ? `<div class="party-detail">${escapeHtml(data.client.name)}</div>` : ''}
+              <div class="party-detail">${escapeHtml(data.client.email)}</div>
+              ${data.client.phone ? `<div class="party-detail">${escapeHtml(data.client.phone)}</div>` : ''}
               ${data.client.address ? `<div class="party-detail">${formatAddress(data.client.address)}</div>` : ''}
             </div>
           </div>
@@ -499,7 +530,7 @@ export function generateQuotePdfHtml(data: QuotePdfData): string {
             <div class="meta-item">
               <div class="meta-label">Status</div>
               <div class="meta-value">
-                <span class="status-badge status-${data.status}">${data.status}</span>
+                <span class="status-badge status-${escapeHtml(data.status)}">${escapeHtml(data.status)}</span>
               </div>
             </div>
           </div>
@@ -555,7 +586,7 @@ export function generateQuotePdfHtml(data: QuotePdfData): string {
               ? `
             <div class="notes">
               <div class="notes-title">Notes</div>
-              <div class="notes-content">${data.notes}</div>
+              <div class="notes-content">${escapeHtml(data.notes)}</div>
             </div>
           `
               : ''
@@ -566,7 +597,7 @@ export function generateQuotePdfHtml(data: QuotePdfData): string {
               ? `
             <div class="terms">
               <div class="terms-title">Terms & Conditions</div>
-              <div class="terms-content">${data.terms}</div>
+              <div class="terms-content">${escapeHtml(data.terms)}</div>
             </div>
           `
               : ''
@@ -583,15 +614,15 @@ export function generateQuotePdfHtml(data: QuotePdfData): string {
  * Generate invoice PDF HTML
  */
 export function generateInvoicePdfHtml(data: InvoicePdfData): string {
-  const primaryColor = data.branding?.primaryColor || '#3B82F6';
+  const primaryColor = sanitizeColor(data.branding?.primaryColor || '#3B82F6');
 
   const lineItemsHtml = data.lineItems
     .map(
       (item) => `
       <tr>
         <td>
-          <div class="item-name">${item.name}</div>
-          ${item.description ? `<div class="item-description">${item.description}</div>` : ''}
+          <div class="item-name">${escapeHtml(item.name)}</div>
+          ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
         </td>
         <td>${item.quantity}</td>
         <td>${formatCurrency(item.rate, data.currency)}</td>
@@ -611,7 +642,7 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
           .map(
             (payment) => `
           <div class="payment-row">
-            <span class="payment-info">${formatDate(payment.paidAt)} - ${payment.method}${payment.reference ? ` (${payment.reference})` : ''}</span>
+            <span class="payment-info">${formatDate(payment.paidAt)} - ${escapeHtml(payment.method)}${payment.reference ? ` (${escapeHtml(payment.reference)})` : ''}</span>
             <span class="payment-amount">${formatCurrency(payment.amount, data.currency)}</span>
           </div>
         `
@@ -621,44 +652,46 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
     `
       : '';
 
+  const safeInvoiceNumber = escapeHtml(data.invoiceNumber);
+
   return `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
-        <title>Invoice ${data.invoiceNumber}</title>
+        <title>Invoice ${safeInvoiceNumber}</title>
         <style>${getBaseStyles(primaryColor)}</style>
       </head>
       <body>
         <div class="print-bar">
-          <span>Invoice ${data.invoiceNumber}</span>
+          <span>Invoice ${safeInvoiceNumber}</span>
           <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
         </div>
         <div class="container">
           <div class="header">
             <div class="business-info">
-              ${data.business.logoUrl ? `<img src="${data.business.logoUrl}" alt="${data.business.name}" class="logo" />` : `<div class="party-name">${data.business.name}</div>`}
+              ${data.business.logoUrl && isSafeUrl(data.business.logoUrl) ? `<img src="${escapeHtml(data.business.logoUrl)}" alt="${escapeHtml(data.business.name)}" class="logo" />` : `<div class="party-name">${escapeHtml(data.business.name)}</div>`}
             </div>
             <div class="document-title">
               <h1>Invoice</h1>
-              <div class="document-number">${data.invoiceNumber}</div>
+              <div class="document-number">${safeInvoiceNumber}</div>
             </div>
           </div>
 
           <div class="parties">
             <div class="party">
               <div class="party-label">From</div>
-              <div class="party-name">${data.business.name}</div>
-              ${data.business.email ? `<div class="party-detail">${data.business.email}</div>` : ''}
-              ${data.business.phone ? `<div class="party-detail">${data.business.phone}</div>` : ''}
+              <div class="party-name">${escapeHtml(data.business.name)}</div>
+              ${data.business.email ? `<div class="party-detail">${escapeHtml(data.business.email)}</div>` : ''}
+              ${data.business.phone ? `<div class="party-detail">${escapeHtml(data.business.phone)}</div>` : ''}
               ${data.business.address ? `<div class="party-detail">${formatAddress(data.business.address)}</div>` : ''}
             </div>
             <div class="party">
               <div class="party-label">Bill To</div>
-              <div class="party-name">${data.client.company || data.client.name}</div>
-              ${data.client.company ? `<div class="party-detail">${data.client.name}</div>` : ''}
-              <div class="party-detail">${data.client.email}</div>
-              ${data.client.phone ? `<div class="party-detail">${data.client.phone}</div>` : ''}
+              <div class="party-name">${escapeHtml(data.client.company || data.client.name)}</div>
+              ${data.client.company ? `<div class="party-detail">${escapeHtml(data.client.name)}</div>` : ''}
+              <div class="party-detail">${escapeHtml(data.client.email)}</div>
+              ${data.client.phone ? `<div class="party-detail">${escapeHtml(data.client.phone)}</div>` : ''}
               ${data.client.address ? `<div class="party-detail">${formatAddress(data.client.address)}</div>` : ''}
             </div>
           </div>
@@ -675,7 +708,7 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
             <div class="meta-item">
               <div class="meta-label">Status</div>
               <div class="meta-value">
-                <span class="status-badge status-${data.status}">${data.status}</span>
+                <span class="status-badge status-${escapeHtml(data.status)}">${escapeHtml(data.status)}</span>
               </div>
             </div>
           </div>
@@ -747,7 +780,7 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
               ? `
             <div class="notes">
               <div class="notes-title">Notes</div>
-              <div class="notes-content">${data.notes}</div>
+              <div class="notes-content">${escapeHtml(data.notes)}</div>
             </div>
           `
               : ''
@@ -758,7 +791,133 @@ export function generateInvoicePdfHtml(data: InvoicePdfData): string {
               ? `
             <div class="terms">
               <div class="terms-title">Payment Terms</div>
-              <div class="terms-content">${data.terms}</div>
+              <div class="terms-content">${escapeHtml(data.terms)}</div>
+            </div>
+          `
+              : ''
+          }
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Generate credit note PDF HTML
+ */
+export function generateCreditNotePdfHtml(data: CreditNotePdfData): string {
+  const primaryColor = sanitizeColor(data.branding?.primaryColor || '#3B82F6');
+
+  const lineItemsHtml = data.lineItems
+    .map(
+      (item) => `
+      <tr>
+        <td>
+          <div class="item-name">${escapeHtml(item.name)}</div>
+          ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
+        </td>
+        <td>${item.quantity}</td>
+        <td>${formatCurrency(item.rate, data.currency)}</td>
+        <td>${formatCurrency(item.amount, data.currency)}</td>
+      </tr>
+    `
+    )
+    .join('');
+
+  const safeCreditNoteNumber = escapeHtml(data.creditNoteNumber);
+  const safeInvoiceNumber = escapeHtml(data.originalInvoiceNumber);
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Credit Note ${safeCreditNoteNumber}</title>
+        <style>${getBaseStyles(primaryColor)}</style>
+      </head>
+      <body>
+        <div class="print-bar">
+          <span>Credit Note ${safeCreditNoteNumber}</span>
+          <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+        <div class="container">
+          <div class="header">
+            <div class="business-info">
+              ${data.business.logoUrl && isSafeUrl(data.business.logoUrl) ? `<img src="${escapeHtml(data.business.logoUrl)}" alt="${escapeHtml(data.business.name)}" class="logo" />` : `<div class="party-name">${escapeHtml(data.business.name)}</div>`}
+            </div>
+            <div class="document-title">
+              <h1>Credit Note</h1>
+              <div class="document-number">${safeCreditNoteNumber}</div>
+            </div>
+          </div>
+
+          <div class="parties">
+            <div class="party">
+              <div class="party-label">From</div>
+              <div class="party-name">${escapeHtml(data.business.name)}</div>
+              ${data.business.email ? `<div class="party-detail">${escapeHtml(data.business.email)}</div>` : ''}
+              ${data.business.phone ? `<div class="party-detail">${escapeHtml(data.business.phone)}</div>` : ''}
+              ${data.business.address ? `<div class="party-detail">${formatAddress(data.business.address)}</div>` : ''}
+            </div>
+            <div class="party">
+              <div class="party-label">Credit To</div>
+              <div class="party-name">${escapeHtml(data.client.company || data.client.name)}</div>
+              ${data.client.company ? `<div class="party-detail">${escapeHtml(data.client.name)}</div>` : ''}
+              <div class="party-detail">${escapeHtml(data.client.email)}</div>
+              ${data.client.phone ? `<div class="party-detail">${escapeHtml(data.client.phone)}</div>` : ''}
+              ${data.client.address ? `<div class="party-detail">${formatAddress(data.client.address)}</div>` : ''}
+            </div>
+          </div>
+
+          <div class="meta-info">
+            <div class="meta-item">
+              <div class="meta-label">Original Invoice</div>
+              <div class="meta-value">${safeInvoiceNumber}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Date</div>
+              <div class="meta-value">${data.issuedAt ? formatDate(data.issuedAt) : formatDate(data.createdAt)}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Status</div>
+              <div class="meta-value">
+                <span class="status-badge status-${escapeHtml(data.status)}">${escapeHtml(data.status)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 24px; padding: 12px 16px; background-color: #fef3c7; border-radius: 8px;">
+            <div style="font-weight: 600; font-size: 12px; color: #92400e; margin-bottom: 4px;">Reason</div>
+            <div style="color: #78350f;">${escapeHtml(data.reason)}</div>
+          </div>
+
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lineItemsHtml}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="totals-row total">
+              <span class="totals-label">Credit Total</span>
+              <span class="totals-value">${formatCurrency(data.totals.total, data.currency)}</span>
+            </div>
+          </div>
+
+          ${
+            data.notes
+              ? `
+            <div class="notes">
+              <div class="notes-title">Notes</div>
+              <div class="notes-content">${escapeHtml(data.notes)}</div>
             </div>
           `
               : ''

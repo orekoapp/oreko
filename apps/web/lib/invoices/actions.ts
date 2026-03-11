@@ -1,5 +1,6 @@
 'use server';
 
+import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { prisma, type Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
@@ -9,11 +10,18 @@ import type {
   InvoiceStatus,
   CreateInvoiceData,
   UpdateInvoiceData,
-  DEFAULT_INVOICE_SETTINGS,
 } from './types';
 import { sendInvoiceSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
 import { formatCurrency } from '@/lib/utils';
+import { ROUTES } from '@/lib/routes';
+import { generateInvoiceNumber } from './internal';
+import { domainEvents } from '@/lib/events/emitter';
+
+/** Generate a cryptographically secure access token (64 hex chars = 256 bits) */
+function generateAccessToken(): string {
+  return randomBytes(32).toString('hex');
+}
 
 /**
  * Get the current user's active workspace with full workspace data
@@ -33,41 +41,6 @@ async function getActiveWorkspace() {
     userId,
     workspace,
   };
-}
-
-/**
- * Generate the next invoice number for a workspace
- * Uses atomic increment on NumberSequence table to prevent race conditions
- */
-async function generateInvoiceNumber(workspaceId: string): Promise<string> {
-  // Use upsert to atomically create or increment the sequence (race-condition safe)
-  const result = await prisma.$transaction(async (tx) => {
-    const updated = await tx.numberSequence.upsert({
-      where: { workspaceId_type: { workspaceId, type: 'invoice' } },
-      update: { currentValue: { increment: 1 } },
-      create: {
-        workspaceId,
-        type: 'invoice',
-        prefix: 'INV',
-        currentValue: 1,
-        padding: 4,
-      },
-    });
-    return {
-      prefix: updated.prefix || 'INV',
-      suffix: updated.suffix,
-      value: updated.currentValue,
-      padding: updated.padding,
-    };
-  });
-
-  const paddedValue = String(result.value).padStart(result.padding, '0');
-  const prefix = result.prefix.replace(/-$/, '');
-  const parts = [prefix, paddedValue];
-  if (result.suffix) {
-    parts.push(result.suffix);
-  }
-  return parts.join('-');
 }
 
 /**
@@ -99,6 +72,12 @@ function calculateTotals(
  */
 export async function createInvoice(data: CreateInvoiceData) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot create invoices
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot create invoices' };
+  }
 
   // Verify client belongs to workspace
   const client = await prisma.client.findFirst({
@@ -123,6 +102,26 @@ export async function createInvoice(data: CreateInvoiceData) {
     invoiceNumber = await generateInvoiceNumber(workspace.id);
   }
 
+  // Determine currency: use provided value, or fall back to workspace BusinessProfile, then 'USD'
+  let currency = data.currency || 'USD';
+  if (!data.currency) {
+    const profile = await prisma.businessProfile.findUnique({
+      where: { workspaceId: workspace.id },
+      select: { currency: true },
+    });
+    currency = profile?.currency || 'USD';
+  }
+
+  // Validate line item values
+  for (const item of data.lineItems) {
+    if (item.rate < 0) {
+      return { success: false, error: 'Line item rate cannot be negative' };
+    }
+    if (item.quantity < 0) {
+      return { success: false, error: 'Line item quantity cannot be negative' };
+    }
+  }
+
   const { subtotal, taxTotal, total } = calculateTotals(data.lineItems);
 
   const lineItems = data.lineItems.map((item, index) => ({
@@ -132,7 +131,9 @@ export async function createInvoice(data: CreateInvoiceData) {
     rate: item.rate,
     amount: Math.round(item.quantity * item.rate * 100) / 100,
     taxRate: item.taxRate || null,
-    taxAmount: item.taxRate ? Math.round(item.quantity * item.rate * (item.taxRate / 100) * 100) / 100 : 0,
+    taxAmount: item.taxRate
+      ? Math.round(item.quantity * item.rate * (item.taxRate / 100) * 100) / 100
+      : 0,
     sortOrder: index,
   }));
 
@@ -144,6 +145,8 @@ export async function createInvoice(data: CreateInvoiceData) {
       invoiceNumber,
       title: data.title,
       status: 'draft',
+      currency,
+      accessToken: generateAccessToken(),
       issueDate: new Date(),
       dueDate: new Date(data.dueDate),
       subtotal,
@@ -176,7 +179,11 @@ export async function createInvoice(data: CreateInvoiceData) {
     },
   });
 
-  revalidatePath('/invoices');
+  revalidatePath(ROUTES.invoices);
+
+  try {
+    domainEvents.emit({ type: 'invoice.created', payload: { invoiceId: invoice.id, workspaceId: workspace.id } });
+  } catch {}
 
   return { success: true, invoice };
 }
@@ -186,6 +193,12 @@ export async function createInvoice(data: CreateInvoiceData) {
  */
 export async function createInvoiceFromQuote(quoteId: string, options?: { dueDays?: number }) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot convert quotes to invoices
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot create invoices' };
+  }
 
   // Get the quote with line items
   const quote = await prisma.quote.findFirst({
@@ -217,6 +230,17 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
 
   const invoiceNumber = await generateInvoiceNumber(workspace.id);
 
+  // Bug #123: Validate discount values from source quote
+  const discountValue = Number(quote.discountValue) || 0;
+  const discountAmount = Number(quote.discountAmount) || 0;
+  const subtotal = Number(quote.subtotal);
+  if (quote.discountType === 'percentage' && (discountValue < 0 || discountValue > 100)) {
+    return { success: false, error: 'Discount percentage must be between 0 and 100' };
+  }
+  if (discountAmount < 0 || discountAmount > subtotal) {
+    return { success: false, error: 'Discount amount cannot be negative or exceed subtotal' };
+  }
+
   // Calculate due date (configurable, default: 30 days from now)
   const dueDays = options?.dueDays ?? 30;
   const dueDate = new Date();
@@ -233,6 +257,7 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
         invoiceNumber,
         title: quote.title || 'Invoice',
         status: 'draft',
+        currency: quote.currency,
         issueDate: new Date(),
         dueDate,
         subtotal: quote.subtotal,
@@ -296,18 +321,29 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
     return newInvoice;
   });
 
-  revalidatePath('/invoices');
-  revalidatePath('/quotes');
-  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath(ROUTES.invoices);
+  revalidatePath(ROUTES.quotes);
+  revalidatePath(ROUTES.quoteDetail(quoteId));
+
+  try {
+    domainEvents.emit({ type: 'invoice.created', payload: { invoiceId: invoice.id, workspaceId: workspace.id } });
+  } catch {}
 
   return { success: true, invoice };
 }
+
 
 /**
  * Update an existing invoice
  */
 export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot update invoices
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot edit invoices' };
+  }
 
   const existingInvoice = await prisma.invoice.findFirst({
     where: {
@@ -332,6 +368,14 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
   let total = Number(existingInvoice.total);
 
   if (data.lineItems) {
+    for (const item of data.lineItems) {
+      if (item.rate < 0) {
+        return { success: false, error: 'Line item rate cannot be negative' };
+      }
+      if (item.quantity < 0) {
+        return { success: false, error: 'Line item quantity cannot be negative' };
+      }
+    }
     const totals = calculateTotals(data.lineItems);
     subtotal = totals.subtotal;
     taxTotal = totals.taxTotal;
@@ -366,10 +410,10 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
               description: item.description || null,
               quantity: item.quantity,
               rate: item.rate,
-              amount: item.quantity * item.rate,
+              amount: Math.round(item.quantity * item.rate * 100) / 100,
               taxRate: item.taxRate || null,
               taxAmount: item.taxRate
-                ? item.quantity * item.rate * (item.taxRate / 100)
+                ? Math.round(item.quantity * item.rate * (item.taxRate / 100) * 100) / 100
                 : 0,
               sortOrder: index,
             })),
@@ -383,8 +427,8 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
     });
   });
 
-  revalidatePath('/invoices');
-  revalidatePath(`/invoices/${invoiceId}`);
+  revalidatePath(ROUTES.invoices);
+  revalidatePath(ROUTES.invoiceDetail(invoiceId));
 
   return { success: true, invoice };
 }
@@ -393,7 +437,7 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
  * Get a single invoice by ID
  */
 export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | null> {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
 
   const invoice = await prisma.invoice.findFirst({
     where: {
@@ -427,6 +471,7 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
     accessToken: invoice.accessToken,
     status: invoice.status as InvoiceStatus,
     title: invoice.title || 'Invoice',
+    currency: invoice.currency || 'USD',
     issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
     dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
     lineItems: invoice.lineItems.map((item: (typeof invoice.lineItems)[number]) => ({
@@ -482,7 +527,7 @@ export async function getInvoices(filters?: {
   clientId?: string;
   search?: string;
 }): Promise<InvoiceListItem[]> {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
 
   const where: Prisma.InvoiceWhereInput = {
     workspaceId: workspace.id,
@@ -528,6 +573,7 @@ export async function getInvoices(filters?: {
       invoiceNumber: invoice.invoiceNumber,
       status: (isOverdue && invoice.status !== 'partial' ? 'overdue' : invoice.status) as InvoiceStatus,
       title: invoice.title || 'Invoice',
+      currency: invoice.currency || 'USD',
       issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
       dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
       total: Number(invoice.total),
@@ -552,6 +598,12 @@ export async function updateInvoiceStatus(
   status: InvoiceStatus
 ) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot change invoice status
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot change invoice status' };
+  }
 
   const invoice = await prisma.invoice.findFirst({
     where: {
@@ -565,6 +617,41 @@ export async function updateInvoiceStatus(
     return { success: false, error: 'Invoice not found' };
   }
 
+  // Validate status transitions
+  const allowedTransitions: Record<string, string[]> = {
+    draft: ['sent', 'voided'],
+    sent: ['viewed', 'paid', 'partial', 'voided', 'draft'],
+    viewed: ['paid', 'partial', 'voided'],
+    partial: ['paid', 'voided'],
+    paid: ['voided'],
+    overdue: ['paid', 'partial', 'voided'],
+    voided: [],
+  };
+
+  const allowed = allowedTransitions[invoice.status];
+  if (allowed && !allowed.includes(status)) {
+    return {
+      success: false,
+      error: `Cannot transition from '${invoice.status}' to '${status}'`,
+    };
+  }
+
+  // Enforce payment constraints for payment-related statuses
+  const amountPaid = Number(invoice.amountPaid);
+  const total = Number(invoice.total);
+  if (status === 'paid' && amountPaid < total) {
+    return {
+      success: false,
+      error: `Cannot mark as paid: amount paid ($${amountPaid.toFixed(2)}) is less than total ($${total.toFixed(2)})`,
+    };
+  }
+  if (status === 'partial' && (amountPaid <= 0 || amountPaid >= total)) {
+    return {
+      success: false,
+      error: 'Cannot mark as partial: amount paid must be between $0 and the total',
+    };
+  }
+
   const updateData: Prisma.InvoiceUpdateInput = {
     status,
   };
@@ -574,6 +661,7 @@ export async function updateInvoiceStatus(
     updateData.sentAt = new Date();
   } else if (status === 'paid') {
     updateData.paidAt = new Date();
+    // Always set amountPaid to total when marking as paid for consistency
     updateData.amountPaid = invoice.total;
     updateData.amountDue = 0;
   } else if (status === 'voided') {
@@ -597,8 +685,16 @@ export async function updateInvoiceStatus(
     }),
   ]);
 
-  revalidatePath('/invoices');
-  revalidatePath(`/invoices/${invoiceId}`);
+  revalidatePath(ROUTES.invoices);
+  revalidatePath(ROUTES.invoiceDetail(invoiceId));
+
+  try {
+    if (status === 'paid') {
+      domainEvents.emit({ type: 'invoice.paid', payload: { invoiceId, amount: Number(invoice.total) } });
+    } else if (status === 'voided') {
+      domainEvents.emit({ type: 'invoice.voided', payload: { invoiceId } });
+    }
+  } catch {}
 
   return { success: true };
 }
@@ -635,6 +731,7 @@ export async function sendInvoice(invoiceId: string) {
         businessName: workspace.name,
         amount: formatCurrency(Number(invoice.total)),
         dueDate: invoice.dueDate,
+        rateLimitKey: workspace.id,
       });
       emailSent = emailResult.success;
       if (!emailResult.success) {
@@ -660,6 +757,12 @@ export async function sendInvoice(invoiceId: string) {
     }).catch(() => {});
   }
 
+  try {
+    if (invoice?.client?.email) {
+      domainEvents.emit({ type: 'invoice.sent', payload: { invoiceId, clientEmail: invoice.client.email } });
+    }
+  } catch {}
+
   return { success: true, emailSent };
 }
 
@@ -667,7 +770,12 @@ export async function sendInvoice(invoiceId: string) {
  * Delete (soft delete) an invoice
  */
 export async function deleteInvoice(invoiceId: string) {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot delete invoices' };
+  }
 
   const invoice = await prisma.invoice.findFirst({
     where: {
@@ -691,7 +799,7 @@ export async function deleteInvoice(invoiceId: string) {
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath('/invoices');
+  revalidatePath(ROUTES.invoices);
 
   return { success: true };
 }
@@ -709,6 +817,12 @@ export async function recordPayment(
   }
 ) {
   const { userId, workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot record payments
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot record payments' };
+  }
 
   const invoice = await prisma.invoice.findFirst({
     where: {
@@ -726,27 +840,53 @@ export async function recordPayment(
     return { success: false, error: 'Cannot record payment for voided invoice' };
   }
 
+  // Bug #125: Prevent payment on already-paid invoices
+  if (invoice.status === 'paid') {
+    return { success: false, error: 'This invoice is already fully paid' };
+  }
+
   if (data.amount <= 0) {
     return { success: false, error: 'Payment amount must be greater than zero' };
   }
 
-  const currentAmountPaid = Number(invoice.amountPaid);
-  const total = Number(invoice.total);
-  const newAmountPaid = currentAmountPaid + data.amount;
-  const newAmountDue = total - newAmountPaid;
-
-  // Determine new status
-  let newStatus: InvoiceStatus;
-  if (newAmountPaid >= total) {
-    newStatus = 'paid';
-  } else if (newAmountPaid > 0) {
-    newStatus = 'partial';
-  } else {
-    newStatus = invoice.status as InvoiceStatus;
+  // Bug #130: Validate amount is a finite number (prevents NaN, Infinity)
+  if (!Number.isFinite(data.amount)) {
+    return { success: false, error: 'Payment amount must be a valid number' };
   }
 
-  await prisma.$transaction([
-    prisma.payment.create({
+  // Bug #125: Prevent overpayment
+  const currentAmountPaid = Number(invoice.amountPaid);
+  const total = Number(invoice.total);
+  const maxPayable = total - currentAmountPaid;
+  if (data.amount > maxPayable) {
+    return { success: false, error: `Payment exceeds remaining balance. Maximum payable: $${maxPayable.toFixed(2)}` };
+  }
+
+  // Bug #67: Use interactive transaction with atomic increment to prevent race conditions
+  await prisma.$transaction(async (tx) => {
+    // Atomically increment amountPaid
+    const updated = await tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        amountPaid: { increment: data.amount },
+      },
+      select: { amountPaid: true },
+    });
+
+    const newAmountPaid = Number(updated.amountPaid);
+    const newAmountDue = total - newAmountPaid;
+
+    // Determine new status
+    let newStatus: InvoiceStatus;
+    if (newAmountPaid >= total) {
+      newStatus = 'paid';
+    } else if (newAmountPaid > 0) {
+      newStatus = 'partial';
+    } else {
+      newStatus = invoice.status as InvoiceStatus;
+    }
+
+    await tx.payment.create({
       data: {
         invoiceId,
         amount: data.amount,
@@ -756,17 +896,18 @@ export async function recordPayment(
         notes: data.notes || null,
         processedAt: new Date(),
       },
-    }),
-    prisma.invoice.update({
+    });
+
+    await tx.invoice.update({
       where: { id: invoiceId },
       data: {
-        amountPaid: newAmountPaid,
         amountDue: Math.max(0, newAmountDue),
         status: newStatus,
         ...(newStatus === 'paid' && { paidAt: new Date() }),
       },
-    }),
-    prisma.invoiceEvent.create({
+    });
+
+    await tx.invoiceEvent.create({
       data: {
         invoiceId,
         eventType: 'payment_recorded',
@@ -779,11 +920,13 @@ export async function recordPayment(
           newAmountDue,
         },
       },
-    }),
-  ]);
+    });
 
-  revalidatePath('/invoices');
-  revalidatePath(`/invoices/${invoiceId}`);
+    return { newAmountPaid, newAmountDue, newStatus };
+  });
+
+  revalidatePath(ROUTES.invoices);
+  revalidatePath(ROUTES.invoiceDetail(invoiceId));
 
   return { success: true };
 }
@@ -792,7 +935,13 @@ export async function recordPayment(
  * Duplicate an invoice
  */
 export async function duplicateInvoice(invoiceId: string) {
-  const { userId, workspace } = await getActiveWorkspace();
+  const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+
+  // Bug #456: RBAC — viewers cannot duplicate invoices
+  if (role === 'viewer') {
+    return { success: false, error: 'Insufficient permissions: viewers cannot duplicate invoices' };
+  }
 
   const original = await prisma.invoice.findFirst({
     where: {
@@ -825,6 +974,8 @@ export async function duplicateInvoice(invoiceId: string) {
       invoiceNumber,
       title: `${original.title || 'Invoice'} (Copy)`,
       status: 'draft',
+      currency: original.currency,
+      accessToken: generateAccessToken(),
       issueDate: new Date(),
       dueDate,
       subtotal: original.subtotal,
@@ -853,7 +1004,7 @@ export async function duplicateInvoice(invoiceId: string) {
     },
   });
 
-  revalidatePath('/invoices');
+  revalidatePath(ROUTES.invoices);
 
   return { success: true, invoiceId: duplicate.id };
 }

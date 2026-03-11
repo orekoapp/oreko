@@ -46,7 +46,7 @@ test.describe('Issue #6 - Session Persistence Across Tabs', () => {
         try {
           if (await skipButton.first().isVisible({ timeout: 1000 })) {
             await skipButton.first().click();
-            await page.waitForTimeout(500);
+            await page.waitForLoadState('domcontentloaded');
           }
         } catch {
           // Continue

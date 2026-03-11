@@ -20,7 +20,7 @@ const tiers = [
     ],
     cta: 'Get Started',
     ctaVariant: 'outline' as const,
-    href: 'https://github.com/quotecraft/quotecraft',
+    href: 'https://github.com/WisdmLabs/quote-software',
     external: true,
   },
   {

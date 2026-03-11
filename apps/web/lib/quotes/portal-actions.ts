@@ -2,8 +2,10 @@
 
 import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
-import type { QuoteBlock, QuoteDocument } from './types';
+import type { QuoteBlock } from './types';
 import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
+import { computeQuoteDocumentHash } from '@/lib/signing/document-hash';
 
 /**
  * Public quote data for client portal (subset of full quote)
@@ -123,10 +125,26 @@ export async function getQuoteByAccessToken(
       return { success: false, error: 'Quote not found' };
     }
 
+    // Reject access to voided or converted quotes that are no longer actionable
+    if (quote.status === 'declined') {
+      return { success: false, error: 'This quote has been declined' };
+    }
+
     // Check if quote is expired
     const now = new Date();
     const isExpired =
       quote.expirationDate !== null && new Date(quote.expirationDate) < now;
+
+    // Reject access if quote expired more than 30 days ago (grace period for reference)
+    if (isExpired) {
+      const expirationDate = new Date(quote.expirationDate!);
+      const daysSinceExpiry = Math.ceil(
+        (now.getTime() - expirationDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSinceExpiry > 30) {
+        return { success: false, error: 'This quote link has expired' };
+      }
+    }
 
     // Parse settings from JSON
     const settings = quote.settings as Record<string, unknown>;
@@ -261,20 +279,38 @@ export async function acceptQuote(data: {
   signatureData: string;
   signerName: string;
   agreedToTerms: boolean;
-}): Promise<{ success: true } | { success: false; error: string }> {
+}): Promise<{ success: true; depositRequired?: boolean; depositAmount?: number; invoicePayUrl?: string } | { success: false; error: string }> {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
-    // Validate signature
+    // Rate limit by IP to prevent abuse on unauthenticated endpoint
+    const { checkRateLimit } = await import('@/lib/rate-limit');
+    const rateLimitResult = checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
+    if (rateLimitResult.limited) {
+      return { success: false, error: 'Too many attempts. Please try again later.' };
+    }
+
+    // Validate signature - must be a valid base64 PNG data URL from SignaturePad
     if (!data.signatureData || !data.signerName) {
       return { success: false, error: 'Signature is required' };
+    }
+    if (!data.signatureData.startsWith('data:image/png;base64,')) {
+      return { success: false, error: 'Invalid signature format' };
+    }
+    // Ensure signature has sufficient data (not just a blank canvas or single dot)
+    const signatureBase64 = data.signatureData.replace('data:image/png;base64,', '');
+    if (signatureBase64.length < 1000) {
+      return { success: false, error: 'Signature is too simple. Please provide a full signature.' };
+    }
+    if (data.signerName.trim().length < 2) {
+      return { success: false, error: 'Please enter your full name' };
     }
 
     if (!data.agreedToTerms) {
       return { success: false, error: 'You must agree to the terms' };
     }
 
-    // Find the quote
+    // Find the quote with line items for document hash
     const quote = await prisma.quote.findUnique({
       where: { accessToken: data.accessToken },
       select: {
@@ -283,6 +319,20 @@ export async function acceptQuote(data: {
         expirationDate: true,
         settings: true,
         workspaceId: true,
+        subtotal: true,
+        total: true,
+        terms: true,
+        notes: true,
+        lineItems: {
+          select: {
+            name: true,
+            description: true,
+            quantity: true,
+            rate: true,
+            amount: true,
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
     });
 
@@ -300,21 +350,43 @@ export async function acceptQuote(data: {
       return { success: false, error: 'This quote has expired' };
     }
 
+    // Compute document hash for tamper-proofing
+    const signedAt = new Date();
+    const signedAtISO = signedAt.toISOString();
+    const documentHash = computeQuoteDocumentHash({
+      quoteId: quote.id,
+      lineItems: quote.lineItems.map((item) => ({
+        name: item.name,
+        description: item.description,
+        quantity: Number(item.quantity),
+        rate: Number(item.rate),
+        amount: Number(item.amount),
+      })),
+      terms: quote.terms || '',
+      notes: quote.notes || '',
+      subtotal: Number(quote.subtotal),
+      total: Number(quote.total),
+      signerName: data.signerName,
+      signedAt: signedAtISO,
+    });
+
     // Update quote with acceptance
     await prisma.$transaction([
       prisma.quote.update({
         where: { accessToken: data.accessToken },
         data: {
           status: 'accepted',
-          acceptedAt: new Date(),
-          signedAt: new Date(),
+          acceptedAt: signedAt,
+          signedAt,
           signatureData: {
             type: 'drawn',
+            encrypted: false,
             data: data.signatureData,
             signerName: data.signerName,
-            signedAt: new Date().toISOString(),
+            signedAt: signedAtISO,
             ipAddress,
             userAgent,
+            documentHash,
           },
         },
       }),
@@ -325,6 +397,9 @@ export async function acceptQuote(data: {
           actorType: 'client',
           metadata: {
             signerName: data.signerName,
+            termsSnapshot: quote.terms || '',
+            notesSnapshot: quote.notes || '',
+            documentHash,
           },
           ipAddress,
           userAgent,
@@ -343,8 +418,56 @@ export async function acceptQuote(data: {
       link: `/quotes/${quote.id}`,
     }).catch(() => {});
 
-    // TODO: Auto-create invoice if setting enabled
-    // TODO: Process deposit payment if required
+    // Auto-create invoice if setting enabled
+    const quoteSettings = (quote.settings as Record<string, unknown>) ?? {};
+    const shouldAutoInvoice = (quoteSettings.autoConvertToInvoice as boolean) ?? false;
+
+    let autoInvoice: { id: string; accessToken: string } | undefined;
+    if (shouldAutoInvoice) {
+      try {
+        const invoiceResult = await createInvoiceFromQuoteInternal(quote.id, quote.workspaceId);
+        if (invoiceResult.success && invoiceResult.invoice) {
+          autoInvoice = invoiceResult.invoice;
+        }
+      } catch (error) {
+        // Log but don't fail acceptance - invoice can be created manually
+        console.error('Auto-invoice creation failed:', error);
+      }
+    }
+
+    // Process deposit payment if required (and invoice was created)
+    const depositRequired = (quoteSettings.depositRequired as boolean) ?? false;
+    if (depositRequired && autoInvoice) {
+      const depositType = (quoteSettings.depositType as 'percentage' | 'fixed') ?? 'percentage';
+      const depositValue = (quoteSettings.depositValue as number) ?? 50;
+      const total = Number(quote.total);
+      const depositAmount = depositType === 'percentage'
+        ? Math.round(total * (depositValue / 100) * 100) / 100
+        : Math.min(depositValue, total);
+
+      try {
+        await prisma.paymentSchedule.create({
+          data: {
+            invoiceId: autoInvoice.id,
+            type: 'deposit',
+            description: `Deposit (${depositType === 'percentage' ? `${depositValue}%` : `$${depositValue}`})`,
+            amount: depositAmount,
+            percentage: depositType === 'percentage' ? depositValue : null,
+            dueDate: new Date(),
+            status: 'pending',
+          },
+        });
+      } catch (error) {
+        console.error('Deposit schedule creation failed:', error);
+      }
+
+      return {
+        success: true,
+        depositRequired: true,
+        depositAmount,
+        invoicePayUrl: `/i/${autoInvoice.accessToken}`,
+      };
+    }
 
     return { success: true };
   } catch (error) {
@@ -364,6 +487,13 @@ export async function declineQuote(data: {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
+    // Rate limit by IP to prevent abuse on unauthenticated endpoint
+    const { checkRateLimit } = await import('@/lib/rate-limit');
+    const rateLimitResult = checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
+    if (rateLimitResult.limited) {
+      return { success: false, error: 'Too many attempts. Please try again later.' };
+    }
+
     // Find the quote
     const quote = await prisma.quote.findUnique({
       where: { accessToken: data.accessToken },
@@ -372,11 +502,17 @@ export async function declineQuote(data: {
         status: true,
         workspaceId: true,
         quoteNumber: true,
+        expirationDate: true,
       },
     });
 
     if (!quote) {
       return { success: false, error: 'Quote not found' };
+    }
+
+    // Bug #20: Check if quote has expired
+    if (quote.expirationDate && new Date(quote.expirationDate) < new Date()) {
+      return { success: false, error: 'This quote has expired' };
     }
 
     // Check if quote can be declined

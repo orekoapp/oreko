@@ -13,15 +13,12 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
     ports:
       - '3000:3000'
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
@@ -50,20 +47,6 @@ services:
       - ./backups:/backups
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-quotecraft}']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis for caching and sessions
-  redis:
-    image: redis:7-alpine
-    container_name: quotecraft-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -100,7 +83,6 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
   traefik_letsencrypt:
 
 networks:

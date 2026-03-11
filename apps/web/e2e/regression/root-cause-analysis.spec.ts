@@ -156,8 +156,12 @@ test.describe('RCA-003: Theme Toggle is Toggle Not Dropdown', () => {
       // Single click should toggle
       await themeToggle.click();
 
-      // Wait for theme change
-      await page.waitForTimeout(500);
+      // Wait for theme class to change on html element
+      if (wasDark) {
+        await expect(page.locator('html:not(.dark)')).toBeAttached({ timeout: 2000 }).catch(() => {});
+      } else {
+        await expect(page.locator('html.dark')).toBeAttached({ timeout: 2000 }).catch(() => {});
+      }
 
       // Theme should have changed
       const newHtml = await page.locator('html').getAttribute('class');
@@ -196,9 +200,6 @@ test.describe('RCA-004: Quote Builder Data Persistence', () => {
     await page.goto('/quotes/new');
     await page.waitForLoadState('networkidle');
 
-    // Wait for builder to initialize
-    await page.waitForTimeout(1000);
-
     // Find a text input or editable area and add content
     const editor = page.locator('[contenteditable="true"]').first();
 
@@ -207,13 +208,9 @@ test.describe('RCA-004: Quote Builder Data Persistence', () => {
       const testContent = `Persistence Test ${Date.now()}`;
       await editor.fill(testContent);
 
-      // Wait for state to persist
-      await page.waitForTimeout(1000);
-
       // Refresh page
       await page.reload();
       await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(1000);
 
       // Content should still be there
       const pageContent = await page.content();
@@ -228,7 +225,6 @@ test.describe('RCA-004: Quote Builder Data Persistence', () => {
   test('quote builder should save to server (not just console.log)', async ({ page }) => {
     await page.goto('/quotes/new');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
     // Find and click save button
     const saveButton = page.getByRole('button', { name: /save/i });
@@ -248,7 +244,7 @@ test.describe('RCA-004: Quote Builder Data Persistence', () => {
       await saveButton.click();
 
       // Wait for potential network request
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
 
       // Either a network request was made OR URL changed (redirected to saved quote)
       const urlChanged = !page.url().includes('/new');
@@ -282,7 +278,7 @@ test.describe('RCA-005: Save and Send Buttons Functionality', () => {
       });
 
       await saveButton.click();
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
 
       // Should either: make network request, show success toast, or redirect
       const hasRequest = requests.length > 0;
@@ -389,9 +385,6 @@ test.describe('RCA-007: Quote List to Detail Navigation', () => {
     await page.goto('/quotes');
     await page.waitForLoadState('networkidle');
 
-    // Wait a bit for dynamic content
-    await page.waitForTimeout(1000);
-
     const quoteLinks = page.locator('a[href^="/quotes/"]').filter({ hasNotText: /new/i });
     const count = await quoteLinks.count();
 
@@ -404,7 +397,6 @@ test.describe('RCA-007: Quote List to Detail Navigation', () => {
       if (href && href !== '/quotes' && href.match(/\/quotes\/[a-zA-Z0-9-]+/)) {
         await firstQuote.click();
         await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(500);
 
         // Should NOT show 404
         const notFoundText = page.getByText(/page not found|404|not found/i);
@@ -483,7 +475,6 @@ test.describe('RCA-008: All Block Types Render Correctly', () => {
 
       if (await blockButton.isVisible()) {
         await blockButton.click();
-        await page.waitForTimeout(500);
 
         // Should not show error
         const unknownBlockError = page.getByText(/unknown block type/i);
@@ -510,7 +501,7 @@ test.describe('RCA-009: Form Validation Errors Display Correctly', () => {
 
     if (await submitButton.isVisible()) {
       await submitButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('networkidle');
 
       // Should show validation errors near fields, not just generic toast
       const fieldErrors = page.locator('[role="alert"], .error, [class*="error"], [aria-invalid="true"]');
@@ -537,7 +528,7 @@ test.describe('RCA-009: Form Validation Errors Display Correctly', () => {
 
     if (await saveButton.isVisible()) {
       await saveButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('networkidle');
 
       // Should either:
       // 1. Show validation errors
@@ -615,7 +606,6 @@ test.describe('RCA-011: Modal Overlay CSS', () => {
 
     if (await inviteButton.isVisible()) {
       await inviteButton.click();
-      await page.waitForTimeout(500);
 
       // Modal should be visible
       const modal = page.locator('[role="dialog"], [class*="modal"]');
@@ -652,7 +642,8 @@ test.describe('RCA-012: Client Edit Page Scroll', () => {
 
       // Scroll down
       await page.mouse.wheel(0, 300);
-      await page.waitForTimeout(300);
+      // Wait for scroll to settle
+      await page.waitForLoadState('domcontentloaded');
 
       // Check layout hasn't corrupted
       const afterScrollBox = await form.boundingBox();

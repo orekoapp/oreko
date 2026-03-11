@@ -184,7 +184,7 @@ describe('InvoiceList', () => {
         createMockInvoice({ status: 'draft' }),
       ];
 
-      const paidInvoices = invoices.filter((inv) => inv.status === 'paid');
+      const paidInvoices = invoices.filter((inv) => inv.status === ('paid' as string));
       expect(paidInvoices.length).toBe(0);
       // Should show "No paid invoices" message
     });
@@ -205,7 +205,7 @@ describe('InvoiceList', () => {
 
     it('send action is available for draft invoices', () => {
       const invoice = createMockInvoice({ status: 'draft' });
-      const canSend = invoice.status === 'draft';
+      const canSend = (invoice.status as string) === 'draft';
 
       expect(canSend).toBe(true);
     });
@@ -221,8 +221,8 @@ describe('InvoiceList', () => {
       const draftInvoice = createMockInvoice({ status: 'draft' });
       const sentInvoice = createMockInvoice({ status: 'sent' });
 
-      const canDeleteDraft = draftInvoice.status === 'draft';
-      const canDeleteSent = sentInvoice.status === 'draft';
+      const canDeleteDraft = (draftInvoice.status as string) === 'draft';
+      const canDeleteSent = (sentInvoice.status as string) === 'draft';
 
       expect(canDeleteDraft).toBe(true);
       expect(canDeleteSent).toBe(false);

@@ -76,7 +76,6 @@ test.describe('Analytics Dashboard', () => {
         const tooltip = page.locator('.recharts-tooltip-wrapper, [role="tooltip"]');
         // Note: Tooltip may or may not be visible depending on data points
         // This test just verifies no error occurs on hover
-        await page.waitForTimeout(300);
       }
     });
 
@@ -165,7 +164,6 @@ test.describe('Analytics Dashboard', () => {
             const tab = page.getByRole('tab', { name: new RegExp(tabName, 'i') });
             if (await tab.isVisible().catch(() => false)) {
               await tab.click();
-              await page.waitForTimeout(200);
             }
           }
         }
@@ -187,7 +185,6 @@ test.describe('Analytics Dashboard', () => {
         const sevenDayBtn = page.getByRole('button', { name: /7d|7 days/i });
         if (await sevenDayBtn.isVisible().catch(() => false)) {
           await sevenDayBtn.click();
-          await page.waitForTimeout(500);
 
           // URL should update with filter param
           const url = page.url();
@@ -476,7 +473,6 @@ test.describe('Analytics Dashboard', () => {
       const revenueTab = page.getByRole('tab', { name: /revenue/i });
       if (await revenueTab.isVisible().catch(() => false)) {
         await revenueTab.click();
-        await page.waitForTimeout(500); // Wait for tab content to load
       }
 
       // Look for monthly comparison
@@ -507,7 +503,6 @@ test.describe('Analytics Dashboard', () => {
         if (await toggle.isVisible().catch(() => false)) {
           foundToggle = true;
           await toggle.click();
-          await page.waitForTimeout(300);
           break;
         }
       }
@@ -590,7 +585,6 @@ test.describe('Analytics Dashboard', () => {
 
       if (await preset.isVisible().catch(() => false)) {
         await preset.click();
-        await page.waitForTimeout(500);
 
         // URL may update with query param
         const newUrl = page.url();

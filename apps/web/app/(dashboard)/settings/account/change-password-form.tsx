@@ -11,16 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { changePassword } from '@/lib/auth/actions';
-
-// Base password validation
-const passwordValidation = z
-  .string()
-  .min(8, 'Password must be at least 8 characters')
-  .max(128, 'Password must be less than 128 characters')
-  .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/,
-    'Password must contain at least one uppercase letter, one lowercase letter, and one number'
-  );
+import { passwordSchema as passwordValidation } from '@/lib/validations/auth';
 
 // Schema for changing password (requires current password)
 const changePasswordSchema = z

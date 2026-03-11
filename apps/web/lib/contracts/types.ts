@@ -73,6 +73,7 @@ export interface ContractInstanceDetail {
   contractName: string;
   clientId: string;
   clientName: string;
+  clientEmail: string | null;
   quoteId: string | null;
   quoteName: string | null;
   workspaceId: string;

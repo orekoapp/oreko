@@ -36,7 +36,8 @@ test.describe('Offline & Network', () => {
 
       // Go offline then online
       await context.setOffline(true);
-      await page.waitForTimeout(1000);
+      // Wait for offline state to propagate to the page
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
       await context.setOffline(false);
 
       // Should show reconnected message
@@ -112,12 +113,11 @@ test.describe('Offline & Network', () => {
 
       // Briefly go offline
       await context.setOffline(true);
-      await page.waitForTimeout(500);
+      // Wait for offline state to propagate
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
       await context.setOffline(false);
 
       // Should recover and load data
-      await page.waitForTimeout(2000);
-
       const content = page.locator('#main-content');
       await expect(content).toBeVisible();
     });
@@ -149,13 +149,11 @@ test.describe('Offline & Network', () => {
         await searchInput.fill('test');
       }
 
-      await page.waitForTimeout(1000);
+      // Wait for offline state to propagate
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
 
       // Come back online
       await context.setOffline(false);
-
-      // Should auto-retry the request
-      await page.waitForTimeout(2000);
     });
   });
 
@@ -262,9 +260,6 @@ test.describe('Offline & Network', () => {
 
       await context.setOffline(true);
 
-      // Make some changes (if possible)
-      await page.waitForTimeout(1000);
-
       await context.setOffline(false);
 
       // Should sync
@@ -278,7 +273,8 @@ test.describe('Offline & Network', () => {
       await page.goto('/dashboard');
 
       await context.setOffline(true);
-      await page.waitForTimeout(500);
+      // Wait for offline state to propagate
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
       await context.setOffline(false);
 
       // Sync indicator
@@ -380,7 +376,8 @@ test.describe('Offline & Network', () => {
       const indicator = page.locator('[class*="connection"]');
 
       await context.setOffline(true);
-      await page.waitForTimeout(500);
+      // Wait for offline state to propagate
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
 
       // Indicator should reflect offline state
       if (await indicator.count() > 0) {

@@ -1,4 +1,18 @@
 import { Resend } from 'resend';
+import { checkRateLimit } from '@/lib/rate-limit';
+
+// Email rate limit: 20 emails per hour per key (workspace or IP)
+const EMAIL_RATE_LIMIT = { limit: 20, windowMs: 60 * 60 * 1000 };
+
+// HTML escape to prevent XSS in email templates
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // Email configuration types
 export interface EmailConfig {
@@ -61,8 +75,23 @@ export function isEmailEnabled(): boolean {
   return getEmailClient() !== null;
 }
 
-// Send email
-export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
+// Send email (with optional rate limiting by key)
+export async function sendEmail(
+  options: EmailOptions,
+  rateLimitKey?: string
+): Promise<EmailResult> {
+  // Apply rate limit if a key is provided (e.g., workspaceId)
+  if (rateLimitKey) {
+    const rl = checkRateLimit(`email:${rateLimitKey}`, EMAIL_RATE_LIMIT);
+    if (rl.limited) {
+      console.warn(`Email rate limited for key ${rateLimitKey}`);
+      return {
+        success: false,
+        error: 'Email rate limit exceeded. Please try again later.',
+      };
+    }
+  }
+
   const client = getEmailClient();
 
   if (!client) {
@@ -76,10 +105,13 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   const config = getDefaultConfig();
 
   try {
+    // Strip newlines from subject to prevent email header injection
+    const safeSubject = options.subject.replace(/[\r\n]+/g, ' ').trim();
+
     const { data, error } = await client.emails.send({
       from: config.from,
       to: Array.isArray(options.to) ? options.to : [options.to],
-      subject: options.subject,
+      subject: safeSubject,
       html: options.html || options.text || 'This email has no content',
       replyTo: options.replyTo ?? config.replyTo,
       cc: options.cc,
@@ -119,15 +151,21 @@ export async function sendQuoteSentEmail(params: {
   businessName: string;
   validUntil?: Date;
   message?: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, clientName, quoteName, quoteUrl, businessName, validUntil, message } = params;
+  const { to, clientName, quoteName, quoteUrl, businessName, validUntil, message, rateLimitKey } = params;
+
+  const safeBusinessName = escapeHtml(businessName);
+  const safeClientName = escapeHtml(clientName);
+  const safeQuoteName = escapeHtml(quoteName);
+  const safeMessage = message ? escapeHtml(message) : '';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>New Quote from ${businessName}</h2>
-      <p>Hi ${clientName},</p>
-      <p>${businessName} has sent you a quote: <strong>${quoteName}</strong></p>
-      ${message ? `<p>${message}</p>` : ''}
+      <h2>New Quote from ${safeBusinessName}</h2>
+      <p>Hi ${safeClientName},</p>
+      <p>${safeBusinessName} has sent you a quote: <strong>${safeQuoteName}</strong></p>
+      ${safeMessage ? `<p>${safeMessage}</p>` : ''}
       ${validUntil ? `<p>This quote is valid until ${validUntil.toLocaleDateString()}.</p>` : ''}
       <p style="margin: 24px 0;">
         <a href="${quoteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
@@ -137,7 +175,7 @@ export async function sendQuoteSentEmail(params: {
       <p>Or copy this link: ${quoteUrl}</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${businessName}
+        Sent via QuoteCraft on behalf of ${safeBusinessName}
       </p>
     </div>
   `;
@@ -149,7 +187,7 @@ export async function sendQuoteSentEmail(params: {
     tags: [
       { name: 'type', value: 'quote_sent' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 export async function sendInvoiceSentEmail(params: {
@@ -161,20 +199,27 @@ export async function sendInvoiceSentEmail(params: {
   amount: string;
   dueDate: Date;
   message?: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, clientName, invoiceNumber, invoiceUrl, businessName, amount, dueDate, message } = params;
+  const { to, clientName, invoiceNumber, invoiceUrl, businessName, amount, dueDate, message, rateLimitKey } = params;
+
+  const safeBusinessName = escapeHtml(businessName);
+  const safeClientName = escapeHtml(clientName);
+  const safeInvoiceNumber = escapeHtml(invoiceNumber);
+  const safeAmount = escapeHtml(amount);
+  const safeMessage = message ? escapeHtml(message) : '';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Invoice from ${businessName}</h2>
-      <p>Hi ${clientName},</p>
-      <p>${businessName} has sent you an invoice:</p>
+      <h2>Invoice from ${safeBusinessName}</h2>
+      <p>Hi ${safeClientName},</p>
+      <p>${safeBusinessName} has sent you an invoice:</p>
       <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
-        <p style="margin: 0;"><strong>Invoice:</strong> ${invoiceNumber}</p>
-        <p style="margin: 8px 0 0;"><strong>Amount:</strong> ${amount}</p>
+        <p style="margin: 0;"><strong>Invoice:</strong> ${safeInvoiceNumber}</p>
+        <p style="margin: 8px 0 0;"><strong>Amount:</strong> ${safeAmount}</p>
         <p style="margin: 8px 0 0;"><strong>Due Date:</strong> ${dueDate.toLocaleDateString()}</p>
       </div>
-      ${message ? `<p>${message}</p>` : ''}
+      ${safeMessage ? `<p>${safeMessage}</p>` : ''}
       <p style="margin: 24px 0;">
         <a href="${invoiceUrl}" style="background-color: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           View & Pay Invoice
@@ -183,7 +228,7 @@ export async function sendInvoiceSentEmail(params: {
       <p>Or copy this link: ${invoiceUrl}</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${businessName}
+        Sent via QuoteCraft on behalf of ${safeBusinessName}
       </p>
     </div>
   `;
@@ -195,7 +240,7 @@ export async function sendInvoiceSentEmail(params: {
     tags: [
       { name: 'type', value: 'invoice_sent' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 export async function sendPaymentReceivedEmail(params: {
@@ -205,14 +250,20 @@ export async function sendPaymentReceivedEmail(params: {
   businessName: string;
   amount: string;
   receiptUrl?: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, clientName, invoiceNumber, businessName, amount, receiptUrl } = params;
+  const { to, clientName, invoiceNumber, businessName, amount, receiptUrl, rateLimitKey } = params;
+
+  const safeClientName = escapeHtml(clientName);
+  const safeInvoiceNumber = escapeHtml(invoiceNumber);
+  const safeAmount = escapeHtml(amount);
+  const safeBusinessName = escapeHtml(businessName);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2>Payment Received</h2>
-      <p>Hi ${clientName},</p>
-      <p>Thank you! We have received your payment of <strong>${amount}</strong> for invoice ${invoiceNumber}.</p>
+      <p>Hi ${safeClientName},</p>
+      <p>Thank you! We have received your payment of <strong>${safeAmount}</strong> for invoice ${safeInvoiceNumber}.</p>
       ${receiptUrl ? `
         <p style="margin: 24px 0;">
           <a href="${receiptUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
@@ -222,7 +273,7 @@ export async function sendPaymentReceivedEmail(params: {
       ` : ''}
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${businessName}
+        Sent via QuoteCraft on behalf of ${safeBusinessName}
       </p>
     </div>
   `;
@@ -234,7 +285,7 @@ export async function sendPaymentReceivedEmail(params: {
     tags: [
       { name: 'type', value: 'payment_received' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 export async function sendQuoteAcceptedEmail(params: {
@@ -243,16 +294,21 @@ export async function sendQuoteAcceptedEmail(params: {
   clientName: string;
   amount: string;
   quoteUrl: string;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, quoteName, clientName, amount, quoteUrl } = params;
+  const { to, quoteName, clientName, amount, quoteUrl, rateLimitKey } = params;
+
+  const safeClientName = escapeHtml(clientName);
+  const safeQuoteName = escapeHtml(quoteName);
+  const safeAmount = escapeHtml(amount);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #10B981;">Quote Accepted!</h2>
-      <p>Great news! <strong>${clientName}</strong> has accepted your quote.</p>
+      <p>Great news! <strong>${safeClientName}</strong> has accepted your quote.</p>
       <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #10B981;">
-        <p style="margin: 0;"><strong>Quote:</strong> ${quoteName}</p>
-        <p style="margin: 8px 0 0;"><strong>Amount:</strong> ${amount}</p>
+        <p style="margin: 0;"><strong>Quote:</strong> ${safeQuoteName}</p>
+        <p style="margin: 8px 0 0;"><strong>Amount:</strong> ${safeAmount}</p>
       </div>
       <p style="margin: 24px 0;">
         <a href="${quoteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
@@ -273,7 +329,7 @@ export async function sendQuoteAcceptedEmail(params: {
     tags: [
       { name: 'type', value: 'quote_accepted' },
     ],
-  });
+  }, rateLimitKey);
 }
 
 export async function sendInvoiceReminderEmail(params: {
@@ -285,8 +341,14 @@ export async function sendInvoiceReminderEmail(params: {
   amount: string;
   dueDate: Date;
   daysOverdue?: number;
+  rateLimitKey?: string;
 }): Promise<EmailResult> {
-  const { to, clientName, invoiceNumber, invoiceUrl, businessName, amount, dueDate, daysOverdue } = params;
+  const { to, clientName, invoiceNumber, invoiceUrl, businessName, amount, dueDate, daysOverdue, rateLimitKey } = params;
+
+  const safeClientName = escapeHtml(clientName);
+  const safeInvoiceNumber = escapeHtml(invoiceNumber);
+  const safeBusinessName = escapeHtml(businessName);
+  const safeAmount = escapeHtml(amount);
 
   const isOverdue = daysOverdue !== undefined && daysOverdue > 0;
   const subject = isOverdue
@@ -298,16 +360,16 @@ export async function sendInvoiceReminderEmail(params: {
       <h2 style="color: ${isOverdue ? '#EF4444' : '#F59E0B'};">
         ${isOverdue ? 'Invoice Overdue' : 'Invoice Reminder'}
       </h2>
-      <p>Hi ${clientName},</p>
+      <p>Hi ${safeClientName},</p>
       <p>
         ${isOverdue
-          ? `This is a reminder that invoice ${invoiceNumber} is now ${daysOverdue} days past due.`
-          : `This is a friendly reminder that invoice ${invoiceNumber} is due on ${dueDate.toLocaleDateString()}.`
+          ? `This is a reminder that invoice ${safeInvoiceNumber} is now ${daysOverdue} days past due.`
+          : `This is a friendly reminder that invoice ${safeInvoiceNumber} is due on ${dueDate.toLocaleDateString()}.`
         }
       </p>
       <div style="background: ${isOverdue ? '#fef2f2' : '#fffbeb'}; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid ${isOverdue ? '#EF4444' : '#F59E0B'};">
-        <p style="margin: 0;"><strong>Invoice:</strong> ${invoiceNumber}</p>
-        <p style="margin: 8px 0 0;"><strong>Amount:</strong> ${amount}</p>
+        <p style="margin: 0;"><strong>Invoice:</strong> ${safeInvoiceNumber}</p>
+        <p style="margin: 8px 0 0;"><strong>Amount:</strong> ${safeAmount}</p>
         <p style="margin: 8px 0 0;"><strong>Due Date:</strong> ${dueDate.toLocaleDateString()}</p>
       </div>
       <p style="margin: 24px 0;">
@@ -317,7 +379,7 @@ export async function sendInvoiceReminderEmail(params: {
       </p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${businessName}
+        Sent via QuoteCraft on behalf of ${safeBusinessName}
       </p>
     </div>
   `;
@@ -329,5 +391,86 @@ export async function sendInvoiceReminderEmail(params: {
     tags: [
       { name: 'type', value: isOverdue ? 'invoice_overdue' : 'invoice_reminder' },
     ],
+  }, rateLimitKey);
+}
+
+/**
+ * Send workspace invitation email
+ */
+export async function sendInvitationEmail(params: {
+  to: string;
+  workspaceName: string;
+  inviterName: string;
+  role: string;
+  inviteUrl: string;
+  rateLimitKey?: string;
+}): Promise<EmailResult> {
+  const { to, workspaceName, inviterName, role, inviteUrl, rateLimitKey } = params;
+
+  const safeInviterName = escapeHtml(inviterName);
+  const safeWorkspaceName = escapeHtml(workspaceName);
+  const safeRole = escapeHtml(role);
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #3B82F6;">You've been invited!</h2>
+      <p>${safeInviterName} has invited you to join <strong>${safeWorkspaceName}</strong> as a <strong>${safeRole}</strong>.</p>
+      <p>QuoteCraft is a visual quote and invoice management tool that helps teams create professional quotes and invoices.</p>
+      <p style="margin: 24px 0;">
+        <a href="${inviteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          Accept Invitation
+        </a>
+      </p>
+      <p style="color: #666; font-size: 14px;">This invitation expires in 7 days. If you don't have an account yet, you'll be able to create one.</p>
+      <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+      <p style="color: #666; font-size: 14px;">
+        Sent via QuoteCraft
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to,
+    subject: `You've been invited to ${workspaceName} - QuoteCraft`,
+    html,
+    tags: [{ name: 'type', value: 'workspace_invitation' }],
+  }, rateLimitKey);
+}
+
+/**
+ * Send email verification email
+ */
+export async function sendVerificationEmail(params: {
+  to: string;
+  name: string;
+  verifyUrl: string;
+}): Promise<EmailResult> {
+  const { to, name, verifyUrl } = params;
+
+  const safeName = escapeHtml(name);
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #3B82F6;">Verify your email</h2>
+      <p>Hi ${safeName},</p>
+      <p>Thanks for creating an account with QuoteCraft! Please click the button below to verify your email address:</p>
+      <p style="margin: 24px 0;">
+        <a href="${verifyUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          Verify Email
+        </a>
+      </p>
+      <p style="color: #666; font-size: 14px;">This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.</p>
+      <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+      <p style="color: #666; font-size: 14px;">
+        Sent via QuoteCraft
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to,
+    subject: 'Verify your email - QuoteCraft',
+    html,
+    tags: [{ name: 'type', value: 'email_verification' }],
   });
 }

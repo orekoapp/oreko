@@ -66,6 +66,7 @@ export interface PublicInvoiceData {
     processedAt: string | null;
   }>;
   canPay: boolean;
+  paymentConfigured: boolean;
 }
 
 /**
@@ -108,6 +109,7 @@ export async function getInvoiceByAccessToken(
           include: {
             businessProfile: true,
             brandingSettings: true,
+            paymentSettings: { select: { stripeOnboardingComplete: true } },
           },
         },
         lineItems: {
@@ -122,6 +124,30 @@ export async function getInvoiceByAccessToken(
 
     if (!invoice) {
       return { success: false, error: 'Invoice not found' };
+    }
+
+    // Bug #22: Reject access to invoices created more than 365 days ago (general expiration)
+    const daysSinceCreated = Math.ceil(
+      (new Date().getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysSinceCreated > 365 && invoice.status !== 'sent' && invoice.status !== 'viewed') {
+      return { success: false, error: 'This invoice link has expired' };
+    }
+
+    // Reject access to voided invoices
+    if (invoice.status === 'voided') {
+      return { success: false, error: 'This invoice has been voided' };
+    }
+
+    // Reject access to paid invoices older than 90 days (grace period for receipts)
+    if (invoice.status === 'paid') {
+      const paidAt = invoice.paidAt || invoice.updatedAt;
+      const daysSincePaid = Math.ceil(
+        (new Date().getTime() - new Date(paidAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSincePaid > 90) {
+        return { success: false, error: 'This invoice link has expired' };
+      }
     }
 
     // Calculate overdue status
@@ -141,11 +167,13 @@ export async function getInvoiceByAccessToken(
     // Voided invoices owe nothing regardless of DB value
     const amountDue = invoice.status === 'voided' ? 0 : Number(invoice.amountDue);
 
-    // Determine if payment is possible
+    // Determine if online payment is possible
+    const paymentConfigured = !!invoice.workspace.paymentSettings?.stripeOnboardingComplete;
     const canPay =
       invoice.status !== 'paid' &&
       invoice.status !== 'voided' &&
-      amountDue > 0;
+      amountDue > 0 &&
+      paymentConfigured;
 
     const publicInvoice: PublicInvoiceData = {
       id: invoice.id,
@@ -207,6 +235,7 @@ export async function getInvoiceByAccessToken(
         processedAt: payment.processedAt?.toISOString() || null,
       })),
       canPay,
+      paymentConfigured,
     };
 
     return { success: true, invoice: publicInvoice };

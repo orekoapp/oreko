@@ -1,34 +1,69 @@
 import { NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { z } from 'zod';
 import { prisma } from '@quotecraft/database';
 import { hashPassword } from '@/lib/auth/credentials';
+import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
 import { passwordSchema } from '@/lib/validations/auth';
+import { validateRequestOrigin } from '@/lib/csrf';
 
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: passwordSchema,
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the terms of service' }),
+  }),
 });
+
+// Reserved slugs that conflict with system routes
+const RESERVED_SLUGS = new Set([
+  'api', 'admin', 'auth', 'login', 'register', 'settings', 'dashboard',
+  'onboarding', 'quotes', 'invoices', 'clients', 'projects', 'analytics',
+  'help', 'templates', 'contracts', 'rate-cards', 'q', 'i', 'p', 'c',
+  'invite', 'verify-email', 'reset-password', 'forgot-password',
+  'public', 'static', 'assets', '_next',
+]);
 
 // Generate a unique workspace slug from name
 function generateSlug(name: string): string {
-  const baseSlug = name
+  let baseSlug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  // Ensure slug doesn't collide with reserved routes
+  if (RESERVED_SLUGS.has(baseSlug)) {
+    baseSlug = `ws-${baseSlug}`;
+  }
+  const randomSuffix = crypto.randomUUID().substring(0, 8);
   return `${baseSlug}-${randomSuffix}`;
 }
 
 export async function POST(request: Request) {
   try {
+    // Bug #14: CSRF origin validation
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimitResult = checkRateLimit(`register:${clientIp}`, strictRateLimitOptions);
+    if (rateLimitResult.limited) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const body = await request.json();
-    const { name, email, password } = registerSchema.parse(body);
-    const normalizedEmail = email.toLowerCase();
+    const parsed = registerSchema.parse(body);
+    const name = parsed.name;
+    const email = parsed.email.toLowerCase();
+    const password = parsed.password;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
+      where: { email },
     });
 
     if (existingUser) {
@@ -47,7 +82,7 @@ export async function POST(request: Request) {
       const user = await tx.user.create({
         data: {
           name,
-          email: normalizedEmail,
+          email,
           passwordHash,
         },
         select: {
@@ -83,7 +118,41 @@ export async function POST(request: Request) {
       return user;
     });
 
-    return NextResponse.json({ user: result }, { status: 201 });
+    // Create email verification token and send email
+    try {
+      const rawToken = crypto.randomUUID();
+      const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+      const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await prisma.emailVerificationToken.create({
+        data: {
+          userId: result.id,
+          token: tokenHash, // Store hash, not raw token
+          expiresAt: tokenExpiresAt,
+        },
+      });
+
+      const { sendVerificationEmail } = await import('@/lib/services/email');
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const verifyUrl = `${baseUrl}/verify-email/confirm?token=${rawToken}`; // Email gets raw token
+      await sendVerificationEmail({ to: email, name, verifyUrl });
+    } catch (emailError) {
+      // Don't fail registration if verification email fails
+      console.error('Failed to send verification email:', emailError);
+    }
+
+    // Bug #72: Audit log for new account creation
+    console.info('[AUDIT] New account registered:', {
+      userId: result.id,
+      email: result.email,
+      ip: clientIp,
+      timestamp: new Date().toISOString(),
+    });
+
+    return NextResponse.json({
+      user: result,
+      message: 'Account created. Please check your email to verify your account.',
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

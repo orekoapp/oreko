@@ -164,7 +164,6 @@ test.describe('Error Boundaries', () => {
 
       // Error should clear (may need to blur or wait)
       await emailInput.blur();
-      await page.waitForTimeout(500);
     });
   });
 

@@ -1,414 +1,442 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock modules before imports
-vi.mock('@/lib/auth', () => ({
-  auth: vi.fn(),
-}));
+// Use vi.hoisted to define mock objects before vi.mock hoists
+const { mockPrisma, mockGetCurrentUserWorkspace } = vi.hoisted(() => {
+  const mockPrisma: Record<string, any> = {
+    workspace: { findUnique: vi.fn() },
+    quote: {
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
+    },
+    quoteLineItem: { deleteMany: vi.fn() },
+    quoteEvent: { create: vi.fn(), updateMany: vi.fn() },
+    invoice: { findFirst: vi.fn() },
+    numberSequence: { upsert: vi.fn() },
+    client: { findFirst: vi.fn() },
+    $transaction: vi.fn((fn: any) => fn(mockPrisma)),
+  };
+  const mockGetCurrentUserWorkspace = vi.fn();
+  return { mockPrisma, mockGetCurrentUserWorkspace };
+});
 
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}));
-
-vi.mock('next/navigation', () => ({
-  redirect: vi.fn(),
-}));
-
-// Import mocked modules - must be after vi.mock calls
-import { auth } from '@/lib/auth';
-import { revalidatePath } from 'next/cache';
-
-// Mock Prisma
-const mockPrisma = {
-  quote: {
-    findFirst: vi.fn(),
-    findMany: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    count: vi.fn(),
-  },
-  quoteLineItem: {
-    deleteMany: vi.fn(),
-  },
-  quoteEvent: {
-    create: vi.fn(),
-  },
-  workspaceMember: {
-    findFirst: vi.fn(),
-  },
-  $transaction: vi.fn((fn) => fn(mockPrisma)),
-};
-
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
+vi.mock('@/lib/services/email', () => ({ sendQuoteSentEmail: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/notifications/actions', () => ({ createNotification: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
 vi.mock('@quotecraft/database', () => ({
   prisma: mockPrisma,
-  Prisma: {
-    InputJsonValue: {},
-    TransactionClient: {},
-  },
+  Prisma: { InputJsonValue: {}, TransactionClient: {} },
 }));
 
-describe('Quote Actions', () => {
-  const mockSession = {
-    user: { id: 'user-123', email: 'test@example.com' },
-  };
+// Import actual functions under test
+import { createQuote, updateQuote, getQuote, getQuotes, deleteQuote, duplicateQuote, updateQuoteStatus } from '@/lib/quotes/actions';
 
-  const mockWorkspace = {
-    id: 'ws-123',
-    name: 'Test Workspace',
-  };
+describe('Quote Actions', () => {
+  const WORKSPACE_ID = 'ws-123';
+  const USER_ID = 'user-123';
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Setup default mocks
-    vi.mocked(auth).mockResolvedValue(mockSession as any);
-
-    mockPrisma.workspaceMember.findFirst.mockResolvedValue({
-      userId: mockSession.user.id,
-      workspaceId: mockWorkspace.id,
-      workspace: mockWorkspace,
+    // Default: authenticated user with workspace
+    mockGetCurrentUserWorkspace.mockResolvedValue({
+      workspaceId: WORKSPACE_ID,
+      userId: USER_ID,
     });
-  });
 
-  afterEach(() => {
-    vi.resetAllMocks();
+    // Default workspace lookup
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      id: WORKSPACE_ID,
+      name: 'Test Workspace',
+    });
+
+    // Default number sequence for quote number generation
+    mockPrisma.numberSequence.upsert.mockResolvedValue({
+      prefix: 'QT',
+      suffix: null,
+      currentValue: 1,
+      padding: 4,
+    });
+
+    // Default quoteEvent create (succeeds silently)
+    mockPrisma.quoteEvent.create.mockResolvedValue({ id: 'event-1' });
   });
 
   describe('createQuote', () => {
     it('creates a quote with valid data', async () => {
-      mockPrisma.quote.findFirst.mockResolvedValue(null); // No existing quotes
+      mockPrisma.client.findFirst.mockResolvedValue({ id: 'client-1', workspaceId: WORKSPACE_ID });
       mockPrisma.quote.create.mockResolvedValue({
-        id: 'quote-123',
+        id: 'quote-1',
         quoteNumber: 'QT-0001',
         title: 'New Project',
         status: 'draft',
         subtotal: 0,
         taxTotal: 0,
         total: 0,
+        lineItems: [],
+        client: { id: 'client-1' },
+        project: null,
       });
 
-      // Test the quote creation flow
-      const data = {
+      const result = await createQuote({
         title: 'New Project',
-        clientId: 'client-123',
+        clientId: 'client-1',
         blocks: [],
-      };
-
-      expect(data.title).toBe('New Project');
-      expect(data.clientId).toBeDefined();
-    });
-
-    it('generates unique quote numbers', () => {
-      const lastQuoteNumber = 'QT-0005';
-      const lastNumber = parseInt(lastQuoteNumber.replace(/\D/g, ''), 10);
-      const nextNumber = lastNumber + 1;
-      const newQuoteNumber = `QT-${String(nextNumber).padStart(4, '0')}`;
-
-      expect(newQuoteNumber).toBe('QT-0006');
-    });
-
-    it('calculates totals from service item blocks', () => {
-      const serviceItems = [
-        { type: 'service-item', content: { quantity: 2, rate: 100, taxRate: 0 } },
-        { type: 'service-item', content: { quantity: 1, rate: 500, taxRate: 10 } },
-      ];
-
-      const subtotal = serviceItems.reduce(
-        (sum, item) => sum + item.content.quantity * item.content.rate,
-        0
-      );
-      const taxTotal = serviceItems.reduce((sum, item) => {
-        const amount = item.content.quantity * item.content.rate;
-        return sum + (item.content.taxRate ? amount * (item.content.taxRate / 100) : 0);
-      }, 0);
-      const total = subtotal + taxTotal;
-
-      expect(subtotal).toBe(700);
-      expect(taxTotal).toBe(50);
-      expect(total).toBe(750);
-    });
-
-    it('requires authentication', async () => {
-      vi.mocked(auth).mockResolvedValue(null);
-
-      // Should throw Unauthorized error
-      expect(auth).toBeDefined();
-    });
-
-    it('requires workspace membership', async () => {
-      mockPrisma.workspaceMember.findFirst.mockResolvedValue(null);
-
-      // Should throw 'No workspace found' error
-      const membership = await mockPrisma.workspaceMember.findFirst({
-        where: { userId: 'user-123' },
       });
-      expect(membership).toBeNull();
+
+      expect(result.success).toBe(true);
+      expect(result.quote).toBeDefined();
+      expect(mockPrisma.quote.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects empty title', async () => {
+      const result = await createQuote({
+        title: '',
+        clientId: 'client-1',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Title is required');
+    });
+
+    it('rejects title over 500 characters', async () => {
+      const result = await createQuote({
+        title: 'a'.repeat(501),
+        clientId: 'client-1',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Title is required');
+    });
+
+    it('rejects invalid block types', async () => {
+      const result = await createQuote({
+        title: 'Test Quote',
+        clientId: 'client-1',
+        blocks: [{ type: 'malicious-script' as any, id: '1', content: { height: 'md' }, createdAt: '', updatedAt: '' } as any],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Invalid block type');
+    });
+
+    it('returns error when client not found', async () => {
+      mockPrisma.client.findFirst.mockResolvedValue(null);
+
+      const result = await createQuote({
+        title: 'Test Quote',
+        clientId: 'nonexistent',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Client not found');
+    });
+
+    it('calculates totals from service item blocks', async () => {
+      mockPrisma.client.findFirst.mockResolvedValue({ id: 'client-1', workspaceId: WORKSPACE_ID });
+      mockPrisma.quote.create.mockImplementation(async ({ data }: any) => ({
+        id: 'quote-1',
+        ...data,
+        lineItems: [],
+        client: { id: 'client-1' },
+        project: null,
+      }));
+
+      await createQuote({
+        title: 'Test',
+        clientId: 'client-1',
+        blocks: [
+          {
+            id: 'b1', type: 'service-item', createdAt: '', updatedAt: '',
+            content: { name: 'Dev', description: '', quantity: 2, rate: 100, unit: 'hour', taxRate: 10, rateCardId: null },
+          },
+        ],
+      });
+
+      const createCall = mockPrisma.quote.create.mock.calls[0]![0];
+      expect(createCall.data.subtotal).toBe(200);
+      expect(createCall.data.taxTotal).toBe(20);
+      expect(createCall.data.total).toBe(220);
+    });
+
+    it('throws when user is not authenticated', async () => {
+      mockGetCurrentUserWorkspace.mockRejectedValue(new Error('Unauthorized'));
+
+      await expect(createQuote({ title: 'Test', clientId: 'c1' })).rejects.toThrow('Unauthorized');
     });
   });
 
   describe('updateQuote', () => {
-    const existingQuote = {
-      id: 'quote-123',
-      workspaceId: 'ws-123',
-      title: 'Original Title',
-      settings: { blocks: [] },
-    };
+    it('updates quote title', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        settings: { blocks: [] },
+      });
+      mockPrisma.quote.update.mockResolvedValue({
+        id: 'quote-1',
+        title: 'Updated Title',
+        lineItems: [],
+        client: null,
+      });
 
-    it('updates quote title', () => {
-      const updateData = { title: 'Updated Title' };
+      const result = await updateQuote('quote-1', { title: 'Updated Title' });
 
-      expect(updateData.title).toBe('Updated Title');
+      expect(result.success).toBe(true);
     });
 
-    it('updates quote blocks and recalculates totals', () => {
-      const newBlocks = [
-        {
-          type: 'service-item',
-          content: { name: 'Service', quantity: 3, rate: 200 },
-        },
-      ];
-
-      const newSubtotal = 600;
-      expect(newSubtotal).toBe(3 * 200);
-    });
-
-    it('verifies quote belongs to workspace', () => {
-      const quoteWorkspaceId = existingQuote.workspaceId;
-      const userWorkspaceId = 'ws-123';
-
-      expect(quoteWorkspaceId).toBe(userWorkspaceId);
-    });
-
-    it('throws error for non-existent quote', async () => {
+    it('returns error for non-existent quote', async () => {
       mockPrisma.quote.findFirst.mockResolvedValue(null);
 
-      const quote = await mockPrisma.quote.findFirst({
-        where: { id: 'non-existent' },
+      const result = await updateQuote('nonexistent', { title: 'Test' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Quote not found');
+    });
+
+    it('rejects negative rates in blocks', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        settings: {},
       });
-      expect(quote).toBeNull();
+
+      const result = await updateQuote('quote-1', {
+        blocks: [
+          {
+            id: 'b1', type: 'service-item', createdAt: '', updatedAt: '',
+            content: { name: 'Bad', description: '', quantity: 1, rate: -50, unit: 'hour', taxRate: 0, rateCardId: null },
+          },
+        ],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('rate cannot be negative');
     });
   });
 
   describe('getQuote', () => {
-    const mockQuoteData = {
-      id: 'quote-123',
-      workspaceId: 'ws-123',
-      clientId: 'client-123',
-      quoteNumber: 'QT-0001',
-      status: 'draft',
-      title: 'Test Quote',
-      subtotal: 1000,
-      taxTotal: 100,
-      total: 1100,
-      discountType: null,
-      discountValue: null,
-      discountAmount: 0,
-      issueDate: new Date('2024-01-15'),
-      expirationDate: new Date('2024-02-15'),
-      notes: 'Test notes',
-      terms: 'Test terms',
-      internalNotes: 'Internal notes',
-      settings: {
-        blocks: [],
-        requireSignature: true,
-        autoConvertToInvoice: false,
-        depositRequired: true,
-        depositType: 'percentage',
-        depositValue: 50,
-      },
-      lineItems: [],
-      client: { id: 'client-123', name: 'Test Client' },
-    };
+    it('returns quote document format', async () => {
+      const now = new Date();
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        clientId: 'client-1',
+        projectId: null,
+        quoteNumber: 'QT-0001',
+        status: 'draft',
+        title: 'Test Quote',
+        issueDate: now,
+        expirationDate: null,
+        subtotal: 1000,
+        taxTotal: 100,
+        total: 1100,
+        discountType: null,
+        discountValue: null,
+        discountAmount: 0,
+        notes: '',
+        terms: '',
+        internalNotes: '',
+        settings: { blocks: [], requireSignature: true },
+        lineItems: [],
+        client: { id: 'client-1', name: 'Acme', email: 'a@b.com', company: 'Acme Corp' },
+        project: null,
+        invoice: null,
+      });
 
-    it('returns quote document format', () => {
-      const settings = mockQuoteData.settings;
+      const doc = await getQuote('quote-1');
 
-      const document = {
-        id: mockQuoteData.id,
-        quoteNumber: mockQuoteData.quoteNumber,
-        status: mockQuoteData.status,
-        title: mockQuoteData.title,
-        settings: {
-          requireSignature: settings.requireSignature ?? true,
-          autoConvertToInvoice: settings.autoConvertToInvoice ?? false,
-          depositRequired: settings.depositRequired ?? false,
-          depositType: settings.depositType ?? 'percentage',
-          depositValue: settings.depositValue ?? 50,
-        },
-        totals: {
-          subtotal: mockQuoteData.subtotal,
-          taxTotal: mockQuoteData.taxTotal,
-          total: mockQuoteData.total,
-        },
-      };
-
-      expect(document.id).toBe('quote-123');
-      expect(document.settings.depositRequired).toBe(true);
-      expect(document.settings.depositValue).toBe(50);
+      expect(doc).not.toBeNull();
+      expect(doc!.id).toBe('quote-1');
+      expect(doc!.totals.subtotal).toBe(1000);
+      expect(doc!.client?.name).toBe('Acme');
     });
 
     it('returns null for non-existent quote', async () => {
       mockPrisma.quote.findFirst.mockResolvedValue(null);
 
-      const quote = await mockPrisma.quote.findFirst({
-        where: { id: 'non-existent' },
-      });
-      expect(quote).toBeNull();
+      const doc = await getQuote('nonexistent');
+
+      expect(doc).toBeNull();
     });
 
-    it('excludes deleted quotes', () => {
-      const whereClause = {
-        id: 'quote-123',
-        workspaceId: 'ws-123',
-        deletedAt: null,
-      };
+    it('constructs blocks from lineItems when blocks are empty', async () => {
+      const now = new Date();
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        clientId: 'client-1',
+        projectId: null,
+        quoteNumber: 'QT-0001',
+        status: 'draft',
+        title: 'Test',
+        issueDate: now,
+        expirationDate: null,
+        subtotal: 100,
+        taxTotal: 0,
+        total: 100,
+        discountType: null,
+        discountValue: null,
+        discountAmount: 0,
+        notes: '',
+        terms: '',
+        internalNotes: '',
+        settings: { blocks: [] }, // empty blocks
+        lineItems: [
+          {
+            id: 'li-1', name: 'Item 1', description: null, quantity: 1, rate: 100,
+            amount: 100, taxRate: null, taxAmount: 0, sortOrder: 0, rateCardId: null,
+            createdAt: now, updatedAt: now,
+          },
+        ],
+        client: { id: 'client-1', name: 'Acme', email: 'a@b.com', company: null },
+        project: null,
+        invoice: null,
+      });
 
-      expect(whereClause.deletedAt).toBeNull();
+      const doc = await getQuote('quote-1');
+
+      expect(doc!.blocks.length).toBe(1);
+      expect(doc!.blocks[0]!.type).toBe('service-item');
     });
   });
 
   describe('getQuotes', () => {
     it('returns paginated results', async () => {
       mockPrisma.quote.findMany.mockResolvedValue([
-        { id: 'q1', quoteNumber: 'QT-0001' },
-        { id: 'q2', quoteNumber: 'QT-0002' },
+        { id: 'q1', quoteNumber: 'QT-0001', title: 'Q1', status: 'draft', total: 100, issueDate: new Date(), expirationDate: null, client: null, createdAt: new Date() },
       ]);
       mockPrisma.quote.count.mockResolvedValue(10);
 
-      const options = { limit: 2, offset: 0 };
-      const quotes = await mockPrisma.quote.findMany({
-        take: options.limit,
-        skip: options.offset,
-      });
-      const total = await mockPrisma.quote.count({});
+      const result = await getQuotes({ limit: 1, offset: 0 });
 
-      expect(quotes.length).toBe(2);
-      expect(total).toBe(10);
+      expect(result.quotes.length).toBe(1);
+      expect(result.total).toBe(10);
     });
 
-    it('filters by status', () => {
-      const whereClause = {
-        workspaceId: 'ws-123',
-        status: 'sent',
-        deletedAt: null,
-      };
+    it('passes status filter to query', async () => {
+      mockPrisma.quote.findMany.mockResolvedValue([]);
+      mockPrisma.quote.count.mockResolvedValue(0);
 
-      expect(whereClause.status).toBe('sent');
+      await getQuotes({ status: 'sent' });
+
+      const findManyCall = mockPrisma.quote.findMany.mock.calls[0]![0];
+      expect(findManyCall.where.status).toBe('sent');
     });
 
-    it('searches by title, quote number, and client name', () => {
-      const search = 'acme';
-      const orConditions = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { quoteNumber: { contains: search, mode: 'insensitive' } },
-        { client: { name: { contains: search, mode: 'insensitive' } } },
-      ];
+    it('passes search filter to query', async () => {
+      mockPrisma.quote.findMany.mockResolvedValue([]);
+      mockPrisma.quote.count.mockResolvedValue(0);
 
-      expect(orConditions.length).toBe(3);
+      await getQuotes({ search: 'acme' });
+
+      const findManyCall = mockPrisma.quote.findMany.mock.calls[0]![0];
+      expect(findManyCall.where.OR).toBeDefined();
+      expect(findManyCall.where.OR.length).toBe(3);
     });
   });
 
   describe('deleteQuote', () => {
-    it('soft deletes quote', async () => {
-      mockPrisma.quote.update.mockResolvedValue({
-        id: 'quote-123',
-        deletedAt: new Date(),
-      });
+    it('soft deletes a quote', async () => {
+      mockPrisma.invoice.findFirst.mockResolvedValue(null); // no linked invoice
+      mockPrisma.quote.update.mockResolvedValue({ id: 'quote-1', deletedAt: new Date() });
 
-      const result = await mockPrisma.quote.update({
-        where: { id: 'quote-123' },
-        data: { deletedAt: new Date() },
-      });
+      const result = await deleteQuote('quote-1');
 
-      expect(result.deletedAt).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(mockPrisma.quote.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ deletedAt: expect.any(Date) }),
+        })
+      );
     });
 
-    it('revalidates quotes path', async () => {
-      // After deletion
-      expect(vi.mocked(revalidatePath)).toHaveBeenCalledTimes(0);
+    it('blocks deletion when linked invoice exists', async () => {
+      mockPrisma.invoice.findFirst.mockResolvedValue({ id: 'inv-1', quoteId: 'quote-1' });
+
+      const result = await deleteQuote('quote-1');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('linked invoice');
     });
   });
 
   describe('duplicateQuote', () => {
-    const originalQuote = {
-      id: 'quote-original',
-      workspaceId: 'ws-123',
-      clientId: 'client-123',
-      title: 'Original Quote',
-      subtotal: 1000,
-      taxTotal: 100,
-      total: 1100,
-      notes: 'Notes',
-      terms: 'Terms',
-      settings: { blocks: [] },
-      lineItems: [
-        { name: 'Item 1', quantity: 1, rate: 1000, amount: 1000, taxRate: 10 },
-      ],
-    };
+    it('creates a copy with new number and draft status', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        clientId: 'client-1',
+        projectId: null,
+        title: 'Original',
+        subtotal: 100,
+        discountType: null,
+        discountValue: null,
+        discountAmount: 0,
+        taxTotal: 0,
+        total: 100,
+        notes: 'notes',
+        terms: 'terms',
+        settings: { blocks: [] },
+        lineItems: [],
+      });
+      mockPrisma.quote.create.mockResolvedValue({ id: 'quote-dup' });
 
-    it('creates copy with new quote number', () => {
-      const newTitle = `${originalQuote.title} (Copy)`;
-      const newStatus = 'draft';
+      const result = await duplicateQuote('quote-1');
 
-      expect(newTitle).toBe('Original Quote (Copy)');
-      expect(newStatus).toBe('draft');
+      expect(result.success).toBe(true);
+      expect(result.quoteId).toBe('quote-dup');
+
+      const createCall = mockPrisma.quote.create.mock.calls[0]![0];
+      expect(createCall.data.title).toBe('Original (Copy)');
+      expect(createCall.data.status).toBe('draft');
     });
 
-    it('copies all line items', () => {
-      const copiedLineItems = originalQuote.lineItems.map((item) => ({
-        name: item.name,
-        quantity: item.quantity,
-        rate: item.rate,
-        amount: item.amount,
-        taxRate: item.taxRate,
-      }));
+    it('throws when original not found', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue(null);
 
-      expect(copiedLineItems.length).toBe(1);
-      expect(copiedLineItems[0]!.name).toBe('Item 1');
-    });
-
-    it('preserves settings but resets status', () => {
-      const newStatus = 'draft';
-      const preservedSettings = { ...originalQuote.settings };
-
-      expect(newStatus).toBe('draft');
-      expect(preservedSettings).toEqual({ blocks: [] });
+      await expect(duplicateQuote('nonexistent')).rejects.toThrow('Quote not found');
     });
   });
 
   describe('updateQuoteStatus', () => {
-    it('sets sentAt timestamp when status is sent', () => {
-      const status = 'sent';
-      const timestampField = status === 'sent' ? 'sentAt' : null;
+    it('allows valid transition from draft to sent', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        status: 'draft',
+      });
+      mockPrisma.quote.update.mockResolvedValue({ id: 'quote-1', status: 'sent' });
 
-      expect(timestampField).toBe('sentAt');
+      const result = await updateQuoteStatus('quote-1', 'sent');
+
+      expect(result.success).toBe(true);
     });
 
-    it('sets acceptedAt timestamp when status is accepted', () => {
-      const status = 'accepted';
-      const statusTimestamps: Record<string, string> = {
-        sent: 'sentAt',
-        accepted: 'acceptedAt',
-        declined: 'declinedAt',
-      };
+    it('rejects invalid transition from draft to accepted', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue({
+        id: 'quote-1',
+        workspaceId: WORKSPACE_ID,
+        status: 'draft',
+      });
 
-      expect(statusTimestamps[status]).toBe('acceptedAt');
+      const result = await updateQuoteStatus('quote-1', 'accepted');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Cannot change status');
     });
 
-    it('creates quote event on status change', () => {
-      const eventData = {
-        quoteId: 'quote-123',
-        eventType: 'status_changed_to_sent',
-        actorId: 'user-123',
-        actorType: 'user',
-      };
+    it('returns error when quote not found', async () => {
+      mockPrisma.quote.findFirst.mockResolvedValue(null);
 
-      expect(eventData.eventType).toBe('status_changed_to_sent');
-    });
+      const result = await updateQuoteStatus('nonexistent', 'sent');
 
-    it('revalidates both quotes list and detail paths', () => {
-      const paths = ['/quotes', '/quotes/quote-123'];
-
-      expect(paths.length).toBe(2);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Quote not found');
     });
   });
 });

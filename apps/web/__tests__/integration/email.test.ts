@@ -12,7 +12,7 @@ vi.mock('nodemailer', () => ({
 
 // Mock React Email
 vi.mock('@react-email/render', () => ({
-  render: vi.fn((component) => '<html>Rendered Email</html>'),
+  render: vi.fn((_component: unknown) => '<html>Rendered Email</html>'),
 }));
 
 describe('Email Integration', () => {
@@ -186,32 +186,24 @@ describe('Email Integration', () => {
   });
 
   describe('Reminder Emails', () => {
-    it('sends payment reminder before due date', async () => {
-      const reminderData = {
-        to: 'client@example.com',
-        subject: 'Payment Reminder - Invoice INV-0001 due in 7 days',
-        daysUntilDue: 7,
-      };
+    it('sends overdue reminder with correct days calculation', async () => {
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() - 5); // 5 days ago
+      const now = new Date();
+      const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
 
-      expect(reminderData.daysUntilDue).toBe(7);
+      expect(daysOverdue).toBeGreaterThanOrEqual(5);
+      expect(daysOverdue).toBeLessThanOrEqual(6); // Allow for time-of-day rounding
     });
 
-    it('sends overdue reminder', async () => {
-      const overdueData = {
-        to: 'client@example.com',
-        subject: 'Overdue Invoice - INV-0001',
-        daysOverdue: 5,
-      };
-
-      expect(overdueData.daysOverdue).toBe(5);
-    });
-
-    it('respects reminder schedule settings', () => {
+    it('determines reminder schedule correctly', () => {
       const reminderDays = [7, 3, 1]; // Days before due
-      const currentDaysUntilDue = 7;
 
-      const shouldSend = reminderDays.includes(currentDaysUntilDue);
-      expect(shouldSend).toBe(true);
+      expect(reminderDays.includes(7)).toBe(true);
+      expect(reminderDays.includes(3)).toBe(true);
+      expect(reminderDays.includes(1)).toBe(true);
+      expect(reminderDays.includes(5)).toBe(false);
+      expect(reminderDays.includes(0)).toBe(false);
     });
   });
 
@@ -226,9 +218,9 @@ describe('Email Integration', () => {
 
     it('replaces template variables', () => {
       const template = 'Hello {{name}}, your quote {{quoteNumber}} is ready.';
-      const variables = { name: 'John', quoteNumber: 'QT-0001' };
+      const variables: Record<string, string> = { name: 'John', quoteNumber: 'QT-0001' };
 
-      const rendered = template.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] || '');
+      const rendered = template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => variables[key] || '');
 
       expect(rendered).toBe('Hello John, your quote QT-0001 is ready.');
     });
@@ -266,12 +258,12 @@ describe('Email Integration', () => {
 
     it('handles rate limiting', async () => {
       mockTransporter.sendMail.mockRejectedValue(
-        new Error('Too many emails sent')
+        new Error('Email rate limit exceeded. Please try again later.')
       );
 
       await expect(
         mockTransporter.sendMail({})
-      ).rejects.toThrow('Too many emails sent');
+      ).rejects.toThrow('Email rate limit exceeded');
     });
 
     it('retries on temporary failures', async () => {

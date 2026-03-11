@@ -122,9 +122,16 @@ export async function skipOnboardingStep(
 
 /**
  * Check if user needs onboarding
+ * Bug #9: Only workspace owners run onboarding — team members joining
+ * an already-configured workspace should skip it.
  */
 export async function needsOnboarding(): Promise<boolean> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #9: Non-owner team members skip onboarding (workspace is already set up)
+  if (role !== 'owner') {
+    return false;
+  }
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },

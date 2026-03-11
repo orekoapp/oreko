@@ -204,7 +204,6 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
     if (hasClientLink) {
       await clientLink.click();
       await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(500);
 
       // Try to find an actions menu (various possible button names)
       const actionsButton = page.locator(
@@ -215,7 +214,6 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
 
       if (actionsVisible) {
         await actionsButton.click();
-        await page.waitForTimeout(500);
 
         const deleteOption = page.getByRole('menuitem', { name: /delete/i });
         const deleteVisible = await deleteOption.isVisible().catch(() => false);
@@ -225,7 +223,6 @@ test.describe('Feature Interaction - Client Data Propagation', () => {
           const isDisabled = await deleteOption.isDisabled().catch(() => true);
           if (!isDisabled) {
             await deleteOption.click();
-            await page.waitForTimeout(500);
 
             // Should show warning about active quotes if applicable
             const warning = page.getByText(/active|cannot delete|has quotes|confirm/i);

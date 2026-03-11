@@ -1,5 +1,9 @@
 /**
  * Payment Types
+ *
+ * Note: Stripe IDs (stripePaymentIntentId, stripeChargeId, etc.) are stored
+ * in plain text. This is acceptable because Stripe IDs are not secrets —
+ * they require a valid Stripe API key to be actionable (Bug #83).
  */
 
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled';

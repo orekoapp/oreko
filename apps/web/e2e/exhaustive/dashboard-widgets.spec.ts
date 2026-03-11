@@ -36,13 +36,10 @@ test.describe('Dashboard Widgets', () => {
       await periodSelector.click();
     }
 
-    await page.waitForTimeout(200);
-
     // Select a different period option
     const option = page.locator('[role="option"], option').filter({ hasText: /30|90|month/i }).first();
     if (await option.isVisible().catch(() => false)) {
       await option.click();
-      await page.waitForTimeout(500);
     }
 
     // Page should still be on dashboard without errors
@@ -121,8 +118,7 @@ test.describe('Dashboard Widgets', () => {
 
     const href = await quoteLink.getAttribute('href');
     await quoteLink.click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
 
     // Should have navigated to a quote detail page
     await expect(page).toHaveURL(/\/quotes\/.+/, { timeout: 15000 });
@@ -142,8 +138,7 @@ test.describe('Dashboard Widgets', () => {
 
     const href = await invoiceLink.getAttribute('href');
     await invoiceLink.click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
 
     // Should have navigated to an invoice detail page
     await expect(page).toHaveURL(/\/invoices\/.+/, { timeout: 15000 });

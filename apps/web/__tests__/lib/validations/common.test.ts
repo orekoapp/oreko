@@ -169,9 +169,9 @@ describe('urlSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('rejects invalid URL', () => {
-    const result = urlSchema.safeParse('not-a-url');
-    expect(result.success).toBe(false);
+  it('auto-prepends https:// to bare domains', () => {
+    const result = urlSchema.safeParse('example.com');
+    expect(result.success).toBe(true);
   });
 });
 
@@ -191,8 +191,13 @@ describe('moneySchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects decimal (requires cents)', () => {
+  it('accepts decimal amounts (stored in dollars)', () => {
     const result = moneySchema.safeParse(99.99);
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects amounts exceeding maximum', () => {
+    const result = moneySchema.safeParse(9999999999);
     expect(result.success).toBe(false);
   });
 });

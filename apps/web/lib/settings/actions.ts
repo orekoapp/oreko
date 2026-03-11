@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { randomBytes, createHash } from 'crypto';
 import { z } from 'zod';
 import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
@@ -23,6 +24,7 @@ import type {
   IntegrationData,
   WebhookData,
 } from './types';
+import { ROUTES } from '@/lib/routes';
 
 // Helper to convert Prisma Decimal to number
 function toNumber(value: Prisma.Decimal | number | null | undefined): number {
@@ -65,7 +67,7 @@ export async function updateWorkspaceName(name: string): Promise<void> {
     data: { name },
   });
 
-  revalidatePath('/settings');
+  revalidatePath(ROUTES.settings);
 }
 
 // ============================================
@@ -139,8 +141,8 @@ export async function updateBusinessProfile(
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/business');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsBusiness);
 }
 
 // Update business logo
@@ -166,8 +168,8 @@ export async function updateBusinessLogo(logoUrl: string | null): Promise<void> 
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/business');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsBusiness);
 }
 
 // ============================================
@@ -235,8 +237,8 @@ export async function updateBrandingSettings(
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/branding');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsBranding);
 }
 
 // ============================================
@@ -301,8 +303,8 @@ export async function updatePaymentSettings(
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/payments');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsPayments);
 }
 
 // ============================================
@@ -355,7 +357,7 @@ export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: st
     },
   });
 
-  revalidatePath('/settings/tax-rates');
+  revalidatePath(ROUTES.settings);
 
   return { id: taxRate.id };
 }
@@ -393,7 +395,7 @@ export async function updateTaxRate(input: UpdateTaxRateInput): Promise<void> {
     },
   });
 
-  revalidatePath('/settings/tax-rates');
+  revalidatePath(ROUTES.settings);
 }
 
 // Delete tax rate
@@ -423,7 +425,7 @@ export async function deleteTaxRate(id: string): Promise<void> {
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath('/settings/tax-rates');
+  revalidatePath(ROUTES.settings);
 }
 
 // ============================================
@@ -531,9 +533,9 @@ export async function updateNumberSequence(
     });
   }
 
-  revalidatePath('/settings');
-  revalidatePath('/settings/invoices');
-  revalidatePath('/settings/quotes');
+  revalidatePath(ROUTES.settings);
+  revalidatePath(ROUTES.settingsInvoice);
+  revalidatePath(ROUTES.settingsQuotes);
 }
 
 // ============================================
@@ -604,6 +606,12 @@ export async function updateMemberRole(
   memberId: string,
   newRole: WorkspaceMemberRole
 ): Promise<{ success: boolean; error?: string }> {
+  // Validate role at runtime (TypeScript types are erased, server actions accept any value)
+  const validRoles = ['member', 'admin', 'owner'] as const;
+  if (!validRoles.includes(newRole as typeof validRoles[number])) {
+    return { success: false, error: 'Invalid role' };
+  }
+
   const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   // Get current user's role
@@ -651,12 +659,25 @@ export async function updateMemberRole(
     }
   }
 
+  const oldRole = targetMember.role;
+
   await prisma.workspaceMember.update({
     where: { id: memberId },
     data: { role: newRole },
   });
 
-  revalidatePath('/settings/team');
+  // Bug #74: Audit log for role changes
+  console.info('[AUDIT] Member role changed:', {
+    workspaceId,
+    changedBy: userId,
+    targetMemberId: memberId,
+    targetUserId: targetMember.userId,
+    oldRole,
+    newRole,
+    timestamp: new Date().toISOString(),
+  });
+
+  revalidatePath(ROUTES.settingsTeam);
 
   return { success: true };
 }
@@ -666,7 +687,20 @@ export async function inviteMember(
   email: string,
   role: WorkspaceMemberRole = 'member'
 ): Promise<{ success: boolean; error?: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  // Validate and normalize email upfront
+  const emailResult = z.string().email().safeParse(email);
+  if (!emailResult.success) {
+    return { success: false, error: 'Invalid email address' };
+  }
+  const normalizedEmail = emailResult.data.toLowerCase().trim();
+
+  // Validate role at runtime (TypeScript types are erased, server actions accept any value)
+  const validRoles = ['member', 'admin', 'owner'] as const;
+  if (!validRoles.includes(role as typeof validRoles[number])) {
+    return { success: false, error: 'Invalid role' };
+  }
+
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
 
   // Only owners and admins can invite members
   const currentRole = await getCurrentUserRole();
@@ -674,14 +708,78 @@ export async function inviteMember(
     return { success: false, error: 'Insufficient permissions to invite members' };
   }
 
-  // Check if user exists
+  // Prevent privilege escalation: only owners can assign owner role
+  if (role === 'owner' && currentRole !== 'owner') {
+    return { success: false, error: 'Only workspace owners can assign the owner role' };
+  }
+
+  // Check if user exists (use normalized email)
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
   });
 
   if (!user) {
-    // TODO: Create invitation record and send email
-    return { success: false, error: 'User not found. Invitation emails coming soon.' };
+    // Check for existing pending invitation
+    const existingInvitation = await prisma.workspaceInvitation.findFirst({
+      where: {
+        workspaceId,
+        email: normalizedEmail,
+        acceptedAt: null,
+        cancelledAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+    if (existingInvitation) {
+      return { success: false, error: 'An invitation has already been sent to this email' };
+    }
+
+    // Get workspace info for email
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    });
+
+    // Get current user name for email (reuse userId from above)
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+
+    // Create invitation (store hash, send raw token)
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await prisma.workspaceInvitation.create({
+      data: {
+        workspaceId,
+        email: normalizedEmail,
+        role,
+        token: tokenHash,
+        invitedById: userId,
+        expiresAt,
+      },
+    });
+
+    // Send invitation email (don't fail if email fails)
+    try {
+      const { sendInvitationEmail } = await import('@/lib/services/email');
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const inviteUrl = `${baseUrl}/invite/${rawToken}`;
+      await sendInvitationEmail({
+        to: normalizedEmail,
+        workspaceName: workspace?.name || 'Workspace',
+        inviterName: currentUser?.name || 'A team member',
+        role,
+        inviteUrl,
+        rateLimitKey: workspaceId,
+      });
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+    }
+
+    revalidatePath(ROUTES.settingsTeam);
+    return { success: true };
   }
 
   // Check if already a member
@@ -707,7 +805,7 @@ export async function inviteMember(
     },
   });
 
-  revalidatePath('/settings/team');
+  revalidatePath(ROUTES.settingsTeam);
 
   return { success: true };
 }
@@ -753,9 +851,223 @@ export async function removeMember(
     where: { id: memberId },
   });
 
-  revalidatePath('/settings/team');
+  revalidatePath(ROUTES.settingsTeam);
 
   return { success: true };
+}
+
+// ============================================
+// INVITATION MANAGEMENT ACTIONS
+// ============================================
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: string;
+  expiresAt: Date;
+  createdAt: Date;
+  invitedBy: { name: string | null };
+}
+
+export async function getPendingInvitations(): Promise<PendingInvitation[]> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const invitations = await prisma.workspaceInvitation.findMany({
+    where: {
+      workspaceId,
+      acceptedAt: null,
+      cancelledAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    include: {
+      invitedBy: { select: { name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return invitations.map((inv) => ({
+    id: inv.id,
+    email: inv.email,
+    role: inv.role,
+    expiresAt: inv.expiresAt,
+    createdAt: inv.createdAt,
+    invitedBy: { name: inv.invitedBy.name },
+  }));
+}
+
+export async function cancelInvitation(
+  invitationId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+  const role = await getCurrentUserRole();
+  if (role !== 'owner' && role !== 'admin') {
+    return { success: false, error: 'Insufficient permissions' };
+  }
+
+  const invitation = await prisma.workspaceInvitation.findFirst({
+    where: { id: invitationId, workspaceId, acceptedAt: null, cancelledAt: null },
+  });
+
+  if (!invitation) {
+    return { success: false, error: 'Invitation not found' };
+  }
+
+  await prisma.workspaceInvitation.update({
+    where: { id: invitationId },
+    data: { cancelledAt: new Date() },
+  });
+  revalidatePath(ROUTES.settingsTeam);
+  return { success: true };
+}
+
+export async function resendInvitation(
+  invitationId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
+  const role = await getCurrentUserRole();
+  if (role !== 'owner' && role !== 'admin') {
+    return { success: false, error: 'Insufficient permissions' };
+  }
+
+  // Rate limit to prevent email spam
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = checkRateLimit(`resend-invite:${userId}`, { limit: 5, windowMs: 300000 });
+  if (rateLimitResult.limited) {
+    return { success: false, error: 'Too many resend attempts. Please try again later.' };
+  }
+
+  const invitation = await prisma.workspaceInvitation.findFirst({
+    where: { id: invitationId, workspaceId, acceptedAt: null, cancelledAt: null },
+    include: { workspace: { select: { name: true } } },
+  });
+
+  if (!invitation) {
+    return { success: false, error: 'Invitation not found' };
+  }
+
+  // Regenerate token and extend expiry (store hash, send raw)
+  const rawToken = randomBytes(32).toString('hex');
+  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+  const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  await prisma.workspaceInvitation.update({
+    where: { id: invitationId },
+    data: { token: tokenHash, expiresAt: newExpiresAt },
+  });
+
+  // Get current user name (reuse userId from above)
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+
+  // Send email
+  try {
+    const { sendInvitationEmail } = await import('@/lib/services/email');
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const inviteUrl = `${baseUrl}/invite/${rawToken}`;
+    await sendInvitationEmail({
+      to: invitation.email,
+      workspaceName: invitation.workspace.name,
+      inviterName: currentUser?.name || 'A team member',
+      role: invitation.role,
+      inviteUrl,
+      rateLimitKey: workspaceId,
+    });
+  } catch (emailError) {
+    console.error('Failed to resend invitation email:', emailError);
+  }
+
+  revalidatePath(ROUTES.settingsTeam);
+  return { success: true };
+}
+
+// Accept an invitation by token (called from the invite page)
+export async function acceptInvitation(
+  token: string
+): Promise<{ success: boolean; error?: string; workspaceId?: string }> {
+  const { auth } = await import('@/lib/auth');
+  const session = await auth();
+
+  if (!session?.user?.id || !session.user.email) {
+    return { success: false, error: 'You must be logged in to accept an invitation' };
+  }
+
+  // Rate limit by user ID to prevent brute-force token enumeration
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = checkRateLimit(`accept-invite:${session.user.id}`, { limit: 10, windowMs: 60000 });
+  if (rateLimitResult.limited) {
+    return { success: false, error: 'Too many attempts. Please try again later.' };
+  }
+
+  // Hash the incoming token to look up (tokens are stored as hashes)
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+
+  const invitation = await prisma.workspaceInvitation.findUnique({
+    where: { token: tokenHash },
+    include: { workspace: { select: { name: true } } },
+  });
+
+  if (!invitation) {
+    return { success: false, error: 'Invitation not found' };
+  }
+
+  if (invitation.cancelledAt) {
+    return { success: false, error: 'This invitation has been cancelled' };
+  }
+
+  if (invitation.acceptedAt) {
+    return { success: false, error: 'This invitation has already been accepted' };
+  }
+
+  if (new Date() > invitation.expiresAt) {
+    return { success: false, error: 'This invitation has expired' };
+  }
+
+  if (invitation.email.toLowerCase() !== session.user.email.toLowerCase()) {
+    return { success: false, error: 'This invitation was sent to a different email address' };
+  }
+
+  // Check if already a member
+  const existingMember = await prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId: invitation.workspaceId,
+        userId: session.user.id,
+      },
+    },
+  });
+
+  if (existingMember) {
+    // Mark invitation as accepted anyway
+    await prisma.workspaceInvitation.update({
+      where: { id: invitation.id },
+      data: { acceptedAt: new Date() },
+    });
+    return { success: true, workspaceId: invitation.workspaceId };
+  }
+
+  // Create membership and mark invitation accepted in a transaction
+  await prisma.$transaction([
+    prisma.workspaceMember.create({
+      data: {
+        workspaceId: invitation.workspaceId,
+        userId: session.user.id,
+        role: (['member', 'admin', 'owner'] as const).includes(
+          invitation.role as 'member' | 'admin' | 'owner'
+        )
+          ? (invitation.role as 'member' | 'admin' | 'owner')
+          : 'member',
+      },
+    }),
+    prisma.workspaceInvitation.update({
+      where: { id: invitation.id },
+      data: { acceptedAt: new Date() },
+    }),
+  ]);
+
+  revalidatePath(ROUTES.settingsTeam);
+  return { success: true, workspaceId: invitation.workspaceId };
 }
 
 // ============================================
@@ -832,8 +1144,20 @@ export async function updateWorkspaceSettings(
     return { success: false, error: 'Only owners can update workspace settings' };
   }
 
-  // Check slug uniqueness if changing
+  // Bug #19: Validate slug against reserved system routes
   if (input.slug) {
+    const reservedSlugs = [
+      'api', 'admin', 'auth', 'login', 'register', 'settings', 'dashboard',
+      'onboarding', 'quotes', 'invoices', 'clients', 'projects', 'analytics',
+      'help', 'templates', 'contracts', 'rate-cards', 'q', 'i', 'p', 'c',
+      'invite', 'verify-email', 'reset-password', 'forgot-password',
+      'public', 'static', 'assets', '_next', 'favicon.ico',
+    ];
+    if (reservedSlugs.includes(input.slug.toLowerCase())) {
+      return { success: false, error: 'This slug is reserved and cannot be used' };
+    }
+
+    // Check slug uniqueness if changing
     const existing = await prisma.workspace.findFirst({
       where: { slug: input.slug, id: { not: workspaceId } },
     });
@@ -856,6 +1180,13 @@ export async function updateWorkspaceSettings(
           oldSlug: currentWorkspace.slug,
         },
       });
+
+      // Bug #81: Clean up old slug history entries (keep last 90 days only)
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      await prisma.workspaceSlugHistory.deleteMany({
+        where: { workspaceId, changedAt: { lt: cutoff } },
+      }).catch(() => { /* non-critical cleanup */ });
     }
   }
 
@@ -867,7 +1198,7 @@ export async function updateWorkspaceSettings(
     },
   });
 
-  revalidatePath('/settings/workspace');
+  revalidatePath(ROUTES.settingsWorkspace);
 
   return { success: true };
 }
@@ -882,11 +1213,85 @@ export async function deleteWorkspace(): Promise<{ success: boolean; error?: str
     return { success: false, error: 'Only owners can delete the workspace' };
   }
 
-  // Soft delete workspace (or implement hard delete with cascading)
-  await prisma.workspace.update({
-    where: { id: workspaceId },
-    data: { deletedAt: new Date() },
+  // Bug #69: Notify all workspace members before deletion
+  const members = await prisma.workspaceMember.findMany({
+    where: { workspaceId },
+    include: { user: { select: { id: true, name: true, email: true } } },
   });
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { name: true },
+  });
+
+  // Bug #132: Check for pending/active payments before deletion
+  const activePayments = await prisma.payment.count({
+    where: {
+      invoice: { workspaceId },
+      status: 'pending',
+    },
+  });
+  if (activePayments > 0) {
+    return { success: false, error: 'Cannot delete workspace with pending payments. Please resolve all payments first.' };
+  }
+
+  // Bug #87: Cascade soft-delete to all workspace entities
+  const deletedAt = new Date();
+  await prisma.$transaction([
+    prisma.quote.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.invoice.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.client.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.project.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.contract.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.contractInstance.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.rateCard.updateMany({
+      where: { workspaceId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { deletedAt },
+    }),
+  ]);
+
+  // Create notifications for all members
+  try {
+    const { createNotification } = await import('@/lib/notifications/actions');
+    await Promise.allSettled(
+      members.map((member) =>
+        createNotification({
+          userId: member.userId,
+          workspaceId,
+          type: 'workspace_deleted',
+          title: `Workspace "${workspace?.name}" has been deleted`,
+          message: 'The workspace owner has deleted this workspace.',
+          entityType: 'workspace',
+          entityId: workspaceId,
+          link: '/dashboard',
+        })
+      )
+    );
+  } catch (error) {
+    console.error('Failed to send workspace deletion notifications:', error);
+  }
 
   revalidatePath('/');
 
@@ -938,25 +1343,28 @@ export async function updateInvoiceDefaults(
 ): Promise<{ success: boolean; error?: string }> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
-    select: { settings: true },
-  });
+  // Bug #89: Use transaction to prevent concurrent read-modify-write races
+  await prisma.$transaction(async (tx) => {
+    const workspace = await tx.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { settings: true, updatedAt: true },
+    });
 
-  const currentSettings = (workspace?.settings as Record<string, unknown>) || {};
-  const currentDefaults = (currentSettings.invoiceDefaults as Partial<InvoiceDefaults>) || {};
+    const currentSettings = (workspace?.settings as Record<string, unknown>) || {};
+    const currentDefaults = (currentSettings.invoiceDefaults as Partial<InvoiceDefaults>) || {};
 
-  await prisma.workspace.update({
-    where: { id: workspaceId },
-    data: {
-      settings: {
-        ...currentSettings,
-        invoiceDefaults: { ...currentDefaults, ...input },
+    await tx.workspace.update({
+      where: { id: workspaceId, updatedAt: workspace?.updatedAt },
+      data: {
+        settings: {
+          ...currentSettings,
+          invoiceDefaults: { ...currentDefaults, ...input },
+        },
       },
-    },
+    });
   });
 
-  revalidatePath('/settings/invoices');
+  revalidatePath(ROUTES.settingsInvoice);
 
   return { success: true };
 }

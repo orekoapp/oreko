@@ -12,7 +12,7 @@ export const quoteStatusSchema = z.enum([
   'converted',
 ]);
 
-// Quote block types
+// Quote block types — must match BlockType in quotes/types.ts
 export const quoteBlockTypeSchema = z.enum([
   'header',
   'text',
@@ -43,6 +43,19 @@ export const quoteBlockSchema = z.object({
   content: z.record(z.unknown()).optional(),
   order: z.number().int().min(0),
 });
+
+// Bug #134: Quote document settings schema (embedded in quote JSON)
+export const quoteDocumentSettingsSchema = z.object({
+  requireSignature: z.boolean().default(true),
+  autoConvertToInvoice: z.boolean().default(false),
+  depositRequired: z.boolean().default(false),
+  depositType: z.enum(['percentage', 'fixed']).default('percentage'),
+  depositValue: z.number().min(0).max(100).default(0),
+  showLineItemPrices: z.boolean().default(true),
+  currency: z.string().length(3).default('USD'),
+  taxInclusive: z.boolean().default(false),
+}).partial();
+export type QuoteDocumentSettings = z.infer<typeof quoteDocumentSettingsSchema>;
 
 // Create quote schema
 export const createQuoteSchema = z.object({

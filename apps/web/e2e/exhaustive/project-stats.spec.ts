@@ -105,7 +105,6 @@ test.describe('Project Stats & Rate Card Categories', () => {
       }
 
       await manageCategoriesBtn.click();
-      await page.waitForTimeout(500);
 
       // A dialog/modal should appear for managing categories
       const dialog = page.locator(
