@@ -130,7 +130,7 @@ export async function createInvoicePaymentIntent(
 
     // Get currency from invoice model (falls back to settings for legacy data)
     const settings = invoice.settings as Record<string, unknown>;
-    const currency = invoice.currency || (settings?.currency as string) ?? 'USD';
+    const currency = invoice.currency || (settings?.currency as string) || 'USD';
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer({
