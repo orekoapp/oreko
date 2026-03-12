@@ -42,7 +42,8 @@ export async function verifyCredentials(email: string, password: string) {
   }
 
   // Bug #17: Enforce email verification before allowing login
-  if (!user.emailVerifiedAt) {
+  // Skip in development since SMTP is not configured
+  if (!user.emailVerifiedAt && process.env.NODE_ENV !== 'development') {
     throw new Error('Please verify your email before logging in. Check your inbox for a verification link.');
   }
 

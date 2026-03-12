@@ -75,9 +75,11 @@ export const CHART_PALETTE = [
  * Format number as currency for chart display
  * Values are already in dollars (not cents)
  */
-export function formatChartCurrency(value: number, currency: string = 'USD'): string {
+export function formatChartCurrency(value: number, currency?: string | number): string {
+  // Recharts tickFormatter passes (value, index) — ignore numeric second arg
+  const curr = typeof currency === 'string' && currency.length === 3 ? currency : 'USD';
   // For compact display, use symbol prefix from Intl
-  const symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
+  const symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency: curr, maximumFractionDigits: 0 })
     .formatToParts(0)
     .find(p => p.type === 'currency')?.value ?? '$';
 

@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Edit, Download, Trash2, ExternalLink, Receipt, ArrowRight, Clock, CheckCircle, XCircle, Eye, Mail } from 'lucide-react';
+import { FileText, Edit, Download, Trash2, ExternalLink, Receipt, ArrowRight, Clock, CheckCircle, XCircle, Eye, Mail, PenLine } from 'lucide-react';
 import { getQuote } from '@/lib/quotes/actions';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
@@ -90,7 +90,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           {quote.status === 'draft' && (
             <SendQuoteButton quoteId={id} />
           )}
-          {quote.status === 'accepted' && (
+          {quote.status === 'accepted' && !quote.linkedInvoice && (
             <ConvertToInvoiceButton
               quoteId={quote.id}
               quoteTitle={quote.title}
@@ -303,6 +303,33 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                     View Invoice
                   </Link>
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Signature */}
+          {quote.signatureData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <PenLine className="h-4 w-4" />
+                  Signature
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="rounded-lg border bg-green-50 dark:bg-green-950 p-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={quote.signatureData.data}
+                    alt="Client signature"
+                    className="max-h-20 mx-auto"
+                  />
+                </div>
+                <div className="space-y-1 text-sm">
+                  <p><span className="text-muted-foreground">Signed by:</span> {quote.signatureData.signerName}</p>
+                  <p><span className="text-muted-foreground">Date:</span> {new Date(quote.signatureData.signedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                  <p><span className="text-muted-foreground">IP:</span> {quote.signatureData.ipAddress}</p>
+                </div>
               </CardContent>
             </Card>
           )}

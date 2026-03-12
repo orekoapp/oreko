@@ -420,6 +420,7 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
           open={sendDialogOpen}
           onOpenChange={setSendDialogOpen}
           type="contract"
+          documentId={sendTarget.id}
           documentNumber={sendTarget.id.slice(0, 8)}
           recipientEmail={sendTarget.clientEmail || ''}
           recipientName={sendTarget.clientName}

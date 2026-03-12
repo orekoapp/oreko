@@ -43,18 +43,8 @@ export function CountersignDialog({
     e.preventDefault();
     if (!businessName.trim()) return;
 
-    setIsSubmitting(true);
-    try {
-      // TODO: Implement countersign server action when backend supports it
-      // For now, show success and let the parent handle status update
-      toast.success('Contract countersigned successfully');
-      onCountersigned?.();
-      onOpenChange(false);
-    } catch {
-      toast.error('Failed to countersign contract');
-    } finally {
-      setIsSubmitting(false);
-    }
+    toast.info('Contract countersigning is not yet implemented. This feature is coming soon.');
+    onOpenChange(false);
   };
 
   return (

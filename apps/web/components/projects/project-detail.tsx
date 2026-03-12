@@ -391,15 +391,24 @@ export function ProjectDetail({ project, stats, activity, notes, contracts }: Pr
               </div>
 
               <div className="mt-4 pt-4 border-t space-y-1">
-                <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full">
+                <button
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+                  onClick={() => toast.info('Client portal is not yet available')}
+                >
                   <ExternalLink className="h-3.5 w-3.5" />
                   View client portal
                 </button>
-                <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full">
+                <button
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+                  onClick={() => toast.info('Invite links are not yet available')}
+                >
                   <Link2 className="h-3.5 w-3.5" />
                   Copy invite link
                 </button>
-                <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full">
+                <button
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+                  onClick={() => toast.info('Invitations are not yet available')}
+                >
                   <Send className="h-3.5 w-3.5" />
                   Send invitation
                 </button>

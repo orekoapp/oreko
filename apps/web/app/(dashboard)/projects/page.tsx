@@ -50,7 +50,7 @@ async function ProjectListWrapper() {
     getProjects({ isActive: false, pageSize: 200 }),
   ]);
   const allProjects = [...activeResult.projects, ...inactiveResult.projects];
-  return <ProjectsDataTable data={allProjects as any} />;
+  return <ProjectsDataTable data={allProjects} />;
 }
 
 function ListLoading() {

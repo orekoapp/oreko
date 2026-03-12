@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { prisma } from '@quotecraft/database';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
@@ -125,7 +126,7 @@ export async function skipOnboardingStep(
  * Bug #9: Only workspace owners run onboarding — team members joining
  * an already-configured workspace should skip it.
  */
-export async function needsOnboarding(): Promise<boolean> {
+export const needsOnboarding = cache(async (): Promise<boolean> => {
   const { workspaceId, role } = await getCurrentUserWorkspace();
 
   // Bug #9: Non-owner team members skip onboarding (workspace is already set up)
@@ -140,4 +141,4 @@ export async function needsOnboarding(): Promise<boolean> {
 
   const workspaceSettings = (workspace?.settings as Record<string, unknown>) ?? {};
   return workspaceSettings.onboardingCompleted !== true;
-}
+});

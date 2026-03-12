@@ -5,17 +5,7 @@ import {
   Loader2,
   Send,
   Plus,
-  Pencil,
   Trash2,
-  Bold,
-  Italic,
-  Underline,
-  Link2,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  List,
-  ListOrdered,
   X,
   Import,
 } from 'lucide-react';
@@ -37,6 +27,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { getEmailTemplates, getEmailTemplateById } from '@/lib/email/actions';
+import { sendQuote } from '@/lib/quotes/actions';
+import { sendInvoice } from '@/lib/invoices/actions';
+import { sendContractInstance } from '@/lib/contracts/actions';
 
 // ─── Types ────────────────────────────────────────────────
 interface LineItemPreview {
@@ -57,6 +50,7 @@ interface SendEmailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   type: 'invoice' | 'quote' | 'contract';
+  documentId: string;
   documentNumber: string;
   recipientEmail: string;
   recipientName: string;
@@ -89,48 +83,13 @@ function formatDate(dateString: string): string {
   });
 }
 
-// ─── Formatting Toolbar ───────────────────────────────────
-function FormattingToolbar() {
-  const buttons = [
-    { icon: Bold, label: 'Bold' },
-    { icon: Italic, label: 'Italic' },
-    { icon: Underline, label: 'Underline' },
-    null, // separator
-    { icon: Link2, label: 'Link' },
-    null,
-    { icon: AlignLeft, label: 'Align left' },
-    { icon: AlignCenter, label: 'Align center' },
-    { icon: AlignRight, label: 'Align right' },
-    null,
-    { icon: List, label: 'Bullet list' },
-    { icon: ListOrdered, label: 'Numbered list' },
-  ];
-
-  return (
-    <div className="flex items-center gap-0.5 px-1 py-1.5 border-b bg-muted/30">
-      {buttons.map((btn, i) =>
-        btn === null ? (
-          <div key={`sep-${i}`} className="w-px h-5 bg-border mx-1" />
-        ) : (
-          <button
-            key={btn.label}
-            type="button"
-            className="h-7 w-7 flex items-center justify-center rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title={btn.label}
-          >
-            <btn.icon className="h-3.5 w-3.5" />
-          </button>
-        )
-      )}
-    </div>
-  );
-}
 
 // ─── Main Component ───────────────────────────────────────
 export function SendEmailDialog({
   open,
   onOpenChange,
   type,
+  documentId,
   documentNumber,
   recipientEmail,
   recipientName,
@@ -207,11 +166,35 @@ export function SendEmailDialog({
     }
 
     setIsSending(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSending(false);
-    toast.success(`${label} sent successfully!`);
-    onOpenChange(false);
-    onSent?.();
+    try {
+      let result: { success: boolean; error?: string; emailSent?: boolean };
+
+      if (type === 'quote') {
+        result = await sendQuote(documentId);
+      } else if (type === 'invoice') {
+        result = await sendInvoice(documentId);
+      } else {
+        const contractResult = await sendContractInstance(documentId);
+        result = { success: true, emailSent: contractResult.emailSent };
+      }
+
+      if (result.success) {
+        if (result.emailSent) {
+          toast.success(`${label} sent successfully!`);
+        } else {
+          toast.success(`${label} status updated to sent, but email delivery failed. Check email settings.`);
+        }
+        onOpenChange(false);
+        onSent?.();
+      } else {
+        toast.error(result.error || `Failed to send ${label.toLowerCase()}`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : `Failed to send ${label.toLowerCase()}`;
+      toast.error(msg);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -373,7 +356,6 @@ export function SendEmailDialog({
                   </DropdownMenu>
                 </div>
                 <div className="border rounded-lg overflow-hidden">
-                  <FormattingToolbar />
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}

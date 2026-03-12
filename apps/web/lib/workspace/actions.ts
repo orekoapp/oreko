@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { prisma } from '@quotecraft/database';
@@ -19,14 +20,14 @@ export interface CreateWorkspaceInput {
   name: string;
 }
 
-// Get current user ID
-async function getCurrentUserId(): Promise<string> {
+// Get current user ID — cached per request
+const getCurrentUserId = cache(async (): Promise<string> => {
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
   return session.user.id;
-}
+});
 
 // Generate a unique workspace slug from name
 function generateSlug(name: string): string {
@@ -75,7 +76,7 @@ export async function getUserWorkspaces(): Promise<WorkspaceWithRole[]> {
 /**
  * Get the currently active workspace ID from cookie, or default to first workspace
  */
-export async function getActiveWorkspaceId(): Promise<string> {
+export const getActiveWorkspaceId = cache(async (): Promise<string> => {
   const userId = await getCurrentUserId();
   const cookieStore = await cookies();
   const storedId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
@@ -101,7 +102,7 @@ export async function getActiveWorkspaceId(): Promise<string> {
   }
 
   return firstMembership.workspaceId;
-}
+});
 
 /**
  * Get the active workspace details

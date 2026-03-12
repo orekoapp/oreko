@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
 import { DataTableRowActions } from '@/components/ui/data-table/data-table-row-actions';
-import { FolderKanban, FileText, Receipt, Pencil, Power, PowerOff, CheckCircle2, XCircle } from 'lucide-react';
+import { FolderKanban, FileText, Receipt, Pencil, Trash2, Power, PowerOff, CheckCircle2, XCircle } from 'lucide-react';
 
 export interface ProjectListItem {
   id: string;
@@ -187,7 +187,7 @@ export function getProjectColumns(options: ProjectColumnsOptions = {}): ColumnDe
                 onClick: onToggleActive,
                 separator: true,
               }] : []),
-              ...(onDelete ? [{ label: 'Delete', icon: <span className="mr-2 h-4 w-4">🗑️</span>, onClick: onDelete, variant: 'destructive' as const, separator: !onToggleActive }] : []),
+              ...(onDelete ? [{ label: 'Delete', icon: <Trash2 className="mr-2 h-4 w-4" />, onClick: onDelete, variant: 'destructive' as const, separator: !onToggleActive }] : []),
             ]}
           />
         );

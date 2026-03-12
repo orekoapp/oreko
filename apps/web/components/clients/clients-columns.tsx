@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
 import { DataTableRowActions } from '@/components/ui/data-table/data-table-row-actions';
 import { ClientListItem } from '@/lib/clients/types';
-import { User, FileText, Receipt } from 'lucide-react';
+import { User, FileText, Receipt, Pencil, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface ClientColumnsOptions {
@@ -122,10 +122,10 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
             onDelete={onDelete}
             actions={[
               ...(onView ? [{ label: 'View Details', icon: <User className="mr-2 h-4 w-4" />, onClick: onView }] : []),
-              ...(onEdit ? [{ label: 'Edit', icon: <span className="mr-2 h-4 w-4">✏️</span>, onClick: onEdit }] : []),
+              ...(onEdit ? [{ label: 'Edit', icon: <Pencil className="mr-2 h-4 w-4" />, onClick: onEdit }] : []),
               ...(onCreateQuote ? [{ label: 'Create Quote', icon: <FileText className="mr-2 h-4 w-4" />, onClick: onCreateQuote, separator: true }] : []),
               ...(onCreateInvoice ? [{ label: 'Create Invoice', icon: <Receipt className="mr-2 h-4 w-4" />, onClick: onCreateInvoice }] : []),
-              ...(onDelete ? [{ label: 'Delete', icon: <span className="mr-2 h-4 w-4">🗑️</span>, onClick: onDelete, variant: 'destructive' as const, separator: true }] : []),
+              ...(onDelete ? [{ label: 'Delete', icon: <Trash2 className="mr-2 h-4 w-4" />, onClick: onDelete, variant: 'destructive' as const, separator: true }] : []),
             ]}
           />
         );

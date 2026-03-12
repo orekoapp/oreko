@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Eye } from 'lucide-react';
+import { toast } from 'sonner';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,10 +112,12 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
             type: data.type as EmailTemplateType,
           });
         }
+        toast.success(template ? 'Template updated' : 'Template created');
         router.push('/settings/emails');
         router.refresh();
       } catch (error) {
         console.error('Failed to save template:', error);
+        toast.error('Failed to save template');
       }
     });
   };

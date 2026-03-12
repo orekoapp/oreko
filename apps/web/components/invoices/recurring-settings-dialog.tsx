@@ -110,7 +110,6 @@ export function RecurringSettingsDialog({
 
   const handleSave = async () => {
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
 
     const settings: RecurringSettings = {
       enabled,
@@ -121,9 +120,10 @@ export function RecurringSettingsDialog({
       autoSend,
     };
 
+    // Save locally for now — recurring invoices backend not yet implemented
     localStorage.setItem(getStorageKey(invoiceId), JSON.stringify(settings));
     setIsSaving(false);
-    toast.success(enabled ? 'Recurring invoice enabled' : 'Recurring settings saved');
+    toast.info('Recurring invoices are not yet fully supported. Settings saved locally only.');
     onSave?.(settings);
     onOpenChange(false);
   };

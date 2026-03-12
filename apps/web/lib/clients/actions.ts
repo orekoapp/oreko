@@ -146,10 +146,12 @@ export async function getClientById(id: string): Promise<ClientDetail> {
     },
     include: {
       quotes: {
+        where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         take: 10,
       },
       invoices: {
+        where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         take: 10,
       },
@@ -171,6 +173,7 @@ export async function getClientById(id: string): Promise<ClientDetail> {
     where: {
       clientId: id,
       workspaceId,
+      deletedAt: null,
     },
     _sum: {
       total: true,
@@ -192,15 +195,31 @@ export async function getClientById(id: string): Promise<ClientDetail> {
     phone: client.phone,
     company: client.company,
     address: safeParseAddress(client.address),
-    billingAddress: (client.billingAddress as ClientAddress) || null,
+    billingAddress: safeParseAddress(client.billingAddress),
     taxId: client.taxId,
     notes: client.notes,
     metadata,
     createdAt: client.createdAt,
     updatedAt: client.updatedAt,
     deletedAt: client.deletedAt,
-    quotes: client.quotes ?? [],
-    invoices: client.invoices ?? [],
+    quotes: (client.quotes ?? []).map((q) => ({
+      ...q,
+      subtotal: toNumber(q.subtotal),
+      discountValue: toNumber(q.discountValue),
+      discountAmount: toNumber(q.discountAmount),
+      taxTotal: toNumber(q.taxTotal),
+      total: toNumber(q.total),
+    })),
+    invoices: (client.invoices ?? []).map((inv) => ({
+      ...inv,
+      subtotal: toNumber(inv.subtotal),
+      discountValue: toNumber(inv.discountValue),
+      discountAmount: toNumber(inv.discountAmount),
+      taxTotal: toNumber(inv.taxTotal),
+      total: toNumber(inv.total),
+      amountPaid: toNumber(inv.amountPaid),
+      amountDue: toNumber(inv.amountDue),
+    })),
     _count: client._count,
     // Computed fields from metadata
     contacts: metadata.contacts || [],

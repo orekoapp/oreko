@@ -593,6 +593,7 @@ export async function getProjectContracts(projectId: string): Promise<ProjectCon
     },
     include: {
       contractInstances: {
+        where: { deletedAt: null },
         include: {
           contract: {
             select: {

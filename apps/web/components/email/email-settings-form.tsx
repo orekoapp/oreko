@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bold, Italic, Underline, Link2, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,9 +19,7 @@ export function EmailSettingsForm() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Mock save
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      toast.success('Email settings updated');
+      toast.info('Email settings are not yet persisted. This feature is coming soon.');
     } catch {
       toast.error('Failed to update email settings');
     } finally {
@@ -40,46 +38,13 @@ export function EmailSettingsForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center gap-1 rounded-t-md border border-b-0 bg-muted/50 px-2 py-1.5">
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <Bold className="h-3.5 w-3.5" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <Italic className="h-3.5 w-3.5" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <Underline className="h-3.5 w-3.5" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <Link2 className="h-3.5 w-3.5" />
-              </Button>
-              <div className="mx-1 h-5 w-px bg-border" />
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <AlignLeft className="h-3.5 w-3.5" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <AlignCenter className="h-3.5 w-3.5" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <AlignRight className="h-3.5 w-3.5" />
-              </Button>
-              <div className="mx-1 h-5 w-px bg-border" />
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <List className="h-3.5 w-3.5" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                <ListOrdered className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            <Textarea
-              value={signature}
-              onChange={(e) => setSignature(e.target.value)}
-              placeholder="Your Name&#10;your@email.com"
-              className="min-h-[100px] rounded-t-none border-t-0"
-              rows={4}
-            />
-          </div>
+          <Textarea
+            value={signature}
+            onChange={(e) => setSignature(e.target.value)}
+            placeholder="Your Name&#10;your@email.com"
+            className="min-h-[100px]"
+            rows={4}
+          />
         </CardContent>
       </Card>
 
@@ -134,7 +99,7 @@ export function EmailSettingsForm() {
                 type="email"
                 className="flex-1"
               />
-              <Button type="button" variant="outline" onClick={() => toast.info('Email verification sent')}>
+              <Button type="button" variant="outline" disabled title="Email verification coming soon">
                 Verify
               </Button>
             </div>

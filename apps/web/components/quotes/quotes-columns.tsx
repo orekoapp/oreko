@@ -7,6 +7,7 @@ import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-col
 import { DataTableRowActions, RowAction } from '@/components/ui/data-table/data-table-row-actions';
 import { QuoteListItem } from '@/lib/quotes/types';
 import { Eye, Pencil, Send, Link2, FileOutput, Copy, Download, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 const statusColors: Record<string, string> = {
   draft: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
@@ -82,9 +83,9 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
       ),
       cell: ({ row }) => {
         return (
-          <div className="font-medium text-primary">
+          <Link href={`/quotes/${row.original.id}`} className="font-medium text-primary hover:underline">
             #{row.getValue('quoteNumber')}
-          </div>
+          </Link>
         );
       },
     },

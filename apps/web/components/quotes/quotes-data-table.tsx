@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { duplicateQuote, deleteQuote, getQuote } from '@/lib/quotes/actions';
+import { createInvoiceFromQuote } from '@/lib/invoices/actions';
 import { cn } from '@/lib/utils';
 import { SendEmailDialog } from '@/components/shared/send-email-dialog';
 
@@ -153,16 +154,31 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
   }, []);
 
   // Convert to Invoice
-  const handleConvertToInvoice = useCallback((quote: QuoteListItem) => {
-    // Mark as converted locally
-    setData((prev) =>
-      prev.map((q) =>
-        q.id === quote.id ? { ...q, status: 'converted' } : q
-      )
-    );
+  const handleConvertToInvoice = useCallback(async (quote: QuoteListItem) => {
+    if (quote.status !== 'accepted') {
+      toast.error('Only accepted quotes can be converted to invoices');
+      return;
+    }
 
-    toast.success('Converting quote to invoice...');
-    router.push(`/invoices/new?fromQuote=${quote.id}`);
+    toast.loading('Converting quote to invoice...', { id: 'convert' });
+    try {
+      const result = await createInvoiceFromQuote(quote.id);
+      if (result.success && result.invoice) {
+        toast.success('Quote converted to invoice!', { id: 'convert' });
+        setData((prev) =>
+          prev.map((q) =>
+            q.id === quote.id ? { ...q, status: 'converted' } : q
+          )
+        );
+        router.push(`/invoices/${result.invoice.id}`);
+      } else {
+        toast.error(result.error || 'Failed to convert quote', { id: 'convert' });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to convert quote';
+      console.error('Convert to invoice error:', err);
+      toast.error(msg, { id: 'convert' });
+    }
   }, [router]);
 
   const columns = getQuoteColumns({
@@ -250,7 +266,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
         statusFilterKey="status"
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
-        onRowClick={(quote) => handleView(quote)}
+        onRowClick={(quote) => router.push(`/quotes/${quote.id}`)}
         bulkActions={bulkActions}
       />
 
@@ -474,6 +490,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
           open={sendDialogOpen}
           onOpenChange={setSendDialogOpen}
           type="quote"
+          documentId={sendTarget.id}
           documentNumber={sendTarget.quoteNumber}
           recipientEmail={sendTarget.client?.email || ''}
           recipientName={sendTarget.client?.name || ''}

@@ -154,7 +154,11 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
 
   // Copy Link
   const handleCopyLink = useCallback(async (invoice: InvoiceListItem) => {
-    const url = `https://quotecraft.app/pay/${invoice.invoiceNumber}`;
+    if (!invoice.accessToken) {
+      toast.error('No portal link available — send the invoice first');
+      return;
+    }
+    const url = `${window.location.origin}/i/${invoice.accessToken}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success('Link copied to clipboard');
@@ -236,7 +240,7 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
         statusFilterKey="status"
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
-        onRowClick={(invoice) => handleView(invoice)}
+        onRowClick={(invoice) => router.push(`/invoices/${invoice.id}`)}
       />
 
       {/* Invoice View Dialog -- Payment Page Style */}
@@ -472,6 +476,7 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
             open={sendDialogOpen}
             onOpenChange={setSendDialogOpen}
             type="invoice"
+            documentId={sendTarget.id}
             documentNumber={sendTarget.invoiceNumber}
             recipientEmail={sendTarget.client.email || ''}
             recipientName={sendTarget.client.name}

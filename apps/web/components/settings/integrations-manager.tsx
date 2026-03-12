@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, FileSpreadsheet, BookOpen, MessageSquare, Calendar, Zap, FolderOpen, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,14 +26,14 @@ interface IntegrationsManagerProps {
   initialData: IntegrationData[];
 }
 
-const PROVIDER_ICONS: Record<string, string> = {
-  quickbooks: '\ud83d\udcd7',
-  xero: '\ud83d\udcd8',
-  slack: '\ud83d\udcac',
-  google_calendar: '\ud83d\udcc5',
-  zapier: '\u26a1',
-  google_drive: '\ud83d\udcc1',
-  dropbox: '\ud83d\udce6',
+const PROVIDER_ICONS: Record<string, React.ReactNode> = {
+  quickbooks: <FileSpreadsheet className="h-6 w-6 text-muted-foreground" />,
+  xero: <BookOpen className="h-6 w-6 text-muted-foreground" />,
+  slack: <MessageSquare className="h-6 w-6 text-muted-foreground" />,
+  google_calendar: <Calendar className="h-6 w-6 text-muted-foreground" />,
+  zapier: <Zap className="h-6 w-6 text-muted-foreground" />,
+  google_drive: <FolderOpen className="h-6 w-6 text-muted-foreground" />,
+  dropbox: <Package className="h-6 w-6 text-muted-foreground" />,
 };
 
 export function IntegrationsManager({ initialData }: IntegrationsManagerProps) {
@@ -106,7 +106,7 @@ export function IntegrationsManager({ initialData }: IntegrationsManagerProps) {
                   className="flex items-center justify-between rounded-lg border p-4"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{PROVIDER_ICONS[integration.provider]}</span>
+                    {PROVIDER_ICONS[integration.provider]}
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{integration.name}</span>
@@ -160,7 +160,7 @@ export function IntegrationsManager({ initialData }: IntegrationsManagerProps) {
                   className="flex items-center justify-between rounded-lg border p-4"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{PROVIDER_ICONS[integration.provider]}</span>
+                    {PROVIDER_ICONS[integration.provider]}
                     <div>
                       <span className="font-medium">{integration.name}</span>
                       <p className="text-sm text-muted-foreground">
@@ -202,7 +202,7 @@ export function IntegrationsManager({ initialData }: IntegrationsManagerProps) {
                   className="flex items-center justify-between rounded-lg border p-4 opacity-60"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{PROVIDER_ICONS[integration.provider]}</span>
+                    {PROVIDER_ICONS[integration.provider]}
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{integration.name}</span>

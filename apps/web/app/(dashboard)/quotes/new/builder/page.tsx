@@ -48,12 +48,16 @@ export default function QuoteBuilderPage() {
   const hasInitialized = useRef(false);
   const clientIdSet = useRef(false);
 
-  // Initialize document if not exists
+  // Reset only if the persisted document is from a previously saved quote (has a real ID).
+  // If it's a fresh unsaved draft (empty ID), keep the user's in-progress work.
   useEffect(() => {
     if (!document) {
       resetDocument();
+    } else if (document.id) {
+      // Stale saved quote from localStorage — clear it for a fresh start
+      resetDocument();
     }
-  }, [document, resetDocument]);
+  }, []);
 
   // Set clientId on document when available
   useEffect(() => {

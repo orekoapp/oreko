@@ -47,6 +47,7 @@ export async function getEmailTemplates(
     type: t.type,
     name: t.name,
     subject: t.subject,
+    body: t.body,
     isActive: t.isActive,
     isDefault: t.isDefault,
     createdAt: t.createdAt,

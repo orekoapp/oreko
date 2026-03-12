@@ -119,11 +119,11 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
             <div className="text-right text-sm">
               <p className="text-muted-foreground">Issue Date</p>
               <p className="font-medium">
-                {new Date(invoice.issueDate).toLocaleDateString()}
+                {new Date(invoice.issueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
               </p>
               <p className="mt-2 text-muted-foreground">Due Date</p>
               <p className={`font-medium ${invoice.isOverdue ? 'text-red-600' : ''}`}>
-                {new Date(invoice.dueDate).toLocaleDateString()}
+                {new Date(invoice.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
               </p>
             </div>
           </div>
@@ -253,7 +253,7 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
                   </div>
                   {payment.processedAt && (
                     <p className="text-sm text-muted-foreground">
-                      {new Date(payment.processedAt).toLocaleDateString()}
+                      {new Date(payment.processedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </p>
                   )}
                 </div>

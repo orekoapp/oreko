@@ -7,6 +7,7 @@ import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-col
 import { DataTableRowActions, RowAction } from '@/components/ui/data-table/data-table-row-actions';
 import { InvoiceListItem } from '@/lib/invoices/types';
 import { AlertCircle, Eye, Pencil, Send, Link2, Copy, Download, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 const statusColors: Record<string, string> = {
   draft: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
@@ -97,9 +98,9 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const isRecurring = recurringInvoiceIds?.has(row.original.id);
         return (
           <div className="flex items-center gap-1.5">
-            <span className="font-medium text-primary">
+            <Link href={`/invoices/${row.original.id}`} className="font-medium text-primary hover:underline">
               #{row.getValue('invoiceNumber')}
-            </span>
+            </Link>
             {isRecurring && (
               <span title="Recurring invoice">
                 <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />

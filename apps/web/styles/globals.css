@@ -276,14 +276,22 @@
   color: var(--primary);
 }
 
-.dark[data-sidebar-style="elevated"] input,
-.dark[data-sidebar-style="elevated"] select,
-.dark[data-sidebar-style="elevated"] textarea,
-.dark[data-sidebar-style="elevated"] [role="combobox"],
-.dark[data-sidebar-style="elevated"] [role="listbox"],
-.dark[data-sidebar-style="elevated"] [data-slot="control"] {
+.dark[data-sidebar-style="elevated"] input:not(.document-paper input),
+.dark[data-sidebar-style="elevated"] select:not(.document-paper select),
+.dark[data-sidebar-style="elevated"] textarea:not(.document-paper textarea),
+.dark[data-sidebar-style="elevated"] [role="combobox"]:not(.document-paper [role="combobox"]),
+.dark[data-sidebar-style="elevated"] [role="listbox"]:not(.document-paper [role="listbox"]),
+.dark[data-sidebar-style="elevated"] [data-slot="control"]:not(.document-paper [data-slot="control"]) {
   background-color: var(--base-800);
   box-shadow: none;
+}
+
+/* Inside document-paper, inputs should stay light (paper always looks like a printed doc) */
+.dark .document-paper input,
+.dark .document-paper select,
+.dark .document-paper textarea {
+  background-color: var(--base-50);
+  color: var(--base-950);
 }
 
 .dark[data-sidebar-style="elevated"] [role="tablist"] {

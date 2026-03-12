@@ -185,7 +185,27 @@ export async function createInvoice(data: CreateInvoiceData) {
     domainEvents.emit({ type: 'invoice.created', payload: { invoiceId: invoice.id, workspaceId: workspace.id } });
   } catch {}
 
-  return { success: true, invoice };
+  return {
+    success: true,
+    invoice: {
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      discountValue: invoice.discountValue ? Number(invoice.discountValue) : null,
+      discountAmount: Number(invoice.discountAmount),
+      taxTotal: Number(invoice.taxTotal),
+      total: Number(invoice.total),
+      amountPaid: Number(invoice.amountPaid),
+      amountDue: Number(invoice.amountDue),
+      lineItems: invoice.lineItems.map((li) => ({
+        ...li,
+        quantity: Number(li.quantity),
+        rate: Number(li.rate),
+        amount: Number(li.amount),
+        taxRate: li.taxRate ? Number(li.taxRate) : null,
+        taxAmount: Number(li.taxAmount),
+      })),
+    },
+  };
 }
 
 /**
@@ -329,7 +349,27 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
     domainEvents.emit({ type: 'invoice.created', payload: { invoiceId: invoice.id, workspaceId: workspace.id } });
   } catch {}
 
-  return { success: true, invoice };
+  return {
+    success: true,
+    invoice: {
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      discountValue: invoice.discountValue ? Number(invoice.discountValue) : null,
+      discountAmount: Number(invoice.discountAmount),
+      taxTotal: Number(invoice.taxTotal),
+      total: Number(invoice.total),
+      amountPaid: Number(invoice.amountPaid),
+      amountDue: Number(invoice.amountDue),
+      lineItems: invoice.lineItems.map((li) => ({
+        ...li,
+        quantity: Number(li.quantity),
+        rate: Number(li.rate),
+        amount: Number(li.amount),
+        taxRate: li.taxRate ? Number(li.taxRate) : null,
+        taxAmount: Number(li.taxAmount),
+      })),
+    },
+  };
 }
 
 
@@ -579,6 +619,7 @@ export async function getInvoices(filters?: {
       total: Number(invoice.total),
       amountPaid: Number(invoice.amountPaid),
       amountDue: Number(invoice.amountDue),
+      accessToken: invoice.accessToken ?? null,
       client: {
         id: invoice.client?.id ?? '',
         name: invoice.client?.name ?? 'Unknown Client',
@@ -1026,72 +1067,21 @@ export interface InvoiceTemplateListItem {
 }
 
 export async function getInvoiceTemplates(filter?: { search?: string; page?: number }) {
-  // TODO: Wire up to database when invoice templates table is added
-  const templates: InvoiceTemplateListItem[] = [
-    {
-      id: 'inv-tmpl-001',
-      name: 'Standard Invoice',
-      description: 'Default invoice template with standard terms',
-      paymentTerms: 'net30',
-      currency: 'USD',
-      usageCount: 24,
-      isDefault: true,
-      createdAt: new Date('2025-12-01'),
-      updatedAt: new Date('2026-02-15'),
-    },
-    {
-      id: 'inv-tmpl-002',
-      name: 'Rush Service Invoice',
-      description: 'Template for rush/expedited service billing',
-      paymentTerms: 'due_on_receipt',
-      currency: 'USD',
-      usageCount: 8,
-      isDefault: false,
-      createdAt: new Date('2026-01-10'),
-      updatedAt: new Date('2026-02-10'),
-    },
-    {
-      id: 'inv-tmpl-003',
-      name: 'Web Development Project',
-      description: 'Multi-phase web development project invoice',
-      paymentTerms: 'net15',
-      currency: 'USD',
-      usageCount: 12,
-      isDefault: false,
-      createdAt: new Date('2025-11-20'),
-      updatedAt: new Date('2026-01-28'),
-    },
-    {
-      id: 'inv-tmpl-004',
-      name: 'Monthly Retainer',
-      description: 'Recurring monthly retainer invoice',
-      paymentTerms: 'net7',
-      currency: 'USD',
-      usageCount: 36,
-      isDefault: false,
-      createdAt: new Date('2025-10-15'),
-      updatedAt: new Date('2026-03-01'),
-    },
-  ];
-
+  // Not yet backed by database — return empty list
   return {
-    data: templates,
-    meta: { page: 1, limit: 10, total: templates.length, totalPages: 1 },
+    data: [] as InvoiceTemplateListItem[],
+    meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
   };
 }
 
 export async function deleteInvoiceTemplate(id: string) {
-  // TODO: Wire up to database
-  console.log('deleteInvoiceTemplate stub called with:', id);
-  revalidatePath('/templates/invoices');
-  return { success: true };
+  // Not yet backed by database
+  return { success: false, error: 'Invoice templates are not yet implemented' };
 }
 
 export async function duplicateInvoiceTemplate(id: string) {
-  // TODO: Wire up to database
-  console.log('duplicateInvoiceTemplate stub called with:', id);
-  revalidatePath('/templates/invoices');
-  return { success: true, id: 'inv-tmpl-dup' };
+  // Not yet backed by database
+  return { success: false, error: 'Invoice templates are not yet implemented' };
 }
 
 export async function updateInvoiceTemplate(data: {
@@ -1102,8 +1092,6 @@ export async function updateInvoiceTemplate(data: {
   currency: string;
   isDefault: boolean;
 }) {
-  // TODO: Wire up to database
-  console.log('updateInvoiceTemplate stub called with:', data);
-  revalidatePath('/templates/invoices');
-  return { success: true };
+  // Not yet backed by database
+  return { success: false, error: 'Invoice templates are not yet implemented' };
 }

@@ -55,8 +55,7 @@ async function getBrowser(): Promise<Browser> {
   } else {
     // Local development: find system Chrome/Chromium
     const executablePath =
-      process.env.PUPPETEER_EXECUTABLE_PATH ||
-      findLocalChrome();
+      (process.env.PUPPETEER_EXECUTABLE_PATH || findLocalChrome()).replace(/\\/g, '/');
 
     browserInstance = await puppeteer.launch({
       headless: true,
@@ -81,6 +80,11 @@ async function getBrowser(): Promise<Browser> {
  */
 function findLocalChrome(): string {
   const paths = [
+    // Windows (native)
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
     // Linux
     '/usr/bin/chromium-browser',
     '/usr/bin/chromium',
@@ -98,7 +102,8 @@ function findLocalChrome(): string {
   for (const p of paths) {
     try {
       if (fs.existsSync(p)) {
-        return p;
+        // Puppeteer needs forward slashes on Windows
+        return p.replace(/\\/g, '/');
       }
     } catch {
       continue;

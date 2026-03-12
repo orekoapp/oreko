@@ -35,7 +35,7 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
     }
   };
 
-  // Sanitize HTML content using DOMPurify (isomorphic-dompurify) to prevent XSS
+  // Sanitize HTML content using DOMPurify to prevent XSS
   const safeHtml = sanitizeHtml(block.content.html || '');
 
   if (isEditing) {

@@ -30,7 +30,7 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
 
   if (isEditing) {
     return (
-      <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="rounded-lg border border-border bg-card text-card-foreground p-4 space-y-3">
         <div className="flex gap-4">
           <div className="flex-1">
             <label className="text-xs font-medium text-muted-foreground">Service Name</label>
@@ -38,7 +38,7 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
               value={block.content.name}
               onChange={(e) => handleChange('name', e.target.value)}
               placeholder="Service name"
-              className="mt-1"
+              className="mt-1 text-foreground"
             />
           </div>
           <div className="w-24">
@@ -49,7 +49,7 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
               onChange={(e) => handleChange('quantity', parseFloat(e.target.value) || 0)}
               min={0}
               step="0.01"
-              className="mt-1"
+              className="mt-1 text-foreground"
             />
           </div>
           <div className="w-32">
@@ -60,7 +60,7 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
               onChange={(e) => handleChange('rate', parseFloat(e.target.value) || 0)}
               min={0}
               step="0.01"
-              className="mt-1"
+              className="mt-1 text-foreground"
             />
           </div>
         </div>
@@ -71,7 +71,7 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
               value={block.content.description}
               onChange={(e) => handleChange('description', e.target.value)}
               placeholder="Add a description..."
-              className="mt-1"
+              className="mt-1 text-foreground"
             />
           </div>
           <div className="w-24">
@@ -84,7 +84,7 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
               min={0}
               max={100}
               step="0.01"
-              className="mt-1"
+              className="mt-1 text-foreground"
             />
           </div>
         </div>

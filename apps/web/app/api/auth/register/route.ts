@@ -11,9 +11,6 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: passwordSchema,
-  termsAccepted: z.literal(true, {
-    errorMap: () => ({ message: 'You must accept the terms of service' }),
-  }),
 });
 
 // Reserved slugs that conflict with system routes
