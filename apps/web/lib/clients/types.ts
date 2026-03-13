@@ -1,5 +1,24 @@
 import type { Client, Quote, Invoice } from '@quotecraft/database';
 
+// Serialized versions with number instead of Decimal (for client components)
+type SerializedQuote = Omit<Quote, 'subtotal' | 'discountValue' | 'discountAmount' | 'taxTotal' | 'total'> & {
+  subtotal: number;
+  discountValue: number;
+  discountAmount: number;
+  taxTotal: number;
+  total: number;
+};
+
+type SerializedInvoice = Omit<Invoice, 'subtotal' | 'discountValue' | 'discountAmount' | 'taxTotal' | 'total' | 'amountPaid' | 'amountDue'> & {
+  subtotal: number;
+  discountValue: number;
+  discountAmount: number;
+  taxTotal: number;
+  total: number;
+  amountPaid: number;
+  amountDue: number;
+};
+
 // Client with relations
 export type ClientWithRelations = Client & {
   quotes?: Quote[];
@@ -97,8 +116,8 @@ export interface ClientDetail {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
-  quotes?: Quote[];
-  invoices?: Invoice[];
+  quotes?: SerializedQuote[];
+  invoices?: SerializedInvoice[];
   _count?: {
     quotes: number;
     invoices: number;

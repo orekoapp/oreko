@@ -135,7 +135,6 @@ export function AnalyticsPageContent({
             data={dashboardData.revenueData}
             period={period}
             onPeriodChange={setPeriod}
-            height={400}
           />
           <MonthlyComparisonChart data={monthlyComparisonData} height={350} />
         </TabsContent>

@@ -612,7 +612,7 @@ export async function getProjectContracts(projectId: string): Promise<ProjectCon
 
   return project.contractInstances.map((ci) => ({
     id: ci.id,
-    name: ci.contract.name,
+    name: ci.contract?.name ?? 'Untitled',
     addedAt: ci.createdAt,
     isSigned: ci.status === 'signed',
     linkedInvoiceId: undefined,

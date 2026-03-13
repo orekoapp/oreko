@@ -221,5 +221,3 @@ export async function getWebhookDeliveries(endpointId: string, limit = 20) {
   }));
 }
 
-/** Exported for UI multi-select */
-export { VALID_EVENT_TYPES };

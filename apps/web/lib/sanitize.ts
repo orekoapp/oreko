@@ -7,7 +7,8 @@
  * the jsdom/isomorphic-dompurify ENOENT error for default-stylesheet.css.
  */
 
-let purify: typeof import('dompurify').default | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let purify: any = null;
 
 if (typeof window !== 'undefined') {
   // Dynamic require only runs in the browser bundle
