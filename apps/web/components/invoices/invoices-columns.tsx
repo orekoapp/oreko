@@ -4,18 +4,29 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
-import { DataTableRowActions } from '@/components/ui/data-table/data-table-row-actions';
+import { DataTableRowActions, RowAction } from '@/components/ui/data-table/data-table-row-actions';
 import { InvoiceListItem } from '@/lib/invoices/types';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Eye, Pencil, Send, Link2, Copy, Download, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 const statusColors: Record<string, string> = {
   draft: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
   sent: 'border-blue-300 text-blue-600 bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:bg-blue-950',
   viewed: 'border-yellow-300 text-yellow-700 bg-yellow-50 dark:border-yellow-600 dark:text-yellow-400 dark:bg-yellow-950',
-  partial: 'border-purple-300 text-purple-600 bg-purple-50 dark:border-purple-600 dark:text-purple-400 dark:bg-purple-950',
+  partial: 'border-amber-300 text-amber-600 bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:bg-amber-950',
   paid: 'border-green-300 text-green-600 bg-green-50 dark:border-green-600 dark:text-green-400 dark:bg-green-950',
   overdue: 'border-red-300 text-red-600 bg-red-50 dark:border-red-600 dark:text-red-400 dark:bg-red-950',
   voided: 'border-gray-300 text-gray-500 bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
+};
+
+const statusLabels: Record<string, string> = {
+  draft: 'Draft',
+  sent: 'Sent',
+  viewed: 'Viewed',
+  partial: 'Partially Paid',
+  paid: 'Paid',
+  overdue: 'Overdue',
+  voided: 'Voided',
 };
 
 function formatCurrency(amount: number): string {
@@ -39,10 +50,19 @@ interface InvoiceColumnsOptions {
   onDelete?: (invoice: InvoiceListItem) => void;
   onDuplicate?: (invoice: InvoiceListItem) => void;
   onDownload?: (invoice: InvoiceListItem) => void;
+  onSend?: (invoice: InvoiceListItem) => void;
+  onCopyLink?: (invoice: InvoiceListItem) => void;
+  onRecordPayment?: (invoice: InvoiceListItem) => void;
+  onRecurringSettings?: (invoice: InvoiceListItem) => void;
+  recurringInvoiceIds?: Set<string>;
 }
 
 export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDef<InvoiceListItem>[] {
-  const { onView, onEdit, onDelete, onDuplicate, onDownload } = options;
+  const {
+    onView, onEdit, onDelete, onDuplicate, onDownload,
+    onSend, onCopyLink, onRecordPayment, onRecurringSettings,
+    recurringInvoiceIds,
+  } = options;
 
   return [
     {
@@ -75,9 +95,17 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         <DataTableColumnHeader column={column} title="Invoice ID" />
       ),
       cell: ({ row }) => {
+        const isRecurring = recurringInvoiceIds?.has(row.original.id);
         return (
-          <div className="font-medium text-primary">
-            #{row.getValue('invoiceNumber')}
+          <div className="flex items-center gap-1.5">
+            <Link href={`/invoices/${row.original.id}`} className="font-medium text-primary hover:underline">
+              #{row.getValue('invoiceNumber')}
+            </Link>
+            {isRecurring && (
+              <span title="Recurring invoice">
+                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+              </span>
+            )}
           </div>
         );
       },
@@ -97,7 +125,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
               variant="outline"
               className={`capitalize ${statusColors[status] || statusColors.draft}`}
             >
-              {status}
+              {statusLabels[status] || status}
             </Badge>
             {isOverdue && (
               <span className="flex items-center gap-1 text-xs text-red-600">
@@ -118,8 +146,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
       ),
       cell: ({ row }) => {
         const client = row.original.client;
-        const displayName = client.company || client.name;
-        const initials = displayName
+        const initials = client.name
           .split(' ')
           .map((n) => n[0])
           .join('')
@@ -132,9 +159,9 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
               {initials}
             </div>
             <div>
-              <div className="font-medium">{displayName}</div>
-              {client.company && client.company !== client.name && (
-                <div className="text-sm text-muted-foreground">{client.name}</div>
+              <div className="font-medium">{client.name}</div>
+              {client.email && (
+                <div className="text-sm text-muted-foreground">{client.email}</div>
               )}
             </div>
           </div>
@@ -145,7 +172,6 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const searchValue = value.toLowerCase();
         return (
           client.name.toLowerCase().includes(searchValue) ||
-          (client.company?.toLowerCase().includes(searchValue) ?? false) ||
           (client.email?.toLowerCase().includes(searchValue) ?? false)
         );
       },
@@ -158,11 +184,17 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
       cell: ({ row }) => {
         const total = row.getValue('total') as number;
         const amountDue = row.original.amountDue;
+        const status = row.original.status;
 
         return (
           <div className="whitespace-nowrap">
             <div className="font-medium">{formatCurrency(total)}</div>
-            {amountDue > 0 && amountDue !== total && (
+            {status === 'partial' && amountDue > 0 && (
+              <div className="text-sm text-amber-600">
+                {formatCurrency(amountDue)} remaining
+              </div>
+            )}
+            {status !== 'partial' && amountDue > 0 && amountDue !== total && (
               <div className="text-sm text-orange-600">
                 Due: {formatCurrency(amountDue)}
               </div>
@@ -200,16 +232,84 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
     {
       id: 'actions',
       cell: ({ row }) => {
-        const status = row.original.status;
-        const canDelete = status === 'draft' || status === 'voided';
+        const invoice = row.original;
+        const actions: RowAction<InvoiceListItem>[] = [];
+
+        if (onView) {
+          actions.push({
+            label: 'View',
+            icon: <Eye className="mr-2 h-4 w-4" />,
+            onClick: onView,
+          });
+        }
+        if (onEdit) {
+          actions.push({
+            label: 'Edit',
+            icon: <Pencil className="mr-2 h-4 w-4" />,
+            onClick: onEdit,
+          });
+        }
+        if (onSend) {
+          actions.push({
+            label: 'Send Invoice',
+            icon: <Send className="mr-2 h-4 w-4" />,
+            onClick: onSend,
+            separator: true,
+          });
+        }
+        if (onCopyLink) {
+          actions.push({
+            label: 'Copy Link',
+            icon: <Link2 className="mr-2 h-4 w-4" />,
+            onClick: onCopyLink,
+          });
+        }
+        if (onDuplicate) {
+          actions.push({
+            label: 'Duplicate',
+            icon: <Copy className="mr-2 h-4 w-4" />,
+            onClick: onDuplicate,
+            separator: true,
+          });
+        }
+        if (onDownload) {
+          actions.push({
+            label: 'Download PDF',
+            icon: <Download className="mr-2 h-4 w-4" />,
+            onClick: onDownload,
+          });
+        }
+        if (onRecordPayment && invoice.status !== 'paid' && invoice.status !== 'voided') {
+          actions.push({
+            label: 'Record Payment',
+            icon: <DollarSign className="mr-2 h-4 w-4" />,
+            onClick: onRecordPayment,
+            separator: true,
+          });
+        }
+        if (onRecurringSettings) {
+          actions.push({
+            label: 'Recurring Settings',
+            icon: <RefreshCw className="mr-2 h-4 w-4" />,
+            onClick: onRecurringSettings,
+          });
+        }
+        if (onDelete) {
+          actions.push({
+            label: 'Delete',
+            icon: <Trash2 className="mr-2 h-4 w-4" />,
+            onClick: onDelete,
+            variant: 'destructive',
+            separator: true,
+          });
+        }
+
         return (
           <DataTableRowActions
-            row={row.original}
+            row={invoice}
+            actions={actions}
             onView={onView}
-            onEdit={onEdit}
-            onDuplicate={onDuplicate}
-            onDelete={canDelete ? onDelete : undefined}
-            onDownload={onDownload}
+            onDelete={onDelete}
           />
         );
       },
@@ -221,7 +321,7 @@ export const invoiceStatusOptions = [
   { value: 'draft', label: 'Draft' },
   { value: 'sent', label: 'Sent' },
   { value: 'viewed', label: 'Viewed' },
-  { value: 'partial', label: 'Partial' },
+  { value: 'partial', label: 'Partially Paid' },
   { value: 'paid', label: 'Paid' },
   { value: 'overdue', label: 'Overdue' },
   { value: 'voided', label: 'Voided' },

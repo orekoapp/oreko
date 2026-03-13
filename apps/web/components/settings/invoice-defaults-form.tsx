@@ -17,7 +17,7 @@ import {
 import { updateInvoiceDefaults, type InvoiceDefaults } from '@/lib/settings/actions';
 import { PAYMENT_TERMS } from '@/lib/invoices/types';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface InvoiceDefaultsFormProps {
   initialData: InvoiceDefaults;
@@ -26,7 +26,6 @@ interface InvoiceDefaultsFormProps {
 export function InvoiceDefaultsForm({ initialData }: InvoiceDefaultsFormProps) {
   const [data, setData] = useState<InvoiceDefaults>(initialData);
   const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,12 +33,12 @@ export function InvoiceDefaultsForm({ initialData }: InvoiceDefaultsFormProps) {
     try {
       const result = await updateInvoiceDefaults(data);
       if (result.success) {
-        toast({ title: 'Invoice defaults saved' });
+        toast.success('Invoice defaults saved');
       } else {
-        toast({ title: 'Error', description: result.error, variant: 'destructive' });
+        toast.error(result.error || 'Failed to save settings');
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to save settings', variant: 'destructive' });
+      toast.error('Failed to save settings');
     } finally {
       setSaving(false);
     }

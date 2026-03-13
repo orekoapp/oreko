@@ -5,7 +5,7 @@ import { prisma } from '@quotecraft/database';
 import { ChangePasswordForm } from './change-password-form';
 import { ProfileForm } from './profile-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
@@ -55,15 +55,6 @@ export default async function AccountSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Account Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account profile and security settings.
-        </p>
-      </div>
-
-      <Separator />
-
       {/* Profile Section */}
       <Card>
         <CardHeader>

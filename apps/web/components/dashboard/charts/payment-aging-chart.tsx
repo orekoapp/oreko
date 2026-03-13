@@ -11,12 +11,10 @@ import {
   Cell,
 } from 'recharts';
 import { ChartCard } from './chart-card';
-import { AgingTooltip } from './chart-tooltip';
 import {
   AGING_COLORS,
   formatChartCurrency,
   formatFullCurrency,
-  getAgingLabel,
 } from '@/lib/dashboard/chart-utils';
 import type { PaymentAgingData } from '@/lib/dashboard/types';
 

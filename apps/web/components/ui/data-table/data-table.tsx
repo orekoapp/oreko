@@ -89,16 +89,18 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar
-        table={table}
-        filterKey={filterKey}
-        filterPlaceholder={filterPlaceholder}
-        statusOptions={statusOptions}
-        statusFilterKey={statusFilterKey}
-        pageSizes={pageSizes}
-        bulkActions={bulkActions}
-      />
-      <div className="rounded-md border">
+      <div className="rounded-lg border">
+        <div className="p-4">
+          <DataTableToolbar
+            table={table}
+            filterKey={filterKey}
+            filterPlaceholder={filterPlaceholder}
+            statusOptions={statusOptions}
+            statusFilterKey={statusFilterKey}
+            pageSizes={pageSizes}
+            bulkActions={bulkActions}
+          />
+        </div>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

@@ -6,6 +6,7 @@ import {
   ExternalLink,
   CheckCircle2,
   Clock,
+  Hourglass,
   Eye,
   Mail,
   FileText,
@@ -56,6 +57,11 @@ const statusConfig: Record<
     label: 'Viewed',
     variant: 'outline',
     icon: <Eye className="h-4 w-4" />,
+  },
+  pending: {
+    label: 'Pending Countersign',
+    variant: 'outline',
+    icon: <Hourglass className="h-4 w-4" />,
   },
   signed: {
     label: 'Signed',
@@ -166,7 +172,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
             </div>
             {instance.signerIpAddress && (
               <div>
-                <p className="text-sm text-muted-foreground">Signer IP</p>
+                <p className="text-sm text-muted-foreground">Client IP</p>
                 <p className="font-medium font-mono text-sm">
                   {instance.signerIpAddress}
                 </p>
@@ -175,34 +181,63 @@ export default async function ContractDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        {instance.signatureData && (
+        {(instance.signatureData || instance.status === 'pending') && (
           <Card>
             <CardHeader>
-              <CardTitle>Signature</CardTitle>
-              <CardDescription>
-                Signed by {instance.signatureData.name} on{' '}
-                {formatDate(new Date(instance.signatureData.date))}
-              </CardDescription>
+              <CardTitle>Signatures</CardTitle>
             </CardHeader>
             <CardContent>
-              {instance.signatureData.type === 'drawn' ? (
-                <div className="border rounded-lg p-4 bg-card">
-                  <img
-                    src={instance.signatureData.value}
-                    alt="Signature"
-                    className="max-h-24"
-                  />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Client Signature */}
+                <div>
+                  <p className="text-sm font-medium mb-2">Client Signature</p>
+                  {instance.signatureData ? (
+                    <div className="border rounded-lg p-4 bg-card">
+                      {instance.signatureData.type === 'drawn' ? (
+                        <img
+                          src={instance.signatureData.value}
+                          alt="Client Signature"
+                          className="max-h-24"
+                        />
+                      ) : (
+                        <p
+                          className="text-3xl"
+                          style={{ fontFamily: "'Brush Script MT', cursive" }}
+                        >
+                          {instance.signatureData.value}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Signed by {instance.signatureData.name} on{' '}
+                        {formatDate(new Date(instance.signatureData.date))}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed rounded-lg p-4 h-24 flex items-center justify-center text-sm text-muted-foreground">
+                      Awaiting client signature
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="border rounded-lg p-4 bg-card">
-                  <p
-                    className="text-3xl"
-                    style={{ fontFamily: "'Brush Script MT', cursive" }}
-                  >
-                    {instance.signatureData.value}
-                  </p>
+
+                {/* Business Signature */}
+                <div>
+                  <p className="text-sm font-medium mb-2">Business Signature</p>
+                  {instance.status === 'signed' ? (
+                    <div className="border rounded-lg p-4 bg-card">
+                      <p
+                        className="text-3xl"
+                        style={{ fontFamily: "'Brush Script MT', cursive" }}
+                      >
+                        Countersigned
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed rounded-lg p-4 h-24 flex items-center justify-center text-sm text-muted-foreground">
+                      Awaiting business countersignature
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         )}

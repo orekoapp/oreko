@@ -1,8 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ConversionFunnelData } from '@/lib/dashboard/types';
@@ -17,12 +16,43 @@ interface ConversionRateCardProps {
   conversionFunnel?: ConversionFunnelData;
 }
 
+function RadialProgress({ value, size = 80, strokeWidth = 6 }: { value: number; size?: number; strokeWidth?: number }) {
+  const r = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * r;
+  const filled = (Math.min(value, 100) / 100) * circumference;
+
+  return (
+    <svg width={size} height={size} className="block -rotate-90">
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        className="stroke-muted"
+        strokeWidth={strokeWidth}
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="var(--primary-500)"
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={circumference - filled}
+        strokeLinecap="round"
+        className="transition-all duration-700 ease-out"
+      />
+    </svg>
+  );
+}
+
 export function ConversionRateCard({ data: propData, conversionFunnel }: ConversionRateCardProps) {
   const data = useMemo(() => {
     if (propData) {
       return {
         currentRate: propData.conversionRate,
-        previousRate: propData.prevConversionRate ?? null,
+        previousRate: propData.prevConversionRate ?? propData.conversionRate,
         acceptedCount: propData.acceptedCount,
         totalSentCount: propData.totalSentCount,
       };
@@ -47,7 +77,6 @@ export function ConversionRateCard({ data: propData, conversionFunnel }: Convers
   }, [propData, conversionFunnel]);
 
   const trend = useMemo(() => {
-    if (data.previousRate === null) return null;
     const change = data.currentRate - data.previousRate;
     return {
       value: Math.abs(change).toFixed(1),
@@ -55,64 +84,43 @@ export function ConversionRateCard({ data: propData, conversionFunnel }: Convers
     };
   }, [data]);
 
-  const chartData = useMemo(() => {
-    return [
-      { name: 'Converted', value: data.currentRate, fill: '#22C55E' },
-      { name: 'Remaining', value: 100 - data.currentRate, fill: '#E5E7EB' },
-    ];
-  }, [data]);
-
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-4">
         <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
-          {/* Radial Chart */}
-          <div className="relative h-[100px] w-[100px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={30}
-                  outerRadius={45}
-                  paddingAngle={2}
-                  dataKey="value"
-                  startAngle={90}
-                  endAngle={-270}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold">{data.currentRate.toFixed(1)}%</span>
+        <div className="flex items-center gap-5">
+          {/* SVG Radial */}
+          <div className="relative shrink-0">
+            <RadialProgress value={data.currentRate} size={80} strokeWidth={6} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-lg font-semibold tabular-nums">{data.currentRate}%</span>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="space-y-2 text-right">
-            {trend && (
-              <div className="flex items-center justify-end gap-1 text-sm">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex items-center gap-1">
+              <span
+                className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+                  trend.isPositive
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-red-600 dark:text-red-400'
+                }`}
+              >
                 {trend.isPositive ? (
-                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <ArrowUpRight className="h-3 w-3" />
                 ) : (
-                  <TrendingDown className="h-4 w-4 text-red-500" />
+                  <ArrowDownRight className="h-3 w-3" />
                 )}
-                <span className={trend.isPositive ? 'text-green-500' : 'text-red-500'}>
-                  {trend.isPositive ? '+' : '-'}{trend.value}%
-                </span>
-              </div>
-            )}
+                {trend.isPositive ? '+' : '-'}{trend.value}%
+              </span>
+              <span className="text-xs text-muted-foreground/60">vs prev</span>
+            </div>
             <p className="text-xs text-muted-foreground">
-              {data.acceptedCount} of {data.totalSentCount} sent
+              {data.acceptedCount} of {data.totalSentCount} quotes converted
             </p>
-            {trend && <p className="text-xs text-muted-foreground">vs prev period</p>}
           </div>
         </div>
       </CardContent>

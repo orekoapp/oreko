@@ -1,20 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Cell,
-} from 'recharts';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-
-const COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface TopClient {
   name: string;
@@ -34,28 +22,26 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+// Use opacity steps of primary color for a cohesive palette
+const BAR_OPACITIES = [1, 0.8, 0.6, 0.45, 0.3];
+
 export function TopClientsChart({ data: propData }: TopClientsChartProps) {
   const chartData = useMemo(() => {
-    if (!propData || propData.length === 0) {
-      return [];
-    }
-    return propData.map((client, index) => ({
-      ...client,
-      color: COLORS[index % COLORS.length],
-    }));
+    if (!propData || propData.length === 0) return [];
+    return propData;
   }, [propData]);
 
   const totalRevenue = chartData.reduce((sum, client) => sum + client.revenue, 0);
+  const maxRevenue = chartData.length > 0 ? chartData[0]!.revenue : 1;
 
   if (chartData.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Top Clients by Revenue</CardTitle>
-          <CardDescription>Your highest-value clients this period</CardDescription>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-sm font-medium">Top Clients</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+          <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
             No client revenue data available
           </div>
         </CardContent>
@@ -65,68 +51,41 @@ export function TopClientsChart({ data: propData }: TopClientsChartProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Top Clients by Revenue</CardTitle>
-        <CardDescription>
-          Your highest-value clients this period
-        </CardDescription>
+      <CardHeader className="pb-4">
+        <div className="flex items-baseline justify-between">
+          <CardTitle className="text-sm font-medium">Top Clients</CardTitle>
+          <span className="text-xs text-muted-foreground/60">
+            {formatCurrency(totalRevenue)} total
+          </span>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[250px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={true} vertical={false} />
-              <XAxis
-                type="number"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 11 }}
-                tickFormatter={(value) => `$${value / 1000}k`}
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 11 }}
-                width={100}
-              />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (!active || !payload || !payload[0]) return null;
-                  const item = payload[0].payload;
-                  const percentage = totalRevenue > 0 ? ((item.revenue / totalRevenue) * 100).toFixed(1) : '0';
-                  return (
-                    <div className="rounded-lg border bg-background px-3 py-2 shadow-md">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-primary">{formatCurrency(item.revenue)}</p>
-                      <p className="text-xs text-muted-foreground">{percentage}% of total</p>
-                    </div>
-                  );
-                }}
-                cursor={{ fill: 'transparent' }}
-              />
-              <Bar
-                dataKey="revenue"
-                radius={[0, 4, 4, 0]}
-                barSize={24}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="mt-4 pt-4 border-t">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Total from top {chartData.length}</span>
-            <span className="font-semibold">{formatCurrency(totalRevenue)}</span>
-          </div>
+        <div className="space-y-3">
+          {chartData.map((client, i) => {
+            const pct = (client.revenue / maxRevenue) * 100;
+            const sharePct = totalRevenue > 0 ? ((client.revenue / totalRevenue) * 100).toFixed(0) : '0';
+            return (
+              <div key={client.name} className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium truncate">{client.name}</span>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <span className="text-xs text-muted-foreground/60 tabular-nums">{sharePct}%</span>
+                    <span className="font-medium tabular-nums">{formatCurrency(client.revenue)}</span>
+                  </div>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full transition-all duration-500 ease-out"
+                    style={{
+                      width: `${Math.max(pct, 3)}%`,
+                      background: 'linear-gradient(90deg, var(--primary-400), var(--primary-600))',
+                      opacity: BAR_OPACITIES[i] ?? 0.3,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

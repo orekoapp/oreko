@@ -139,13 +139,13 @@
   }
 }
 
-html {
-  font-size: calc(16px * var(--font-size-scale, 1));
-}
-
 @layer base {
   * {
     @apply border-border;
+  }
+
+  html {
+    font-size: calc(16px * var(--font-size-scale, 1));
   }
 
   body {
@@ -177,108 +177,153 @@ html {
     font-family: var(--text-family);
     font-weight: var(--text-weight);
   }
+
+  /* Theme gradients — primary (blue) → secondary (violet) */
+  .gradient-primary {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+  }
+
+  .gradient-primary-subtle {
+    background: linear-gradient(135deg, var(--primary-50), var(--primary-100));
+  }
+
+  .gradient-primary-text {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+  }
+
+  .gradient-card-border {
+    border-image: linear-gradient(135deg, var(--primary-200), var(--primary-400)) 1;
+  }
+
+  .dark .gradient-primary-subtle {
+    background: linear-gradient(135deg, var(--primary-950), var(--primary-900));
+  }
 }
 
-/* Gradient Utilities */
-.gradient-primary {
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
-}
-
-.gradient-primary-subtle {
-  background: linear-gradient(135deg, var(--primary-50), var(--primary-100));
-}
-
-.dark .gradient-primary-subtle {
-  background: linear-gradient(135deg, var(--primary-950), var(--primary-900));
-}
-
-.gradient-primary-text {
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.gradient-accent {
-  background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
-}
-
-.gradient-card-border {
-  border-image: linear-gradient(135deg, var(--primary-200), var(--primary-400)) 1;
-}
-
-/* Elevated Sidebar Style */
+/* Elevated style — gray canvas with white cards & inputs */
 [data-sidebar-style="elevated"] {
+  --background: var(--base-100);
   --sidebar-background: var(--base-100);
-  --sidebar-foreground: var(--base-700);
-  --sidebar-border: transparent;
+  --sidebar-accent: var(--base-50);
+  --sidebar-border: var(--base-200);
+  --card: var(--base-50);
+  --popover: var(--base-50);
+  --secondary: var(--base-50);
 }
 
-[data-sidebar-style="elevated"] [data-sidebar] {
-  background: var(--sidebar-background);
+[data-sidebar-style="elevated"] [data-sidebar="sidebar"] {
   border-right: none;
-  box-shadow: var(--shadow-lg);
 }
 
-[data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-group-label] {
-  color: var(--base-400);
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+[data-sidebar-style="elevated"] [data-sidebar="menu-button"][data-active="true"],
+[data-sidebar-style="elevated"] [data-sidebar="menu-sub-button"][data-active="true"] {
+  background-color: var(--primary-100);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  border-radius: var(--radius);
+  color: var(--primary);
 }
 
-[data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-menu-button] {
-  color: var(--base-600);
-  border-radius: 0.5rem;
-  transition: all 0.15s ease;
+[data-sidebar-style="elevated"] [data-sidebar="menu-button"][data-active="true"] svg,
+[data-sidebar-style="elevated"] [data-sidebar="menu-sub-button"][data-active="true"] svg {
+  color: var(--primary);
 }
 
-[data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-menu-button]:hover {
-  background: var(--base-200);
-  color: var(--base-900);
+/* White inputs, selects, textareas on gray canvas */
+[data-sidebar-style="elevated"] input,
+[data-sidebar-style="elevated"] select,
+[data-sidebar-style="elevated"] textarea,
+[data-sidebar-style="elevated"] [role="combobox"],
+[data-sidebar-style="elevated"] [role="listbox"],
+[data-sidebar-style="elevated"] [data-slot="control"] {
+  background-color: var(--base-50);
+  box-shadow: none;
 }
 
-[data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-menu-button][data-active="true"] {
-  background: var(--primary-600);
-  color: var(--primary-50);
-  font-weight: 500;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+/* White for tab lists and table containers */
+[data-sidebar-style="elevated"] [role="tablist"] {
+  background-color: var(--base-50);
 }
 
-[data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-menu-button][data-active="true"] svg {
-  color: var(--primary-50);
+[data-sidebar-style="elevated"] table {
+  background-color: var(--base-50);
 }
 
-.dark [data-sidebar-style="elevated"] {
+.dark[data-sidebar-style="elevated"] {
+  --background: var(--base-900);
   --sidebar-background: var(--base-900);
-  --sidebar-foreground: var(--base-200);
+  --sidebar-accent: var(--base-800);
+  --card: var(--base-800);
+  --popover: var(--base-800);
+  --secondary: var(--base-800);
 }
 
-.dark [data-sidebar-style="elevated"] [data-sidebar] {
-  background: var(--sidebar-background);
+.dark[data-sidebar-style="elevated"] [data-sidebar="menu-button"][data-active="true"],
+.dark[data-sidebar-style="elevated"] [data-sidebar="menu-sub-button"][data-active="true"] {
+  background-color: var(--primary-950);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.15), 0 1px 2px -1px rgb(0 0 0 / 0.15);
+  color: var(--primary);
 }
 
-.dark [data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-group-label] {
-  color: var(--base-500);
+.dark[data-sidebar-style="elevated"] [data-sidebar="menu-button"][data-active="true"] svg,
+.dark[data-sidebar-style="elevated"] [data-sidebar="menu-sub-button"][data-active="true"] svg {
+  color: var(--primary);
 }
 
-.dark [data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-menu-button] {
-  color: var(--base-400);
+.dark[data-sidebar-style="elevated"] input:not(.document-paper input),
+.dark[data-sidebar-style="elevated"] select:not(.document-paper select),
+.dark[data-sidebar-style="elevated"] textarea:not(.document-paper textarea),
+.dark[data-sidebar-style="elevated"] [role="combobox"]:not(.document-paper [role="combobox"]),
+.dark[data-sidebar-style="elevated"] [role="listbox"]:not(.document-paper [role="listbox"]),
+.dark[data-sidebar-style="elevated"] [data-slot="control"]:not(.document-paper [data-slot="control"]) {
+  background-color: var(--base-800);
+  box-shadow: none;
 }
 
-.dark [data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-menu-button]:hover {
-  background: var(--base-800);
-  color: var(--base-100);
+/* Inside document-paper, inputs should stay light (paper always looks like a printed doc) */
+.dark .document-paper input,
+.dark .document-paper select,
+.dark .document-paper textarea {
+  background-color: var(--base-50);
+  color: var(--base-950);
 }
 
-.dark [data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-menu-button][data-active="true"] {
-  background: var(--primary-500);
-  color: var(--primary-950);
+.dark[data-sidebar-style="elevated"] [role="tablist"] {
+  background-color: var(--base-800);
 }
 
-.dark [data-sidebar-style="elevated"] [data-sidebar] [data-sidebar-menu-button][data-active="true"] svg {
-  color: var(--primary-950);
+.dark[data-sidebar-style="elevated"] table {
+  background-color: var(--base-800);
+}
+
+/* Force light-mode inside the quote builder paper/canvas area.
+   The editing paper should always look like a printed document
+   regardless of the app's theme (dark or light). */
+.dark .document-paper {
+  --background: var(--base-50);
+  --foreground: var(--base-950);
+  --card: var(--base-50);
+  --card-foreground: var(--base-950);
+  --popover: var(--base-50);
+  --popover-foreground: var(--base-950);
+  --primary: var(--primary-600);
+  --primary-foreground: var(--primary-50);
+  --secondary: var(--base-100);
+  --secondary-foreground: var(--base-900);
+  --muted: var(--base-100);
+  --muted-foreground: var(--base-500);
+  --accent: var(--primary-100);
+  --accent-foreground: var(--primary-900);
+  --border: var(--base-200);
+  --input: var(--base-200);
+  --ring: var(--primary-500);
+  color: var(--base-950);
 }
 
 /* Custom scrollbar */
@@ -298,21 +343,6 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--muted-foreground) / 0.5);
-}
-
-/* Document canvas: always render in light mode (paper simulation) */
-.dark .document-paper {
-  --foreground: var(--base-950);
-  --card: var(--base-50);
-  --card-foreground: var(--base-950);
-  --muted: var(--base-100);
-  --muted-foreground: var(--base-500);
-  --border: var(--base-200);
-  --input: var(--base-200);
-  --ring: var(--primary-500);
-  --accent: var(--primary-100);
-  --accent-foreground: var(--primary-900);
-  color: var(--base-950);
 }
 
 /* Print styles for quotes/invoices */

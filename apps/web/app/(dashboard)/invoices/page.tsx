@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Invoices',
-  description: 'Manage and track your invoices and payments',
+  description: 'Create, send, and track invoices for your clients.',
 };
 
 export default async function InvoicesPage() {

@@ -16,6 +16,7 @@ const { mockPrisma, mockGetCurrentUserWorkspace } = vi.hoisted(() => {
     invoice: { findFirst: vi.fn() },
     numberSequence: { upsert: vi.fn() },
     client: { findFirst: vi.fn() },
+    businessProfile: { findUnique: vi.fn() },
     $transaction: vi.fn((fn: any) => fn(mockPrisma)),
   };
   const mockGetCurrentUserWorkspace = vi.fn();
@@ -26,6 +27,8 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
 vi.mock('@/lib/services/email', () => ({ sendQuoteSentEmail: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/notifications/actions', () => ({ createNotification: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/routes', () => ({ ROUTES: { quotes: '/quotes', invoices: '/invoices', quoteDetail: (id: string) => `/quotes/${id}`, invoiceDetail: (id: string) => `/invoices/${id}` } }));
+vi.mock('@/lib/events/emitter', () => ({ domainEvents: { emit: vi.fn() } }));
 vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
 vi.mock('@quotecraft/database', () => ({
   prisma: mockPrisma,
@@ -46,6 +49,7 @@ describe('Quote Actions', () => {
     mockGetCurrentUserWorkspace.mockResolvedValue({
       workspaceId: WORKSPACE_ID,
       userId: USER_ID,
+      role: 'owner',
     });
 
     // Default workspace lookup
@@ -61,6 +65,9 @@ describe('Quote Actions', () => {
       currentValue: 1,
       padding: 4,
     });
+
+    // Default businessProfile for currency lookup
+    mockPrisma.businessProfile.findUnique.mockResolvedValue({ currency: 'USD' });
 
     // Default quoteEvent create (succeeds silently)
     mockPrisma.quoteEvent.create.mockResolvedValue({ id: 'event-1' });

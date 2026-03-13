@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
 import { DataTableRowActions } from '@/components/ui/data-table/data-table-row-actions';
 import { ClientListItem } from '@/lib/clients/types';
-import { Building2, User, FileText, Receipt } from 'lucide-react';
+import { User, FileText, Receipt, Pencil, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface ClientColumnsOptions {
@@ -52,22 +52,22 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
       ),
       cell: ({ row }) => {
         const client = row.original;
-        const isCompany = client.type === 'company';
+        const displayName = client.company || client.name;
+        const initials = displayName
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2);
 
         return (
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              {isCompany ? (
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <User className="h-5 w-5 text-muted-foreground" />
-              )}
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+              {initials}
             </div>
             <div>
-              <div className="font-medium">{client.company || client.name}</div>
-              {client.company && client.company !== client.name && (
-                <div className="text-sm text-muted-foreground">{client.name}</div>
-              )}
+              <div className="font-medium text-primary">{displayName}</div>
+              <div className="text-sm text-muted-foreground">{client.email}</div>
             </div>
           </div>
         );
@@ -79,23 +79,6 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
           client.name.toLowerCase().includes(searchValue) ||
           (client.company?.toLowerCase().includes(searchValue) ?? false) ||
           (client.email?.toLowerCase().includes(searchValue) ?? false)
-        );
-      },
-    },
-    {
-      accessorKey: 'email',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Contact" />
-      ),
-      cell: ({ row }) => {
-        const client = row.original;
-        return (
-          <div>
-            <div className="text-sm">{client.email}</div>
-            {client.phone && (
-              <div className="text-sm text-muted-foreground">{client.phone}</div>
-            )}
-          </div>
         );
       },
     },
@@ -117,28 +100,6 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
       },
     },
     {
-      accessorKey: 'totalQuotes',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Quotes" />
-      ),
-      cell: ({ row }) => {
-        return (
-          <Badge variant="secondary">{row.getValue('totalQuotes')}</Badge>
-        );
-      },
-    },
-    {
-      accessorKey: 'totalInvoices',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Invoices" />
-      ),
-      cell: ({ row }) => {
-        return (
-          <Badge variant="secondary">{row.getValue('totalInvoices')}</Badge>
-        );
-      },
-    },
-    {
       accessorKey: 'totalRevenue',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Revenue" />
@@ -153,21 +114,18 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
     {
       id: 'actions',
       cell: ({ row }) => {
-        const client = row.original;
-        const hasDocuments = (client.totalQuotes ?? 0) > 0 || (client.totalInvoices ?? 0) > 0;
-
         return (
           <DataTableRowActions
             row={row.original}
             onView={onView}
             onEdit={onEdit}
-            onDelete={!hasDocuments ? onDelete : undefined}
+            onDelete={onDelete}
             actions={[
               ...(onView ? [{ label: 'View Details', icon: <User className="mr-2 h-4 w-4" />, onClick: onView }] : []),
-              ...(onEdit ? [{ label: 'Edit', icon: <span className="mr-2 h-4 w-4">✏️</span>, onClick: onEdit }] : []),
+              ...(onEdit ? [{ label: 'Edit', icon: <Pencil className="mr-2 h-4 w-4" />, onClick: onEdit }] : []),
               ...(onCreateQuote ? [{ label: 'Create Quote', icon: <FileText className="mr-2 h-4 w-4" />, onClick: onCreateQuote, separator: true }] : []),
               ...(onCreateInvoice ? [{ label: 'Create Invoice', icon: <Receipt className="mr-2 h-4 w-4" />, onClick: onCreateInvoice }] : []),
-              ...(!hasDocuments && onDelete ? [{ label: 'Delete', icon: <span className="mr-2 h-4 w-4">🗑️</span>, onClick: onDelete, variant: 'destructive' as const, separator: true }] : []),
+              ...(onDelete ? [{ label: 'Delete', icon: <Trash2 className="mr-2 h-4 w-4" />, onClick: onDelete, variant: 'destructive' as const, separator: true }] : []),
             ]}
           />
         );

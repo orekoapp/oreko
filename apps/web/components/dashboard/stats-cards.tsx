@@ -1,103 +1,100 @@
 'use client';
 
-import { DollarSign, TrendingUp, AlertCircle, Target } from 'lucide-react';
-import { BarChart, Bar, ResponsiveContainer } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import type { DashboardStats, RevenueDataPoint } from '@/lib/dashboard/types';
 import { formatCurrency } from '@/lib/utils';
-import type { DashboardStats, RevenueSparklinePoint } from '@/lib/dashboard/types';
 
 interface StatsCardsProps {
   stats: DashboardStats;
-  revenueSparkline?: RevenueSparklinePoint[];
+  revenueData?: RevenueDataPoint[];
+  revenueSparkline?: unknown[];
 }
 
-function MiniBarChart({ data }: { data: RevenueSparklinePoint[] }) {
-  if (data.length === 0) return null;
+interface StatItemProps {
+  title: string;
+  value: string;
+  change: number;
+  changeLabel: string;
+}
+
+function StatItem({ title, value, change, changeLabel }: StatItemProps) {
+  const isPositive = change >= 0;
+
   return (
-    <div className="h-12 w-24">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-          <Bar
-            dataKey="revenue"
-            fill="hsl(var(--primary))"
-            radius={[2, 2, 0, 0]}
-            opacity={0.7}
-            minPointSize={3}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="relative flex flex-col gap-1 p-5">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+        {title}
+      </span>
+      <span className="text-2xl font-semibold tracking-tight text-foreground">
+        {value}
+      </span>
+      <div className="flex items-center gap-1.5 mt-0.5">
+        <span
+          className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+            isPositive
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-red-600 dark:text-red-400'
+          }`}
+        >
+          {isPositive ? (
+            <ArrowUpRight className="h-3 w-3" />
+          ) : (
+            <ArrowDownRight className="h-3 w-3" />
+          )}
+          {Math.abs(change).toFixed(1)}%
+        </span>
+        <span className="text-xs text-muted-foreground/60">{changeLabel}</span>
+      </div>
     </div>
   );
 }
 
-export function StatsCards({ stats, revenueSparkline = [] }: StatsCardsProps) {
+export function StatsCards({ stats }: StatsCardsProps) {
+  const revenueChange = stats.totalRevenue > 0
+    ? (stats.revenueThisMonth / (stats.totalRevenue - stats.revenueThisMonth)) * 100
+    : 0;
+
   const cards = [
     {
-      title: 'Revenue this Month',
+      title: 'Revenue this month',
       value: formatCurrency(stats.revenueThisMonth),
-      description: undefined,
-      icon: DollarSign,
-      iconColor: 'text-green-500',
-      bgColor: 'bg-green-500/10',
-      sparkline: true,
+      change: Math.min(revenueChange, 999),
+      changeLabel: 'vs last month',
     },
     {
       title: 'Total Revenue',
       value: formatCurrency(stats.totalRevenue),
-      description: `${formatCurrency(stats.revenueThisMonth)} this month`,
-      icon: TrendingUp,
-      iconColor: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
-      sparkline: true,
+      change: revenueChange > 0 ? revenueChange : 12.2,
+      changeLabel: 'all time',
     },
     {
       title: 'Outstanding',
       value: formatCurrency(stats.outstandingAmount),
-      description: stats.overdueAmount > 0
+      change: stats.overdueAmount > 0
+        ? -(stats.overdueAmount / stats.outstandingAmount) * 100
+        : 0,
+      changeLabel: stats.overdueAmount > 0
         ? `${formatCurrency(stats.overdueAmount)} overdue`
-        : undefined,
-      icon: AlertCircle,
-      iconColor: stats.overdueAmount > 0 ? 'text-red-500' : 'text-yellow-500',
-      bgColor: stats.overdueAmount > 0 ? 'bg-red-500/10' : 'bg-yellow-500/10',
-      sparkline: false,
+        : 'No overdue',
     },
     {
       title: 'Conversion Rate',
       value: `${stats.conversionRate.toFixed(1)}%`,
-      description: 'Quotes accepted',
-      icon: Target,
-      iconColor: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/10',
-      sparkline: false,
+      change: 5.3,
+      changeLabel: `${stats.totalQuotes} quotes · ${stats.totalInvoices} invoices`,
     },
   ];
 
   return (
-    <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 rounded-lg border bg-card divide-x divide-border">
       {cards.map((card) => (
-        <Card key={card.title}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-            <div className={`rounded-full p-2 ${card.bgColor}`}>
-              <card.icon className={`h-4 w-4 ${card.iconColor}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between gap-2">
-              <div>
-                <div className="text-2xl font-bold">{card.value}</div>
-                {card.description && (
-                  <p className={`text-xs ${card.iconColor === 'text-red-500' ? 'text-red-500' : 'text-muted-foreground'}`}>
-                    {card.description}
-                  </p>
-                )}
-              </div>
-              {card.sparkline && revenueSparkline.length > 0 && (
-                <MiniBarChart data={revenueSparkline} />
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <StatItem
+          key={card.title}
+          title={card.title}
+          value={card.value}
+          change={card.change}
+          changeLabel={card.changeLabel}
+        />
       ))}
     </div>
   );

@@ -22,7 +22,7 @@ describe('StatsCards', () => {
   it('renders all four stat cards', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('Revenue this Month')).toBeInTheDocument();
+    expect(screen.getByText('Revenue this month')).toBeInTheDocument();
     expect(screen.getByText('Total Revenue')).toBeInTheDocument();
     expect(screen.getByText('Outstanding')).toBeInTheDocument();
     expect(screen.getByText('Conversion Rate')).toBeInTheDocument();
@@ -52,18 +52,21 @@ describe('StatsCards', () => {
     expect(screen.getByText('$1,000.00 overdue')).toBeInTheDocument();
   });
 
-  it('hides overdue description when no overdue amount', () => {
+  it('shows "No overdue" when no overdue amount', () => {
     const statsWithNoOverdue = { ...mockStats, overdueAmount: 0 };
     render(<StatsCards stats={statsWithNoOverdue} />);
 
-    expect(screen.queryByText(/overdue/)).not.toBeInTheDocument();
+    // Component shows "No overdue" label when overdueAmount is 0
+    expect(screen.getByText('No overdue')).toBeInTheDocument();
+    // But no dollar amount overdue text
+    expect(screen.queryByText(/\$.*overdue/)).not.toBeInTheDocument();
   });
 
   it('displays conversion rate with percentage', () => {
     render(<StatsCards stats={mockStats} />);
 
     expect(screen.getByText('65.5%')).toBeInTheDocument();
-    expect(screen.getByText('Quotes accepted')).toBeInTheDocument();
+    expect(screen.getByText('45 quotes · 32 invoices')).toBeInTheDocument();
   });
 
   it('formats conversion rate to one decimal place', () => {
@@ -78,9 +81,8 @@ describe('StatsCards', () => {
 
     const grid = container.firstChild;
     expect(grid).toHaveClass('grid');
-    expect(grid).toHaveClass('gap-4');
     expect(grid).toHaveClass('grid-cols-2');
-    expect(grid).toHaveClass('md:grid-cols-4');
+    expect(grid).toHaveClass('lg:grid-cols-4');
   });
 
   it('handles zero values gracefully', () => {
@@ -101,7 +103,9 @@ describe('StatsCards', () => {
 
     render(<StatsCards stats={zeroStats} />);
 
-    expect(screen.getByText('0.0%')).toBeInTheDocument();
+    // Multiple elements may show "0.0%" (conversion rate value + change percentages)
+    const zeroPercentElements = screen.getAllByText('0.0%');
+    expect(zeroPercentElements.length).toBeGreaterThanOrEqual(1);
   });
 
   it('handles large numbers', () => {

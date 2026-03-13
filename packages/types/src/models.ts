@@ -179,6 +179,7 @@ export interface Quote extends BaseModel, SoftDeletable {
  * Quote settings
  */
 export interface QuoteSettings {
+  currency?: string;
   requireSignature?: boolean;
   autoConvertToInvoice?: boolean;
   depositRequired?: boolean;
@@ -312,7 +313,7 @@ export interface Payment extends BaseModel {
   invoiceId: string;
   amount: number;
   currency: string;
-  paymentMethod: 'card' | 'bank_transfer' | 'manual';
+  paymentMethod: 'card' | 'bank_transfer' | 'check' | 'cash' | 'manual';
   status: PaymentStatus;
   stripePaymentIntentId: string | null;
   stripeChargeId: string | null;

@@ -9,19 +9,14 @@ export const metadata = {
 
 export default function NewEmailTemplatePage() {
   return (
-    <div className="container max-w-3xl py-6">
-      <div className="mb-6 flex items-center gap-4">
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/settings/emails">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Create Email Template</h1>
-          <p className="text-muted-foreground">
-            Create a new custom email template
-          </p>
-        </div>
+        <h2 className="text-lg font-semibold">Create Email Template</h2>
       </div>
 
       <EmailTemplateForm />

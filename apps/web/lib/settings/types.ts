@@ -168,6 +168,94 @@ export const COMMON_TIMEZONES = [
   'Pacific/Auckland',
 ] as const;
 
+// Custom field types
+export type CustomFieldType = 'text' | 'number' | 'date' | 'dropdown' | 'multiselect' | 'checkbox' | 'url' | 'email';
+export type CustomFieldEntity = 'quote' | 'invoice' | 'client' | 'project';
+
+export const CUSTOM_FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
+  text: 'Text',
+  number: 'Number',
+  date: 'Date',
+  dropdown: 'Dropdown',
+  multiselect: 'Multi-Select',
+  checkbox: 'Checkbox',
+  url: 'URL',
+  email: 'Email',
+};
+
+export const CUSTOM_FIELD_ENTITY_LABELS: Record<CustomFieldEntity, string> = {
+  quote: 'Quotes',
+  invoice: 'Invoices',
+  client: 'Clients',
+  project: 'Projects',
+};
+
+export interface CustomFieldData {
+  id: string;
+  name: string;
+  fieldType: CustomFieldType;
+  appliesTo: CustomFieldEntity[];
+  isRequired: boolean;
+  isActive: boolean;
+  options: string[];
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Integration types
+export interface IntegrationData {
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+  isConnected: boolean;
+  isAvailable: boolean;
+  connectedAt: Date | null;
+  config: Record<string, unknown>;
+}
+
+// Webhook types
+export type WebhookEvent =
+  | 'quote.created' | 'quote.sent' | 'quote.accepted' | 'quote.declined' | 'quote.expired'
+  | 'invoice.created' | 'invoice.sent' | 'invoice.paid' | 'invoice.overdue' | 'invoice.voided'
+  | 'client.created' | 'client.updated' | 'client.deleted'
+  | 'project.created' | 'project.updated' | 'project.completed'
+  | 'payment.received' | 'payment.refunded' | 'payment.failed';
+
+export const WEBHOOK_EVENT_LABELS: Record<WebhookEvent, string> = {
+  'quote.created': 'Created',
+  'quote.sent': 'Sent',
+  'quote.accepted': 'Accepted',
+  'quote.declined': 'Declined',
+  'quote.expired': 'Expired',
+  'invoice.created': 'Created',
+  'invoice.sent': 'Sent',
+  'invoice.paid': 'Paid',
+  'invoice.overdue': 'Overdue',
+  'invoice.voided': 'Voided',
+  'client.created': 'Created',
+  'client.updated': 'Updated',
+  'client.deleted': 'Deleted',
+  'project.created': 'Created',
+  'project.updated': 'Updated',
+  'project.completed': 'Completed',
+  'payment.received': 'Received',
+  'payment.refunded': 'Refunded',
+  'payment.failed': 'Failed',
+};
+
+export interface WebhookData {
+  id: string;
+  name: string;
+  url: string;
+  secret: string | null;
+  events: WebhookEvent[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Common currencies
 export const COMMON_CURRENCIES = [
   { code: 'USD', name: 'US Dollar', symbol: '$' },

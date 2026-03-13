@@ -11,6 +11,10 @@ interface ClientDetailPageProps {
 export async function generateMetadata({ params }: ClientDetailPageProps) {
   const { id } = await params;
 
+  if (!UUID_REGEX.test(id)) {
+    return { title: 'Client Not Found' };
+  }
+
   try {
     const client = await getClientById(id);
     return {
@@ -23,8 +27,14 @@ export async function generateMetadata({ params }: ClientDetailPageProps) {
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function ClientDetailPage({ params }: ClientDetailPageProps) {
   const { id } = await params;
+
+  if (!UUID_REGEX.test(id)) {
+    notFound();
+  }
 
   try {
     const [client, activities] = await Promise.all([

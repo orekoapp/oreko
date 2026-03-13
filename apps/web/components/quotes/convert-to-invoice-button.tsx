@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Receipt, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -71,8 +72,8 @@ export function ConvertToInvoiceButton({
 
       if (result.success && result.invoice) {
         if (sendImmediately) {
-          await sendInvoice(result.invoice.id).catch((err) => {
-            console.error('Failed to send invoice after conversion:', err);
+          await sendInvoice(result.invoice.id).catch(() => {
+            toast.error('Invoice created but failed to send email. You can send it manually.');
           });
         }
         router.push(`/invoices/${result.invoice.id}`);

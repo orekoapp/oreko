@@ -53,7 +53,7 @@ const supportOptions = [
     title: 'Email Support',
     description: 'Send us an email and we\'ll respond within 24 hours',
     action: 'Send Email',
-    href: 'mailto:support@quote.persuado.tech',
+    href: 'mailto:support@quotecraft.app',
     available: true,
   },
   {
@@ -61,7 +61,7 @@ const supportOptions = [
     title: 'Report a Bug',
     description: 'Found an issue? Let us know',
     action: 'Report Bug',
-    href: 'mailto:support@quote.persuado.tech?subject=Bug%20Report',
+    href: 'mailto:support@quotecraft.app?subject=Bug%20Report',
     available: true,
   },
 ];
@@ -124,7 +124,7 @@ export default function HelpPage() {
       </section>
 
       {/* FAQs */}
-      <section id="getting-started">
+      <section>
         <h2 className="text-lg font-semibold mb-4">Frequently Asked Questions</h2>
         <div className="grid gap-4">
           {faqs.map((faq, index) => (
@@ -144,7 +144,7 @@ export default function HelpPage() {
       </section>
 
       {/* Support Options */}
-      <section id="docs">
+      <section>
         <h2 className="text-lg font-semibold mb-4">Get Support</h2>
         <div className="grid gap-4 md:grid-cols-3">
           {supportOptions.map((option) => (
@@ -171,12 +171,12 @@ export default function HelpPage() {
                 ) : (
                   <div className="space-y-2">
                     <Button className="w-full" disabled>
-                      Coming Soon (Q2 2026)
+                      Coming Soon
                     </Button>
                     <p className="text-xs text-muted-foreground text-center">
-                      Live chat is planned for Q2 2026. In the meantime, email us at{' '}
-                      <a href="mailto:support@quote.persuado.tech" className="text-primary hover:underline">
-                        support@quote.persuado.tech
+                      In the meantime, reach us at{' '}
+                      <a href="mailto:support@quotecraft.app" className="text-primary hover:underline">
+                        support@quotecraft.app
                       </a>
                     </p>
                   </div>
@@ -188,7 +188,7 @@ export default function HelpPage() {
       </section>
 
       {/* Additional Resources */}
-      <section id="tips">
+      <section>
         <Card>
           <CardHeader>
             <CardTitle>Need more help?</CardTitle>
@@ -198,7 +198,7 @@ export default function HelpPage() {
           </CardHeader>
           <CardContent className="flex gap-4">
             <Button variant="outline" asChild>
-              <a href="mailto:support@quote.persuado.tech" target="_blank" rel="noopener noreferrer">
+              <a href="mailto:support@quotecraft.app" target="_blank" rel="noopener noreferrer">
                 <Mail className="mr-2 h-4 w-4" />
                 Contact Support
               </a>

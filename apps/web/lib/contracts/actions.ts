@@ -18,6 +18,7 @@ import type {
   PaginatedContracts,
   PaginatedContractInstances,
   SignatureData,
+  ContractSettingsData,
 } from './types';
 import { sendEmail } from '@/lib/services/email';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
@@ -38,6 +39,15 @@ function safeParseVariables(variables: unknown): ContractVariable[] {
     if (Array.isArray(variables)) return variables;
     if (typeof variables === 'string') return JSON.parse(variables);
     return [];
+  } catch {
+    return [];
+  }
+}
+
+function parseContractVariables(variables: unknown): ContractVariable[] {
+  try {
+    const parsed = typeof variables === 'string' ? JSON.parse(variables) : variables;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
@@ -277,12 +287,13 @@ export async function getContractInstances(
 
   return {
     data: instances.map((i) => {
-      const vars = i.contract.variables;
+      const vars = i.contract?.variables;
       const variablesCount = Array.isArray(vars) ? vars.length : 0;
       return {
         id: i.id,
-        contractName: i.contract.name,
-        clientName: i.client.company || i.client.name,
+        contractName: i.contract?.name ?? 'Untitled',
+        clientName: i.client?.company || i.client?.name || 'Unknown',
+        clientEmail: i.client?.email || null,
         quoteName: i.quote?.title || null,
         status: i.status,
         variablesCount,
@@ -320,11 +331,11 @@ export async function getContractInstanceById(id: string): Promise<ContractInsta
 
   return {
     id: instance.id,
-    contractId: instance.contractId,
-    contractName: instance.contract.name,
-    clientId: instance.clientId,
-    clientName: instance.client.company || instance.client.name,
-    clientEmail: instance.client.email || null,
+    contractId: instance.contractId ?? '',
+    contractName: instance.contract?.name ?? 'Untitled',
+    clientId: instance.clientId ?? '',
+    clientName: instance.client?.company || instance.client?.name || 'Unknown',
+    clientEmail: instance.client?.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -377,11 +388,11 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
 
   return {
     id: instance.id,
-    contractId: instance.contractId,
-    contractName: instance.contract.name,
-    clientId: instance.clientId,
-    clientName: instance.client.company || instance.client.name,
-    clientEmail: instance.client.email || null,
+    contractId: instance.contractId ?? '',
+    contractName: instance.contract?.name ?? 'Untitled',
+    clientId: instance.clientId ?? '',
+    clientName: instance.client?.company || instance.client?.name || 'Unknown',
+    clientEmail: instance.client?.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -475,11 +486,11 @@ export async function createContractInstance(
 
   return {
     id: instance.id,
-    contractId: instance.contractId,
-    contractName: instance.contract.name,
-    clientId: instance.clientId,
-    clientName: instance.client.company || instance.client.name,
-    clientEmail: instance.client.email || null,
+    contractId: instance.contractId ?? '',
+    contractName: instance.contract?.name ?? 'Untitled',
+    clientId: instance.clientId ?? '',
+    clientName: instance.client?.company || instance.client?.name || 'Unknown',
+    clientEmail: instance.client?.email || null,
     quoteId: instance.quoteId,
     quoteName: instance.quote?.title || null,
     workspaceId: instance.workspaceId,
@@ -539,11 +550,11 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
 
     try {
       const safeWorkspaceName = escapeHtml(workspace.name);
-      const safeClientName = escapeHtml(instance.client.name);
+      const safeClientName = escapeHtml(instance.client?.name || 'Client');
       const safeContractName = escapeHtml(contractName);
 
       const emailResult = await sendEmail({
-        to: instance.client.email,
+        to: instance.client?.email || '',
         subject: `Contract: ${contractName} from ${workspace.name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -663,6 +674,27 @@ export async function deleteContractInstance(id: string): Promise<void> {
   });
 
   revalidatePath('/contracts');
+}
+
+// ============================================
+// CONTRACT SETTINGS (STUB)
+// ============================================
+
+// Get contract settings
+export async function getContractSettings(): Promise<ContractSettingsData> {
+  // TODO: Wire up to database when contract settings table is added
+  return {
+    autoCountersign: false,
+  };
+}
+
+// Update contract settings
+export async function updateContractSettings(
+  input: Partial<ContractSettingsData>
+): Promise<void> {
+  // TODO: Wire up to database when contract settings table is added
+  console.log('updateContractSettings stub called with:', input);
+  revalidatePath('/settings/contracts');
 }
 
 // Duplicate a contract template

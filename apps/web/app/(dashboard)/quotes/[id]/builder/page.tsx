@@ -72,6 +72,14 @@ export default function EditQuoteBuilderPage() {
     async function loadQuote() {
       try {
         setIsLoading(true);
+
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(quoteId)) {
+          setError('Quote not found');
+          setIsLoading(false);
+          return;
+        }
+
         const quote = await getQuote(quoteId);
         if (quote) {
           initDocument(quote);

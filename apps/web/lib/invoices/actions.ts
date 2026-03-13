@@ -127,7 +127,7 @@ export async function createInvoice(data: CreateInvoiceData) {
   const lineItems = data.lineItems.map((item, index) => ({
     name: item.name,
     description: item.description || null,
-    quantity: item.quantity,
+    quantity: Math.round(item.quantity * 100) / 100,
     rate: item.rate,
     amount: Math.round(item.quantity * item.rate * 100) / 100,
     taxRate: item.taxRate || null,
@@ -185,7 +185,27 @@ export async function createInvoice(data: CreateInvoiceData) {
     domainEvents.emit({ type: 'invoice.created', payload: { invoiceId: invoice.id, workspaceId: workspace.id } });
   } catch {}
 
-  return { success: true, invoice };
+  return {
+    success: true,
+    invoice: {
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      discountValue: invoice.discountValue ? Number(invoice.discountValue) : null,
+      discountAmount: Number(invoice.discountAmount),
+      taxTotal: Number(invoice.taxTotal),
+      total: Number(invoice.total),
+      amountPaid: Number(invoice.amountPaid),
+      amountDue: Number(invoice.amountDue),
+      lineItems: invoice.lineItems.map((li) => ({
+        ...li,
+        quantity: Number(li.quantity),
+        rate: Number(li.rate),
+        amount: Number(li.amount),
+        taxRate: li.taxRate ? Number(li.taxRate) : null,
+        taxAmount: Number(li.taxAmount),
+      })),
+    },
+  };
 }
 
 /**
@@ -329,7 +349,27 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
     domainEvents.emit({ type: 'invoice.created', payload: { invoiceId: invoice.id, workspaceId: workspace.id } });
   } catch {}
 
-  return { success: true, invoice };
+  return {
+    success: true,
+    invoice: {
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      discountValue: invoice.discountValue ? Number(invoice.discountValue) : null,
+      discountAmount: Number(invoice.discountAmount),
+      taxTotal: Number(invoice.taxTotal),
+      total: Number(invoice.total),
+      amountPaid: Number(invoice.amountPaid),
+      amountDue: Number(invoice.amountDue),
+      lineItems: invoice.lineItems.map((li) => ({
+        ...li,
+        quantity: Number(li.quantity),
+        rate: Number(li.rate),
+        amount: Number(li.amount),
+        taxRate: li.taxRate ? Number(li.taxRate) : null,
+        taxAmount: Number(li.taxAmount),
+      })),
+    },
+  };
 }
 
 
@@ -579,6 +619,7 @@ export async function getInvoices(filters?: {
       total: Number(invoice.total),
       amountPaid: Number(invoice.amountPaid),
       amountDue: Number(invoice.amountDue),
+      accessToken: invoice.accessToken ?? null,
       client: {
         id: invoice.client?.id ?? '',
         name: invoice.client?.name ?? 'Unknown Client',
@@ -1007,4 +1048,50 @@ export async function duplicateInvoice(invoiceId: string) {
   revalidatePath(ROUTES.invoices);
 
   return { success: true, invoiceId: duplicate.id };
+}
+
+// ============================================
+// INVOICE TEMPLATES (STUB)
+// ============================================
+
+export interface InvoiceTemplateListItem {
+  id: string;
+  name: string;
+  description: string;
+  paymentTerms: string;
+  currency: string;
+  usageCount: number;
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function getInvoiceTemplates(filter?: { search?: string; page?: number }) {
+  // Not yet backed by database — return empty list
+  return {
+    data: [] as InvoiceTemplateListItem[],
+    meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+  };
+}
+
+export async function deleteInvoiceTemplate(id: string) {
+  // Not yet backed by database
+  return { success: false, error: 'Invoice templates are not yet implemented' };
+}
+
+export async function duplicateInvoiceTemplate(id: string) {
+  // Not yet backed by database
+  return { success: false, error: 'Invoice templates are not yet implemented' };
+}
+
+export async function updateInvoiceTemplate(data: {
+  id: string;
+  name: string;
+  description: string;
+  paymentTerms: string;
+  currency: string;
+  isDefault: boolean;
+}) {
+  // Not yet backed by database
+  return { success: false, error: 'Invoice templates are not yet implemented' };
 }

@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   FileText,
   Receipt,
   Users,
-  CreditCard,
   LayoutDashboard,
   BarChart3,
   Settings,
@@ -54,6 +54,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
         setResults(data);
       } catch {
         setResults([]);
+        toast.error('Search failed. Please try again.');
       } finally {
         setIsSearching(false);
       }
@@ -246,11 +247,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
             <FolderKanban className="mr-2 h-4 w-4" />
             <span>Projects</span>
           </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/rate-cards'))}>
-            <CreditCard className="mr-2 h-4 w-4" />
-            <span>Rate Cards</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/analytics'))}>
+<CommandItem onSelect={() => runCommand(() => router.push('/analytics'))}>
             <BarChart3 className="mr-2 h-4 w-4" />
             <span>Analytics</span>
           </CommandItem>

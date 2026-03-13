@@ -47,6 +47,7 @@ export async function getEmailTemplates(
     type: t.type,
     name: t.name,
     subject: t.subject,
+    body: t.body,
     isActive: t.isActive,
     isDefault: t.isDefault,
     createdAt: t.createdAt,
@@ -387,16 +388,16 @@ export async function sendContractSentEmail(params: {
   const variables: EmailVariables = {
     businessName: instance.workspace.businessProfile?.businessName || 'Your Business',
     businessEmail: instance.workspace.businessProfile?.email || undefined,
-    clientName: instance.client.company || instance.client.name,
-    clientEmail: instance.client.email,
-    contractName: instance.contract.name,
+    clientName: instance.client?.company || instance.client?.name || 'Client',
+    clientEmail: instance.client?.email || '',
+    contractName: instance.contract?.name || 'Contract',
     contractUrl,
     message: params.message,
   };
 
   return sendTemplatedEmail({
     type: 'contract_sent',
-    to: instance.client.email,
+    to: instance.client?.email || '',
     variables,
   });
 }
@@ -432,9 +433,9 @@ export async function sendContractSignedEmail(params: {
   const variables: EmailVariables = {
     businessName: instance.workspace.businessProfile?.businessName || 'Your Business',
     businessEmail: instance.workspace.businessProfile?.email || undefined,
-    clientName: instance.client.company || instance.client.name,
-    clientEmail: instance.client.email,
-    contractName: instance.contract.name,
+    clientName: instance.client?.company || instance.client?.name || 'Client',
+    clientEmail: instance.client?.email || '',
+    contractName: instance.contract?.name || 'Contract',
     contractUrl,
   };
 

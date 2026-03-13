@@ -86,6 +86,7 @@ export interface InvoiceListItem {
   total: number;
   amountPaid: number;
   amountDue: number;
+  accessToken: string | null;
   client: {
     id: string;
     name: string;

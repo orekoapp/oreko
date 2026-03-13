@@ -1,54 +1,56 @@
 import { Suspense } from 'react';
-import Link from 'next/link';
-import { FileText, Receipt } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { RecentQuotes, RecentInvoices } from '@/components/dashboard/recent-items';
 import { AnalyticsSection } from '@/components/dashboard/analytics-section';
-import { getDashboardData, getConversionFunnelData } from '@/lib/dashboard/actions';
+import { getDashboardData } from '@/lib/dashboard/actions';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata() {
-  const t = await getTranslations('dashboard');
-  return {
-    title: t('title'),
-    description: t('subtitle'),
-  };
+export const metadata = {
+  title: 'Dashboard',
+  description: 'Your QuoteCraft dashboard',
+};
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function formatToday() {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 async function DashboardContent() {
-  const [data, conversionFunnelData] = await Promise.all([
-    getDashboardData(),
-    getConversionFunnelData(),
-  ]);
+  const data = await getDashboardData();
 
   return (
     <>
       {/* Stats Cards */}
-      <StatsCards stats={data.stats} revenueSparkline={data.revenueSparkline} />
+      <StatsCards stats={data.stats} revenueData={data.revenueData} />
 
-      {/* Analytics Charts Section */}
-      <AnalyticsSection
-        revenueData={data.revenueData}
-        conversionFunnelData={conversionFunnelData}
-        winRate={data.stats.winRate}
-        collectionRate={data.stats.collectionRate}
-      />
+      {/* Revenue Chart (full width) */}
+      <AnalyticsSection revenueData={data.revenueData} />
 
-      {/* Recent Items Section — 3-column layout */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div>
+      {/* Activity + Recent Items (2-column layout) */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-2">
           <RecentActivity activities={data.recentActivity} />
         </div>
-        <div>
-          <RecentQuotes quotes={data.recentQuotes} />
-        </div>
-        <div>
-          <RecentInvoices invoices={data.recentInvoices} />
+        <div className="lg:col-span-3 flex flex-col gap-6">
+          <div className="flex-1 min-h-0">
+            <RecentQuotes quotes={data.recentQuotes} />
+          </div>
+          <div className="flex-1 min-h-0">
+            <RecentInvoices invoices={data.recentInvoices} />
+          </div>
         </div>
       </div>
     </>
@@ -58,59 +60,37 @@ async function DashboardContent() {
 function DashboardSkeleton() {
   return (
     <>
-      {/* Stats Cards Skeleton — 4 cards */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-32" />
-        ))}
-      </div>
+      {/* Stats Cards Skeleton — single bordered row */}
+      <Skeleton className="h-24 rounded-lg" />
 
       {/* Analytics Section Skeleton */}
-      <div className="space-y-6">
-        <Skeleton className="h-[350px]" />
-        <div className="grid gap-6 md:grid-cols-3">
-          <Skeleton className="h-[200px]" />
-          <Skeleton className="h-[200px]" />
-          <Skeleton className="h-[200px]" />
-        </div>
-      </div>
+      <Skeleton className="h-[350px]" />
 
-      {/* Recent Items Skeleton — 3 columns */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Skeleton className="h-96" />
-        <Skeleton className="h-80" />
-        <Skeleton className="h-80" />
+      {/* Activity + Recent Items Skeleton */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-2">
+          <Skeleton className="h-96" />
+        </div>
+        <div className="lg:col-span-3 flex flex-col gap-6">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
+        </div>
       </div>
     </>
   );
 }
 
-export default async function DashboardPage() {
-  const t = await getTranslations('dashboard');
-
+export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('title')}</h1>
-          <p className="text-muted-foreground">
-            {t('subtitle')}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
-            <Link href="/quotes/new">
-              <FileText className="mr-2 h-4 w-4" />
-              {t('newQuote')}
-            </Link>
-          </Button>
-          <Button size="sm" asChild className="flex-1 sm:flex-none">
-            <Link href="/invoices/new">
-              <Receipt className="mr-2 h-4 w-4" />
-              {t('newInvoice')}
-            </Link>
-          </Button>
-        </div>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {getGreeting()}
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {formatToday()} &mdash; Here&apos;s how your business is doing.
+        </p>
       </div>
 
       <Suspense fallback={<DashboardSkeleton />}>

@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, FileText, Receipt } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { subDays, startOfMonth, endOfMonth, startOfYear } from 'date-fns';
+import { ArrowUpRight, ArrowDownRight, DollarSign, FileText, Receipt, TrendingUp } from 'lucide-react';
+import { DateRange } from 'react-day-picker';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 import { SalesPipelineSection } from './sales-pipeline-section';
 import { FinancialHealthSection } from './financial-health-section';
@@ -37,56 +39,86 @@ interface ClientLTV {
   isGrowing?: boolean;
 }
 
-interface StatCardProps {
+const PERIOD_OPTIONS = [
+  { label: '7D', value: '7d' },
+  { label: '30D', value: '30d' },
+  { label: '90D', value: '90d' },
+  { label: 'MTD', value: 'month' },
+  { label: 'YTD', value: 'ytd' },
+];
+
+function getDateRangeFromPreset(preset: string): DateRange {
+  const today = new Date();
+
+  switch (preset) {
+    case '7d':
+      return { from: subDays(today, 7), to: today };
+    case '30d':
+      return { from: subDays(today, 30), to: today };
+    case '90d':
+      return { from: subDays(today, 90), to: today };
+    case 'month':
+      return { from: startOfMonth(today), to: endOfMonth(today) };
+    case 'ytd':
+      return { from: startOfYear(today), to: today };
+    default:
+      return { from: subDays(today, 30), to: today };
+  }
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+interface StatItemProps {
   title: string;
   value: string | number;
-  description?: string;
   icon: React.ComponentType<{ className?: string }>;
   trend?: {
     value: number;
     isPositive: boolean;
   };
+  detail?: string;
 }
 
-function StatCard({ title, value, description, icon: Icon, trend }: StatCardProps) {
+function StatItem({ title, value, icon: Icon, trend, detail }: StatItemProps) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {(description || trend) && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            {trend && (
-              <>
-                {trend.isPositive ? (
-                  <TrendingUp className="h-3 w-3 text-green-500" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 text-red-500" />
-                )}
-                <span className={trend.isPositive ? 'text-green-500' : 'text-red-500'}>
-                  {trend.isPositive ? '+' : ''}{trend.value}%
-                </span>
-              </>
+    <div className="relative flex flex-col gap-1 p-5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+          {title}
+        </span>
+        <Icon className="h-4 w-4 text-muted-foreground/40" />
+      </div>
+      <span className="text-2xl font-semibold tracking-tight">{value}</span>
+      <div className="flex items-center gap-1.5 mt-0.5">
+        {trend && (
+          <span
+            className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+              trend.isPositive
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-red-600 dark:text-red-400'
+            }`}
+          >
+            {trend.isPositive ? (
+              <ArrowUpRight className="h-3 w-3" />
+            ) : (
+              <ArrowDownRight className="h-3 w-3" />
             )}
-            {description && <span>{description}</span>}
-          </p>
+            {trend.value}%
+          </span>
         )}
-      </CardContent>
-    </Card>
+        {detail && (
+          <span className="text-xs text-muted-foreground/60">{detail}</span>
+        )}
+      </div>
+    </div>
   );
-}
-
-// Format currency (values are already in dollars)
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
 }
 
 interface AnalyticsDashboardProps {
@@ -95,7 +127,7 @@ interface AnalyticsDashboardProps {
   conversionFunnel: ConversionFunnelData;
   paymentAging: PaymentAgingData;
   topClients?: TopClient[];
-  clientLTV?: { clients: ClientLTV[]; averageLTV: number; totalClients: number };
+  clientLTV?: ClientLTV[];
   revenueForecast?: ForecastDataPoint[];
   monthlyComparison?: MonthlyComparisonData[];
 }
@@ -110,60 +142,91 @@ export function AnalyticsDashboard({
   revenueForecast,
   monthlyComparison,
 }: AnalyticsDashboardProps) {
-  // Calculate trends (null when no prior period data to avoid misleading "+100%")
+  const [selectedPreset, setSelectedPreset] = useState('30d');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    getDateRangeFromPreset('30d')
+  );
+
+  const handlePresetChange = (value: string) => {
+    setSelectedPreset(value);
+    setDateRange(getDateRangeFromPreset(value));
+  };
+
   const revenueTrend = useMemo(() => {
-    if (stats.prevMonthRevenue === 0) return null;
-    const change = ((stats.revenueThisMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100;
+    const change = stats.prevMonthRevenue > 0
+      ? ((stats.revenueThisMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100
+      : stats.revenueThisMonth > 0 ? 100 : 0;
     return { value: Math.abs(Math.round(change)), isPositive: change >= 0 };
   }, [stats]);
 
   const quotesTrend = useMemo(() => {
-    if (stats.prevMonthQuotes === 0) return null;
-    const change = ((stats.quotesThisMonth - stats.prevMonthQuotes) / stats.prevMonthQuotes) * 100;
+    const change = stats.prevMonthQuotes > 0
+      ? ((stats.quotesThisMonth - stats.prevMonthQuotes) / stats.prevMonthQuotes) * 100
+      : stats.quotesThisMonth > 0 ? 100 : 0;
     return { value: Math.abs(Math.round(change)), isPositive: change >= 0 };
   }, [stats]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Period Selector - Inline pills */}
+      <div className="flex items-center gap-1 rounded-lg border bg-card p-1 w-fit">
+        {PERIOD_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => handlePresetChange(option.value)}
+            className={cn(
+              'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+              selectedPreset === option.value
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       {/* Overview Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-lg border bg-card divide-x divide-border">
+        <StatItem
           title="Total Revenue"
           value={formatCurrency(stats.totalRevenue)}
           icon={DollarSign}
-          trend={revenueTrend ?? undefined}
-          description="vs last month"
+          trend={revenueTrend}
+          detail="vs last month"
         />
-        <StatCard
+        <StatItem
           title="Total Quotes"
           value={stats.totalQuotes}
           icon={FileText}
-          trend={quotesTrend ?? undefined}
-          description="vs last month"
+          trend={quotesTrend}
+          detail="vs last month"
         />
-        <StatCard
+        <StatItem
           title="Conversion Rate"
-          value={`${stats.conversionRate.toFixed(1)}%`}
+          value={`${stats.conversionRate}%`}
           icon={TrendingUp}
-          description="Quotes to invoices"
+          detail="Quotes to invoices"
         />
-        <StatCard
+        <StatItem
           title="Outstanding"
           value={formatCurrency(stats.outstandingAmount)}
           icon={Receipt}
-          description={`${formatCurrency(stats.overdueAmount)} overdue`}
+          detail={`${formatCurrency(stats.overdueAmount)} overdue`}
         />
       </div>
 
-      {/* Sales Pipeline & Financial Health (P0 Features) */}
+      {/* Sales Pipeline & Financial Health */}
       <div className="grid gap-6 lg:grid-cols-2">
         <SalesPipelineSection
+          dateRange={dateRange}
           conversionRate={stats.conversionRate}
           avgDealValue={stats.avgDealValue}
           quoteStatusCounts={quoteStatusCounts}
           conversionFunnel={conversionFunnel}
         />
         <FinancialHealthSection
+          dateRange={dateRange}
           outstandingAmount={stats.outstandingAmount}
           overdueAmount={stats.overdueAmount}
           revenueThisMonth={stats.revenueThisMonth}
@@ -171,8 +234,8 @@ export function AnalyticsDashboard({
         />
       </div>
 
-      {/* Revenue Forecast - Full Width */}
-      <RevenueForecastChart forecastData={revenueForecast} />
+      {/* Revenue Forecast */}
+      <RevenueForecastChart dateRange={dateRange} forecastData={revenueForecast} />
 
       {/* Client Insights */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -180,18 +243,22 @@ export function AnalyticsDashboard({
         <ClientLifetimeValueCard data={clientLTV} />
       </div>
 
-      {/* Secondary Charts */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <ConversionRateCard
-          data={{
-            conversionRate: stats.conversionRate,
-            acceptedCount: quoteStatusCounts.accepted + quoteStatusCounts.converted,
-            totalSentCount: quoteStatusCounts.sent + quoteStatusCounts.viewed + quoteStatusCounts.accepted + quoteStatusCounts.declined + quoteStatusCounts.expired + quoteStatusCounts.converted,
-          }}
-          conversionFunnel={conversionFunnel}
-        />
-        <QuotesByStatusChart data={quoteStatusCounts} />
-        <RevenueComparisonChart data={monthlyComparison} />
+      {/* Secondary Charts - Conversion rate is compact, pair with status; comparison gets full width below */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-2 space-y-6">
+          <ConversionRateCard
+            data={{
+              conversionRate: stats.conversionRate,
+              acceptedCount: quoteStatusCounts.accepted,
+              totalSentCount: quoteStatusCounts.sent + quoteStatusCounts.viewed + quoteStatusCounts.accepted + quoteStatusCounts.declined,
+            }}
+            conversionFunnel={conversionFunnel}
+          />
+          <QuotesByStatusChart data={quoteStatusCounts} />
+        </div>
+        <div className="lg:col-span-3">
+          <RevenueComparisonChart data={monthlyComparison} />
+        </div>
       </div>
     </div>
   );

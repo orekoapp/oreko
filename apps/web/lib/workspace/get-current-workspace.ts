@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
@@ -18,9 +19,10 @@ interface WorkspaceContext {
  * Get the current user's active workspace ID, user ID, and role.
  * This is the shared helper used by all server actions that need workspace context.
  *
- * Respects the active workspace cookie if set, otherwise falls back to the first workspace.
+ * Wrapped with React.cache() so it only runs once per request —
+ * multiple server actions calling this in the same render get the cached result.
  */
-export async function getCurrentUserWorkspace(): Promise<WorkspaceContext> {
+export const getCurrentUserWorkspace = cache(async (): Promise<WorkspaceContext> => {
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
@@ -56,7 +58,7 @@ export async function getCurrentUserWorkspace(): Promise<WorkspaceContext> {
     userId,
     role: firstMembership.role as WorkspaceRole,
   };
-}
+});
 
 /**
  * Role hierarchy for permission checks.

@@ -58,9 +58,9 @@ export const authConfig: NextAuthConfig = {
     },
     jwt({ token, user, trigger, session }) {
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
+        token.id = user.id ?? '';
+        token.email = user.email ?? '';
+        token.name = user.name ?? '';
         token.avatarUrl = user.avatarUrl;
       }
 

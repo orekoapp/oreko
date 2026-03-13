@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -22,6 +23,7 @@ const registerSchema = z
     email: z.string().email('Please enter a valid email address'),
     password: passwordSchema,
     confirmPassword: z.string(),
+    termsAccepted: z.literal(true, { errorMap: () => ({ message: 'You must accept the terms and conditions' }) }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -54,6 +56,7 @@ export function RegisterForm() {
           name: data.name,
           email: data.email,
           password: data.password,
+          termsAccepted: data.termsAccepted,
         }),
       });
 
@@ -73,13 +76,12 @@ export function RegisterForm() {
 
       if (signInResult?.error) {
         toast.error('Account created but failed to sign in. Please try logging in.');
-        router.push('/login');
+        window.location.href = '/login';
         return;
       }
 
-      toast.success('Account created successfully!');
-      router.push('/onboarding');
-      router.refresh();
+      // Full page reload to ensure server picks up the new auth cookie
+      window.location.href = '/onboarding';
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
@@ -159,6 +161,27 @@ export function RegisterForm() {
             {errors.confirmPassword && (
               <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
             )}
+          </div>
+
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="termsAccepted"
+              disabled={isLoading}
+              {...register('termsAccepted')}
+              onCheckedChange={(checked) => {
+                // react-hook-form expects a change event, but Checkbox uses onCheckedChange
+                const event = { target: { name: 'termsAccepted', value: checked === true } };
+                register('termsAccepted').onChange(event as any);
+              }}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label htmlFor="termsAccepted" className="text-sm font-normal cursor-pointer">
+                I agree to the Terms of Service and Privacy Policy
+              </Label>
+              {errors.termsAccepted && (
+                <p className="text-sm text-destructive">{errors.termsAccepted.message}</p>
+              )}
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>

@@ -58,7 +58,7 @@ export function QuotePortalView({ quote, accessToken }: QuotePortalViewProps) {
             <p className="font-medium">This quote has expired</p>
             <p className="text-sm text-orange-700 dark:text-orange-300">
               This quote expired on{' '}
-              {new Date(quote.expirationDate!).toLocaleDateString()}. Please
+              {new Date(quote.expirationDate!).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}. Please
               contact {quote.business.name} to request a new quote.
             </p>
           </div>
@@ -99,13 +99,13 @@ export function QuotePortalView({ quote, accessToken }: QuotePortalViewProps) {
         </div>
         <div className="flex items-center gap-1">
           <Calendar className="h-4 w-4" />
-          <span>Issued: {new Date(quote.issueDate).toLocaleDateString()}</span>
+          <span>Issued: {new Date(quote.issueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
         </div>
         {quote.expirationDate && (
           <div className="flex items-center gap-1">
             <Clock className="h-4 w-4" />
             <span>
-              Valid until: {new Date(quote.expirationDate).toLocaleDateString()}
+              Valid until: {new Date(quote.expirationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
           </div>
         )}

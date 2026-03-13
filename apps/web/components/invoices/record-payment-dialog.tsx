@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { DollarSign, Loader2, CreditCard, Building2, Banknote, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,10 +26,23 @@ import {
 } from '@/components/ui/select';
 import { recordPayment } from '@/lib/invoices/actions';
 
+export interface PaymentRecord {
+  id: string;
+  amount: number;
+  date: string;
+  method: string;
+  methodLabel: string;
+  referenceNumber?: string;
+  notes?: string;
+}
+
 interface RecordPaymentDialogProps {
   invoiceId: string;
   amountDue: number;
   currency: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onPaymentRecorded?: (payment?: PaymentRecord) => void;
 }
 
 const paymentMethods = [
@@ -50,10 +63,15 @@ export function RecordPaymentDialog({
   invoiceId,
   amountDue,
   currency,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onPaymentRecorded,
 }: RecordPaymentDialogProps) {
   const router = useRouter();
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (controlledOnOpenChange || (() => {})) : setInternalOpen;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amount, setAmount] = useState(amountDue.toString());
   const [paymentMethod, setPaymentMethod] = useState('card');
@@ -86,8 +104,9 @@ export function RecordPaymentDialog({
       });
 
       if (result.success) {
-        toast({ title: 'Payment recorded', description: `${formatCurrency(numAmount, currency)} payment recorded successfully.` });
+        toast.success('Payment recorded successfully');
         setOpen(false);
+        onPaymentRecorded?.();
         router.refresh();
         // Reset form
         setAmount(amountDue.toString());
@@ -104,12 +123,14 @@ export function RecordPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="w-full">
-          <DollarSign className="mr-2 h-4 w-4" />
-          Record Payment
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button className="w-full">
+            <DollarSign className="mr-2 h-4 w-4" />
+            Record Payment
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>

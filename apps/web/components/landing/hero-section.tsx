@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export function HeroSection() {
   return (
-    <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
+    <section aria-label="Introduction" className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-950 -z-10" />
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] -z-10" />
@@ -96,6 +96,7 @@ export function HeroSection() {
                   src="/images/landing/hero-screenshot.png"
                   alt="QuoteCraft visual quote builder - drag and drop blocks to create professional quotes"
                   fill
+                  sizes="(max-width: 1280px) 100vw, 1280px"
                   className="object-contain"
                   priority
                   quality={90}

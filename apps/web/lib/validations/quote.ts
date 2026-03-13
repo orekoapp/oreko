@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idSchema, moneySchema, percentageSchema, listQuerySchema } from './common';
+import { idSchema, moneySchema, percentageSchema, listQuerySchema, emailSchema } from './common';
 
 // Quote status enum
 export const quoteStatusSchema = z.enum([
@@ -93,9 +93,9 @@ export const quoteFilterSchema = listQuerySchema.extend({
 // Send quote schema
 export const sendQuoteSchema = z.object({
   id: idSchema,
-  recipientEmail: z.string().email().optional(), // Uses client email if not provided
+  recipientEmail: emailSchema.optional(), // Uses client email if not provided
   message: z.string().max(2000).optional(),
-  ccEmails: z.array(z.string().email()).max(5).optional(),
+  ccEmails: z.array(emailSchema).max(5).optional(),
 });
 
 // Accept quote schema (client action)

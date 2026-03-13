@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Check, ArrowRight, Building2, Palette, CreditCard, PartyPopper, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +64,8 @@ export function OnboardingWizard({ initialProgress, stripeEnabled }: OnboardingW
       await completeOnboarding();
       router.push('/dashboard');
       router.refresh();
+    } catch {
+      toast.error('Failed to complete setup. Please try again.');
     } finally {
       setIsLoading(false);
     }

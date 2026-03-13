@@ -51,8 +51,8 @@ export function LoginForm() {
         return;
       }
 
-      router.push(callbackUrl);
-      router.refresh();
+      // Full page reload to ensure server picks up the new auth cookie
+      window.location.href = callbackUrl;
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
@@ -88,11 +88,8 @@ export function LoginForm() {
         return;
       }
 
-      toast.success('Welcome to the demo!', {
-        description: 'Explore all features - changes won\'t be saved.',
-      });
-      router.push('/dashboard');
-      router.refresh();
+      // Full page reload to ensure server picks up the new auth cookie
+      window.location.href = '/dashboard';
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {

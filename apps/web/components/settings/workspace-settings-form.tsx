@@ -26,10 +26,22 @@ export function WorkspaceSettingsForm({ initialData }: WorkspaceSettingsFormProp
     setSuccess(false);
     setIsSubmitting(true);
 
+    if (name.trim().length < 1) {
+      setError('Workspace name is required');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      setError('Slug must be lowercase letters, numbers, and hyphens only');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const result = await updateWorkspaceSettings({ name, slug });
+      const result = await updateWorkspaceSettings({ name: name.trim(), slug });
       if (result.success) {
         setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
         router.refresh();
       } else {
         setError(result.error || 'Failed to update workspace settings');
@@ -68,7 +80,7 @@ export function WorkspaceSettingsForm({ initialData }: WorkspaceSettingsFormProp
       <div className="grid gap-2">
         <Label htmlFor="slug">Workspace URL</Label>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">quote.persuado.tech/</span>
+          <span className="text-sm text-muted-foreground">quotecraft.app/</span>
           <Input
             id="slug"
             value={slug}

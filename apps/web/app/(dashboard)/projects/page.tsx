@@ -1,11 +1,10 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Plus, FolderKanban, FileText, Receipt, CheckCircle } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ProjectList } from '@/components/projects';
-import { getProjects, getProjectSummaryStats } from '@/lib/projects/actions';
+import { ProjectsDataTable } from '@/components/projects';
+import { getProjects } from '@/lib/projects/actions';
 
 interface ProjectsPageProps {
   searchParams: Promise<{
@@ -22,8 +21,6 @@ export const metadata = {
 };
 
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps) {
-  const params = await searchParams;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -39,98 +36,21 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
         </Button>
       </div>
 
-      <Suspense fallback={<StatsLoading />}>
-        <ProjectStats />
-      </Suspense>
-
       <Suspense fallback={<ListLoading />}>
-        <ProjectListWrapper searchParams={params} />
+        <ProjectListWrapper />
       </Suspense>
     </div>
   );
 }
 
-async function ProjectStats() {
-  const stats = await getProjectSummaryStats();
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <FolderKanban className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Total Projects</p>
-            <p className="text-2xl font-bold">{stats.totalProjects}</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <CheckCircle className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Active Projects</p>
-            <p className="text-2xl font-bold">{stats.activeProjects}</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <FileText className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Total Quotes</p>
-            <p className="text-2xl font-bold">{stats.totalQuotes}</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <Receipt className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Total Invoices</p>
-            <p className="text-2xl font-bold">{stats.totalInvoices}</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-async function ProjectListWrapper({
-  searchParams,
-}: {
-  searchParams: {
-    search?: string;
-    status?: string;
-    page?: string;
-    sortBy?: string;
-    sortOrder?: string;
-  };
-}) {
-  const projects = await getProjects({
-    search: searchParams.search,
-    isActive: searchParams.status === 'inactive' ? false : searchParams.status === 'active' ? true : undefined,
-    page: searchParams.page ? parseInt(searchParams.page) : 1,
-  });
-
-  return <ProjectList projects={projects} />;
-}
-
-function StatsLoading() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="flex items-center gap-3 p-4">
-            <Skeleton className="h-8 w-8 rounded" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-6 w-12" />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+async function ProjectListWrapper() {
+  // Fetch all projects (active + inactive) — the DataTable handles status filtering client-side
+  const [activeResult, inactiveResult] = await Promise.all([
+    getProjects({ isActive: true, pageSize: 200 }),
+    getProjects({ isActive: false, pageSize: 200 }),
+  ]);
+  const allProjects = [...activeResult.projects, ...inactiveResult.projects];
+  return <ProjectsDataTable data={allProjects} />;
 }
 
 function ListLoading() {

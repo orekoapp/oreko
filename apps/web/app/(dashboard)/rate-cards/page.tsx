@@ -17,6 +17,7 @@ interface RateCardsPageProps {
 
 export const metadata = {
   title: 'Rate Cards',
+  description: 'Manage your service and product pricing with rate cards.',
 };
 
 async function RateCardsContent({ searchParams }: RateCardsPageProps) {
@@ -25,7 +26,7 @@ async function RateCardsContent({ searchParams }: RateCardsPageProps) {
   const filter: RateCardFilter = {
     search: params.search,
     categoryId: params.categoryId,
-    pricingType: params.pricingType as PricingType | undefined,
+    pricingType: (['fixed', 'hourly', 'daily', 'weekly', 'monthly', 'per_unit'] as const).includes(params.pricingType as PricingType) ? params.pricingType as PricingType : undefined,
     isActive: params.isActive ? params.isActive === 'true' : undefined,
     page: params.page ? parseInt(params.page) : 1,
     limit: params.limit ? parseInt(params.limit) : 20,

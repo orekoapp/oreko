@@ -1,11 +1,10 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Plus, Users, Building2, User, FileText, Receipt } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClientsDataTable } from '@/components/clients';
-import { getClients, getClientStats } from '@/lib/clients/actions';
+import { getClients } from '@/lib/clients/actions';
 
 interface ClientsPageProps {
   searchParams: Promise<{
@@ -42,67 +41,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         </Button>
       </div>
 
-      <Suspense fallback={<StatsLoading />}>
-        <ClientStats />
-      </Suspense>
-
       <Suspense fallback={<ListLoading />}>
         <ClientListWrapper searchParams={params} />
       </Suspense>
-    </div>
-  );
-}
-
-async function ClientStats() {
-  const stats = await getClientStats();
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <Users className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Total Clients</p>
-            <p className="text-2xl font-bold">{stats.total}</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <User className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Individuals</p>
-            <p className="text-2xl font-bold">{stats.individuals}</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <Building2 className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Companies</p>
-            <p className="text-2xl font-bold">{stats.companies}</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <FileText className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Active Quotes</p>
-            <p className="text-2xl font-bold">{stats.withActiveQuotes}</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-3 p-4">
-          <Receipt className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">Clients with Unpaid</p>
-            <p className="text-2xl font-bold">{stats.withUnpaidInvoices}</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -127,24 +68,6 @@ async function ClientListWrapper({
   });
 
   return <ClientsDataTable data={clients} />;
-}
-
-function StatsLoading() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="flex items-center gap-3 p-4">
-            <Skeleton className="h-8 w-8 rounded" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-6 w-12" />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
 }
 
 function ListLoading() {

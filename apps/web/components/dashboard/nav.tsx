@@ -7,17 +7,30 @@ import {
   FileText,
   Receipt,
   Users,
-  CreditCard,
   Settings,
   FileStack,
   PanelLeftClose,
   PanelLeft,
+  ChevronDown,
+  type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
-export const navItems = [
+interface NavChild {
+  title: string;
+  href: string;
+}
+
+interface NavItem {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  children?: NavChild[];
+}
+
+export const navItems: NavItem[] = [
   {
     title: 'Dashboard',
     href: '/dashboard',
@@ -39,11 +52,6 @@ export const navItems = [
     icon: Users,
   },
   {
-    title: 'Rate Cards',
-    href: '/rate-cards',
-    icon: CreditCard,
-  },
-  {
     title: 'Templates',
     href: '/templates',
     icon: FileStack,
@@ -58,6 +66,19 @@ export const navItems = [
 export function DashboardNav() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    navItems.forEach((item) => {
+      if (item.children && pathname.startsWith(item.href)) {
+        initial[item.href] = true;
+      }
+    });
+    return initial;
+  });
+
+  const toggleMenu = (href: string) => {
+    setExpandedMenus((prev) => ({ ...prev, [href]: !prev[href] }));
+  };
 
   return (
     <aside
@@ -79,6 +100,77 @@ export function DashboardNav() {
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
+          // Items with children — collapsible dropdown
+          if (item.children) {
+            const isExpanded = expandedMenus[item.href] ?? false;
+
+            const hasActiveChild = pathname.startsWith(item.href);
+
+            // Collapsed sidebar — just show icon
+            if (collapsed) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center rounded-md py-2 text-sm font-medium transition-colors justify-center px-2',
+                    hasActiveChild
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                  title={item.title}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                </Link>
+              );
+            }
+
+            return (
+              <div key={item.href}>
+                <button
+                  onClick={() => toggleMenu(item.href)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    hasActiveChild
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 text-left">{item.title}</span>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 transition-transform',
+                      isExpanded && 'rotate-180'
+                    )}
+                  />
+                </button>
+                {isExpanded && (
+                  <div className="ml-[22px] flex flex-col gap-0.5 mt-0.5">
+                    {item.children.map((child) => {
+                      const isChildItemActive = pathname === child.href || pathname.startsWith(`${child.href}/`);
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={cn(
+                            'relative rounded-md px-3 py-2 text-sm transition-colors border-l-2',
+                            isChildItemActive
+                              ? 'border-primary bg-primary/10 font-medium text-foreground'
+                              : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
+                          )}
+                        >
+                          {child.title}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // Regular flat nav items
           return (
             <Link
               key={item.href}

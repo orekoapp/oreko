@@ -68,7 +68,7 @@ export function ServiceGroupBlockContent({ block }: ServiceGroupBlockContentProp
 
   if (isEditing) {
     return (
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border border-border bg-card text-card-foreground">
         <div className="flex items-center gap-3 border-b p-4">
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleToggleCollapse}>
             {block.content.collapsed ? (
@@ -82,7 +82,7 @@ export function ServiceGroupBlockContent({ block }: ServiceGroupBlockContentProp
               value={block.content.title}
               onChange={(e) => handleChange('title', e.target.value)}
               placeholder="Group title"
-              className="font-medium"
+              className="font-medium text-foreground"
             />
           </div>
           {showPrices && (
@@ -96,7 +96,7 @@ export function ServiceGroupBlockContent({ block }: ServiceGroupBlockContentProp
               value={block.content.description}
               onChange={(e) => handleChange('description', e.target.value)}
               placeholder="Group description (optional)"
-              className="text-sm"
+              className="text-sm text-foreground"
             />
 
             <div className="space-y-2">

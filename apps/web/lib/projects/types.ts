@@ -63,3 +63,32 @@ export type ProjectListItem = {
   name: string;
   description: string | null;
 };
+
+// Project activity item
+export type ProjectActivity = {
+  id: string;
+  type: 'contract_signed' | 'quote_accepted' | 'quote_sent' | 'invoice_created' | 'invoice_paid' | 'invoice_sent' | 'note_added' | 'file_uploaded';
+  title: string;
+  description?: string;
+  amount?: number;
+  date: Date;
+};
+
+// Project note
+export type ProjectNote = {
+  id: string;
+  content: string;
+  authorName: string;
+  authorAvatar?: string;
+  createdAt: Date;
+  isPrivate: boolean;
+};
+
+// Project contract
+export type ProjectContract = {
+  id: string;
+  name: string;
+  addedAt: Date;
+  isSigned: boolean;
+  linkedInvoiceId?: string;
+};

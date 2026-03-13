@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { isInvoiceOverdue, getDaysUntilDue } from '@/lib/invoices/types';
 import { InvoiceActions } from '@/components/invoices/invoice-actions';
-import { RecordPaymentDialog } from '@/components/invoices/record-payment-dialog';
+import { RecordPaymentButton } from '@/components/invoices/record-payment-button';
 import { CreditNoteDialog } from '@/components/invoices/credit-note-dialog';
 import { CreditNotesList } from '@/components/invoices/credit-notes-list';
 
@@ -26,8 +26,13 @@ interface InvoiceDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function generateMetadata({ params }: InvoiceDetailPageProps) {
   const { id } = await params;
+  if (!UUID_REGEX.test(id)) {
+    return { title: 'Invoice Not Found' };
+  }
   try {
     const invoice = await getInvoice(id);
     return { title: invoice ? `${invoice.title} - ${invoice.invoiceNumber}` : 'Invoice Details' };
@@ -55,6 +60,10 @@ function formatCurrency(amount: number, currency: string = 'USD'): string {
 
 export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
   const { id } = await params;
+
+  if (!UUID_REGEX.test(id)) {
+    notFound();
+  }
 
   let invoice;
   try {
@@ -147,18 +156,18 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 {/* Line Items */}
                 <div className="mb-8">
                   <h3 className="mb-4 font-semibold">Line Items</h3>
-                  <div className="overflow-x-auto rounded-lg border">
-                    <table className="w-full min-w-[500px]">
+                  <div className="overflow-hidden rounded-lg border">
+                    <table className="w-full">
                       <thead className="bg-muted text-sm">
                         <tr>
                           <th className="px-4 py-3 text-left font-medium">Description</th>
-                          <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Qty</th>
-                          <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Rate</th>
-                          <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Amount</th>
+                          <th className="px-4 py-3 text-right font-medium">Qty</th>
+                          <th className="px-4 py-3 text-right font-medium">Rate</th>
+                          <th className="px-4 py-3 text-right font-medium">Amount</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {invoice.lineItems.map((item) => (
+                        {invoice.lineItems.map((item: any) => (
                           <tr key={item.id}>
                             <td className="px-4 py-3">
                               <p className="font-medium">{item.name}</p>
@@ -168,11 +177,11 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                                 </p>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{item.quantity}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <td className="px-4 py-3 text-right">{item.quantity}</td>
+                            <td className="px-4 py-3 text-right">
                               {formatCurrency(item.rate, invoice.settings.currency)}
                             </td>
-                            <td className="px-4 py-3 text-right font-medium whitespace-nowrap">
+                            <td className="px-4 py-3 text-right font-medium">
                               {formatCurrency(item.amount, invoice.settings.currency)}
                             </td>
                           </tr>
@@ -306,7 +315,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               ) : (
                 <p className="text-muted-foreground text-sm">No client assigned</p>
               )}
-              <Button variant="outline" size="sm" className="mt-4 w-auto" asChild>
+              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
                 <Link href={`/clients/${invoice.clientId}`}>
                   <ExternalLink className="mr-2 h-4 w-4" />
                   View Client
@@ -322,7 +331,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 <CardTitle className="text-base">Record Payment</CardTitle>
               </CardHeader>
               <CardContent>
-                <RecordPaymentDialog
+                <RecordPaymentButton
                   invoiceId={invoice.id}
                   amountDue={invoice.totals.amountDue}
                   currency={invoice.settings.currency}

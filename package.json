@@ -23,6 +23,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "type-check": "turbo type-check",
     "test": "turbo test",
+    "test:coverage": "turbo test:coverage",
     "test:e2e": "turbo test:e2e",
     "db:generate": "pnpm --filter @quotecraft/database generate",
     "db:push": "pnpm --filter @quotecraft/database push",

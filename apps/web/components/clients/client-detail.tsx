@@ -5,28 +5,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Building2,
   Mail,
   Phone,
   Globe,
   MapPin,
   Pencil,
   Trash2,
-  FileText,
-  Receipt,
-  User,
-  Calendar,
-  DollarSign,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
+  MoreHorizontal,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,11 +26,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { deleteClient } from '@/lib/clients/actions';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import type { ClientDetail as ClientDetailType, ClientActivity } from '@/lib/clients/types';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface ClientDetailProps {
   client: ClientDetailType;
@@ -66,6 +60,11 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
     }
   };
 
+  const totalRevenue = client.totalRevenue;
+  const outstanding = client.outstandingAmount;
+  const collected = totalRevenue - outstanding;
+  const collectionProgress = totalRevenue > 0 ? (collected / totalRevenue) * 100 : 0;
+
   const addressString = client.address
     ? [
         client.address.street,
@@ -79,334 +78,333 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
     : null;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/clients">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-              {client.type === 'company' ? (
-                <Building2 className="h-8 w-8 text-muted-foreground" />
-              ) : (
-                <User className="h-8 w-8 text-muted-foreground" />
-              )}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">{client.company || client.name}</h1>
-              {client.company && client.company !== client.name && (
-                <p className="text-muted-foreground">{client.name}</p>
-              )}
-              <div className="mt-1 flex items-center gap-2">
-                <Badge variant={client.type === 'company' ? 'default' : 'secondary'}>
-                  {client.type === 'company' ? 'Company' : 'Individual'}
-                </Badge>
-                {client.tags.map((tag) => (
-                  <Badge key={tag} variant="outline">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-8">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link
+          href="/clients"
+          className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Clients
+        </Link>
+        <span>/</span>
+        <span className="text-foreground">{client.company || client.name}</span>
+      </div>
 
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {client.company || client.name}
+            </h1>
+            <Badge
+              variant={client.type === 'company' ? 'default' : 'secondary'}
+              className="font-normal"
+            >
+              {client.type === 'company' ? 'Company' : 'Individual'}
+            </Badge>
+            {client.tags.map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs font-normal">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+          {client.company && client.company !== client.name && (
+            <p className="text-muted-foreground">{client.name}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" asChild>
             <Link href={`/clients/${client.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4" />
+              <Pencil className="mr-2 h-3.5 w-3.5" />
               Edit
             </Link>
           </Button>
-          {!((client._count?.quotes ?? 0) > 0 || (client._count?.invoices ?? 0) > 0) && (
-            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/quotes/new?clientId=${client.id}`}>New quote</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/invoices/new?clientId=${client.id}`}>New invoice</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900">
-                <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Quotes</p>
-                <p className="text-2xl font-bold">{client._count?.quotes || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-purple-100 p-2 dark:bg-purple-900">
-                <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Invoices</p>
-                <p className="text-2xl font-bold">{client._count?.invoices || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-green-100 p-2 dark:bg-green-900">
-                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">{formatCurrency(client.totalRevenue)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-orange-100 p-2 dark:bg-orange-900">
-                <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Outstanding</p>
-                <p className="text-2xl font-bold">{formatCurrency(client.outstandingAmount)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Contact Details */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
+        <a
+          href={`mailto:${client.email}`}
+          className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+        >
+          <Mail className="h-3.5 w-3.5" />
+          {client.email}
+        </a>
+        {client.phone && (
+          <a
+            href={`tel:${client.phone}`}
+            className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            {client.phone}
+          </a>
+        )}
+        {client.website && (
+          <a
+            href={client.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            {client.website}
+          </a>
+        )}
+        {addressString && (
+          <span className="flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5" />
+            {addressString}
+          </span>
+        )}
       </div>
 
-      {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Info */}
-        <div className="space-y-6">
-          {/* Contact Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Contact Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <a href={`mailto:${client.email}`} className="text-sm hover:underline">
-                  {client.email}
-                </a>
-              </div>
-              {client.phone && (
-                <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a href={`tel:${client.phone}`} className="text-sm hover:underline">
-                    {client.phone}
-                  </a>
-                </div>
-              )}
-              {client.website && (
-                <div className="flex items-center gap-3">
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                  <a
-                    href={client.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm hover:underline"
-                  >
-                    {client.website}
-                  </a>
-                </div>
-              )}
-              {addressString && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{addressString}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* Financial Summary */}
+      <div className="rounded-lg border bg-card p-6">
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Total Revenue</p>
+            <p className="text-2xl font-semibold tracking-tight mt-1">
+              {formatCurrency(totalRevenue)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Outstanding</p>
+            <p className="text-2xl font-semibold tracking-tight mt-1 text-amber-600">
+              {formatCurrency(outstanding)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Quotes</p>
+            <p className="text-2xl font-semibold tracking-tight mt-1">
+              {client._count?.quotes || 0}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Invoices</p>
+            <p className="text-2xl font-semibold tracking-tight mt-1">
+              {client._count?.invoices || 0}
+            </p>
+          </div>
+        </div>
+        {totalRevenue > 0 && (
+          <div className="mt-5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>Collection progress</span>
+              <span>{Math.round(collectionProgress)}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all"
+                style={{ width: `${collectionProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
-          {/* Additional Contacts */}
+      {/* Main Grid */}
+      <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
+        {/* Main Content */}
+        <div className="space-y-10">
+          {/* Invoices */}
+          <section>
+            <SectionHeader
+              title="Invoices"
+              count={client.invoices?.length || 0}
+              addHref={`/invoices/new?clientId=${client.id}`}
+            />
+            {client.invoices && client.invoices.length > 0 ? (
+              <div className="rounded-lg border divide-y">
+                {client.invoices.map((invoice) => (
+                  <Link
+                    key={invoice.id}
+                    href={`/invoices/${invoice.id}`}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{invoice.invoiceNumber}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Due {formatDate(invoice.dueDate)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium tabular-nums">
+                        {formatCurrency(Number(invoice.total))}
+                      </span>
+                      <StatusBadge status={invoice.status} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <EmptyState label="No invoices yet" />
+            )}
+          </section>
+
+          {/* Quotes */}
+          <section>
+            <SectionHeader
+              title="Quotes"
+              count={client.quotes?.length || 0}
+              addHref={`/quotes/new?clientId=${client.id}`}
+            />
+            {client.quotes && client.quotes.length > 0 ? (
+              <div className="rounded-lg border divide-y">
+                {client.quotes.map((quote) => (
+                  <Link
+                    key={quote.id}
+                    href={`/quotes/${quote.id}`}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{quote.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatDate(quote.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium tabular-nums">
+                        {formatCurrency(Number(quote.total))}
+                      </span>
+                      <StatusBadge status={quote.status} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <EmptyState label="No quotes yet" />
+            )}
+          </section>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-8">
+          {/* Additional Contacts (company-specific) */}
           {client.contacts.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Additional Contacts</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <section>
+              <h2 className="text-sm font-medium text-muted-foreground mb-4">People</h2>
+              <div className="rounded-lg border divide-y">
                 {client.contacts.map((contact) => (
-                  <div key={contact.id} className="space-y-1">
+                  <div key={contact.id} className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{contact.name}</span>
+                      <p className="text-sm font-medium">{contact.name}</p>
                       {contact.isPrimary && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs font-normal">
                           Primary
                         </Badge>
                       )}
                     </div>
                     {contact.role && (
-                      <p className="text-sm text-muted-foreground">{contact.role}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{contact.role}</p>
                     )}
-                    <div className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
-                      <a href={`mailto:${contact.email}`} className="hover:underline">
-                        {contact.email}
-                      </a>
+                    <div className="flex flex-wrap gap-x-3 mt-1 text-xs text-muted-foreground">
+                      {contact.email && (
+                        <a
+                          href={`mailto:${contact.email}`}
+                          className="hover:text-foreground transition-colors"
+                        >
+                          {contact.email}
+                        </a>
+                      )}
                       {contact.phone && (
-                        <a href={`tel:${contact.phone}`} className="hover:underline">
+                        <a
+                          href={`tel:${contact.phone}`}
+                          className="hover:text-foreground transition-colors"
+                        >
                           {contact.phone}
                         </a>
                       )}
                     </div>
-                    <Separator className="mt-3" />
                   </div>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </section>
           )}
 
           {/* Notes */}
           {client.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap text-sm">{client.notes}</p>
-              </CardContent>
-            </Card>
+            <section>
+              <h2 className="text-sm font-medium text-muted-foreground mb-4">Notes</h2>
+              <div className="rounded-lg border px-4 py-3">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{client.notes}</p>
+              </div>
+            </section>
           )}
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <Button asChild variant="outline" className="justify-start">
-                <Link href={`/quotes/new?clientId=${client.id}`}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Create Quote
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="justify-start">
-                <Link href={`/invoices/new?clientId=${client.id}`}>
-                  <Receipt className="mr-2 h-4 w-4" />
-                  Create Invoice
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Activity & History */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity & History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="activity">
-                <TabsList>
-                  <TabsTrigger value="activity">Activity</TabsTrigger>
-                  <TabsTrigger value="quotes">Quotes ({client.quotes?.length || 0})</TabsTrigger>
-                  <TabsTrigger value="invoices">Invoices ({client.invoices?.length || 0})</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="activity" className="mt-4">
-                  {activities.length === 0 ? (
-                    <p className="py-8 text-center text-muted-foreground">
-                      No activity yet
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {activities.map((activity) => (
-                        <ActivityItem key={activity.id} activity={activity} />
-                      ))}
+          {/* Activity */}
+          <section>
+            <h2 className="text-sm font-medium text-muted-foreground mb-4">Activity</h2>
+            {activities.length > 0 ? (
+              <div className="space-y-0">
+                {activities.map((item, i) => (
+                  <div key={item.id} className="flex gap-3">
+                    <div className="relative flex flex-col items-center">
+                      <div
+                        className={cn(
+                          'h-2 w-2 rounded-full mt-1.5 shrink-0 bg-gray-400',
+                          (item.type === 'quote_accepted' || item.type === 'invoice_paid') &&
+                            'bg-emerald-500',
+                          (item.type === 'quote_sent' || item.type === 'invoice_sent') &&
+                            'bg-blue-500',
+                          (item.type === 'quote_declined' || item.type === 'invoice_overdue') &&
+                            'bg-red-500',
+                        )}
+                      />
+                      {i < activities.length - 1 && (
+                        <div className="w-px flex-1 bg-border mt-1.5" />
+                      )}
                     </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="quotes" className="mt-4">
-                  {!client.quotes || client.quotes.length === 0 ? (
-                    <p className="py-8 text-center text-muted-foreground">
-                      No quotes yet
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {client.quotes.map((quote) => (
-                        <Link
-                          key={quote.id}
-                          href={`/quotes/${quote.id}`}
-                          className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                        >
-                          <div>
-                            <p className="font-medium">{quote.title}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatDate(quote.createdAt)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">{formatCurrency(Number(quote.total))}</p>
-                            <Badge variant={getQuoteStatusVariant(quote.status)}>
-                              {quote.status}
-                            </Badge>
-                          </div>
-                        </Link>
-                      ))}
+                    <div className="pb-5">
+                      <p className="text-sm">{item.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatRelativeDate(item.date)}
+                        {item.amount != null && ` \u00b7 ${formatCurrency(item.amount)}`}
+                      </p>
                     </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="invoices" className="mt-4">
-                  {!client.invoices || client.invoices.length === 0 ? (
-                    <p className="py-8 text-center text-muted-foreground">
-                      No invoices yet
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {client.invoices.map((invoice) => (
-                        <Link
-                          key={invoice.id}
-                          href={`/invoices/${invoice.id}`}
-                          className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                        >
-                          <div>
-                            <p className="font-medium">{invoice.invoiceNumber}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Due {formatDate(invoice.dueDate)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">{formatCurrency(Number(invoice.total))}</p>
-                            <Badge variant={getInvoiceStatusVariant(invoice.status)}>
-                              {invoice.status}
-                            </Badge>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No activity yet</p>
+            )}
+          </section>
         </div>
       </div>
 
-      {/* Delete Confirmation */}
+      {/* Delete Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Client</AlertDialogTitle>
+            <AlertDialogTitle>Delete client</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete {client.company || client.name}? This action
-              cannot be undone. All associated quotes and invoices will remain but will no longer be
+              cannot be undone. Associated quotes and invoices will remain but will no longer be
               linked to this client.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -426,72 +424,72 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
   );
 }
 
-function ActivityItem({ activity }: { activity: ClientActivity }) {
-  const getIcon = () => {
-    switch (activity.type) {
-      case 'quote_created':
-        return <FileText className="h-4 w-4" />;
-      case 'quote_sent':
-        return <Mail className="h-4 w-4" />;
-      case 'quote_accepted':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'quote_declined':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'invoice_created':
-        return <Receipt className="h-4 w-4" />;
-      case 'invoice_sent':
-        return <Mail className="h-4 w-4" />;
-      case 'invoice_paid':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'invoice_overdue':
-        return <AlertCircle className="h-4 w-4 text-orange-500" />;
-      default:
-        return <Calendar className="h-4 w-4" />;
-    }
-  };
+/* ---------- Shared sub-components ---------- */
 
+function SectionHeader({
+  title,
+  count,
+  addHref,
+}: {
+  title: string;
+  count: number;
+  addHref?: string;
+}) {
   return (
-    <div className="flex gap-3">
-      <div className="mt-1">{getIcon()}</div>
-      <div className="flex-1">
-        <p className="text-sm">{activity.title}</p>
-        {activity.description && (
-          <p className="text-sm text-muted-foreground">{activity.description}</p>
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2.5">
+        <h2 className="text-sm font-medium text-muted-foreground">{title}</h2>
+        {count > 0 && (
+          <span className="text-xs text-muted-foreground tabular-nums bg-muted rounded-full px-2 py-0.5">
+            {count}
+          </span>
         )}
-        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{formatDate(activity.date)}</span>
-          {activity.amount && <span>• {formatCurrency(activity.amount)}</span>}
-        </div>
       </div>
+      {addHref && (
+        <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+          <Link href={addHref}>
+            <Plus className="mr-1 h-3 w-3" />
+            Add
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }
 
-function getQuoteStatusVariant(status: string) {
-  switch (status) {
-    case 'accepted':
-      return 'default' as const;
-    case 'sent':
-    case 'viewed':
-      return 'secondary' as const;
-    case 'declined':
-    case 'expired':
-      return 'destructive' as const;
-    default:
-      return 'outline' as const;
-  }
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        'text-xs capitalize',
+        (status === 'paid' || status === 'accepted') &&
+          'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400',
+        status === 'sent' &&
+          'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400',
+        (status === 'draft' || status === 'viewed') &&
+          'border-border bg-muted text-muted-foreground',
+        (status === 'overdue' || status === 'declined' || status === 'expired') &&
+          'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400',
+      )}
+    >
+      {status}
+    </Badge>
+  );
 }
 
-function getInvoiceStatusVariant(status: string) {
-  switch (status) {
-    case 'paid':
-      return 'default' as const;
-    case 'sent':
-    case 'viewed':
-      return 'secondary' as const;
-    case 'overdue':
-      return 'destructive' as const;
-    default:
-      return 'outline' as const;
-  }
+function EmptyState({ label }: { label: string }) {
+  return <p className="text-sm text-muted-foreground py-2">{label}</p>;
+}
+
+function formatRelativeDate(date: Date) {
+  const now = new Date();
+  const diff = now.getTime() - new Date(date).getTime();
+  const days = Math.floor(diff / 86400000);
+
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  return formatDate(date);
 }

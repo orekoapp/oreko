@@ -13,3 +13,4 @@ export {
   DocumentDetailSkeleton,
   SettingsSkeleton,
 } from './loading-skeletons';
+export { SendEmailDialog } from './send-email-dialog';

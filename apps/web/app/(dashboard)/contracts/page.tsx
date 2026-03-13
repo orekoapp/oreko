@@ -45,12 +45,12 @@ export default async function ContractsPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   return (
-    <div className="container py-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Contracts</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Contracts</h1>
           <p className="text-muted-foreground">
-            View and manage contracts sent to your clients.
+            Manage your contracts and track signatures
           </p>
         </div>
         <Button asChild>

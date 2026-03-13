@@ -4,8 +4,10 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
-import { DataTableRowActions } from '@/components/ui/data-table/data-table-row-actions';
+import { DataTableRowActions, RowAction } from '@/components/ui/data-table/data-table-row-actions';
 import { QuoteListItem } from '@/lib/quotes/types';
+import { Eye, Pencil, Send, Link2, FileOutput, Copy, Download, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 const statusColors: Record<string, string> = {
   draft: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
@@ -38,10 +40,16 @@ interface QuoteColumnsOptions {
   onDuplicate?: (quote: QuoteListItem) => void;
   onDelete?: (quote: QuoteListItem) => void;
   onDownload?: (quote: QuoteListItem) => void;
+  onSend?: (quote: QuoteListItem) => void;
+  onCopyLink?: (quote: QuoteListItem) => void;
+  onConvertToInvoice?: (quote: QuoteListItem) => void;
 }
 
 export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<QuoteListItem>[] {
-  const { onView, onEdit, onDuplicate, onDelete, onDownload } = options;
+  const {
+    onView, onEdit, onDuplicate, onDelete, onDownload,
+    onSend, onCopyLink, onConvertToInvoice,
+  } = options;
 
   return [
     {
@@ -75,9 +83,9 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
       ),
       cell: ({ row }) => {
         return (
-          <div className="font-medium text-primary">
+          <Link href={`/quotes/${row.original.id}`} className="font-medium text-primary hover:underline">
             #{row.getValue('quoteNumber')}
-          </div>
+          </Link>
         );
       },
     },
@@ -123,23 +131,15 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
           .toUpperCase()
           .slice(0, 2);
 
-        const displayName = client.company || client.name;
-        const displayInitials = displayName
-          .split(' ')
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2);
-
         return (
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-              {displayInitials}
+              {initials}
             </div>
             <div>
-              <div className="font-medium">{displayName}</div>
-              {client.company && client.company !== client.name && (
-                <div className="text-sm text-muted-foreground">{client.name}</div>
+              <div className="font-medium">{client.name}</div>
+              {client.email && (
+                <div className="text-sm text-muted-foreground">{client.email}</div>
               )}
             </div>
           </div>
@@ -151,7 +151,6 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
         const searchValue = value.toLowerCase();
         return (
           client.name.toLowerCase().includes(searchValue) ||
-          (client.company?.toLowerCase().includes(searchValue) ?? false) ||
           (client.email?.toLowerCase().includes(searchValue) ?? false)
         );
       },
@@ -197,16 +196,77 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
     {
       id: 'actions',
       cell: ({ row }) => {
-        const status = row.original.status;
-        const canDelete = status === 'draft';
+        const quote = row.original;
+        const actions: RowAction<QuoteListItem>[] = [];
+
+        if (onView) {
+          actions.push({
+            label: 'View',
+            icon: <Eye className="mr-2 h-4 w-4" />,
+            onClick: onView,
+          });
+        }
+        if (onEdit) {
+          actions.push({
+            label: 'Edit',
+            icon: <Pencil className="mr-2 h-4 w-4" />,
+            onClick: onEdit,
+          });
+        }
+        if (onSend) {
+          actions.push({
+            label: 'Send Quote',
+            icon: <Send className="mr-2 h-4 w-4" />,
+            onClick: onSend,
+            separator: true,
+          });
+        }
+        if (onCopyLink) {
+          actions.push({
+            label: 'Copy Link',
+            icon: <Link2 className="mr-2 h-4 w-4" />,
+            onClick: onCopyLink,
+          });
+        }
+        if (onConvertToInvoice && quote.status !== 'converted' && quote.status !== 'declined') {
+          actions.push({
+            label: 'Convert to Invoice',
+            icon: <FileOutput className="mr-2 h-4 w-4" />,
+            onClick: onConvertToInvoice,
+            separator: true,
+          });
+        }
+        if (onDuplicate) {
+          actions.push({
+            label: 'Duplicate',
+            icon: <Copy className="mr-2 h-4 w-4" />,
+            onClick: onDuplicate,
+            separator: !onConvertToInvoice || quote.status === 'converted' || quote.status === 'declined',
+          });
+        }
+        if (onDownload) {
+          actions.push({
+            label: 'Download PDF',
+            icon: <Download className="mr-2 h-4 w-4" />,
+            onClick: onDownload,
+          });
+        }
+        if (onDelete) {
+          actions.push({
+            label: 'Delete',
+            icon: <Trash2 className="mr-2 h-4 w-4" />,
+            onClick: onDelete,
+            variant: 'destructive',
+            separator: true,
+          });
+        }
+
         return (
           <DataTableRowActions
-            row={row.original}
+            row={quote}
+            actions={actions}
             onView={onView}
-            onEdit={onEdit}
-            onDuplicate={onDuplicate}
-            onDelete={canDelete ? onDelete : undefined}
-            onDownload={onDownload}
+            onDelete={onDelete}
           />
         );
       },

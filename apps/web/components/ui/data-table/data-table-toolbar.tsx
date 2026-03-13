@@ -75,7 +75,7 @@ export function DataTableToolbar<TData>({
   const isFiltered =
     table.getState().columnFilters.length > 0 || searchValue.length > 0;
 
-  const statusColumn = table.getColumn(statusFilterKey);
+  const statusColumn = statusOptions?.length ? table.getColumn(statusFilterKey) : null;
   const currentStatusFilter = statusColumn?.getFilterValue() as string | undefined;
 
   return (

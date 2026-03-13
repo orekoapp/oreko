@@ -44,7 +44,7 @@ export function QuotePipeline({ data, className }: QuotePipelineProps) {
               <div key={stage.key} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{stage.label}</span>
-                  <span className="font-medium">{stage.value}</span>
+                  <span className="font-medium">{stage.value} ({Math.round(stage.pct)}%)</span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-muted">
                   <div

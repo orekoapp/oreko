@@ -197,13 +197,13 @@ export async function createQuote(data: {
       quoteNumber,
       title: data.title,
       status: 'draft',
-      currency,
       accessToken: generateAccessToken(),
       subtotal,
       taxTotal,
       total,
       settings: {
         blocks: data.blocks || [],
+        currency,
       } as unknown as Prisma.InputJsonValue,
       lineItems: {
         create: lineItems,
@@ -233,7 +233,25 @@ export async function createQuote(data: {
     domainEvents.emit({ type: 'quote.created', payload: { quoteId: quote.id, workspaceId: workspace.id } });
   } catch {}
 
-  return { success: true, quote };
+  return {
+    success: true,
+    quote: {
+      ...quote,
+      subtotal: Number(quote.subtotal),
+      taxTotal: Number(quote.taxTotal),
+      total: Number(quote.total),
+      discountValue: quote.discountValue ? Number(quote.discountValue) : null,
+      discountAmount: Number(quote.discountAmount),
+      lineItems: quote.lineItems.map((li) => ({
+        ...li,
+        quantity: Number(li.quantity),
+        rate: Number(li.rate),
+        amount: Number(li.amount),
+        taxRate: li.taxRate ? Number(li.taxRate) : null,
+        taxAmount: Number(li.taxAmount),
+      })),
+    },
+  };
 }
 
 /**
@@ -374,7 +392,25 @@ export async function updateQuote(
     revalidatePath(ROUTES.quotes);
     revalidatePath(`/quotes/${quoteId}`);
 
-    return { success: true as const, quote };
+    return {
+      success: true as const,
+      quote: {
+        ...quote,
+        subtotal: Number(quote.subtotal),
+        taxTotal: Number(quote.taxTotal),
+        total: Number(quote.total),
+        discountValue: quote.discountValue ? Number(quote.discountValue) : null,
+        discountAmount: Number(quote.discountAmount),
+        lineItems: quote.lineItems.map((li) => ({
+          ...li,
+          quantity: Number(li.quantity),
+          rate: Number(li.rate),
+          amount: Number(li.amount),
+          taxRate: li.taxRate ? Number(li.taxRate) : null,
+          taxAmount: Number(li.taxAmount),
+        })),
+      },
+    };
   } catch (error) {
     console.error('Failed to update quote:', error);
     return { success: false as const, error: 'Failed to save quote. Please try again.' };
@@ -486,6 +522,15 @@ export async function getQuote(quoteId: string) {
           company: quote.client.company,
         }
       : null,
+    signatureData: quote.signatureData as {
+      type: string;
+      data: string;
+      signerName: string;
+      signedAt: string;
+      ipAddress: string;
+      documentHash: string;
+    } | null,
+    acceptedAt: quote.acceptedAt?.toISOString() ?? null,
   };
 
   return document;

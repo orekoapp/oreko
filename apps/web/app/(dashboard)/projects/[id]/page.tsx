@@ -1,6 +1,12 @@
 import { notFound } from 'next/navigation';
 import { ProjectDetail } from '@/components/projects';
-import { getProject, getProjectStats } from '@/lib/projects/actions';
+import {
+  getProject,
+  getProjectStats,
+  getProjectActivity,
+  getProjectNotes,
+  getProjectContracts,
+} from '@/lib/projects/actions';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -25,12 +31,23 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
 
   try {
-    const [project, stats] = await Promise.all([
+    const [project, stats, activity, notes, contracts] = await Promise.all([
       getProject(id),
       getProjectStats(id),
+      getProjectActivity(id),
+      getProjectNotes(id),
+      getProjectContracts(id),
     ]);
 
-    return <ProjectDetail project={project} stats={stats} />;
+    return (
+      <ProjectDetail
+        project={project}
+        stats={stats}
+        activity={activity}
+        notes={notes}
+        contracts={contracts}
+      />
+    );
   } catch {
     notFound();
   }

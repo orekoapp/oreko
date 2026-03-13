@@ -202,6 +202,16 @@ export interface QuoteDocument {
   internalNotes: string;
   linkedInvoice?: LinkedInvoice | null;
   client?: QuoteClient | null;
+  signatureData?: {
+    type: string;
+    data: string;
+    signerName: string;
+    signedAt: string;
+    ipAddress: string;
+    documentHash: string;
+  } | null;
+  acceptedAt?: string | null;
+  contractTemplateId?: string | null;
 }
 
 export type QuoteStatus =

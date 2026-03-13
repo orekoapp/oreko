@@ -1,29 +1,36 @@
 'use client';
 
 import { useMemo } from 'react';
+import { DateRange } from 'react-day-picker';
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { PaymentAgingData } from '@/lib/dashboard/types';
 
 interface FinancialHealthSectionProps {
+  dateRange?: DateRange;
   outstandingAmount: number;
   overdueAmount: number;
   revenueThisMonth: number;
   paymentAging: PaymentAgingData;
 }
 
-// Format as currency (values are already in dollars)
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
 }
+
+const AGING_BUCKETS_CONFIG = [
+  { label: 'Current', color: 'bg-emerald-500' },
+  { label: '1-30 Days', color: 'bg-amber-400' },
+  { label: '31-60 Days', color: 'bg-orange-500' },
+  { label: '60+ Days', color: 'bg-red-500' },
+] as const;
 
 export function FinancialHealthSection({
   outstandingAmount,
@@ -31,124 +38,92 @@ export function FinancialHealthSection({
   revenueThisMonth,
   paymentAging,
 }: FinancialHealthSectionProps) {
-  // Calculate collection rate (collected vs total outstanding)
   const collectionRate = outstandingAmount > 0
     ? Math.min(100, (revenueThisMonth / (revenueThisMonth + outstandingAmount)) * 100)
     : 100;
 
-  // Build aging buckets from real data
   const agingBuckets = useMemo(() => {
-    const total = paymentAging.totalOutstanding || 1; // Avoid division by zero
+    const total = paymentAging.totalOutstanding || 1;
     return [
+      { amount: paymentAging.current, percentage: (paymentAging.current / total) * 100 },
+      { amount: paymentAging.days1to30, percentage: (paymentAging.days1to30 / total) * 100 },
+      { amount: paymentAging.days31to60, percentage: (paymentAging.days31to60 / total) * 100 },
       {
-        bucket: 'Current',
-        amount: paymentAging.current,
-        percentage: (paymentAging.current / total) * 100,
-        color: '#22C55E',
-      },
-      {
-        bucket: '1-30 Days',
-        amount: paymentAging.days1to30,
-        percentage: (paymentAging.days1to30 / total) * 100,
-        color: '#FACC15',
-      },
-      {
-        bucket: '31-60 Days',
-        amount: paymentAging.days31to60,
-        percentage: (paymentAging.days31to60 / total) * 100,
-        color: '#F97316',
-      },
-      {
-        bucket: '60+ Days',
         amount: paymentAging.days61to90 + paymentAging.days90plus,
         percentage: ((paymentAging.days61to90 + paymentAging.days90plus) / total) * 100,
-        color: '#EF4444',
       },
     ];
   }, [paymentAging]);
 
   const healthStatus = useMemo(() => {
-    if (outstandingAmount === 0) return { label: 'Excellent', color: 'text-green-500', icon: CheckCircle2 };
+    if (outstandingAmount === 0) return { label: 'Excellent', color: 'text-emerald-600', icon: CheckCircle2 };
     const overdueRatio = (overdueAmount / outstandingAmount) * 100;
-    if (overdueRatio < 10) return { label: 'Excellent', color: 'text-green-500', icon: CheckCircle2 };
-    if (overdueRatio < 25) return { label: 'Good', color: 'text-yellow-500', icon: Clock };
-    return { label: 'Needs Attention', color: 'text-red-500', icon: AlertTriangle };
+    if (overdueRatio < 10) return { label: 'Excellent', color: 'text-emerald-600', icon: CheckCircle2 };
+    if (overdueRatio < 25) return { label: 'Good', color: 'text-amber-500', icon: Clock };
+    return { label: 'Attention', color: 'text-red-500', icon: AlertTriangle };
   }, [outstandingAmount, overdueAmount]);
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Financial Health</span>
-          <div className={cn('flex items-center gap-2 text-sm font-normal', healthStatus.color)}>
-            <healthStatus.icon className="h-4 w-4" />
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">Financial Health</CardTitle>
+          <div className={cn('flex items-center gap-1.5 text-xs font-medium', healthStatus.color)}>
+            <healthStatus.icon className="h-3.5 w-3.5" />
             <span>{healthStatus.label}</span>
           </div>
-        </CardTitle>
-        <CardDescription>
-          Outstanding balances and payment collection metrics
-        </CardDescription>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Key Metrics */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Outstanding</span>
-              <span className="font-semibold">{formatCurrency(outstandingAmount)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Overdue</span>
-              <span className="font-semibold text-red-500">{formatCurrency(overdueAmount)}</span>
-            </div>
+        {/* Key Metrics - 2x2 grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Outstanding</p>
+            <p className="text-lg font-semibold mt-0.5">{formatCurrency(outstandingAmount)}</p>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Collected (MTD)</span>
-              <span className="font-semibold text-green-600">{formatCurrency(revenueThisMonth)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Collection Rate</span>
-              <span className="font-semibold">{collectionRate.toFixed(1)}%</span>
-            </div>
+          <div>
+            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Overdue</p>
+            <p className="text-lg font-semibold text-red-500 mt-0.5">{formatCurrency(overdueAmount)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Collected (MTD)</p>
+            <p className="text-lg font-semibold text-emerald-600 mt-0.5">{formatCurrency(revenueThisMonth)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Collection Rate</p>
+            <p className="text-lg font-semibold mt-0.5">{collectionRate.toFixed(0)}%</p>
           </div>
         </div>
 
         {/* Aging Buckets */}
-        <div>
-          <h4 className="mb-3 text-sm font-medium">Receivables Aging</h4>
-          <div className="space-y-3">
-            {agingBuckets.map((bucket) => (
-              <div key={bucket.bucket} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
+        <div className="space-y-2.5">
+          <h4 className="text-xs text-muted-foreground/70 uppercase tracking-wider">Receivables Aging</h4>
+          {agingBuckets.map((bucket, i) => {
+            const config = AGING_BUCKETS_CONFIG[i]!;
+            return (
+              <div key={config.label} className="space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: bucket.color }}
-                    />
-                    <span>{bucket.bucket}</span>
+                    <span className={`h-1.5 w-1.5 rounded-full ${config.color}`} />
+                    <span className="text-muted-foreground">{config.label}</span>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground">{bucket.percentage.toFixed(1)}%</span>
-                    <span className="w-20 text-right font-medium">
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground/60 tabular-nums">{bucket.percentage.toFixed(0)}%</span>
+                    <span className="font-medium tabular-nums w-16 text-right">
                       {formatCurrency(bucket.amount)}
                     </span>
                   </div>
                 </div>
-                <Progress
-                  value={bucket.percentage}
-                  className="h-2"
-                  style={
-                    {
-                      '--progress-background': bucket.color,
-                    } as React.CSSProperties
-                  }
-                />
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ease-out ${config.color}`}
+                    style={{ width: `${Math.max(bucket.percentage, bucket.amount > 0 ? 3 : 0)}%` }}
+                  />
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-
       </CardContent>
     </Card>
   );
