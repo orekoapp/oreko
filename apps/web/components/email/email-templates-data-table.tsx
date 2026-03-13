@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { sanitizeHtml } from '@/lib/sanitize';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ColumnDef } from '@tanstack/react-table';
@@ -90,7 +91,7 @@ function replaceVariables(text: string) {
 function PreviewBody({ body }: { body: string }) {
   return (
     <div
-      dangerouslySetInnerHTML={{ __html: replaceVariables(body) }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(replaceVariables(body)) }}
       className="prose prose-sm max-w-none"
     />
   );
@@ -362,7 +363,7 @@ export function EmailTemplatesDataTable({ data }: EmailTemplatesDataTableProps) 
             </p>
             <hr />
             <div
-              dangerouslySetInnerHTML={{ __html: replaceVariables(previewTemplate?.body ?? '') }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(replaceVariables(previewTemplate?.body ?? '')) }}
               className="prose prose-sm max-w-none"
             />
           </div>

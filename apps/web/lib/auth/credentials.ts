@@ -42,8 +42,8 @@ export async function verifyCredentials(email: string, password: string) {
   }
 
   // Bug #17: Enforce email verification before allowing login
-  // Skip in development since SMTP is not configured
-  if (!user.emailVerifiedAt && process.env.NODE_ENV !== 'development') {
+  // Use dedicated env var instead of NODE_ENV (Vercel previews may use NODE_ENV=development)
+  if (!user.emailVerifiedAt && process.env.SKIP_EMAIL_VERIFICATION !== 'true') {
     throw new Error('Please verify your email before logging in. Check your inbox for a verification link.');
   }
 

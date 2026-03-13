@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { useRouter } from 'next/navigation';
 import {
   Loader2,
@@ -456,7 +457,7 @@ export default function NewContractForm({
                     {previewContent ? (
                       <div
                         className="prose prose-sm max-w-none text-sm [&_strong]:text-foreground [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 max-h-[400px] overflow-y-auto"
-                        dangerouslySetInnerHTML={{ __html: previewContent }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewContent) }}
                       />
                     ) : (
                       <div className="py-12 text-center">
@@ -666,7 +667,7 @@ export default function NewContractForm({
                           <div
                             className="text-[10px] leading-relaxed max-h-[500px] overflow-hidden"
                             style={{ color: '#333' }}
-                            dangerouslySetInnerHTML={{ __html: previewContent }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewContent) }}
                           />
                         ) : (
                           <p
