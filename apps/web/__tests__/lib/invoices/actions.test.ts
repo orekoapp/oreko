@@ -4,6 +4,7 @@ const { mockPrisma, mockGetCurrentUserWorkspace } = vi.hoisted(() => {
   const mockPrisma: Record<string, any> = {
     workspace: { findUnique: vi.fn() },
     invoice: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), count: vi.fn() },
+    businessProfile: { findUnique: vi.fn() },
     invoiceLineItem: { deleteMany: vi.fn() },
     invoiceEvent: { create: vi.fn() },
     client: { findFirst: vi.fn() },
@@ -24,6 +25,8 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/services/email', () => ({ sendInvoiceSentEmail: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/notifications/actions', () => ({ createNotification: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/utils', () => ({ formatCurrency: vi.fn((v: number) => `$${v.toFixed(2)}`) }));
+vi.mock('@/lib/routes', () => ({ ROUTES: { quotes: '/quotes', invoices: '/invoices', quoteDetail: (id: string) => `/quotes/${id}`, invoiceDetail: (id: string) => `/invoices/${id}` } }));
+vi.mock('@/lib/events/emitter', () => ({ domainEvents: { emit: vi.fn() } }));
 vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
 vi.mock('@/lib/invoices/internal', () => ({ generateInvoiceNumber: vi.fn().mockResolvedValue('INV-0001') }));
 vi.mock('@quotecraft/database', () => ({
@@ -48,6 +51,7 @@ describe('Invoice Actions', () => {
     mockGetCurrentUserWorkspace.mockResolvedValue({
       workspaceId: WORKSPACE_ID,
       userId: USER_ID,
+      role: 'owner',
     });
 
     mockPrisma.workspace.findUnique.mockResolvedValue({
@@ -56,6 +60,9 @@ describe('Invoice Actions', () => {
     });
 
     mockPrisma.invoiceEvent.create.mockResolvedValue({ id: 'event-1' });
+
+    // Default businessProfile for currency lookup
+    mockPrisma.businessProfile.findUnique.mockResolvedValue({ currency: 'USD' });
   });
 
   describe('createInvoice', () => {
@@ -166,6 +173,16 @@ describe('Invoice Actions', () => {
       mockPrisma.invoice.create.mockResolvedValue({
         id: 'inv-1',
         invoiceNumber: 'INV-0001',
+        subtotal: 1000,
+        discountValue: null,
+        discountAmount: 0,
+        taxTotal: 100,
+        total: 1100,
+        amountPaid: 0,
+        amountDue: 1100,
+        lineItems: [
+          { name: 'Dev', quantity: 10, rate: 100, amount: 1000, taxRate: 10, taxAmount: 100 },
+        ],
       });
       mockPrisma.quote.update.mockResolvedValue({ id: 'quote-1', status: 'converted' });
       mockPrisma.quoteEvent.create.mockResolvedValue({ id: 'event-1' });
