@@ -160,6 +160,7 @@ model Workspace {
   slugHistory        WorkspaceSlugHistory[]
   webhookEndpoints   WebhookEndpoint[]
   invoiceTemplates   InvoiceTemplate[]
+  apiKeys            ApiKey[]
 
   @@index([slug])
   @@index([ownerId])
@@ -962,6 +963,28 @@ model CreditNoteEvent {
 
   @@index([creditNoteId])
   @@map("credit_note_events")
+}
+
+// ============================================
+// API KEYS
+// ============================================
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  name        String    @db.VarChar(100)
+  keyHash     String    @unique @map("key_hash")
+  keyPrefix   String    @map("key_prefix") @db.VarChar(12)
+  lastUsedAt  DateTime? @map("last_used_at")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([keyHash])
+  @@map("api_keys")
 }
 
 // ============================================
