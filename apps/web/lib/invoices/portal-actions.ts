@@ -3,6 +3,7 @@
 import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { InvoiceLineItem } from './types';
+import { toNumber } from '@/lib/utils';
 import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
 
 /**
@@ -165,7 +166,7 @@ export async function getInvoiceByAccessToken(
     const settings = invoice.settings as Record<string, unknown>;
 
     // Voided invoices owe nothing regardless of DB value
-    const amountDue = invoice.status === 'voided' ? 0 : Number(invoice.amountDue);
+    const amountDue = invoice.status === 'voided' ? 0 : toNumber(invoice.amountDue);
 
     // Determine if online payment is possible
     const paymentConfigured = !!invoice.workspace.paymentSettings?.stripeOnboardingComplete;
@@ -185,11 +186,11 @@ export async function getInvoiceByAccessToken(
       isOverdue,
       daysOverdue,
       totals: {
-        subtotal: Number(invoice.subtotal),
-        discountAmount: Number(invoice.discountAmount),
-        taxTotal: Number(invoice.taxTotal),
-        total: Number(invoice.total),
-        amountPaid: Number(invoice.amountPaid),
+        subtotal: toNumber(invoice.subtotal),
+        discountAmount: toNumber(invoice.discountAmount),
+        taxTotal: toNumber(invoice.taxTotal),
+        total: toNumber(invoice.total),
+        amountPaid: toNumber(invoice.amountPaid),
         amountDue,
       },
       settings: {
@@ -222,15 +223,15 @@ export async function getInvoiceByAccessToken(
         id: item.id,
         name: item.name,
         description: item.description,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
-        amount: Number(item.amount),
+        quantity: toNumber(item.quantity),
+        rate: toNumber(item.rate),
+        amount: toNumber(item.amount),
         taxRate: item.taxRate ? Number(item.taxRate) : null,
-        taxAmount: Number(item.taxAmount),
+        taxAmount: toNumber(item.taxAmount),
       })),
       payments: invoice.payments.map((payment: (typeof invoice.payments)[number]) => ({
         id: payment.id,
-        amount: Number(payment.amount),
+        amount: toNumber(payment.amount),
         paymentMethod: payment.paymentMethod,
         processedAt: payment.processedAt?.toISOString() || null,
       })),

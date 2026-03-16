@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { DollarSign, Loader2, CreditCard, Building2, Banknote, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -67,7 +66,6 @@ export function RecordPaymentDialog({
   onOpenChange: controlledOnOpenChange,
   onPaymentRecorded,
 }: RecordPaymentDialogProps) {
-  const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -105,14 +103,14 @@ export function RecordPaymentDialog({
 
       if (result.success) {
         toast.success('Payment recorded successfully');
-        setOpen(false);
-        onPaymentRecorded?.();
-        router.refresh();
-        // Reset form
-        setAmount(amountDue.toString());
+        // Reset form before closing
         setPaymentMethod('card');
         setReferenceNumber('');
         setNotes('');
+        setOpen(false);
+        onPaymentRecorded?.();
+        // Full reload to ensure all server-rendered amounts update
+        window.location.reload();
       } else {
         setError(result.error || 'Failed to record payment');
       }

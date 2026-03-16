@@ -54,3 +54,19 @@ class DomainEventEmitter {
 
 /** Singleton domain event emitter */
 export const domainEvents = new DomainEventEmitter();
+
+// Initialize outbound webhook listeners once
+let _webhooksInitialized = false;
+export function ensureWebhooksInitialized(): void {
+  if (_webhooksInitialized) return;
+  _webhooksInitialized = true;
+  // Dynamic import to avoid circular dependency
+  import('@/lib/webhooks/outbound').then(({ initOutboundWebhooks }) => {
+    initOutboundWebhooks();
+  });
+}
+
+// Auto-init on first import in server context
+if (typeof window === 'undefined') {
+  ensureWebhooksInitialized();
+}

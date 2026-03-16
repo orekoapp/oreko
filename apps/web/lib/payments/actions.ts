@@ -8,6 +8,7 @@ import {
   createRefund,
 } from '@/lib/services/stripe';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
+import { toNumber } from '@/lib/utils';
 import type {
   PaymentListItem,
   PaymentDetail,
@@ -272,7 +273,7 @@ export async function getPayments(filter?: {
   return payments.map((p) => ({
     id: p.id,
     invoiceId: p.invoiceId,
-    amount: Number(p.amount),
+    amount: toNumber(p.amount),
     currency: p.currency,
     paymentMethod: p.paymentMethod as PaymentListItem['paymentMethod'],
     status: p.status as PaymentListItem['status'],
@@ -323,7 +324,7 @@ export async function getPaymentById(paymentId: string): Promise<PaymentDetail |
   return {
     id: payment.id,
     invoiceId: payment.invoiceId,
-    amount: Number(payment.amount),
+    amount: toNumber(payment.amount),
     currency: payment.currency,
     paymentMethod: payment.paymentMethod as PaymentDetail['paymentMethod'],
     status: payment.status as PaymentDetail['status'],

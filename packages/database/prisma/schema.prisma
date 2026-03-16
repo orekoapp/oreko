@@ -215,9 +215,12 @@ model BusinessProfile {
   taxId        String?  @map("tax_id") @db.VarChar(100)
   currency     String   @default("USD") @db.VarChar(3)
   timezone     String   @default("UTC") @db.VarChar(50)
-  locale       String   @default("en") @db.VarChar(10)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  locale         String   @default("en") @db.VarChar(10)
+  emailSignature String?  @map("email_signature") @db.Text
+  emailFooter    String?  @map("email_footer") @db.Text
+  clientEmail    String?  @map("client_email")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 

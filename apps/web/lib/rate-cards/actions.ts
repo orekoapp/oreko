@@ -17,13 +17,7 @@ import type {
   RateCardSelection,
   RateCardImportResult,
 } from './types';
-
-// Helper to convert Prisma Decimal to number
-function toNumber(value: Prisma.Decimal | number | null | undefined): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === 'number') return value;
-  return value.toNumber();
-}
+import { toNumber } from '@/lib/utils';
 
 // ============================================
 // RATE CARD ACTIONS

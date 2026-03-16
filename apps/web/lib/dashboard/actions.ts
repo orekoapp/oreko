@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma, Prisma } from '@quotecraft/database';
+import { prisma } from '@quotecraft/database';
 import { subDays, subMonths, startOfDay, format } from 'date-fns';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {
@@ -15,13 +15,7 @@ import type {
   DashboardData,
   DashboardPeriod,
 } from './types';
-
-// Helper to convert Prisma Decimal to number
-function toNumber(value: Prisma.Decimal | number | null | undefined): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === 'number') return value;
-  return value.toNumber();
-}
+import { toNumber } from '@/lib/utils';
 
 // Get period start date
 function getPeriodStartDate(period: DashboardPeriod): Date | null {

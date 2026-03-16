@@ -22,16 +22,7 @@ import { safeParseAddress, safeParseMetadata } from './types';
 import { ROUTES } from '@/lib/routes';
 import { nanoid } from 'nanoid';
 import { domainEvents } from '@/lib/events/emitter';
-
-// Helper to convert Decimal to number
-function toNumber(value: unknown): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'object' && value !== null && 'toNumber' in value) {
-    return (value as { toNumber: () => number }).toNumber();
-  }
-  return Number(value) || 0;
-}
+import { toNumber } from '@/lib/utils';
 
 // Get paginated clients
 export async function getClients(filter: ClientFilter = {}): Promise<PaginatedClients> {

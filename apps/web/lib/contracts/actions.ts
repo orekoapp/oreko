@@ -693,7 +693,6 @@ export async function updateContractSettings(
   input: Partial<ContractSettingsData>
 ): Promise<void> {
   // TODO: Wire up to database when contract settings table is added
-  console.log('updateContractSettings stub called with:', input);
   revalidatePath('/settings/contracts');
 }
 

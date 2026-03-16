@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -19,12 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
-import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
-import { createQuote, updateQuote, sendQuote } from '@/lib/quotes/actions';
-import { getClientById } from '@/lib/clients/actions';
 import { formatCurrency, cn } from '@/lib/utils';
-import type { ServiceItemBlock } from '@/lib/quotes/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,267 +36,59 @@ import { ItemsSection } from './sections/ItemsSection';
 import { TermsSection } from './sections/TermsSection';
 import { NotesSection } from './sections/NotesSection';
 
+import { useQuoteForm } from './hooks/useQuoteForm';
+import { useQuoteSave } from './hooks/useQuoteSave';
+import { useLogoUpload } from './hooks/useLogoUpload';
+import { useQuoteTotals } from './hooks/useQuoteTotals';
+
 type PreviewMode = 'payment' | 'email' | 'pdf';
 type EditorSection = 'details' | 'items' | 'terms' | 'notes';
 
-interface ClientInfo {
-  id: string;
-  name: string;
-  email: string;
-  company: string | null;
-}
+const sectionNav = [
+  { id: 'details' as const, label: 'Details' },
+  { id: 'items' as const, label: 'Items' },
+  { id: 'terms' as const, label: 'Terms' },
+  { id: 'notes' as const, label: 'Notes' },
+];
 
 export function QuoteEditor() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const clientId = searchParams.get('clientId');
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
+  const [activeSection, setActiveSection] = useState<EditorSection>('details');
 
   const {
     document,
     isDirty,
     isSaving,
-    initDocument,
-    updateTitle,
-    updateProjectId,
+    client,
+    title,
+    projectId,
+    expirationDays,
+    taxRate,
+    setExpirationDays,
+    setTaxRate,
+    handleTitleChange,
+    handleProjectChange,
+    handleClientChange,
     updateNotes,
     updateTerms,
     updateInternalNotes,
     addBlock,
     updateBlock,
     removeBlock,
-  } = useQuoteBuilderStore();
+  } = useQuoteForm();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [showSendConfirm, setShowSendConfirm] = useState(false);
-  const [previewMode, setPreviewMode] = useState<PreviewMode>('payment');
-  const [activeSection, setActiveSection] = useState<EditorSection>('details');
-  const [client, setClient] = useState<ClientInfo | null>(null);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const {
+    isLoading,
+    isSending,
+    showSendConfirm,
+    setShowSendConfirm,
+    handleSave,
+    handleSendQuote,
+  } = useQuoteSave({ document, client });
 
-  // Form state for quote details
-  const [title, setTitle] = useState('');
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [expirationDays, setExpirationDays] = useState('30');
-  const [taxRate, setTaxRate] = useState('0');
-
-  // Initialize document if not exists or has empty ID (from resetDocument())
-  useEffect(() => {
-    if (!document || !document.id) {
-      const now = new Date().toISOString();
-      const expDate = new Date();
-      expDate.setDate(expDate.getDate() + 30);
-
-      initDocument({
-        id: `temp-${Date.now()}`,
-        workspaceId: 'default',
-        clientId: clientId || '',
-        projectId: null,
-        quoteNumber: 'DRAFT',
-        status: 'draft',
-        title: 'New Quote',
-        issueDate: now,
-        expirationDate: expDate.toISOString(),
-        blocks: [],
-        settings: {
-          requireSignature: true,
-          autoConvertToInvoice: false,
-          depositRequired: false,
-          depositType: 'percentage',
-          depositValue: 50,
-          showLineItemPrices: true,
-          allowPartialAcceptance: false,
-          currency: 'USD',
-          taxInclusive: false,
-        },
-        totals: {
-          subtotal: 0,
-          discountType: null,
-          discountValue: null,
-          discountAmount: 0,
-          taxTotal: 0,
-          total: 0,
-        },
-        notes: '',
-        terms: '',
-        internalNotes: '',
-      });
-    }
-  }, [document, initDocument, clientId]);
-
-  // Load client info
-  useEffect(() => {
-    if (clientId) {
-      getClientById(clientId)
-        .then((result) => {
-          if (result) {
-            setClient({
-              id: result.id,
-              name: result.name,
-              email: result.email,
-              company: result.company,
-            });
-          }
-        })
-        .catch(() => toast.error('Failed to load client details'));
-    }
-  }, [clientId]);
-
-  // Sync form state with document
-  useEffect(() => {
-    if (document) {
-      setTitle(document.title);
-      setProjectId(document.projectId);
-    }
-  }, [document]);
-
-  // Cleanup blob URL on unmount to prevent memory leak
-  useEffect(() => {
-    return () => {
-      if (logoUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(logoUrl);
-      }
-    };
-  }, [logoUrl]);
-
-  const handleTitleChange = (newTitle: string) => {
-    setTitle(newTitle);
-    updateTitle(newTitle);
-  };
-
-  const handleProjectChange = (newProjectId: string | null) => {
-    setProjectId(newProjectId);
-    updateProjectId(newProjectId);
-  };
-
-  const handleClientChange = useCallback((newClient: ClientInfo | null) => {
-    setClient(newClient);
-    // Update URL to reflect client change
-    if (newClient) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('clientId', newClient.id);
-      router.replace(url.pathname + url.search);
-    }
-  }, [router]);
-
-  // Logo upload handler (mock - in production this would upload to storage)
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-      toast.error('Only PNG and JPG images are allowed');
-      return;
-    }
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Logo must be less than 2MB');
-      return;
-    }
-
-    setIsUploadingLogo(true);
-    try {
-      // Revoke previous object URL to prevent memory leak
-      if (logoUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(logoUrl);
-      }
-      // Create a local preview URL
-      const url = URL.createObjectURL(file);
-      setLogoUrl(url);
-      toast.success('Logo uploaded successfully');
-    } catch {
-      toast.error('Failed to upload logo');
-    } finally {
-      setIsUploadingLogo(false);
-    }
-  };
-
-  const handleSave = async () => {
-    // Bug #168: Prevent double-submit race condition
-    if (!document || isLoading || isSending) return;
-
-    setIsLoading(true);
-    try {
-      if (document.id.startsWith('temp-')) {
-        // Create new quote
-        const result = await createQuote({
-          clientId: client?.id || document.clientId,
-          projectId: document.projectId,
-          title: document.title,
-          blocks: document.blocks,
-        });
-
-        if (result.success && result.quote) {
-          toast.success('Quote saved as draft');
-          router.push(`/quotes/${result.quote.id}`);
-        }
-      } else {
-        // Update existing quote
-        const result = await updateQuote(document.id, {
-          title: document.title,
-          blocks: document.blocks,
-          notes: document.notes,
-          terms: document.terms,
-          internalNotes: document.internalNotes,
-        });
-
-        if (result.success) {
-          toast.success('Quote saved successfully');
-        }
-      }
-    } catch {
-      toast.error('Failed to save quote');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSendQuote = async () => {
-    // Bug #168: Prevent double-submit race condition
-    if (!document || !client || isSending || isLoading) return;
-
-    setIsSending(true);
-    try {
-      // First save if it's a new quote
-      let quoteId = document.id;
-
-      if (document.id.startsWith('temp-')) {
-        const createResult = await createQuote({
-          clientId: client.id,
-          projectId: document.projectId,
-          title: document.title,
-          blocks: document.blocks,
-        });
-
-        if (!createResult.success || !createResult.quote) {
-          throw new Error('Failed to create quote');
-        }
-        quoteId = createResult.quote.id;
-      }
-
-      // Then send the quote
-      const result = await sendQuote(quoteId);
-
-      if (result.success) {
-        if (result.emailSent) {
-          toast.success('Quote sent and email delivered');
-        } else {
-          toast.warning('Quote marked as sent, but email delivery failed. Please check your email configuration.');
-        }
-        router.push(`/quotes/${quoteId}`);
-      } else {
-        throw new Error(result.error || 'Failed to send quote');
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to send quote');
-    } finally {
-      setIsSending(false);
-      setShowSendConfirm(false);
-    }
-  };
+  const { logoUrl, isUploadingLogo, handleLogoUpload } = useLogoUpload();
+  const { serviceItems, subtotal, taxAmount, total } = useQuoteTotals(document?.blocks, taxRate);
 
   const handleSwitchToBuilder = () => {
     if (client?.id) {
@@ -310,30 +97,6 @@ export function QuoteEditor() {
       router.push('/quotes/new/builder');
     }
   };
-
-  // Calculate totals from service item blocks
-  const serviceItems = useMemo(() => {
-    return (document?.blocks || []).filter(
-      (b): b is ServiceItemBlock => b.type === 'service-item'
-    );
-  }, [document?.blocks]);
-
-  const subtotal = useMemo(() => {
-    return serviceItems.reduce(
-      (sum, item) => sum + item.content.quantity * item.content.rate,
-      0
-    );
-  }, [serviceItems]);
-
-  const taxAmount = subtotal * (parseFloat(taxRate) / 100);
-  const total = subtotal + taxAmount;
-
-  const sectionNav = [
-    { id: 'details' as const, label: 'Details' },
-    { id: 'items' as const, label: 'Items' },
-    { id: 'terms' as const, label: 'Terms' },
-    { id: 'notes' as const, label: 'Notes' },
-  ];
 
   return (
     <div className="space-y-6">

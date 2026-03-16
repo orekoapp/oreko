@@ -5,6 +5,7 @@ import { prisma, type Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { generateCreditNoteNumber } from '@/lib/invoices/internal';
 import { ROUTES } from '@/lib/routes';
+import { toNumber } from '@/lib/utils';
 import { domainEvents } from '@/lib/events/emitter';
 
 /**
@@ -236,7 +237,7 @@ export async function getCreditNotes(filters?: {
     id: cn.id,
     creditNoteNumber: cn.creditNoteNumber,
     reason: cn.reason,
-    amount: Number(cn.amount),
+    amount: toNumber(cn.amount),
     currency: cn.currency || 'USD',
     status: cn.status,
     issuedAt: cn.issuedAt?.toISOString() ?? null,
@@ -281,7 +282,7 @@ export async function getCreditNoteById(id: string) {
     id: creditNote.id,
     creditNoteNumber: creditNote.creditNoteNumber,
     reason: creditNote.reason,
-    amount: Number(creditNote.amount),
+    amount: toNumber(creditNote.amount),
     currency: creditNote.currency || 'USD',
     status: creditNote.status,
     issuedAt: creditNote.issuedAt?.toISOString() ?? null,
@@ -292,9 +293,9 @@ export async function getCreditNoteById(id: string) {
       id: item.id,
       name: item.name,
       description: item.description,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-      amount: Number(item.amount),
+      quantity: toNumber(item.quantity),
+      rate: toNumber(item.rate),
+      amount: toNumber(item.amount),
       sortOrder: item.sortOrder,
     })),
     events: creditNote.events.map((event) => ({
@@ -344,7 +345,7 @@ export async function getCreditNotesForInvoice(invoiceId: string) {
     id: cn.id,
     creditNoteNumber: cn.creditNoteNumber,
     reason: cn.reason,
-    amount: Number(cn.amount),
+    amount: toNumber(cn.amount),
     currency: cn.currency || 'USD',
     status: cn.status,
     issuedAt: cn.issuedAt?.toISOString() ?? null,
@@ -353,9 +354,9 @@ export async function getCreditNotesForInvoice(invoiceId: string) {
       id: item.id,
       name: item.name,
       description: item.description,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-      amount: Number(item.amount),
+      quantity: toNumber(item.quantity),
+      rate: toNumber(item.rate),
+      amount: toNumber(item.amount),
       sortOrder: item.sortOrder,
     })),
   }));

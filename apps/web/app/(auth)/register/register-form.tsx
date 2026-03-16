@@ -76,12 +76,12 @@ export function RegisterForm() {
 
       if (signInResult?.error) {
         toast.error('Account created but failed to sign in. Please try logging in.');
-        window.location.href = '/login';
+        router.push('/login');
         return;
       }
 
-      // Full page reload to ensure server picks up the new auth cookie
-      window.location.href = '/onboarding';
+      router.push('/onboarding');
+      router.refresh();
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {

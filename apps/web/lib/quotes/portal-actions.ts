@@ -3,6 +3,7 @@
 import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { QuoteBlock } from './types';
+import { toNumber } from '@/lib/utils';
 import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
 import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
 import { computeQuoteDocumentHash } from '@/lib/signing/document-hash';
@@ -160,10 +161,10 @@ export async function getQuoteByAccessToken(
       isExpired,
       blocks,
       totals: {
-        subtotal: Number(quote.subtotal),
-        discountAmount: Number(quote.discountAmount),
-        taxTotal: Number(quote.taxTotal),
-        total: Number(quote.total),
+        subtotal: toNumber(quote.subtotal),
+        discountAmount: toNumber(quote.discountAmount),
+        taxTotal: toNumber(quote.taxTotal),
+        total: toNumber(quote.total),
       },
       settings: {
         requireSignature: (settings.requireSignature as boolean) ?? true,
@@ -199,11 +200,11 @@ export async function getQuoteByAccessToken(
         id: item.id,
         name: item.name,
         description: item.description,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
-        amount: Number(item.amount),
+        quantity: toNumber(item.quantity),
+        rate: toNumber(item.rate),
+        amount: toNumber(item.amount),
         taxRate: item.taxRate ? Number(item.taxRate) : null,
-        taxAmount: Number(item.taxAmount),
+        taxAmount: toNumber(item.taxAmount),
       })),
       hasContract: quote.contractInstances.length > 0,
     };
@@ -358,14 +359,14 @@ export async function acceptQuote(data: {
       lineItems: quote.lineItems.map((item) => ({
         name: item.name,
         description: item.description,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
-        amount: Number(item.amount),
+        quantity: toNumber(item.quantity),
+        rate: toNumber(item.rate),
+        amount: toNumber(item.amount),
       })),
       terms: quote.terms || '',
       notes: quote.notes || '',
-      subtotal: Number(quote.subtotal),
-      total: Number(quote.total),
+      subtotal: toNumber(quote.subtotal),
+      total: toNumber(quote.total),
       signerName: data.signerName,
       signedAt: signedAtISO,
     });
@@ -440,7 +441,7 @@ export async function acceptQuote(data: {
     if (depositRequired && autoInvoice) {
       const depositType = (quoteSettings.depositType as 'percentage' | 'fixed') ?? 'percentage';
       const depositValue = (quoteSettings.depositValue as number) ?? 50;
-      const total = Number(quote.total);
+      const total = toNumber(quote.total);
       const depositAmount = depositType === 'percentage'
         ? Math.round(total * (depositValue / 100) * 100) / 100
         : Math.min(depositValue, total);

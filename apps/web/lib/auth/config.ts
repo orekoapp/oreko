@@ -58,6 +58,9 @@ export const authConfig: NextAuthConfig = {
     },
     jwt({ token, user, trigger, session }) {
       if (user) {
+        if (!user.id) {
+          console.warn('[AUTH] JWT callback received user without id — this may indicate an OAuth provider issue');
+        }
         token.id = user.id ?? '';
         token.email = user.email ?? '';
         token.name = user.name ?? '';

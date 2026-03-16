@@ -117,6 +117,20 @@ export interface UpdatePaymentSettingsInput {
   defaultPaymentTerms?: number;
 }
 
+// Email settings type
+export interface EmailSettingsData {
+  emailSignature: string | null;
+  emailFooter: string | null;
+  clientEmail: string | null;
+}
+
+// Update email settings input
+export interface UpdateEmailSettingsInput {
+  emailSignature?: string;
+  emailFooter?: string;
+  clientEmail?: string;
+}
+
 // Update number sequence input
 export interface UpdateNumberSequenceInput {
   type: 'quote' | 'invoice';

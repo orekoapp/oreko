@@ -9,6 +9,7 @@ import { sendQuoteSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
 import { ROUTES } from '@/lib/routes';
 import { domainEvents } from '@/lib/events/emitter';
+import { toNumber } from '@/lib/utils';
 
 /**
  * Bug #134: Safely parse quote settings from JSON with runtime validation.
@@ -237,18 +238,18 @@ export async function createQuote(data: {
     success: true,
     quote: {
       ...quote,
-      subtotal: Number(quote.subtotal),
-      taxTotal: Number(quote.taxTotal),
-      total: Number(quote.total),
+      subtotal: toNumber(quote.subtotal),
+      taxTotal: toNumber(quote.taxTotal),
+      total: toNumber(quote.total),
       discountValue: quote.discountValue ? Number(quote.discountValue) : null,
-      discountAmount: Number(quote.discountAmount),
+      discountAmount: toNumber(quote.discountAmount),
       lineItems: quote.lineItems.map((li) => ({
         ...li,
-        quantity: Number(li.quantity),
-        rate: Number(li.rate),
-        amount: Number(li.amount),
+        quantity: toNumber(li.quantity),
+        rate: toNumber(li.rate),
+        amount: toNumber(li.amount),
         taxRate: li.taxRate ? Number(li.taxRate) : null,
-        taxAmount: Number(li.taxAmount),
+        taxAmount: toNumber(li.taxAmount),
       })),
     },
   };
@@ -396,18 +397,18 @@ export async function updateQuote(
       success: true as const,
       quote: {
         ...quote,
-        subtotal: Number(quote.subtotal),
-        taxTotal: Number(quote.taxTotal),
-        total: Number(quote.total),
+        subtotal: toNumber(quote.subtotal),
+        taxTotal: toNumber(quote.taxTotal),
+        total: toNumber(quote.total),
         discountValue: quote.discountValue ? Number(quote.discountValue) : null,
-        discountAmount: Number(quote.discountAmount),
+        discountAmount: toNumber(quote.discountAmount),
         lineItems: quote.lineItems.map((li) => ({
           ...li,
-          quantity: Number(li.quantity),
-          rate: Number(li.rate),
-          amount: Number(li.amount),
+          quantity: toNumber(li.quantity),
+          rate: toNumber(li.rate),
+          amount: toNumber(li.amount),
           taxRate: li.taxRate ? Number(li.taxRate) : null,
-          taxAmount: Number(li.taxAmount),
+          taxAmount: toNumber(li.taxAmount),
         })),
       },
     };
@@ -465,8 +466,8 @@ export async function getQuote(quoteId: string) {
       content: {
         name: item.name,
         description: item.description || '',
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
+        quantity: toNumber(item.quantity),
+        rate: toNumber(item.rate),
         unit: 'hour',
         taxRate: item.taxRate ? Number(item.taxRate) : null,
         rateCardId: item.rateCardId || null,
@@ -497,12 +498,12 @@ export async function getQuote(quoteId: string) {
       taxInclusive: parsedSettings.taxInclusive,
     },
     totals: {
-      subtotal: Number(quote.subtotal),
+      subtotal: toNumber(quote.subtotal),
       discountType: quote.discountType as 'percentage' | 'fixed' | null,
       discountValue: quote.discountValue ? Number(quote.discountValue) : null,
-      discountAmount: Number(quote.discountAmount),
-      taxTotal: Number(quote.taxTotal),
-      total: Number(quote.total),
+      discountAmount: toNumber(quote.discountAmount),
+      taxTotal: toNumber(quote.taxTotal),
+      total: toNumber(quote.total),
     },
     notes: quote.notes || '',
     terms: quote.terms || '',
@@ -582,7 +583,7 @@ export async function getQuotes(options?: {
       quoteNumber: quote.quoteNumber,
       title: quote.title,
       status: quote.status,
-      total: Number(quote.total),
+      total: toNumber(quote.total),
       currency: quote.currency || 'USD',
       issueDate: quote.issueDate.toISOString().split('T')[0],
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] || null,
@@ -821,7 +822,7 @@ export async function sendQuote(quoteId: string) {
   }
 
   // Prevent sending empty quotes
-  if (Math.abs(Number(quote.total)) < 0.01) {
+  if (Math.abs(toNumber(quote.total)) < 0.01) {
     return { success: false, error: 'Cannot send a quote with zero total. Add line items first.' };
   }
 

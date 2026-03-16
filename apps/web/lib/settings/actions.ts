@@ -19,19 +19,15 @@ import type {
   UpdateBrandingSettingsInput,
   UpdatePaymentSettingsInput,
   UpdateNumberSequenceInput,
+  EmailSettingsData,
+  UpdateEmailSettingsInput,
   Address,
   CustomFieldData,
   IntegrationData,
   WebhookData,
 } from './types';
 import { ROUTES } from '@/lib/routes';
-
-// Helper to convert Prisma Decimal to number
-function toNumber(value: Prisma.Decimal | number | null | undefined): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === 'number') return value;
-  return value.toNumber();
-}
+import { toNumber } from '@/lib/utils';
 
 // ============================================
 // WORKSPACE ACTIONS
@@ -170,6 +166,63 @@ export async function updateBusinessLogo(logoUrl: string | null): Promise<void> 
 
   revalidatePath(ROUTES.settings);
   revalidatePath(ROUTES.settingsBusiness);
+}
+
+// ============================================
+// EMAIL SETTINGS ACTIONS
+// ============================================
+
+// Get email settings
+export async function getEmailSettings(): Promise<EmailSettingsData | null> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const profile = await prisma.businessProfile.findUnique({
+    where: { workspaceId },
+  });
+
+  if (!profile) {
+    return null;
+  }
+
+  return {
+    emailSignature: profile.emailSignature,
+    emailFooter: profile.emailFooter,
+    clientEmail: profile.clientEmail,
+  };
+}
+
+// Update email settings
+export async function updateEmailSettings(
+  input: UpdateEmailSettingsInput
+): Promise<void> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const existing = await prisma.businessProfile.findUnique({
+    where: { workspaceId },
+  });
+
+  if (existing) {
+    await prisma.businessProfile.update({
+      where: { workspaceId },
+      data: {
+        ...(input.emailSignature !== undefined && { emailSignature: input.emailSignature || null }),
+        ...(input.emailFooter !== undefined && { emailFooter: input.emailFooter || null }),
+        ...(input.clientEmail !== undefined && { clientEmail: input.clientEmail || null }),
+      },
+    });
+  } else {
+    await prisma.businessProfile.create({
+      data: {
+        workspaceId,
+        businessName: 'My Business',
+        emailSignature: input.emailSignature || null,
+        emailFooter: input.emailFooter || null,
+        clientEmail: input.clientEmail || null,
+      },
+    });
+  }
+
+  revalidatePath(ROUTES.settings);
 }
 
 // ============================================
@@ -1390,7 +1443,7 @@ export async function createCustomField(input: {
   options?: string[];
 }): Promise<{ id: string }> {
   // TODO: Wire up to database
-  console.log('createCustomField stub called with:', input);
+
   revalidatePath('/settings/custom-fields');
   return { id: crypto.randomUUID() };
 }
@@ -1406,13 +1459,13 @@ export async function updateCustomField(input: {
   sortOrder?: number;
 }): Promise<void> {
   // TODO: Wire up to database
-  console.log('updateCustomField stub called with:', input);
+
   revalidatePath('/settings/custom-fields');
 }
 
 export async function deleteCustomField(id: string): Promise<void> {
   // TODO: Wire up to database
-  console.log('deleteCustomField stub called with:', id);
+
   revalidatePath('/settings/custom-fields');
 }
 
@@ -1421,51 +1474,48 @@ export async function deleteCustomField(id: string): Promise<void> {
 // ============================================
 
 export async function getIntegrations(): Promise<IntegrationData[]> {
-  // TODO: Wire up to real integration providers
   return [
     {
-      id: 'quickbooks',
-      name: 'QuickBooks',
-      provider: 'quickbooks',
-      description: 'Sync invoices and payments with QuickBooks Online.',
+      id: 'webhooks',
+      name: 'Webhooks',
+      provider: 'webhooks',
+      description: 'Send real-time event notifications to any URL when actions occur in your workspace (e.g. quote accepted, invoice paid).',
       isConnected: false,
-      isAvailable: false,
+      isAvailable: true,
       connectedAt: null,
       config: {},
     },
     {
-      id: 'xero',
-      name: 'Xero',
-      provider: 'xero',
-      description: 'Sync invoices and payments with Xero.',
+      id: 'zapier',
+      name: 'Zapier',
+      provider: 'zapier',
+      description: 'Connect QuoteCraft to 5,000+ apps using Zapier. Set up a webhook in QuoteCraft and use it as a Zapier trigger.',
       isConnected: false,
-      isAvailable: false,
+      isAvailable: true,
       connectedAt: null,
       config: {},
     },
     {
-      id: 'slack',
-      name: 'Slack',
-      provider: 'slack',
-      description: 'Get notifications in your Slack workspace.',
+      id: 'n8n',
+      name: 'n8n',
+      provider: 'n8n',
+      description: 'Build powerful self-hosted automations with n8n. Use QuoteCraft webhooks as triggers in your n8n workflows.',
       isConnected: false,
-      isAvailable: false,
+      isAvailable: true,
+      connectedAt: null,
+      config: {},
+    },
+    {
+      id: 'make',
+      name: 'Make (Integromat)',
+      provider: 'make',
+      description: 'Create visual automation scenarios with Make. Connect QuoteCraft events to hundreds of services via webhooks.',
+      isConnected: false,
+      isAvailable: true,
       connectedAt: null,
       config: {},
     },
   ];
-}
-
-export async function connectIntegration(id: string): Promise<void> {
-  // TODO: Wire up to real OAuth flow
-  console.log('connectIntegration stub called with:', id);
-  revalidatePath('/settings/integrations');
-}
-
-export async function disconnectIntegration(id: string): Promise<void> {
-  // TODO: Wire up to real disconnect flow
-  console.log('disconnectIntegration stub called with:', id);
-  revalidatePath('/settings/integrations');
 }
 
 // ============================================
@@ -1484,7 +1534,7 @@ export async function createWebhook(input: {
   secret?: string;
 }): Promise<{ id: string }> {
   // TODO: Wire up to database
-  console.log('createWebhook stub called with:', input);
+
   revalidatePath('/settings/webhooks');
   return { id: crypto.randomUUID() };
 }
@@ -1498,13 +1548,13 @@ export async function updateWebhook(input: {
   isActive?: boolean;
 }): Promise<void> {
   // TODO: Wire up to database
-  console.log('updateWebhook stub called with:', input);
+
   revalidatePath('/settings/webhooks');
 }
 
 export async function deleteWebhook(id: string): Promise<void> {
   // TODO: Wire up to database
-  console.log('deleteWebhook stub called with:', id);
+
   revalidatePath('/settings/webhooks');
 }
 

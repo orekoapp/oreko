@@ -67,11 +67,19 @@ Thumbs.db
 # Playwright auth state
 apps/web/e2e/.auth/
 
-# Test environment config (contains credentials)
-.claude/test-environment.json
+# Claude Code (AI tool config, may contain credentials)
+.claude/
 
 # Playwright MCP screenshots
 .playwright-mcp/
 
+# Build debug output
+build_output.txt
+
 # PDF files
 *.pdf
+
+# Internal project docs (not for version control)
+PM_QUESTIONS.md
+STUBBED_FEATURES.md
+API_SPECIFICATION.md

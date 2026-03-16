@@ -1,8 +1,22 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { Decimal } from '@prisma/client/runtime/library'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Convert a Prisma Decimal (or any numeric-ish value) to a plain number.
+ * Handles null, undefined, Decimal objects, and already-plain numbers.
+ */
+export function toNumber(value: Decimal | number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'object' && 'toNumber' in value) {
+    return (value as { toNumber: () => number }).toNumber();
+  }
+  return Number(value) || 0;
 }
 
 /**

@@ -7,25 +7,70 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { getEmailSettings, updateEmailSettings } from '@/lib/settings/actions';
+
+const DEFAULT_FOOTER =
+  'This email and any attachments are intended solely for the use of the individual or entity to whom they are addressed. If you have received this message in error, please notify the sender immediately. Unauthorized use, disclosure, or distribution is prohibited.';
 
 export function EmailSettingsForm() {
+  const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [signature, setSignature] = React.useState('');
-  const [footer, setFooter] = React.useState(
-    'This email and any attachments are intended solely for the use of the individual or entity to whom they are addressed. If you have received this message in error, please notify the sender immediately. Unauthorized use, disclosure, or distribution is prohibited.'
-  );
+  const [footer, setFooter] = React.useState(DEFAULT_FOOTER);
   const [clientEmail, setClientEmail] = React.useState('');
+
+  // Load existing settings on mount
+  React.useEffect(() => {
+    async function loadSettings() {
+      try {
+        const settings = await getEmailSettings();
+        if (settings) {
+          setSignature(settings.emailSignature || '');
+          setFooter(settings.emailFooter || DEFAULT_FOOTER);
+          setClientEmail(settings.clientEmail || '');
+        }
+      } catch {
+        toast.error('Failed to load email settings');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      toast.info('Email settings are not yet persisted. This feature is coming soon.');
+      await updateEmailSettings({
+        emailSignature: signature,
+        emailFooter: footer,
+        clientEmail: clientEmail,
+      });
+      toast.success('Email settings saved successfully');
     } catch {
-      toast.error('Failed to update email settings');
+      toast.error('Failed to save email settings');
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <div className="h-5 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-64 animate-pulse rounded bg-muted" />
+            </CardHeader>
+            <CardContent>
+              <div className="h-24 animate-pulse rounded bg-muted" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
