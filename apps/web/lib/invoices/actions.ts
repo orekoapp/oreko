@@ -969,7 +969,7 @@ export async function recordPayment(
   revalidatePath(ROUTES.invoices);
   revalidatePath(ROUTES.invoiceDetail(invoiceId));
 
-  domainEvents.emit({ type: 'payment.received', payload: { paymentId: result.paymentId, invoiceId, amount: data.amount, workspaceId: workspace.id } });
+  domainEvents.emit({ type: 'payment.received', payload: { paymentId: result.paymentId, invoiceId, amount: data.amount } });
 
   return { success: true };
 }
@@ -1053,8 +1053,17 @@ export async function duplicateInvoice(invoiceId: string) {
 }
 
 // ============================================
-// INVOICE TEMPLATES (STUB)
+// INVOICE TEMPLATES
 // ============================================
+
+export interface InvoiceTemplateLineItem {
+  id: string;
+  name: string;
+  description: string;
+  rate: number;
+  qty: number;
+  taxable: boolean;
+}
 
 export interface InvoiceTemplateListItem {
   id: string;
@@ -1062,6 +1071,9 @@ export interface InvoiceTemplateListItem {
   description: string;
   paymentTerms: string;
   currency: string;
+  lineItems: InvoiceTemplateLineItem[];
+  notes: string;
+  terms: string;
   usageCount: number;
   isDefault: boolean;
   createdAt: Date;
@@ -1069,31 +1081,187 @@ export interface InvoiceTemplateListItem {
 }
 
 export async function getInvoiceTemplates(filter?: { search?: string; page?: number }) {
-  // Not yet backed by database — return empty list
+  const { workspace } = await getActiveWorkspace();
+
+  const page = filter?.page ?? 1;
+  const limit = 10;
+  const skip = (page - 1) * limit;
+
+  const where = {
+    workspaceId: workspace.id,
+    deletedAt: null,
+    ...(filter?.search ? { name: { contains: filter.search, mode: 'insensitive' as const } } : {}),
+  };
+
+  const [templates, total] = await Promise.all([
+    prisma.invoiceTemplate.findMany({
+      where,
+      orderBy: [{ isDefault: 'desc' }, { updatedAt: 'desc' }],
+      skip,
+      take: limit,
+    }),
+    prisma.invoiceTemplate.count({ where }),
+  ]);
+
+  const data: InvoiceTemplateListItem[] = templates.map((t) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description ?? '',
+    paymentTerms: t.paymentTerms,
+    currency: t.currency,
+    lineItems: (t.lineItems as unknown as InvoiceTemplateLineItem[]) ?? [],
+    notes: t.notes ?? '',
+    terms: t.terms ?? '',
+    usageCount: t.usageCount,
+    isDefault: t.isDefault,
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
+  }));
+
   return {
-    data: [] as InvoiceTemplateListItem[],
-    meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+    data,
+    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
 }
 
-export async function deleteInvoiceTemplate(id: string) {
-  // Not yet backed by database
-  return { success: false, error: 'Invoice templates are not yet implemented' };
-}
+export async function createInvoiceTemplate(data: {
+  name: string;
+  description?: string;
+  paymentTerms?: string;
+  currency?: string;
+  lineItems?: InvoiceTemplateLineItem[];
+  notes?: string;
+  terms?: string;
+  isDefault?: boolean;
+}) {
+  const { workspace } = await getActiveWorkspace();
 
-export async function duplicateInvoiceTemplate(id: string) {
-  // Not yet backed by database
-  return { success: false, error: 'Invoice templates are not yet implemented' };
+  if (!data.name?.trim()) {
+    return { success: false, error: 'Template name is required' };
+  }
+
+  // If setting as default, unset any existing default
+  if (data.isDefault) {
+    await prisma.invoiceTemplate.updateMany({
+      where: { workspaceId: workspace.id, isDefault: true },
+      data: { isDefault: false },
+    });
+  }
+
+  const template = await prisma.invoiceTemplate.create({
+    data: {
+      workspaceId: workspace.id,
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      paymentTerms: data.paymentTerms || 'net30',
+      currency: data.currency || 'USD',
+      lineItems: (data.lineItems ?? []) as unknown as any,
+      notes: data.notes?.trim() || null,
+      terms: data.terms?.trim() || null,
+      isDefault: data.isDefault ?? false,
+    },
+  });
+
+  revalidatePath('/templates/invoices');
+  return { success: true, id: template.id };
 }
 
 export async function updateInvoiceTemplate(data: {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   paymentTerms: string;
   currency: string;
+  lineItems?: InvoiceTemplateLineItem[];
+  notes?: string;
+  terms?: string;
   isDefault: boolean;
 }) {
-  // Not yet backed by database
-  return { success: false, error: 'Invoice templates are not yet implemented' };
+  const { workspace } = await getActiveWorkspace();
+
+  const template = await prisma.invoiceTemplate.findFirst({
+    where: { id: data.id, workspaceId: workspace.id, deletedAt: null },
+  });
+
+  if (!template) {
+    return { success: false, error: 'Template not found' };
+  }
+
+  if (!data.name?.trim()) {
+    return { success: false, error: 'Template name is required' };
+  }
+
+  // If setting as default, unset any existing default
+  if (data.isDefault && !template.isDefault) {
+    await prisma.invoiceTemplate.updateMany({
+      where: { workspaceId: workspace.id, isDefault: true },
+      data: { isDefault: false },
+    });
+  }
+
+  await prisma.invoiceTemplate.update({
+    where: { id: data.id },
+    data: {
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      paymentTerms: data.paymentTerms,
+      currency: data.currency,
+      lineItems: (data.lineItems ?? template.lineItems) as unknown as any,
+      notes: data.notes?.trim() ?? template.notes,
+      terms: data.terms?.trim() ?? template.terms,
+      isDefault: data.isDefault,
+    },
+  });
+
+  revalidatePath('/templates/invoices');
+  return { success: true };
+}
+
+export async function deleteInvoiceTemplate(id: string) {
+  const { workspace } = await getActiveWorkspace();
+
+  const template = await prisma.invoiceTemplate.findFirst({
+    where: { id, workspaceId: workspace.id, deletedAt: null },
+  });
+
+  if (!template) {
+    return { success: false, error: 'Template not found' };
+  }
+
+  await prisma.invoiceTemplate.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  });
+
+  revalidatePath('/templates/invoices');
+  return { success: true };
+}
+
+export async function duplicateInvoiceTemplate(id: string) {
+  const { workspace } = await getActiveWorkspace();
+
+  const template = await prisma.invoiceTemplate.findFirst({
+    where: { id, workspaceId: workspace.id, deletedAt: null },
+  });
+
+  if (!template) {
+    return { success: false, error: 'Template not found' };
+  }
+
+  const duplicate = await prisma.invoiceTemplate.create({
+    data: {
+      workspaceId: workspace.id,
+      name: `${template.name} (Copy)`,
+      description: template.description,
+      paymentTerms: template.paymentTerms,
+      currency: template.currency,
+      lineItems: (template.lineItems ?? []) as unknown as any,
+      notes: template.notes,
+      terms: template.terms,
+      isDefault: false,
+    },
+  });
+
+  revalidatePath('/templates/invoices');
+  return { success: true, id: duplicate.id };
 }

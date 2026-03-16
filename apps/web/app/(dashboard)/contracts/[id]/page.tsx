@@ -2,15 +2,12 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Send,
-  ExternalLink,
   CheckCircle2,
   Clock,
   Hourglass,
   Eye,
   Mail,
   FileText,
-  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ContractEditor } from '@/components/contracts/contract-editor';
+import { ContractDetailActions } from '@/components/contracts/contract-detail-actions';
 import { getContractInstanceById } from '@/lib/contracts/actions';
 import { formatDate } from '@/lib/utils';
 
@@ -84,7 +82,6 @@ export default async function ContractDetailPage({ params }: PageProps) {
   }
 
   const config = statusConfig[instance.status] ?? statusConfig.draft;
-  const clientViewUrl = `/c/${instance.accessToken}`;
 
   return (
     <div className="container max-w-4xl py-6">
@@ -109,30 +106,13 @@ export default async function ContractDetailPage({ params }: PageProps) {
               For {instance.clientName} · Created {formatDate(instance.createdAt)}
             </p>
           </div>
-          <div className="flex gap-2">
-            {instance.status === 'draft' && (
-              <Button>
-                <Send className="mr-2 h-4 w-4" />
-                Send to Client
-              </Button>
-            )}
-            {instance.status !== 'draft' && (
-              <Button variant="outline" asChild>
-                <Link href={clientViewUrl} target="_blank">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View as Client
-                </Link>
-              </Button>
-            )}
-            {instance.pdfUrl && (
-              <Button variant="outline" asChild>
-                <a href={instance.pdfUrl} download>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF
-                </a>
-              </Button>
-            )}
-          </div>
+          <ContractDetailActions
+            contractId={instance.id}
+            contractName={instance.contractName}
+            status={instance.status}
+            accessToken={instance.accessToken}
+            pdfUrl={instance.pdfUrl}
+          />
         </div>
       </div>
 
@@ -181,7 +161,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        {(instance.signatureData || instance.status === 'pending') && (
+        {(instance.signatureData || instance.status === 'pending' || instance.status === 'signed') && (
           <Card>
             <CardHeader>
               <CardTitle>Signatures</CardTitle>
@@ -222,13 +202,25 @@ export default async function ContractDetailPage({ params }: PageProps) {
                 {/* Business Signature */}
                 <div>
                   <p className="text-sm font-medium mb-2">Business Signature</p>
-                  {instance.status === 'signed' ? (
+                  {instance.countersignatureData ? (
                     <div className="border rounded-lg p-4 bg-card">
-                      <p
-                        className="text-3xl"
-                        style={{ fontFamily: "'Brush Script MT', cursive" }}
-                      >
-                        Countersigned
+                      {instance.countersignatureData.type === 'drawn' ? (
+                        <img
+                          src={instance.countersignatureData.value}
+                          alt="Business Signature"
+                          className="max-h-24"
+                        />
+                      ) : (
+                        <p
+                          className="text-3xl"
+                          style={{ fontFamily: "'Brush Script MT', cursive" }}
+                        >
+                          {instance.countersignatureData.value}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Countersigned by {instance.countersignatureData.name} on{' '}
+                        {formatDate(new Date(instance.countersignatureData.date))}
                       </p>
                     </div>
                   ) : (

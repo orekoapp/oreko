@@ -347,6 +347,9 @@ export async function getContractInstanceById(id: string): Promise<ContractInsta
     signedAt: instance.signedAt,
     signatureData: (instance.signatureData as unknown) as SignatureData | null,
     signerIpAddress: instance.signerIpAddress,
+    countersignedAt: instance.countersignedAt,
+    countersignatureData: (instance.countersignatureData as unknown) as SignatureData | null,
+    countersignerName: instance.countersignerName,
     pdfUrl: instance.pdfUrl,
     createdAt: instance.createdAt,
     updatedAt: instance.updatedAt,
@@ -404,6 +407,9 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
     signedAt: instance.signedAt,
     signatureData: (instance.signatureData as unknown) as SignatureData | null,
     signerIpAddress: instance.signerIpAddress,
+    countersignedAt: instance.countersignedAt,
+    countersignatureData: (instance.countersignatureData as unknown) as SignatureData | null,
+    countersignerName: instance.countersignerName,
     pdfUrl: instance.pdfUrl,
     createdAt: instance.createdAt,
     updatedAt: instance.updatedAt,
@@ -502,6 +508,9 @@ export async function createContractInstance(
     signedAt: instance.signedAt,
     signatureData: (instance.signatureData as unknown) as SignatureData | null,
     signerIpAddress: instance.signerIpAddress,
+    countersignedAt: instance.countersignedAt,
+    countersignatureData: (instance.countersignatureData as unknown) as SignatureData | null,
+    countersignerName: instance.countersignerName,
     pdfUrl: instance.pdfUrl,
     createdAt: instance.createdAt,
     updatedAt: instance.updatedAt,
@@ -633,27 +642,124 @@ export async function signContract(input: SignContractInput, ipAddress?: string,
     documentHash,
   };
 
-  await prisma.contractInstance.update({
-    where: { id: instance.id },
-    data: {
-      status: 'signed',
-      signedAt,
-      signatureData: signatureWithHash as unknown as Prisma.InputJsonValue,
-      signerIpAddress: ipAddress || null,
-      signerUserAgent: userAgent || null,
-    },
+  // Check if auto-countersign is enabled
+  const profile = await prisma.businessProfile.findUnique({
+    where: { workspaceId: instance.workspaceId },
+    select: { autoCountersign: true, businessName: true },
   });
+
+  const autoCountersign = profile?.autoCountersign ?? false;
+
+  if (autoCountersign) {
+    // Auto-countersign: go straight to 'signed'
+    const businessName = profile?.businessName || 'Business';
+    const counterSignedAt = new Date();
+    const counterHash = computeContractDocumentHash({
+      contractInstanceId: instance.id,
+      content: instance.content,
+      signerName: businessName,
+      signedAt: counterSignedAt.toISOString(),
+    });
+
+    await prisma.contractInstance.update({
+      where: { id: instance.id },
+      data: {
+        status: 'signed',
+        signedAt,
+        signatureData: signatureWithHash as unknown as Prisma.InputJsonValue,
+        signerIpAddress: ipAddress || null,
+        signerUserAgent: userAgent || null,
+        countersignedAt: counterSignedAt,
+        countersignatureData: {
+          type: 'typed',
+          value: businessName,
+          name: businessName,
+          date: counterSignedAt.toISOString(),
+          documentHash: counterHash,
+        } as unknown as Prisma.InputJsonValue,
+        countersignerName: businessName,
+      },
+    });
+  } else {
+    // Manual countersign: go to 'pending'
+    await prisma.contractInstance.update({
+      where: { id: instance.id },
+      data: {
+        status: 'pending',
+        signedAt,
+        signatureData: signatureWithHash as unknown as Prisma.InputJsonValue,
+        signerIpAddress: ipAddress || null,
+        signerUserAgent: userAgent || null,
+      },
+    });
+  }
 
   // Notify workspace members
   notifyWorkspaceMembers({
     workspaceId: instance.workspaceId,
     type: 'contract_signed',
-    title: 'Contract signed',
-    message: 'Your client has signed the contract.',
+    title: autoCountersign ? 'Contract fully signed' : 'Contract signed by client',
+    message: autoCountersign
+      ? 'Your client has signed the contract and it was automatically countersigned.'
+      : 'Your client has signed the contract. It is now awaiting your countersignature.',
     entityType: 'contract',
     entityId: instance.id,
     link: `/contracts/${instance.id}`,
   }).catch(() => {});
+}
+
+// Countersign a contract (called by business user after client has signed)
+export async function counterSignContract(
+  contractId: string,
+  signatureData: SignatureData,
+): Promise<{ success: boolean; error?: string }> {
+  const { workspaceId, userId } = await getCurrentUserWorkspace();
+
+  const instance = await prisma.contractInstance.findFirst({
+    where: { id: contractId, workspaceId, deletedAt: null },
+  });
+
+  if (!instance) {
+    return { success: false, error: 'Contract not found' };
+  }
+
+  if (instance.status !== 'pending') {
+    return { success: false, error: 'Contract is not awaiting countersignature' };
+  }
+
+  if (!instance.signedAt) {
+    return { success: false, error: 'Client has not signed this contract yet' };
+  }
+
+  const countersignedAt = new Date();
+
+  // Compute document hash for tamper-proofing
+  const documentHash = computeContractDocumentHash({
+    contractInstanceId: instance.id,
+    content: instance.content,
+    signerName: signatureData.name,
+    signedAt: countersignedAt.toISOString(),
+  });
+
+  const signatureWithHash = {
+    ...signatureData,
+    documentHash,
+  };
+
+  await prisma.contractInstance.update({
+    where: { id: instance.id },
+    data: {
+      status: 'signed',
+      countersignedAt,
+      countersignatureData: signatureWithHash as unknown as Prisma.InputJsonValue,
+      countersignerName: signatureData.name,
+    },
+  });
+
+  revalidatePath('/contracts');
+  revalidatePath(`/contracts/${instance.id}`);
+
+  return { success: true };
 }
 
 // Delete a contract instance
@@ -677,14 +783,20 @@ export async function deleteContractInstance(id: string): Promise<void> {
 }
 
 // ============================================
-// CONTRACT SETTINGS (STUB)
+// CONTRACT SETTINGS
 // ============================================
 
 // Get contract settings
 export async function getContractSettings(): Promise<ContractSettingsData> {
-  // TODO: Wire up to database when contract settings table is added
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const profile = await prisma.businessProfile.findUnique({
+    where: { workspaceId },
+    select: { autoCountersign: true },
+  });
+
   return {
-    autoCountersign: false,
+    autoCountersign: profile?.autoCountersign ?? false,
   };
 }
 
@@ -692,7 +804,20 @@ export async function getContractSettings(): Promise<ContractSettingsData> {
 export async function updateContractSettings(
   input: Partial<ContractSettingsData>
 ): Promise<void> {
-  // TODO: Wire up to database when contract settings table is added
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  await prisma.businessProfile.upsert({
+    where: { workspaceId },
+    update: {
+      ...(input.autoCountersign !== undefined && { autoCountersign: input.autoCountersign }),
+    },
+    create: {
+      workspaceId,
+      businessName: '',
+      autoCountersign: input.autoCountersign ?? false,
+    },
+  });
+
   revalidatePath('/settings/contracts');
 }
 

@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { ContractEditor } from './contract-editor';
@@ -66,7 +66,7 @@ export default function NewContractForm({
   preselectedClientId,
 }: NewContractFormProps) {
   const router = useRouter();
-  const { toast } = useToast();
+  // toast from sonner (imported at top level)
   const [loading, setLoading] = useState(false);
 
   // Form State
@@ -130,7 +130,7 @@ export default function NewContractForm({
 
   const handleSubmit = async (isDraft: boolean) => {
     if (!selectedTemplateId || !selectedClientId) {
-      toast({ title: 'Missing fields', description: 'Please select a template and a signee.' });
+      toast.error('Please select a template and a signee.');
       return;
     }
 
@@ -140,7 +140,7 @@ export default function NewContractForm({
         .filter((v) => v.required && !variableValues[v.key]?.trim())
         .map((v) => v.label);
       if (missing.length > 0) {
-        toast({ title: 'Missing fields', description: `Please fill in: ${missing.join(', ')}` });
+        toast.error(`Please fill in: ${missing.join(', ')}`);
         return;
       }
     }
@@ -153,15 +153,14 @@ export default function NewContractForm({
         quoteId: selectedQuoteId || undefined,
         variableValues,
       });
-      toast({
-        title: isDraft ? 'Contract Saved' : 'Contract Sent',
-        description: isDraft
-          ? 'Your contract has been saved as a draft.'
-          : `Contract sent to ${selectedClient?.name || 'the client'}.`,
-      });
+      toast.success(
+        isDraft
+          ? 'Contract saved as a draft.'
+          : `Contract sent to ${selectedClient?.name || 'the client'}.`
+      );
       router.push(`/contracts/${instance.id}`);
     } catch {
-      toast({ title: 'Error', description: 'Failed to create contract.' });
+      toast.error('Failed to create contract.');
     } finally {
       setLoading(false);
     }

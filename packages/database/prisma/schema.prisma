@@ -159,6 +159,7 @@ model Workspace {
   notifications      Notification[]
   slugHistory        WorkspaceSlugHistory[]
   webhookEndpoints   WebhookEndpoint[]
+  invoiceTemplates   InvoiceTemplate[]
 
   @@index([slug])
   @@index([ownerId])
@@ -218,8 +219,9 @@ model BusinessProfile {
   locale         String   @default("en") @db.VarChar(10)
   emailSignature String?  @map("email_signature") @db.Text
   emailFooter    String?  @map("email_footer") @db.Text
-  clientEmail    String?  @map("client_email")
-  createdAt      DateTime @default(now()) @map("created_at")
+  clientEmail      String?  @map("client_email")
+  autoCountersign  Boolean  @default(false) @map("auto_countersign")
+  createdAt        DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -662,11 +664,14 @@ model ContractInstance {
   accessToken     String    @unique @default(uuid()) @map("access_token") @db.VarChar(100)
   sentAt          DateTime? @map("sent_at")
   viewedAt        DateTime? @map("viewed_at")
-  signedAt        DateTime? @map("signed_at")
-  signatureData   Json?     @map("signature_data")
-  signerIpAddress String?   @map("signer_ip_address") @db.VarChar(45)
-  signerUserAgent String?   @map("signer_user_agent") @db.Text
-  pdfUrl          String?   @map("pdf_url")
+  signedAt              DateTime? @map("signed_at")
+  signatureData         Json?     @map("signature_data")
+  signerIpAddress       String?   @map("signer_ip_address") @db.VarChar(45)
+  signerUserAgent       String?   @map("signer_user_agent") @db.Text
+  countersignedAt       DateTime? @map("countersigned_at")
+  countersignatureData  Json?     @map("countersignature_data")
+  countersignerName     String?   @map("countersigner_name")
+  pdfUrl                String?   @map("pdf_url")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
@@ -957,6 +962,33 @@ model CreditNoteEvent {
 
   @@index([creditNoteId])
   @@map("credit_note_events")
+}
+
+// ============================================
+// INVOICE TEMPLATES
+// ============================================
+
+model InvoiceTemplate {
+  id           String    @id @default(uuid())
+  workspaceId  String    @map("workspace_id")
+  name         String    @db.VarChar(200)
+  description  String?   @db.Text
+  paymentTerms String    @default("net30") @map("payment_terms") @db.VarChar(20)
+  currency     String    @default("USD") @db.VarChar(3)
+  lineItems    Json      @default("[]") @map("line_items")
+  notes        String?   @db.Text
+  terms        String?   @db.Text
+  isDefault    Boolean   @default(false) @map("is_default")
+  usageCount   Int       @default(0) @map("usage_count")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, deletedAt])
+  @@map("invoice_templates")
 }
 
 // ============================================

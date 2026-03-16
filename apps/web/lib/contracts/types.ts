@@ -85,6 +85,9 @@ export interface ContractInstanceDetail {
   signedAt: Date | null;
   signatureData: SignatureData | null;
   signerIpAddress: string | null;
+  countersignedAt: Date | null;
+  countersignatureData: SignatureData | null;
+  countersignerName: string | null;
   pdfUrl: string | null;
   createdAt: Date;
   updatedAt: Date;

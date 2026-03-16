@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Loader2, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { SignaturePad } from './signature-pad';
+import { counterSignContract } from '@/lib/contracts/actions';
+import type { SignatureData } from '@/lib/contracts/types';
 
 interface CountersignDialogProps {
   open: boolean;
@@ -31,26 +32,35 @@ export function CountersignDialog({
   onCountersigned,
 }: CountersignDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [businessName, setBusinessName] = useState('');
+  const [signature, setSignature] = useState<SignatureData | null>(null);
 
-  useEffect(() => {
-    if (open) {
-      setBusinessName('Your Business Name');
+  const handleSubmit = async () => {
+    if (!signature) {
+      toast.error('Please provide your signature');
+      return;
     }
-  }, [open]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!businessName.trim()) return;
-
-    toast.info('Contract countersigning is not yet implemented. This feature is coming soon.');
-    onOpenChange(false);
+    setIsSubmitting(true);
+    try {
+      const result = await counterSignContract(contractId, signature);
+      if (!result.success) {
+        toast.error(result.error || 'Failed to countersign contract');
+        return;
+      }
+      toast.success('Contract countersigned successfully');
+      onOpenChange(false);
+      onCountersigned?.();
+    } catch {
+      toast.error('Failed to countersign contract');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form onSubmit={handleSubmit}>
+      <DialogContent className="!max-w-[600px] !max-h-[85vh] !p-0 !gap-0 !flex !flex-col overflow-hidden">
+        <div className="p-6 pb-3 shrink-0">
           <DialogHeader>
             <DialogTitle>Countersign Contract</DialogTitle>
             <DialogDescription>
@@ -58,39 +68,19 @@ export function CountersignDialog({
               The client has already signed this contract.
             </DialogDescription>
           </DialogHeader>
+        </div>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="business-name">Business Name</Label>
-              <Input
-                id="business-name"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="Enter your business name"
-                required
-              />
-            </div>
+        <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4 min-h-0">
+          <SignaturePad onSignatureChange={setSignature} />
 
-            {businessName && (
-              <div className="border rounded-lg p-4 bg-muted/30">
-                <p className="text-xs text-muted-foreground mb-2">Signature Preview</p>
-                <p
-                  className="text-2xl"
-                  style={{ fontFamily: "'Brush Script MT', cursive" }}
-                >
-                  {businessName}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {new Date().toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-              </div>
-            )}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            By countersigning, you confirm that you have reviewed and agree to the terms
+            of this contract. Your signature will be recorded along with a timestamp
+            for verification purposes.
+          </p>
+        </div>
 
+        <div className="shrink-0 border-t p-4 bg-background">
           <DialogFooter>
             <Button
               type="button"
@@ -100,13 +90,16 @@ export function CountersignDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !businessName.trim()}>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || !signature}
+            >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <PenLine className="mr-2 h-4 w-4" />
               Countersign
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

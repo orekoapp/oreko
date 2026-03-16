@@ -23,11 +23,12 @@ import { DataTableRowActions } from '@/components/ui/data-table/data-table-row-a
 import { cn, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
+  createInvoiceTemplate,
   deleteInvoiceTemplate,
   duplicateInvoiceTemplate,
   updateInvoiceTemplate,
 } from '@/lib/invoices/actions';
-import type { InvoiceTemplateListItem } from '@/lib/invoices/actions';
+import type { InvoiceTemplateListItem, InvoiceTemplateLineItem } from '@/lib/invoices/actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,36 +66,7 @@ const paymentTermsLabel: Record<string, string> = {
   net60: 'Net 60',
 };
 
-interface TemplateLineItem {
-  id: string;
-  name: string;
-  description: string;
-  rate: number;
-  qty: number;
-  taxable: boolean;
-}
-
-// Sample line items per template
-const sampleLineItems: Record<string, TemplateLineItem[]> = {
-  'inv-tmpl-001': [
-    { id: 'li-1', name: 'Processing Fee (sample)', description: 'This fee covers all work done by the team to process your booking once submitted.', rate: 15, qty: 1, taxable: true },
-    { id: 'li-2', name: 'Consulting/Coaching Session (sample)', description: 'Hourly cost of a consulting Zoom call or in-person coaching session with one of our specialists.', rate: 50, qty: 1, taxable: true },
-    { id: 'li-3', name: 'Certification Fee (sample)', description: 'Upon completion of a course with our team, this fee will cover all costs of any examinations for your certification.', rate: 200, qty: 1, taxable: true },
-  ],
-  'inv-tmpl-002': [
-    { id: 'li-4', name: 'Rush Delivery Fee', description: 'Additional charge for expedited delivery of services.', rate: 100, qty: 1, taxable: true },
-  ],
-  'inv-tmpl-003': [
-    { id: 'li-5', name: 'Design Phase', description: 'UI/UX design, wireframes, and mockups.', rate: 2500, qty: 1, taxable: true },
-    { id: 'li-6', name: 'Frontend Development', description: 'HTML, CSS, and JavaScript implementation.', rate: 3500, qty: 1, taxable: true },
-    { id: 'li-7', name: 'Backend Development', description: 'Server-side logic, API, and database.', rate: 4000, qty: 1, taxable: true },
-    { id: 'li-8', name: 'QA & Testing', description: 'Quality assurance and cross-browser testing.', rate: 1000, qty: 1, taxable: true },
-  ],
-  'inv-tmpl-004': [
-    { id: 'li-9', name: 'Monthly Retainer Fee', description: 'Fixed monthly fee for ongoing services and support.', rate: 2000, qty: 1, taxable: true },
-    { id: 'li-10', name: 'Additional Hours', description: 'Extra hours beyond the retainer agreement.', rate: 150, qty: 0, taxable: true },
-  ],
-};
+type TemplateLineItem = InvoiceTemplateLineItem;
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -112,43 +84,71 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
 
   // Edit dialog state
   const [editingTemplate, setEditingTemplate] = useState<InvoiceTemplateListItem | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [editName, setEditName] = useState('');
   const [editLineItems, setEditLineItems] = useState<TemplateLineItem[]>([]);
   const [editPaymentTerms, setEditPaymentTerms] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  const handleOpenCreate = () => {
+    setIsCreating(true);
+    setEditingTemplate(null);
+    setEditName('');
+    setEditPaymentTerms('net30');
+    setEditLineItems([]);
+  };
+
   const handleOpenEdit = (template: InvoiceTemplateListItem) => {
+    setIsCreating(false);
     setEditingTemplate(template);
     setEditName(template.name);
     setEditPaymentTerms(template.paymentTerms);
-    setEditLineItems(sampleLineItems[template.id] ?? []);
+    setEditLineItems(template.lineItems ?? []);
   };
 
   const handleCloseEdit = () => {
     setEditingTemplate(null);
+    setIsCreating(false);
   };
 
   const handleSaveTemplate = async () => {
-    if (!editingTemplate) return;
     if (!editName.trim()) {
       toast.error('Template name is required');
       return;
     }
     setIsSaving(true);
     try {
-      await updateInvoiceTemplate({
-        id: editingTemplate.id,
-        name: editName,
-        description: editingTemplate.description,
-        paymentTerms: editPaymentTerms,
-        currency: editingTemplate.currency,
-        isDefault: editingTemplate.isDefault,
-      });
-      toast.success('Template updated');
+      if (isCreating) {
+        const result = await createInvoiceTemplate({
+          name: editName,
+          paymentTerms: editPaymentTerms,
+          lineItems: editLineItems,
+        });
+        if (!result.success) {
+          toast.error(result.error || 'Failed to create template');
+          return;
+        }
+        toast.success('Template created');
+      } else if (editingTemplate) {
+        const result = await updateInvoiceTemplate({
+          id: editingTemplate.id,
+          name: editName,
+          description: editingTemplate.description,
+          paymentTerms: editPaymentTerms,
+          currency: editingTemplate.currency,
+          lineItems: editLineItems,
+          isDefault: editingTemplate.isDefault,
+        });
+        if (!result.success) {
+          toast.error(result.error || 'Failed to update template');
+          return;
+        }
+        toast.success('Template updated');
+      }
       handleCloseEdit();
       router.refresh();
     } catch {
-      toast.error('Failed to update template');
+      toast.error('Failed to save template');
     } finally {
       setIsSaving(false);
     }
@@ -332,7 +332,7 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
       <p className="text-muted-foreground mb-4">
         Create your first invoice template to streamline your billing workflow.
       </p>
-      <Button>
+      <Button onClick={handleOpenCreate}>
         <Plus className="mr-2 h-4 w-4" />
         Create Template
       </Button>
@@ -341,6 +341,14 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
 
   return (
     <>
+      <div className="flex items-center justify-between mb-4">
+        <div />
+        <Button onClick={handleOpenCreate} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          Create Template
+        </Button>
+      </div>
+
       {selectedRows.length > 0 && (
         <div className="flex items-center gap-2 mb-4">
           <span className="text-sm text-muted-foreground">
@@ -377,13 +385,17 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
       />
 
       {/* Edit Template Dialog - Invoice Builder Style */}
-      <Dialog open={!!editingTemplate} onOpenChange={(open) => !open && handleCloseEdit()}>
+      <Dialog open={!!editingTemplate || isCreating} onOpenChange={(open) => !open && handleCloseEdit()}>
         <DialogContent className="!flex !flex-col !max-w-[860px] !max-h-[90vh] !p-0 !gap-0 overflow-hidden">
           {/* Header */}
           <div className="p-8 pb-2">
-            <h2 className="text-2xl font-bold tracking-tight">Invoice Template</h2>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {isCreating ? 'New Invoice Template' : 'Invoice Template'}
+            </h2>
             <p className="text-muted-foreground mt-1">
-              Your invoice templates are available when creating invoices.
+              {isCreating
+                ? 'Create a reusable template to speed up invoice creation.'
+                : 'Your invoice templates are available when creating invoices.'}
             </p>
           </div>
 
@@ -508,26 +520,7 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
 
               {/* Payment Method Section */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold">Payment Method</h3>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Options
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[180px]">
-                      <DropdownMenuItem>Bank Transfer</DropdownMenuItem>
-                      <DropdownMenuItem>Credit Card (Stripe)</DropdownMenuItem>
-                      <DropdownMenuItem>PayPal</DropdownMenuItem>
-                      <DropdownMenuItem>Cash / Check</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <h3 className="text-base font-semibold">Payment Method</h3>
                 <p className="text-sm text-muted-foreground">
                   Payment methods are setup in your settings page.
                 </p>
@@ -554,14 +547,16 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
 
               {/* Actions */}
               <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive transition-colors"
-                  onClick={handleDeleteFromDialog}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete template
-                </button>
+                {!isCreating ? (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive transition-colors"
+                    onClick={handleDeleteFromDialog}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete template
+                  </button>
+                ) : <div />}
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -575,7 +570,7 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
                     disabled={isSaving}
                   >
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Template
+                    {isCreating ? 'Create Template' : 'Save Template'}
                   </Button>
                 </div>
               </div>
