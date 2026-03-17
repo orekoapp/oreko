@@ -204,7 +204,21 @@ const config: Config = {
   				to: {
   					transform: 'translateX(0)'
   				}
-  			}
+  			},
+			'cell-ripple': {
+				'0%': {
+					opacity: '0.4',
+					transform: 'scale(1)'
+				},
+				'50%': {
+					opacity: '1',
+					transform: 'scale(1.05)'
+				},
+				'100%': {
+					opacity: '0.4',
+					transform: 'scale(1)'
+				}
+			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
@@ -214,7 +228,8 @@ const config: Config = {
   			'slide-in-from-top': 'slide-in-from-top 0.2s ease-out',
   			'slide-in-from-bottom': 'slide-in-from-bottom 0.2s ease-out',
   			'slide-in-from-left': 'slide-in-from-left 0.2s ease-out',
-  			'slide-in-from-right': 'slide-in-from-right 0.2s ease-out'
+  			'slide-in-from-right': 'slide-in-from-right 0.2s ease-out',
+			'cell-ripple': 'cell-ripple var(--duration) ease-out var(--delay)'
   		}
   	}
   },

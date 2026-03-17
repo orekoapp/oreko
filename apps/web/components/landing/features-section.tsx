@@ -1,176 +1,95 @@
 import Image from 'next/image';
-import {
-  Blocks,
-  ArrowRightLeft,
-  PenTool,
-  CalendarClock,
-  Layers,
-  Server,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { FileText, ArrowRightLeft, CreditCard, BarChart3, ChevronRight } from 'lucide-react';
 
 const features = [
   {
-    icon: Blocks,
-    title: 'Visual Quote Builder',
-    headline: 'Build Beautiful Quotes',
+    tag: 'Quotes',
+    icon: FileText,
+    title: 'Create professional quotes in minutes',
     description:
-      'Drag-and-drop blocks, not spreadsheet rows. Create quotes your clients will remember with our intuitive visual editor.',
-    points: ['Block-based editor', 'Real-time preview', 'Professional templates'],
-    color: 'from-blue-500 to-blue-600',
-    image: '/images/landing/hero-screenshot.png',
-    imageAlt: 'Visual quote builder with drag and drop blocks',
+      'Build branded quotes with our visual editor. Add line items, apply discounts, set payment terms, and send to clients for review and approval.',
+    screenshot: '/screenshots/quote-preview.png',
+    screenshotAlt: 'QuoteCraft quote preview with line items and totals',
+    link: '/features#quotes',
   },
   {
+    tag: 'Invoicing',
     icon: ArrowRightLeft,
-    title: 'One-Click Conversion',
-    headline: 'Quote to Invoice in One Click',
+    title: 'Convert quotes to invoices instantly',
     description:
-      'Stop copying data between documents. When a quote is accepted, convert it to an invoice instantly with zero re-entry.',
-    points: ['Zero data re-entry', 'Automatic data transfer', 'Maintain history'],
-    color: 'from-violet-500 to-violet-600',
-    image: '/images/landing/feature-quotes-list.png',
-    imageAlt: 'Quotes list showing draft, sent, and accepted statuses',
+      'When a client accepts a quote, convert it to an invoice with one click. No re-entering data. Everything carries over — line items, client details, payment terms.',
+    screenshot: '/screenshots/invoice-preview.png',
+    screenshotAlt: 'QuoteCraft invoice preview with payment tracking',
+    link: '/features#invoicing',
   },
   {
-    icon: PenTool,
-    title: 'E-Signatures',
-    headline: 'Get Signed Instantly',
+    tag: 'Clients',
+    icon: CreditCard,
+    title: 'Keep all your clients in one place',
     description:
-      'Built-in electronic signatures that are legally binding. Clients can sign from any device, anywhere.',
-    points: ['Legally binding', 'Mobile-friendly', 'Signature tracking'],
-    color: 'from-emerald-500 to-emerald-600',
-    image: '/images/landing/feature-quote-builder.png',
-    imageAlt: 'Quote builder with signature block for electronic signatures',
+      'Manage contacts, track quote and invoice history, and see lifetime value at a glance. Know exactly where each client relationship stands.',
+    screenshot: '/screenshots/clients.png',
+    screenshotAlt: 'QuoteCraft client management interface',
+    link: '/features#clients',
   },
   {
-    icon: CalendarClock,
-    title: 'Payment Scheduling',
-    headline: 'Flexible Payment Terms',
+    tag: 'Analytics',
+    icon: BarChart3,
+    title: 'Understand how your business is performing',
     description:
-      'Set up deposits, milestone payments, and auto-reminders. Get paid on your terms without chasing clients.',
-    points: ['Deposit requests', 'Milestone payments', 'Auto-reminders'],
-    color: 'from-amber-500 to-amber-600',
-    image: '/images/landing/feature-dashboard.png',
-    imageAlt: 'Dashboard showing revenue tracking and invoice status',
-  },
-  {
-    icon: Layers,
-    title: 'Rate Card System',
-    headline: 'Consistent Pricing',
-    description:
-      'Create reusable services with saved rates. Build quotes faster and maintain consistent pricing across projects.',
-    points: ['Reusable services', 'Automatic calculations', 'Version history'],
-    color: 'from-pink-500 to-pink-600',
-    image: '/images/landing/feature-rate-cards.png',
-    imageAlt: 'Rate cards with service pricing for hourly and fixed rates',
-  },
-  {
-    icon: Server,
-    title: 'Self-Hosted Option',
-    headline: 'Your Data, Your Server',
-    description:
-      'Deploy on your own infrastructure with Docker. Full control over your data with no vendor lock-in.',
-    points: ['Docker deployment', 'Full data control', 'No vendor lock-in'],
-    color: 'from-slate-500 to-slate-600',
-    image: '/images/landing/feature-settings.png',
-    imageAlt: 'Comprehensive settings for full customization',
+      'Track revenue trends, quote conversion rates, and client insights. See what is working and where you can improve.',
+    screenshot: '/screenshots/analytics.png',
+    screenshotAlt: 'QuoteCraft analytics dashboard',
+    link: '/features#analytics',
   },
 ];
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-20 md:py-28">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            QuoteCraft is Different
-          </h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            A visual builder that's open source and actually free. Everything you need to
-            create, send, and get paid for your work.
-          </p>
-        </div>
-
-        <div className="space-y-20 max-w-6xl mx-auto">
-          {features.map((feature, index) => (
+    <section id="features" className="bg-background py-24">
+      <div className="max-w-6xl mx-auto px-6 space-y-32">
+        {features.map((feature, i) => {
+          const isReversed = i % 2 === 1;
+          return (
             <div
-              key={index}
-              className={cn(
-                'grid md:grid-cols-2 gap-12 items-center',
-                index % 2 === 1 && 'md:grid-flow-dense'
-              )}
+              key={feature.tag}
+              className={`flex flex-col ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-20`}
             >
-              {/* Content */}
-              <div className={cn(index % 2 === 1 && 'md:col-start-2')}>
-                <div
-                  className={cn(
-                    'inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br mb-6',
-                    feature.color
-                  )}
-                >
-                  <feature.icon className="h-6 w-6 text-white" />
+              <div className="flex-1 max-w-md">
+                <div className="inline-flex items-center gap-2 text-sm font-medium text-primary mb-4">
+                  <feature.icon className="h-4 w-4" />
+                  <span>{feature.tag}</span>
                 </div>
-
-                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">
+                <h2 className="font-display text-3xl font-medium text-foreground tracking-tight leading-snug">
                   {feature.title}
-                </p>
-
-                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-4">
-                  {feature.headline}
-                </h3>
-
-                <p className="text-lg text-slate-600 dark:text-slate-400 mb-6">
+                </h2>
+                <p className="mt-4 text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
-
-                <ul className="space-y-3">
-                  {feature.points.map((point, pointIndex) => (
-                    <li key={pointIndex} className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                        <svg
-                          className="w-3 h-3 text-green-600 dark:text-green-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                      <span className="text-slate-700 dark:text-slate-300">{point}</span>
-                    </li>
-                  ))}
-                </ul>
+                <Link
+                  href={feature.link}
+                  className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  Learn more
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
 
-              {/* Feature screenshot */}
-              <div className={cn(index % 2 === 1 && 'md:col-start-1')}>
-                <div className="relative">
-                  <div
-                    className={cn(
-                      'absolute -inset-4 bg-gradient-to-r blur-2xl rounded-3xl opacity-20',
-                      feature.color
-                    )}
+              <div className="flex-1 w-full">
+                <div className="rounded-xl border border-border shadow-lg overflow-hidden bg-card">
+                  <Image
+                    src={feature.screenshot}
+                    alt={feature.screenshotAlt}
+                    width={1280}
+                    height={800}
+                    className="w-full h-auto"
                   />
-                  <div className="relative aspect-[16/10] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden">
-                    <Image
-                      src={feature.image}
-                      alt={feature.imageAlt}
-                      fill
-                      className="object-contain"
-                      quality={90}
-                    />
-                  </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </section>
   );

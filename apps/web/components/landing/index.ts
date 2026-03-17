@@ -1,11 +1,7 @@
 export { MarketingHeader } from './marketing-header';
 export { HeroSection } from './hero-section';
-export { ProblemSection } from './problem-section';
 export { FeaturesSection } from './features-section';
-export { HowItWorksSection } from './how-it-works';
 export { PricingSection } from './pricing-section';
 export { TestimonialsSection } from './testimonials-section';
 export { OpenSourceSection } from './open-source-section';
-export { FAQSection } from './faq-section';
-export { FinalCTASection } from './final-cta-section';
 export { MarketingFooter } from './marketing-footer';

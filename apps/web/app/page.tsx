@@ -2,37 +2,29 @@ import type { Metadata } from 'next';
 import {
   MarketingHeader,
   HeroSection,
-  ProblemSection,
   FeaturesSection,
-  HowItWorksSection,
-  PricingSection,
   TestimonialsSection,
+  PricingSection,
   OpenSourceSection,
-  FAQSection,
-  FinalCTASection,
   MarketingFooter,
 } from '@/components/landing';
 
 export const metadata: Metadata = {
-  title: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
+  title: 'QuoteCraft - Manage clients. Send quotes. Get paid faster.',
   description:
     'The open-source alternative to Bloom and Bonsai. Visual quote builder, e-signatures, one-click invoice conversion. Free self-hosted or cloud.',
 };
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <MarketingHeader />
-      <main id="main-content">
+      <main>
         <HeroSection />
-        <ProblemSection />
         <FeaturesSection />
-        <HowItWorksSection />
-        <PricingSection />
         <TestimonialsSection />
+        <PricingSection />
         <OpenSourceSection />
-        <FAQSection />
-        <FinalCTASection />
       </main>
       <MarketingFooter />
     </div>
