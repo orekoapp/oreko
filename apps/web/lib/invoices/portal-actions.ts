@@ -4,7 +4,7 @@ import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { InvoiceLineItem } from './types';
 import { toNumber } from '@/lib/utils';
-import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { notifyWorkspaceMembers } from '@/lib/notifications/internal';
 
 /**
  * Public invoice data for client portal (subset of full invoice)

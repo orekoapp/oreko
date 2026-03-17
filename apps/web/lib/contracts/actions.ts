@@ -22,7 +22,7 @@ import type {
   ContractSettingsData,
 } from './types';
 import { sendEmail } from '@/lib/services/email';
-import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/internal';
 import { computeContractDocumentHash } from '@/lib/signing/document-hash';
 
 // HTML escape for safe email template interpolation

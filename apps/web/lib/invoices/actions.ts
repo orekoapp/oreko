@@ -12,7 +12,7 @@ import type {
   UpdateInvoiceData,
 } from './types';
 import { sendInvoiceSentEmail } from '@/lib/services/email';
-import { createNotification } from '@/lib/notifications/actions';
+import { createNotification } from '@/lib/notifications/internal';
 import { formatCurrency, toNumber, getBaseUrl } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { generateInvoiceNumber } from './internal';
@@ -44,10 +44,11 @@ async function getActiveWorkspace() {
 }
 
 /**
- * Calculate totals from line items
+ * Calculate totals from line items, applying discount before tax total
  */
 function calculateTotals(
-  lineItems: Array<{ quantity: number; rate: number; taxRate?: number }>
+  lineItems: Array<{ quantity: number; rate: number; taxRate?: number }>,
+  discount?: { type?: 'percentage' | 'fixed' | null; value?: number | null }
 ) {
   let subtotal = 0;
   let taxTotal = 0;
@@ -60,10 +61,28 @@ function calculateTotals(
     }
   }
 
+  subtotal = Math.round(subtotal * 100) / 100;
+  taxTotal = Math.round(taxTotal * 100) / 100;
+
+  // Calculate discount amount
+  let discountAmount = 0;
+  if (discount?.type && discount.value != null && discount.value > 0) {
+    if (discount.type === 'percentage') {
+      discountAmount = subtotal * (discount.value / 100);
+    } else if (discount.type === 'fixed') {
+      discountAmount = discount.value;
+    }
+  }
+
+  // Clamp: discount cannot exceed subtotal (prevents negative total before tax)
+  discountAmount = Math.min(discountAmount, subtotal);
+  discountAmount = Math.round(discountAmount * 100) / 100;
+
   return {
-    subtotal: Math.round(subtotal * 100) / 100,
-    taxTotal: Math.round(taxTotal * 100) / 100,
-    total: Math.round((subtotal + taxTotal) * 100) / 100,
+    subtotal,
+    taxTotal,
+    discountAmount,
+    total: Math.round((subtotal + taxTotal - discountAmount) * 100) / 100,
   };
 }
 
@@ -122,7 +141,10 @@ export async function createInvoice(data: CreateInvoiceData) {
     }
   }
 
-  const { subtotal, taxTotal, total } = calculateTotals(data.lineItems);
+  const { subtotal, taxTotal, discountAmount, total } = calculateTotals(
+    data.lineItems,
+    { type: data.discountType, value: data.discountValue }
+  );
 
   const lineItems = data.lineItems.map((item, index) => ({
     name: item.name,
@@ -150,6 +172,9 @@ export async function createInvoice(data: CreateInvoiceData) {
       issueDate: new Date(),
       dueDate: new Date(data.dueDate),
       subtotal,
+      discountType: data.discountType || null,
+      discountValue: data.discountValue ?? null,
+      discountAmount,
       taxTotal,
       total,
       amountDue: total,
@@ -405,7 +430,16 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
 
   let subtotal = toNumber(existingInvoice.subtotal);
   let taxTotal = toNumber(existingInvoice.taxTotal);
+  let discountAmount = toNumber(existingInvoice.discountAmount);
   let total = toNumber(existingInvoice.total);
+
+  // Resolve discount: use provided values, fall back to existing invoice values
+  const discountType = data.discountType !== undefined
+    ? data.discountType
+    : (existingInvoice.discountType as 'percentage' | 'fixed' | null);
+  const discountValue = data.discountValue !== undefined
+    ? data.discountValue
+    : (existingInvoice.discountValue ? Number(existingInvoice.discountValue) : null);
 
   if (data.lineItems) {
     for (const item of data.lineItems) {
@@ -416,9 +450,22 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
         return { success: false, error: 'Line item quantity cannot be negative' };
       }
     }
-    const totals = calculateTotals(data.lineItems);
+    const totals = calculateTotals(data.lineItems, { type: discountType, value: discountValue });
     subtotal = totals.subtotal;
     taxTotal = totals.taxTotal;
+    discountAmount = totals.discountAmount;
+    total = totals.total;
+  } else if (data.discountType !== undefined || data.discountValue !== undefined) {
+    // Line items didn't change but discount did — recalculate with existing line items
+    const existingItems = existingInvoice.lineItems.map((li) => ({
+      quantity: toNumber(li.quantity),
+      rate: toNumber(li.rate),
+      taxRate: li.taxRate ? Number(li.taxRate) : undefined,
+    }));
+    const totals = calculateTotals(existingItems, { type: discountType, value: discountValue });
+    subtotal = totals.subtotal;
+    taxTotal = totals.taxTotal;
+    discountAmount = totals.discountAmount;
     total = totals.total;
   }
 
@@ -439,11 +486,17 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
         notes: data.notes,
         terms: data.terms,
         internalNotes: data.internalNotes,
-        ...(data.lineItems && {
+        // Always persist discount fields if they changed
+        ...(data.discountType !== undefined && { discountType: data.discountType || null }),
+        ...(data.discountValue !== undefined && { discountValue: data.discountValue ?? null }),
+        ...((data.lineItems || data.discountType !== undefined || data.discountValue !== undefined) && {
           subtotal,
+          discountAmount,
           taxTotal,
           total,
           amountDue: Math.max(0, total - toNumber(existingInvoice.amountPaid)),
+        }),
+        ...(data.lineItems && {
           lineItems: {
             create: data.lineItems.map((item, index) => ({
               name: item.name,

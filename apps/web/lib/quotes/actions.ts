@@ -6,7 +6,7 @@ import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
 import { sendQuoteSentEmail } from '@/lib/services/email';
-import { createNotification } from '@/lib/notifications/actions';
+import { createNotification } from '@/lib/notifications/internal';
 import { ROUTES } from '@/lib/routes';
 import { domainEvents } from '@/lib/events/emitter';
 import { toNumber, getBaseUrl } from '@/lib/utils';

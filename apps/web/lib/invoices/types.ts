@@ -110,6 +110,8 @@ export interface CreateInvoiceData {
     rate: number;
     taxRate?: number;
   }>;
+  discountType?: 'percentage' | 'fixed' | null;
+  discountValue?: number | null;
   notes?: string;
   terms?: string;
   internalNotes?: string;
@@ -126,6 +128,8 @@ export interface UpdateInvoiceData {
     rate: number;
     taxRate?: number;
   }>;
+  discountType?: 'percentage' | 'fixed' | null;
+  discountValue?: number | null;
   notes?: string;
   terms?: string;
   internalNotes?: string;

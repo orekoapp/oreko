@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@quotecraft/database';
 import { generateSigningCertificateHtml } from '@/lib/signing/certificate-template';
 import { generatePdfFromHtml } from '@/lib/services/pdf';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 
 /**
  * GET /api/download/signing-certificate/contract/[contractId]
@@ -20,8 +21,10 @@ export async function GET(
 
     const { contractId } = await params;
 
+    const { workspaceId } = await getCurrentUserWorkspace();
+
     const instance = await prisma.contractInstance.findFirst({
-      where: { id: contractId },
+      where: { id: contractId, workspaceId },
       select: {
         id: true,
         signedAt: true,

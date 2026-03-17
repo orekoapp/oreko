@@ -1327,7 +1327,7 @@ export async function deleteWorkspace(): Promise<{ success: boolean; error?: str
 
   // Create notifications for all members
   try {
-    const { createNotification } = await import('@/lib/notifications/actions');
+    const { createNotification } = await import('@/lib/notifications/internal');
     await Promise.allSettled(
       members.map((member) =>
         createNotification({

@@ -4,7 +4,7 @@ import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { QuoteBlock } from './types';
 import { toNumber } from '@/lib/utils';
-import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { notifyWorkspaceMembers } from '@/lib/notifications/internal';
 import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
 import { computeQuoteDocumentHash } from '@/lib/signing/document-hash';
 
