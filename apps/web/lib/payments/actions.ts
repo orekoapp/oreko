@@ -8,7 +8,7 @@ import {
   createRefund,
 } from '@/lib/services/stripe';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
-import { toNumber } from '@/lib/utils';
+import { toNumber, getBaseUrl } from '@/lib/utils';
 import type {
   PaymentListItem,
   PaymentDetail,
@@ -118,7 +118,7 @@ export async function createStripeOnboardingLink(options?: {
   }
 
   const { workspaceId } = await getCurrentUserWorkspace();
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
   const returnPath = options?.returnTo === 'onboarding'
     ? '/onboarding?stripe=success'
     : '/settings/payments?success=true';

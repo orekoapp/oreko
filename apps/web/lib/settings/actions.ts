@@ -27,7 +27,7 @@ import type {
   WebhookData,
 } from './types';
 import { ROUTES } from '@/lib/routes';
-import { toNumber } from '@/lib/utils';
+import { toNumber, getBaseUrl } from '@/lib/utils';
 
 // ============================================
 // WORKSPACE ACTIONS
@@ -817,7 +817,7 @@ export async function inviteMember(
     // Send invitation email (don't fail if email fails)
     try {
       const { sendInvitationEmail } = await import('@/lib/services/email');
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = getBaseUrl();
       const inviteUrl = `${baseUrl}/invite/${rawToken}`;
       await sendInvitationEmail({
         to: normalizedEmail,
@@ -1017,7 +1017,7 @@ export async function resendInvitation(
   // Send email
   try {
     const { sendInvitationEmail } = await import('@/lib/services/email');
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const inviteUrl = `${baseUrl}/invite/${rawToken}`;
     await sendInvitationEmail({
       to: invitation.email,

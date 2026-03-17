@@ -1,3 +1,4 @@
+import { getBaseUrl } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
@@ -57,7 +58,7 @@ export async function POST() {
     // Send verification email
     try {
       const { sendVerificationEmail } = await import('@/lib/services/email');
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = getBaseUrl();
       const verifyUrl = `${baseUrl}/verify-email/confirm?token=${rawToken}`;
       await sendVerificationEmail({
         to: user.email,

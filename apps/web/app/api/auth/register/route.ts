@@ -1,3 +1,4 @@
+import { getBaseUrl } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { z } from 'zod';
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
       });
 
       const { sendVerificationEmail } = await import('@/lib/services/email');
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = getBaseUrl();
       const verifyUrl = `${baseUrl}/verify-email/confirm?token=${rawToken}`; // Email gets raw token
       await sendVerificationEmail({ to: email, name, verifyUrl });
     } catch (emailError) {

@@ -4,19 +4,26 @@
  * Returns true if the request origin is valid, false otherwise.
  */
 export function validateRequestOrigin(request: { headers: { get(name: string): string | null } }): boolean {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  let expectedHost: string;
-  try {
-    expectedHost = new URL(appUrl).host;
-  } catch {
-    expectedHost = 'localhost:3000';
+  // Build set of allowed hosts from all known URL env vars
+  const allowedHosts = new Set<string>();
+
+  for (const envVar of [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+    process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : undefined,
+    'http://localhost:3000',
+  ]) {
+    if (envVar) {
+      try { allowedHosts.add(new URL(envVar).host); } catch { /* skip invalid */ }
+    }
   }
 
   // Check Origin header first (most reliable for CSRF)
   const origin = request.headers.get('origin');
   if (origin) {
     try {
-      return new URL(origin).host === expectedHost;
+      return allowedHosts.has(new URL(origin).host);
     } catch {
       return false;
     }
@@ -26,7 +33,7 @@ export function validateRequestOrigin(request: { headers: { get(name: string): s
   const referer = request.headers.get('referer');
   if (referer) {
     try {
-      return new URL(referer).host === expectedHost;
+      return allowedHosts.has(new URL(referer).host);
     } catch {
       return false;
     }

@@ -1,5 +1,6 @@
 'use server';
 
+import { getBaseUrl } from '@/lib/utils';
 import { prisma, Prisma } from '@quotecraft/database';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
@@ -553,7 +554,7 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
   // Send email notification
   let emailSent = false;
   if (instance.client?.email && workspace) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const contractUrl = `${baseUrl}/c/${instance.accessToken}`;
     const contractName = instance.contract?.name || 'Contract';
 

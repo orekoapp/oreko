@@ -1,5 +1,6 @@
 'use server';
 
+import { getBaseUrl } from '@/lib/utils';
 import { prisma, Prisma } from '@quotecraft/database';
 import { revalidatePath } from 'next/cache';
 import { sendEmail, sendQuoteSentEmail, sendInvoiceSentEmail } from '@/lib/services/email';
@@ -382,7 +383,7 @@ export async function sendContractSentEmail(params: {
     throw new Error('Contract instance not found');
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
   const contractUrl = `${baseUrl}/c/${instance.accessToken}`;
 
   const variables: EmailVariables = {
@@ -427,7 +428,7 @@ export async function sendContractSignedEmail(params: {
     throw new Error('Contract instance not found');
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
   const contractUrl = `${baseUrl}/contracts/${instance.id}`;
 
   const variables: EmailVariables = {

@@ -9,7 +9,7 @@ import { sendQuoteSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
 import { ROUTES } from '@/lib/routes';
 import { domainEvents } from '@/lib/events/emitter';
-import { toNumber } from '@/lib/utils';
+import { toNumber, getBaseUrl } from '@/lib/utils';
 
 /**
  * Bug #134: Safely parse quote settings from JSON with runtime validation.
@@ -853,7 +853,7 @@ export async function sendQuote(quoteId: string) {
   });
 
   // Send email notification
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
   const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
 
   let emailSent = false;

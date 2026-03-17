@@ -1,3 +1,4 @@
+import { getBaseUrl } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes, createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Build reset URL (email gets raw token)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
     // Send email

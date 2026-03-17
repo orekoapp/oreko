@@ -84,3 +84,14 @@ export function formatRelativeTime(
 
   return rtf.format(0, 'second')
 }
+
+/**
+ * Get the base URL for the app — works on Vercel (production + preview) and locally.
+ * Priority: NEXT_PUBLIC_APP_URL > VERCEL_URL > VERCEL_BRANCH_URL > localhost
+ */
+export function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  if (process.env.VERCEL_BRANCH_URL) return `https://${process.env.VERCEL_BRANCH_URL}`;
+  return 'http://localhost:3000';
+}

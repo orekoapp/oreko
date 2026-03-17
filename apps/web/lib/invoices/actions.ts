@@ -13,7 +13,7 @@ import type {
 } from './types';
 import { sendInvoiceSentEmail } from '@/lib/services/email';
 import { createNotification } from '@/lib/notifications/actions';
-import { formatCurrency, toNumber } from '@/lib/utils';
+import { formatCurrency, toNumber, getBaseUrl } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { generateInvoiceNumber } from './internal';
 import { domainEvents } from '@/lib/events/emitter';
@@ -760,7 +760,7 @@ export async function sendInvoice(invoiceId: string) {
   let emailSent = false;
 
   if (invoice?.client?.email) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const invoiceUrl = `${baseUrl}/i/${invoice.accessToken}`;
 
     try {

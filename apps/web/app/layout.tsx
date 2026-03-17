@@ -1,3 +1,4 @@
+import { getBaseUrl } from '@/lib/utils';
 import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'QuoteCraft' }],
   creator: 'QuoteCraft',
   publisher: 'QuoteCraft',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(getBaseUrl()),
   alternates: {
     canonical: '/',
   },
@@ -97,7 +98,7 @@ const jsonLd = {
   operatingSystem: 'Web, Docker',
   description:
     'Open-source visual quote and invoice builder for freelancers and small businesses',
-  url: process.env.NEXT_PUBLIC_APP_URL || 'https://quote.persuado.tech',
+  url: getBaseUrl(),
   downloadUrl: process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/WisdmLabs/quote-software',
   offers: [
     {
@@ -125,7 +126,7 @@ const jsonLd = {
   author: {
     '@type': 'Organization',
     name: 'QuoteCraft',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://quote.persuado.tech',
+    url: getBaseUrl(),
   },
 };
 
