@@ -23,7 +23,7 @@ function formatCurrency(amount: number): string {
 }
 
 // Use opacity steps of primary color for a cohesive palette
-const BAR_OPACITIES = [1, 0.8, 0.6, 0.45, 0.3];
+const BAR_OPACITIES = [1, 0.85, 0.7, 0.55, 0.4];
 
 export function TopClientsChart({ data: propData }: TopClientsChartProps) {
   const chartData = useMemo(() => {

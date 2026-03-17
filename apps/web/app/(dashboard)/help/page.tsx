@@ -1,4 +1,5 @@
-import Link from 'next/link';
+'use client';
+
 import {
   BookOpen,
   MessageCircle,
@@ -6,12 +7,16 @@ import {
   FileText,
   Video,
   ExternalLink,
-  HelpCircle,
   Lightbulb,
   Bug,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 const helpTopics = [
   {
@@ -51,7 +56,7 @@ const supportOptions = [
   {
     icon: Mail,
     title: 'Email Support',
-    description: 'Send us an email and we\'ll respond within 24 hours',
+    description: 'We\'ll respond within 24 hours',
     action: 'Send Email',
     href: 'mailto:support@quotecraft.app',
     available: true,
@@ -89,10 +94,6 @@ const faqs = [
   },
 ];
 
-export const metadata = {
-  title: 'Help & Support',
-};
-
 export default function HelpPage() {
   return (
     <div className="space-y-8">
@@ -105,111 +106,77 @@ export default function HelpPage() {
 
       {/* Help Topics */}
       <section>
-        <h2 className="text-lg font-semibold mb-4">Help Topics</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <h2 className="text-sm font-medium text-muted-foreground mb-3">Resources</h2>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           {helpTopics.map((topic) => (
-            <Link key={topic.title} href={topic.href} className="block">
-              <Card className="hover:shadow-md transition-shadow h-full cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-2">
-                    <topic.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <CardTitle className="text-base">{topic.title}</CardTitle>
-                  <CardDescription>{topic.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+            <a
+              key={topic.title}
+              href={topic.href}
+              className="flex items-start gap-3 rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <topic.icon className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{topic.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{topic.description}</p>
+              </div>
+            </a>
           ))}
         </div>
       </section>
 
       {/* FAQs */}
       <section>
-        <h2 className="text-lg font-semibold mb-4">Frequently Asked Questions</h2>
-        <div className="grid gap-4">
-          {faqs.map((faq, index) => (
-            <Card key={index}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <HelpCircle className="h-4 w-4 text-primary" />
+        <h2 className="text-sm font-medium text-muted-foreground mb-3">Frequently Asked Questions</h2>
+        <div className="rounded-lg border">
+          <Accordion type="single" collapsible className="px-4">
+            {faqs.map((faq, index) => (
+              <AccordionItem key={index} value={`faq-${index}`} className={index === faqs.length - 1 ? 'border-b-0' : ''}>
+                <AccordionTrigger className="text-sm hover:no-underline">
                   {faq.question}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{faq.answer}</p>
-              </CardContent>
-            </Card>
-          ))}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
 
       {/* Support Options */}
       <section>
-        <h2 className="text-lg font-semibold mb-4">Get Support</h2>
-        <div className="grid gap-4 md:grid-cols-3">
+        <h2 className="text-sm font-medium text-muted-foreground mb-3">Get Support</h2>
+        <div className="rounded-lg border divide-y">
           {supportOptions.map((option) => (
-            <Card key={option.title}>
-              <CardHeader>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-2">
-                  <option.icon className="h-5 w-5 text-primary" />
+            <div key={option.title} className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <option.icon className="h-4 w-4 text-primary" />
                 </div>
-                <CardTitle className="text-base">{option.title}</CardTitle>
-                <CardDescription>{option.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {option.available ? (
-                  option.href ? (
-                    <Button asChild className="w-full">
-                      <a href={option.href} target="_blank" rel="noopener noreferrer">
-                        {option.action}
-                        <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
-                    </Button>
-                  ) : (
-                    <Button className="w-full">{option.action}</Button>
-                  )
+                <div>
+                  <p className="text-sm font-medium">{option.title}</p>
+                  <p className="text-xs text-muted-foreground">{option.description}</p>
+                </div>
+              </div>
+              {option.available ? (
+                option.href ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={option.href} target="_blank" rel="noopener noreferrer">
+                      {option.action}
+                      <ExternalLink className="ml-2 h-3 w-3" />
+                    </a>
+                  </Button>
                 ) : (
-                  <div className="space-y-2">
-                    <Button className="w-full" disabled>
-                      Coming Soon
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center">
-                      In the meantime, reach us at{' '}
-                      <a href="mailto:support@quotecraft.app" className="text-primary hover:underline">
-                        support@quotecraft.app
-                      </a>
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  <Button variant="outline" size="sm">{option.action}</Button>
+                )
+              ) : (
+                <span className="text-xs text-muted-foreground">Coming soon</span>
+              )}
+            </div>
           ))}
         </div>
-      </section>
-
-      {/* Additional Resources */}
-      <section>
-        <Card>
-          <CardHeader>
-            <CardTitle>Need more help?</CardTitle>
-            <CardDescription>
-              Check out our community resources or schedule a demo call
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex gap-4">
-            <Button variant="outline" asChild>
-              <a href="mailto:support@quotecraft.app" target="_blank" rel="noopener noreferrer">
-                <Mail className="mr-2 h-4 w-4" />
-                Contact Support
-              </a>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/settings">
-                Back to Settings
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
       </section>
     </div>
   );

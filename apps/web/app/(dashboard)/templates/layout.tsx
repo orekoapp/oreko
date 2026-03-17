@@ -17,6 +17,12 @@ export default function TemplatesLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
+        <p className="text-muted-foreground">
+          Manage your contract, invoice, and email templates
+        </p>
+      </div>
       <nav className="border-b">
         <div className="flex gap-6">
           {templateTabs.map((tab) => {

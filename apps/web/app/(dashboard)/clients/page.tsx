@@ -6,16 +6,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ClientsDataTable } from '@/components/clients';
 import { getClients } from '@/lib/clients/actions';
 
-interface ClientsPageProps {
-  searchParams: Promise<{
-    search?: string;
-    type?: string;
-    page?: string;
-    sortBy?: string;
-    sortOrder?: string;
-  }>;
-}
-
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
@@ -23,8 +13,7 @@ export const metadata = {
   description: 'Manage your client database and relationships',
 };
 
-export default async function ClientsPage({ searchParams }: ClientsPageProps) {
-  const params = await searchParams;
+export default async function ClientsPage() {
 
   return (
     <div className="space-y-6">
@@ -42,7 +31,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       </div>
 
       <Suspense fallback={<ListLoading />}>
-        <ClientListWrapper searchParams={params} />
+        <ClientListWrapper searchParams={{}} />
       </Suspense>
     </div>
   );
