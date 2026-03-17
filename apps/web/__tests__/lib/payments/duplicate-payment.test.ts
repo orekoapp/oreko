@@ -35,6 +35,8 @@ vi.mock('@/lib/services/email', () => ({
 vi.mock('@/lib/utils', () => ({
   formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
   cn: (...args: unknown[]) => args.filter(Boolean).join(' '),
+  toNumber: (v: unknown) => (v === null || v === undefined ? 0 : Number(v) || 0),
+  getBaseUrl: () => 'http://localhost:3000',
 }));
 
 import { prisma } from '@quotecraft/database';

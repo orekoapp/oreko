@@ -24,7 +24,7 @@ const { mockPrisma, mockGetCurrentUserWorkspace } = vi.hoisted(() => {
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/services/email', () => ({ sendInvoiceSentEmail: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/notifications/actions', () => ({ createNotification: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@/lib/utils', () => ({ formatCurrency: vi.fn((v: number) => `$${v.toFixed(2)}`) }));
+vi.mock('@/lib/utils', () => ({ formatCurrency: vi.fn((v: number) => `$${v.toFixed(2)}`), toNumber: (v: unknown) => (v === null || v === undefined ? 0 : Number(v) || 0), getBaseUrl: () => 'http://localhost:3000' }));
 vi.mock('@/lib/routes', () => ({ ROUTES: { quotes: '/quotes', invoices: '/invoices', quoteDetail: (id: string) => `/quotes/${id}`, invoiceDetail: (id: string) => `/invoices/${id}` } }));
 vi.mock('@/lib/events/emitter', () => ({ domainEvents: { emit: vi.fn() } }));
 vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
