@@ -25,6 +25,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { deleteContractInstance, getContractInstanceById } from '@/lib/contracts/actions';
@@ -161,7 +162,9 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
 
   // Copy Link
   const handleCopyLink = useCallback(async (contract: ContractInstanceListItem) => {
-    const url = `https://quotecraft.app/c/${contract.id}`;
+    // Bug #185: Use dynamic base URL instead of hardcoded domain
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const url = `${baseUrl}/c/${contract.accessToken || contract.id}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success('Link copied to clipboard');
@@ -231,6 +234,7 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
       {/* Contract View Dialog */}
       <Dialog open={!!viewingContract} onOpenChange={(open) => !open && handleCloseView()}>
         <DialogContent className="!flex !flex-col !max-w-[860px] !max-h-[90vh] !p-0 !gap-0 overflow-hidden">
+          <DialogTitle className="sr-only">Contract Preview</DialogTitle>
           {contract && (
             <>
               {/* Header */}

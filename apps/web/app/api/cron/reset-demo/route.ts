@@ -231,8 +231,8 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: false,
+        // Low #12: Don't leak internal error details in response
         error: 'Failed to reset demo workspace',
-        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

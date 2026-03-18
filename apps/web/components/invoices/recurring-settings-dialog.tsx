@@ -120,7 +120,13 @@ export function RecurringSettingsDialog({
       autoSend,
     };
 
-    // Save locally for now — recurring invoices backend not yet implemented
+    // TODO (HIGH #40): Recurring invoice settings are only persisted to localStorage.
+    // This means settings are lost if the user clears browser data or switches devices.
+    // Needs a backend implementation:
+    //   1. Add a RecurringInvoiceSettings model to the Prisma schema.
+    //   2. Create server actions (createRecurringSettings, updateRecurringSettings).
+    //   3. Replace localStorage calls with server action calls.
+    //   4. Add a cron job / BullMQ worker to generate invoices on schedule.
     localStorage.setItem(getStorageKey(invoiceId), JSON.stringify(settings));
     setIsSaving(false);
     toast.info('Recurring invoices are not yet fully supported. Settings saved locally only.');

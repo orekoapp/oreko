@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, PartyPopper, FileText, Users, Settings, Rocket } from 'lucide-react';
+import { Loader2, PartyPopper, FileText, Users, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface OnboardingCompleteStepProps {
@@ -36,14 +36,6 @@ export function OnboardingCompleteStep({ onComplete, isLoading }: OnboardingComp
           <h4 className="font-medium">Add your clients</h4>
           <p className="text-sm text-muted-foreground">
             Import or create client profiles to get started
-          </p>
-        </div>
-
-        <div className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-          <Settings className="h-5 w-5 text-primary mb-2" />
-          <h4 className="font-medium">Configure rate cards</h4>
-          <p className="text-sm text-muted-foreground">
-            Set up reusable service items for faster quoting
           </p>
         </div>
 

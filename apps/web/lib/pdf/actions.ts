@@ -98,6 +98,13 @@ export async function getQuotePdfData(quoteId: string): Promise<QuotePdfData | n
  * Get quote data for PDF generation by access token (public)
  */
 export async function getQuotePdfDataByToken(accessToken: string): Promise<QuotePdfData | null> {
+  // MEDIUM #30: Rate limit public PDF endpoints to prevent abuse
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = checkRateLimit(`pdf-quote:${accessToken}`, { limit: 20, windowMs: 60000 });
+  if (rateLimitResult.limited) {
+    return null;
+  }
+
   const quote = await prisma.quote.findFirst({
     where: {
       accessToken,
@@ -118,6 +125,11 @@ export async function getQuotePdfDataByToken(accessToken: string): Promise<Quote
   });
 
   if (!quote) {
+    return null;
+  }
+
+  // HIGH #16: Reject voided/expired quotes from public PDF access
+  if (quote.status === 'voided' || quote.status === 'expired') {
     return null;
   }
 
@@ -278,6 +290,13 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
  * Get invoice data for PDF generation by access token (public)
  */
 export async function getInvoicePdfDataByToken(accessToken: string): Promise<InvoicePdfData | null> {
+  // MEDIUM #30: Rate limit public PDF endpoints to prevent abuse
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = checkRateLimit(`pdf-invoice:${accessToken}`, { limit: 20, windowMs: 60000 });
+  if (rateLimitResult.limited) {
+    return null;
+  }
+
   const invoice = await prisma.invoice.findFirst({
     where: {
       accessToken,
@@ -301,6 +320,11 @@ export async function getInvoicePdfDataByToken(accessToken: string): Promise<Inv
   });
 
   if (!invoice) {
+    return null;
+  }
+
+  // HIGH #16: Reject voided invoices from public PDF access
+  if (invoice.status === 'voided') {
     return null;
   }
 

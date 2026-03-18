@@ -165,9 +165,10 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
             {client.phone}
           </a>
         )}
+        {/* Bug #204: Ensure website link has protocol to prevent relative URL navigation */}
         {client.website && (
           <a
-            href={client.website}
+            href={client.website.startsWith('http') ? client.website : `https://${client.website}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 hover:text-foreground transition-colors"
@@ -482,10 +483,20 @@ function EmptyState({ label }: { label: string }) {
   return <p className="text-sm text-muted-foreground py-2">{label}</p>;
 }
 
+// Low #88: Handle future dates (e.g. upcoming due dates)
 function formatRelativeDate(date: Date) {
   const now = new Date();
   const diff = now.getTime() - new Date(date).getTime();
   const days = Math.floor(diff / 86400000);
+
+  // Future dates
+  if (days < 0) {
+    const futureDays = Math.abs(days);
+    if (futureDays === 1) return 'Tomorrow';
+    if (futureDays < 7) return `In ${futureDays} days`;
+    if (futureDays < 30) return `In ${Math.floor(futureDays / 7)} weeks`;
+    return formatDate(date);
+  }
 
   if (days === 0) return 'Today';
   if (days === 1) return 'Yesterday';

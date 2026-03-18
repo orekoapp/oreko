@@ -87,6 +87,7 @@ export function getContractColumns(
       enableHiding: false,
     },
     {
+      id: 'contract',
       accessorKey: 'contractName',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Contract" />
@@ -96,7 +97,7 @@ export function getContractColumns(
         return (
           <div>
             <div className="font-medium text-primary">
-              {row.getValue('contractName')}
+              {row.original.contractName}
             </div>
             {quoteName && (
               <div className="text-sm text-muted-foreground">{quoteName}</div>
@@ -106,7 +107,7 @@ export function getContractColumns(
       },
       filterFn: (row, id, value) => {
         const searchValue = value.toLowerCase();
-        const contractName = (row.getValue('contractName') as string).toLowerCase();
+        const contractName = (row.original.contractName as string).toLowerCase();
         const clientName = row.original.clientName.toLowerCase();
         const clientEmail = row.original.clientEmail?.toLowerCase() ?? '';
         return contractName.includes(searchValue) || clientName.includes(searchValue) || clientEmail.includes(searchValue);
@@ -137,12 +138,13 @@ export function getContractColumns(
       },
     },
     {
+      id: 'client',
       accessorKey: 'clientName',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Client" />
       ),
       cell: ({ row }) => {
-        const clientName = row.getValue('clientName') as string;
+        const clientName = row.original.clientName;
         const clientEmail = row.original.clientEmail;
         const initials = clientName
           .split(' ')
@@ -167,6 +169,7 @@ export function getContractColumns(
       },
     },
     {
+      id: 'created',
       accessorKey: 'createdAt',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Created" />
@@ -174,7 +177,7 @@ export function getContractColumns(
       cell: ({ row }) => {
         return (
           <div className="text-muted-foreground">
-            {formatDate(row.getValue('createdAt'))}
+            {formatDate(row.original.createdAt)}
           </div>
         );
       },

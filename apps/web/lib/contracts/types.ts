@@ -91,6 +91,7 @@ export interface ContractInstanceDetail {
   pdfUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
+  documentIntegrity?: 'verified' | 'tampered' | 'unchecked';
 }
 
 // Signature data
@@ -121,6 +122,8 @@ export interface CreateContractInstanceInput {
   quoteId?: string;
   content?: string;
   variableValues?: Record<string, string>;
+  // Bug #186: Allow creating and immediately sending
+  sendImmediately?: boolean;
 }
 
 // Sign contract input

@@ -113,10 +113,15 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
+    // Bug #93: Return response with security headers for served content
     return NextResponse.json({
       url: result.url,
       key: result.key,
       size: result.size,
+    }, {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+      },
     });
   } catch (error) {
     console.error('Upload error:', error);

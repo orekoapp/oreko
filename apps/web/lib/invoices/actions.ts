@@ -89,6 +89,7 @@ function calculateTotals(
 /**
  * Create a new invoice
  */
+// Low #57: Both calls are cached via React.cache() — no actual redundant DB query
 export async function createInvoice(data: CreateInvoiceData) {
   const { userId, workspace } = await getActiveWorkspace();
   const { role } = await getCurrentUserWorkspace();
@@ -96,6 +97,14 @@ export async function createInvoice(data: CreateInvoiceData) {
   // Bug #456: RBAC — viewers cannot create invoices
   if (role === 'viewer') {
     return { success: false, error: 'Insufficient permissions: viewers cannot create invoices' };
+  }
+
+  // MEDIUM #13: Basic input validation
+  if (!data.clientId || typeof data.clientId !== 'string') {
+    return { success: false, error: 'Client is required' };
+  }
+  if (!data.lineItems || !Array.isArray(data.lineItems) || data.lineItems.length === 0) {
+    return { success: false, error: 'At least one line item is required' };
   }
 
   // Verify client belongs to workspace
@@ -138,6 +147,23 @@ export async function createInvoice(data: CreateInvoiceData) {
     }
     if (item.quantity < 0) {
       return { success: false, error: 'Line item quantity cannot be negative' };
+    }
+  }
+
+  // Bug #17: Validate discount values before calculating totals
+  if (data.discountType === 'percentage' && data.discountValue != null) {
+    if (data.discountValue < 0 || data.discountValue > 100) {
+      return { success: false, error: 'Discount percentage must be between 0 and 100' };
+    }
+  }
+  if (data.discountType === 'fixed' && data.discountValue != null) {
+    if (data.discountValue < 0) {
+      return { success: false, error: 'Discount amount cannot be negative' };
+    }
+    // Cap fixed discount at subtotal (calculateTotals also clamps, but reject early for clarity)
+    const preliminarySubtotal = data.lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+    if (data.discountValue > preliminarySubtotal) {
+      data.discountValue = preliminarySubtotal;
     }
   }
 
@@ -264,26 +290,32 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
     return { success: false, error: 'Quote not found' };
   }
 
-  // Check if an invoice already exists for this quote
-  const existingInvoice = await prisma.invoice.findFirst({
-    where: { quoteId: quote.id },
-  });
-
-  if (existingInvoice) {
-    return { success: false, error: 'Invoice already exists for this quote' };
-  }
-
-  const invoiceNumber = await generateInvoiceNumber(workspace.id);
-
   // Bug #123: Validate discount values from source quote
   const discountValue = toNumber(quote.discountValue) || 0;
-  const discountAmount = toNumber(quote.discountAmount) || 0;
+  let discountAmount = toNumber(quote.discountAmount) || 0;
   const subtotal = toNumber(quote.subtotal);
-  if (quote.discountType === 'percentage' && (discountValue < 0 || discountValue > 100)) {
-    return { success: false, error: 'Discount percentage must be between 0 and 100' };
-  }
-  if (discountAmount < 0 || discountAmount > subtotal) {
-    return { success: false, error: 'Discount amount cannot be negative or exceed subtotal' };
+
+  // Bug #13: Recalculate discount during quote-to-invoice conversion
+  // Recalculate subtotal from actual line items to ensure discount doesn't exceed it
+  const lineItemSubtotal = quote.lineItems.reduce(
+    (sum, item) => sum + toNumber(item.amount),
+    0
+  );
+
+  if (quote.discountType === 'percentage') {
+    if (discountValue < 0 || discountValue > 100) {
+      return { success: false, error: 'Discount percentage must be between 0 and 100' };
+    }
+    // Recalculate percentage-based discount amount from actual line item subtotal
+    discountAmount = Math.round(lineItemSubtotal * (discountValue / 100) * 100) / 100;
+  } else {
+    // For fixed amount discounts, cap at the actual subtotal
+    if (discountAmount < 0) {
+      return { success: false, error: 'Discount amount cannot be negative' };
+    }
+    if (discountAmount > lineItemSubtotal) {
+      discountAmount = lineItemSubtotal;
+    }
   }
 
   // Calculate due date (configurable, default: 30 days from now)
@@ -291,7 +323,20 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + dueDays);
 
-  const invoice = await prisma.$transaction(async (tx) => {
+  let invoice;
+  try {
+  invoice = await prisma.$transaction(async (tx) => {
+    // Bug #7: Check for existing invoice INSIDE transaction to prevent race condition
+    const existingInvoice = await tx.invoice.findFirst({
+      where: { quoteId: quote.id },
+    });
+
+    if (existingInvoice) {
+      throw new Error('DUPLICATE_INVOICE');
+    }
+
+    const invoiceNumber = await generateInvoiceNumber(workspace.id);
+
     // Create the invoice
     const newInvoice = await tx.invoice.create({
       data: {
@@ -305,13 +350,13 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
         currency: quote.currency,
         issueDate: new Date(),
         dueDate,
-        subtotal: quote.subtotal,
+        subtotal: lineItemSubtotal,
         discountType: quote.discountType,
         discountValue: quote.discountValue,
-        discountAmount: quote.discountAmount,
+        discountAmount: discountAmount,
         taxTotal: quote.taxTotal,
-        total: quote.total,
-        amountDue: quote.total,
+        total: lineItemSubtotal - discountAmount + toNumber(quote.taxTotal),
+        amountDue: lineItemSubtotal - discountAmount + toNumber(quote.taxTotal),
         notes: quote.notes,
         terms: quote.terms,
         settings: {} as unknown as Prisma.InputJsonValue,
@@ -365,6 +410,12 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
 
     return newInvoice;
   });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'DUPLICATE_INVOICE') {
+      return { success: false, error: 'Invoice already exists for this quote' };
+    }
+    throw err;
+  }
 
   revalidatePath(ROUTES.invoices);
   revalidatePath(ROUTES.quotes);
@@ -664,7 +715,8 @@ export async function getInvoices(filters?: {
     return {
       id: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
-      status: (isOverdue && invoice.status !== 'partial' ? 'overdue' : invoice.status) as InvoiceStatus,
+      // Bug #176: Partially-paid overdue invoices should also show as overdue
+      status: (isOverdue ? 'overdue' : invoice.status) as InvoiceStatus,
       title: invoice.title || 'Invoice',
       currency: invoice.currency || 'USD',
       issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
@@ -714,7 +766,7 @@ export async function updateInvoiceStatus(
   // Validate status transitions
   const allowedTransitions: Record<string, string[]> = {
     draft: ['sent', 'voided'],
-    sent: ['viewed', 'paid', 'partial', 'voided', 'draft'],
+    sent: ['viewed', 'paid', 'partial', 'voided'],
     viewed: ['paid', 'partial', 'voided'],
     partial: ['paid', 'voided'],
     paid: ['voided'],
@@ -755,8 +807,11 @@ export async function updateInvoiceStatus(
     updateData.sentAt = new Date();
   } else if (status === 'paid') {
     updateData.paidAt = new Date();
-    // Always set amountPaid to total when marking as paid for consistency
-    updateData.amountPaid = invoice.total;
+    // Bug #16: Only override amountPaid if it doesn't already match total
+    // This preserves the payment ledger when payments were recorded incrementally
+    if (Math.abs(amountPaid - total) > 0.01) {
+      updateData.amountPaid = invoice.total;
+    }
     updateData.amountDue = 0;
   } else if (status === 'voided') {
     updateData.voidedAt = new Date();
@@ -796,7 +851,14 @@ export async function updateInvoiceStatus(
 /**
  * Send invoice to client
  */
-export async function sendInvoice(invoiceId: string) {
+// Bug #105: Accept optional email customization from SendEmailDialog
+interface SendEmailOptions {
+  recipients?: string[];
+  subject?: string;
+  message?: string;
+}
+
+export async function sendInvoice(invoiceId: string, emailOptions?: SendEmailOptions) {
   const result = await updateInvoiceStatus(invoiceId, 'sent');
 
   if (!result.success) {
@@ -816,15 +878,21 @@ export async function sendInvoice(invoiceId: string) {
     const baseUrl = getBaseUrl();
     const invoiceUrl = `${baseUrl}/i/${invoice.accessToken}`;
 
+    // Bug #105: Use custom recipients from dialog if provided
+    const emailRecipients = emailOptions?.recipients?.length
+      ? emailOptions.recipients
+      : [invoice.client.email];
+
     try {
       const emailResult = await sendInvoiceSentEmail({
-        to: invoice.client.email,
+        to: emailRecipients,
         clientName: invoice.client.name,
         invoiceNumber: invoice.invoiceNumber,
         invoiceUrl,
         businessName: workspace.name,
         amount: formatCurrency(toNumber(invoice.total)),
         dueDate: invoice.dueDate,
+        message: emailOptions?.message || undefined,
         rateLimitKey: workspace.id,
       });
       emailSent = emailResult.success;

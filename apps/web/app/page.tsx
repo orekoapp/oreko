@@ -1,32 +1,40 @@
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import {
   MarketingHeader,
   HeroSection,
+  TrustSection,
   FeaturesSection,
   TestimonialsSection,
   PricingSection,
   OpenSourceSection,
+  CtaSection,
   MarketingFooter,
+  DotBackground,
 } from '@/components/landing';
 
-export const metadata: Metadata = {
-  title: 'QuoteCraft - Manage clients. Send quotes. Get paid faster.',
-  description:
-    'The open-source alternative to Bloom and Bonsai. Visual quote builder, e-signatures, one-click invoice conversion. Free self-hosted or cloud.',
-};
-
-export default function HomePage() {
+export default async function HomePage() {
+  // Redirect logged-in users to dashboard
+  const session = await auth();
+  if (session?.user) {
+    redirect('/dashboard');
+  }
   return (
-    <div className="min-h-screen bg-background">
-      <MarketingHeader />
-      <main>
-        <HeroSection />
-        <FeaturesSection />
-        <TestimonialsSection />
-        <PricingSection />
-        <OpenSourceSection />
-      </main>
-      <MarketingFooter />
+    <div className="min-h-screen bg-background relative">
+      <DotBackground />
+      <div className="relative z-10">
+        <MarketingHeader />
+        <main>
+          <HeroSection />
+          <TrustSection />
+          <FeaturesSection />
+          <TestimonialsSection />
+          <PricingSection />
+          <OpenSourceSection />
+          <CtaSection />
+        </main>
+        <MarketingFooter />
+      </div>
     </div>
   );
 }

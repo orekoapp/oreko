@@ -137,7 +137,7 @@ export function ProjectsDataTable({ data }: ProjectsDataTableProps) {
         filterKey="name"
         filterPlaceholder="Search projects..."
         statusOptions={projectStatusOptions}
-        statusFilterKey="isActive"
+        statusFilterKey="status"
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
         onRowSelect={setSelectedRows}

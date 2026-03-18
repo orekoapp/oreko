@@ -1,7 +1,10 @@
 export { MarketingHeader } from './marketing-header';
 export { HeroSection } from './hero-section';
+export { TrustSection } from './trust-section';
 export { FeaturesSection } from './features-section';
 export { PricingSection } from './pricing-section';
 export { TestimonialsSection } from './testimonials-section';
 export { OpenSourceSection } from './open-source-section';
+export { CtaSection } from './cta-section';
 export { MarketingFooter } from './marketing-footer';
+export { DotBackground } from './dot-background';

@@ -66,6 +66,13 @@ export interface RateLimitResult {
  * Check rate limit for a given key (typically IP address or user ID).
  *
  * NOTE: Per-instance only. See module-level comment for limitations.
+ *
+ * TODO (MEDIUM #7): IP-based rate limiting is bypassable via X-Forwarded-For
+ * header spoofing. On serverless platforms, the IP is derived from
+ * X-Forwarded-For which clients can forge. Mitigations:
+ * - Use Vercel's `request.ip` (trusted proxy IP) instead of raw headers
+ * - Prefer user/session-based keys over IP-based keys where possible
+ * - For unauthenticated endpoints, combine IP with fingerprinting
  */
 export function checkRateLimit(
   key: string,

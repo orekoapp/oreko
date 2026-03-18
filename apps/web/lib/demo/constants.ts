@@ -3,6 +3,10 @@
  *
  * These constants define the demo account configuration.
  * The demo account lets visitors try the full app; data resets daily via cron.
+ *
+ * MEDIUM #42: DEMO_USER_PASSWORD is intentionally hardcoded and visible in the client bundle.
+ * This is a public demo account — the password is displayed on the login page so visitors
+ * can try the app. The demo workspace data resets daily via cron, so exposure is by design.
  */
 
 export const DEMO_USER_EMAIL = (process.env.DEMO_USER_EMAIL || 'demo@quotecraft.demo').trim();

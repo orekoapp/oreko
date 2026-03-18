@@ -87,9 +87,10 @@ export function VariableManager({ variables, onChange }: VariableManagerProps) {
           </p>
         ) : (
           <div className="space-y-3">
+            {/* Low #62: Use variable.key as React key instead of array index */}
             {variables.map((variable, index) => (
               <div
-                key={index}
+                key={variable.key || index}
                 className="flex items-start gap-2 p-3 border rounded-lg bg-muted/30"
               >
                 <div className="cursor-move text-muted-foreground pt-2">

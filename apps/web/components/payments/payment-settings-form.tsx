@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Loader2, ExternalLink, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -60,10 +61,16 @@ export function PaymentSettingsForm({ initialData, stripeEnabled }: PaymentSetti
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Low #64: Added toast feedback on save
   const handleSave = () => {
     startTransition(async () => {
-      await updatePaymentSettings(settings);
-      router.refresh();
+      try {
+        await updatePaymentSettings(settings);
+        toast.success('Payment settings saved');
+        router.refresh();
+      } catch {
+        toast.error('Failed to save payment settings');
+      }
     });
   };
 

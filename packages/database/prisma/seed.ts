@@ -76,7 +76,7 @@ async function main() {
     { email: 'admin@quotecraft.dev', role: 'admin' },
     { email: 'member@quotecraft.dev', role: 'member' },
     { email: 'viewer@quotecraft.dev', role: 'viewer' },
-    { email: 'test@quotecraft.dev', role: 'owner' },
+    { email: 'test@quotecraft.dev', role: 'member' },
   ];
 
   for (const member of memberRoles) {

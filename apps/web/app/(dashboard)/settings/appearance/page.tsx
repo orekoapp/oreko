@@ -57,7 +57,12 @@ export default function AppearanceSettingsPage() {
   const { sidebarStyle, setSidebarStyle } = useSidebarStyle();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Low #55: Note about localStorage persistence */}
+      <p className="text-xs text-muted-foreground">
+        Appearance preferences are saved to this browser. They won&apos;t sync across devices.
+      </p>
+
       {/* Font Size */}
       <Card>
         <CardHeader>

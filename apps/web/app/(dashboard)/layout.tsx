@@ -33,13 +33,13 @@ async function SidebarWithData({ user }: { user: { name: string | null; email: s
 
 // Async server component — fetches header data and renders
 async function HeaderWithData({ user }: { user: { id: string; email: string; name: string | null; avatarUrl: string | null } }) {
-  const [unreadCount, notifications] = await Promise.all([
+  const [unreadCount, notificationsResult] = await Promise.all([
     getUnreadNotificationCount(),
     getNotifications(10),
   ]);
 
   return (
-    <AppHeader user={user} unreadCount={unreadCount} notifications={notifications} />
+    <AppHeader user={user} unreadCount={unreadCount} notifications={notificationsResult.data} />
   );
 }
 

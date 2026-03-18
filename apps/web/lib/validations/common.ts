@@ -32,26 +32,27 @@ export const listQuerySchema = paginationSchema
   .merge(searchSchema)
   .merge(dateRangeSchema);
 
-// Email schema with custom message
+// Low #92: min(1) first so empty string shows "Email is required" not "invalid email"
 export const emailSchema = z
   .string()
-  .email('Please enter a valid email address')
   .min(1, 'Email is required')
+  .email('Please enter a valid email address')
   .max(255, 'Email must be less than 255 characters');
 
 // Phone schema (flexible international format, requires at least 7 digits)
-export const phoneSchema = z
-  .string()
-  .regex(
-    /^\+?[\d\s\-().]{7,25}$/,
-    'Please enter a valid phone number (at least 7 digits)'
-  )
-  .refine(
-    (val) => (val.match(/\d/g) || []).length >= 7,
-    'Phone number must contain at least 7 digits'
-  )
-  .optional()
-  .or(z.literal(''));
+// Low #93: Restructured so empty string resolves before regex validation fires
+export const phoneSchema = z.union([
+  z.literal(''),
+  z.string()
+    .regex(
+      /^\+?[\d\s\-().]{7,25}$/,
+      'Please enter a valid phone number (at least 7 digits)'
+    )
+    .refine(
+      (val) => (val.match(/\d/g) || []).length >= 7,
+      'Phone number must contain at least 7 digits'
+    ),
+]).optional();
 
 // URL schema - accepts full URLs or plain domains (auto-prepends https://)
 export const urlSchema = z
@@ -88,7 +89,7 @@ export const slugSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be lowercase with hyphens only');
 
-// Address schema
+// Address schema (strict — all required, used when address is mandatory)
 export const addressSchema = z.object({
   street: z.string().min(1, 'Street address is required').max(200),
   city: z.string().min(1, 'City is required').max(100),
@@ -97,8 +98,14 @@ export const addressSchema = z.object({
   country: z.string().min(1, 'Country is required').max(100),
 });
 
-// Partial address (all optional)
-export const partialAddressSchema = addressSchema.partial();
+// Partial address (all optional, allows empty strings — used for client form)
+export const partialAddressSchema = z.object({
+  street: z.string().max(200).optional().or(z.literal('')),
+  city: z.string().max(100).optional().or(z.literal('')),
+  state: z.string().max(100).optional().or(z.literal('')),
+  postalCode: z.string().max(20).optional().or(z.literal('')),
+  country: z.string().max(100).optional().or(z.literal('')),
+});
 
 // File upload schema
 export const fileUploadSchema = z.object({

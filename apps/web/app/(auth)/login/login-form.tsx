@@ -22,7 +22,9 @@ type LoginFormData = LoginInput;
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  // HIGH #1: Validate callbackUrl is a relative path to prevent open redirect attacks
+  const rawCallback = searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = rawCallback.startsWith('/') && !rawCallback.startsWith('//') ? rawCallback : '/dashboard';
   const [isLoading, setIsLoading] = React.useState(false);
   const [isOAuthLoading, setIsOAuthLoading] = React.useState<string | null>(null);
   const [isDemoLoading, setIsDemoLoading] = React.useState(false);

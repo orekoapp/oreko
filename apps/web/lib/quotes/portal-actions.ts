@@ -6,7 +6,7 @@ import type { QuoteBlock } from './types';
 import { toNumber } from '@/lib/utils';
 import { notifyWorkspaceMembers } from '@/lib/notifications/internal';
 import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
-import { computeQuoteDocumentHash } from '@/lib/signing/document-hash';
+import { computeQuoteDocumentHash, verifyDocumentHash } from '@/lib/signing/document-hash';
 
 /**
  * Public quote data for client portal (subset of full quote)
@@ -65,6 +65,7 @@ export interface PublicQuoteData {
     taxAmount: number;
   }>;
   hasContract: boolean;
+  documentIntegrity?: 'verified' | 'tampered' | 'unchecked';
 }
 
 /**
@@ -131,6 +132,15 @@ export async function getQuoteByAccessToken(
       return { success: false, error: 'This quote has been declined' };
     }
 
+    // Bug #19: Limit access to accepted quotes after 90 days
+    if (quote.status === 'accepted') {
+      const acceptedDate = quote.acceptedAt || quote.updatedAt;
+      const daysSinceAccepted = (Date.now() - new Date(acceptedDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceAccepted > 90) {
+        return { success: false, error: 'This quote has expired' };
+      }
+    }
+
     // Check if quote is expired
     const now = new Date();
     const isExpired =
@@ -144,6 +154,36 @@ export async function getQuoteByAccessToken(
       );
       if (daysSinceExpiry > 30) {
         return { success: false, error: 'This quote link has expired' };
+      }
+    }
+
+    // Verify document hash integrity for signed/accepted quotes
+    let documentIntegrity: 'verified' | 'tampered' | 'unchecked' = 'unchecked';
+    if (quote.signedAt && quote.signatureData) {
+      try {
+        const sigData = quote.signatureData as Record<string, unknown>;
+        const storedHash = sigData.documentHash as string | undefined;
+        if (storedHash) {
+          const recomputedHash = computeQuoteDocumentHash({
+            quoteId: quote.id,
+            lineItems: quote.lineItems.map((item) => ({
+              name: item.name,
+              description: item.description,
+              quantity: toNumber(item.quantity),
+              rate: toNumber(item.rate),
+              amount: toNumber(item.amount),
+            })),
+            terms: quote.terms || '',
+            notes: quote.notes || '',
+            subtotal: toNumber(quote.subtotal),
+            total: toNumber(quote.total),
+            signerName: (sigData.signerName as string) || 'Unknown',
+            signedAt: (sigData.signedAt as string) || quote.signedAt.toISOString(),
+          });
+          documentIntegrity = verifyDocumentHash(recomputedHash, storedHash) ? 'verified' : 'tampered';
+        }
+      } catch (err) {
+        console.error('Document hash verification failed:', err);
       }
     }
 
@@ -207,6 +247,7 @@ export async function getQuoteByAccessToken(
         taxAmount: toNumber(item.taxAmount),
       })),
       hasContract: quote.contractInstances.length > 0,
+      documentIntegrity,
     };
 
     return { success: true, quote: publicQuote };
@@ -230,15 +271,19 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
 
     if (!quote) return;
 
-    const isFirstView = quote.viewedAt === null;
+    // Atomically set viewedAt only if it hasn't been set yet (prevents race condition)
+    const updated = await prisma.quote.updateMany({
+      where: { id: quote.id, viewedAt: null },
+      data: { viewedAt: new Date() },
+    });
+    const isFirstView = updated.count > 0;
 
-    // Update view count and first view timestamp
+    // Update view count and status
     await prisma.$transaction([
       prisma.quote.update({
         where: { accessToken },
         data: {
           viewCount: { increment: 1 },
-          ...(isFirstView && { viewedAt: new Date() }),
           ...(quote.status === 'sent' && { status: 'viewed' }),
         },
       }),
@@ -254,7 +299,7 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
       }),
     ]);
 
-    // Notify workspace members on first view
+    // Notify workspace members on first view (only the request that atomically set viewedAt)
     if (isFirstView) {
       await notifyWorkspaceMembers({
         workspaceId: quote.workspaceId,
@@ -274,6 +319,11 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
 
 /**
  * Accept a quote with signature
+ *
+ * SECURITY TODO: Enforce OTP verification before allowing signature.
+ * The current OTP store is in-memory and broken in serverless environments.
+ * Once the OTP infrastructure is moved to Redis/DB, add a `verifiedOtpToken`
+ * parameter here and validate it server-side before proceeding with acceptance.
  */
 export async function acceptQuote(data: {
   accessToken: string;
@@ -291,17 +341,32 @@ export async function acceptQuote(data: {
       return { success: false, error: 'Too many attempts. Please try again later.' };
     }
 
-    // Validate signature - must be a valid base64 PNG data URL from SignaturePad
-    if (!data.signatureData || !data.signerName) {
-      return { success: false, error: 'Signature is required' };
-    }
-    if (!data.signatureData.startsWith('data:image/png;base64,')) {
-      return { success: false, error: 'Invalid signature format' };
-    }
-    // Ensure signature has sufficient data (not just a blank canvas or single dot)
-    const signatureBase64 = data.signatureData.replace('data:image/png;base64,', '');
-    if (signatureBase64.length < 1000) {
-      return { success: false, error: 'Signature is too simple. Please provide a full signature.' };
+    // SECURITY TODO: Enforce OTP verification before allowing signature.
+    // When the business profile has e-signature OTP enabled, require a valid
+    // OTP token here. Blocked on migrating OTP store from in-memory to DB/Redis.
+
+    // Bug #68: Only validate signatureData if the quote actually requires signature
+    // First fetch quote settings to check requireSignature
+    const quoteForSigCheck = await prisma.quote.findFirst({
+      where: { accessToken: data.accessToken, deletedAt: null },
+      select: { settings: true },
+    });
+    const sigSettings = (quoteForSigCheck?.settings as Record<string, unknown>) ?? {};
+    const requireSignature = (sigSettings.requireSignature as boolean) ?? true;
+
+    if (requireSignature) {
+      // Validate signature - must be a valid base64 PNG data URL from SignaturePad
+      if (!data.signatureData || !data.signerName) {
+        return { success: false, error: 'Signature is required' };
+      }
+      if (!data.signatureData.startsWith('data:image/png;base64,')) {
+        return { success: false, error: 'Invalid signature format' };
+      }
+      // Ensure signature has sufficient data (not just a blank canvas or single dot)
+      const signatureBase64 = data.signatureData.replace('data:image/png;base64,', '');
+      if (signatureBase64.length < 1000) {
+        return { success: false, error: 'Signature is too simple. Please provide a full signature.' };
+      }
     }
     if (data.signerName.trim().length < 2) {
       return { success: false, error: 'Please enter your full name' };
@@ -312,8 +377,9 @@ export async function acceptQuote(data: {
     }
 
     // Find the quote with line items for document hash
-    const quote = await prisma.quote.findUnique({
-      where: { accessToken: data.accessToken },
+    // HIGH #3-7: Add deletedAt check to prevent operating on soft-deleted quotes
+    const quote = await prisma.quote.findFirst({
+      where: { accessToken: data.accessToken, deletedAt: null },
       select: {
         id: true,
         status: true,
@@ -496,8 +562,9 @@ export async function declineQuote(data: {
     }
 
     // Find the quote
-    const quote = await prisma.quote.findUnique({
-      where: { accessToken: data.accessToken },
+    // MEDIUM #18: Filter out soft-deleted quotes
+    const quote = await prisma.quote.findFirst({
+      where: { accessToken: data.accessToken, deletedAt: null },
       select: {
         id: true,
         status: true,

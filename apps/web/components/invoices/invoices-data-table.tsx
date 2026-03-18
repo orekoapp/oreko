@@ -24,6 +24,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { deleteInvoice, duplicateInvoice, getInvoice } from '@/lib/invoices/actions';
@@ -36,10 +37,11 @@ const ACCENT = '#3786b3';
 const ACCENT_LIGHT = '#e3f2fa';
 const ACCENT_BG = 'bg-sky-50/60';
 
-function formatCurrency(amount: number): string {
+// Bug #172: Accept currency parameter instead of hardcoding USD
+function formatCurrency(amount: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
   }).format(amount);
 }
 
@@ -240,12 +242,13 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
         statusFilterKey="status"
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
-        onRowClick={(invoice) => router.push(`/invoices/${invoice.id}`)}
+        onRowClick={(invoice) => handleView(invoice)}
       />
 
       {/* Invoice View Dialog -- Payment Page Style */}
       <Dialog open={!!viewingInvoice} onOpenChange={(open) => !open && handleCloseView()}>
         <DialogContent className="!flex !flex-col !max-w-[520px] !max-h-[90vh] !p-0 !gap-0 overflow-hidden">
+          <DialogTitle className="sr-only">Invoice Preview</DialogTitle>
           {invoice && (
             <>
               {/* Scrollable content */}
@@ -447,23 +450,6 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                 </div>
               </div>
 
-              {/* Footer Actions */}
-              {(invoice.status as string) === 'draft' && (
-                <div className="border-t p-3 flex items-center justify-end bg-background">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={() => {
-                      handleCloseView();
-                      router.push(`/invoices/${invoice.id}/edit`);
-                    }}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
-              )}
             </>
           )}
         </DialogContent>
@@ -492,7 +478,8 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
         <RecordPaymentDialog
           invoiceId={paymentTarget.id}
           amountDue={(data.find((i) => i.id === paymentTarget.id)?.amountDue) ?? paymentTarget.amountDue}
-          currency="USD"
+          // Low #173: Use invoice's actual currency instead of hardcoded USD
+          currency={data.find((i) => i.id === paymentTarget.id)?.currency || 'USD'}
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
           onPaymentRecorded={handlePaymentRecorded}

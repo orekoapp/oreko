@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 
 /**
  * Compute a SHA-256 hash of document content at signing time.
@@ -35,19 +35,20 @@ interface ContractHashInput {
  * Includes all financially significant fields + signer identity.
  */
 export function computeQuoteDocumentHash(input: QuoteHashInput): string {
+  // Bug #160: Explicitly convert numeric fields to Number() to handle Prisma Decimal objects
   const payload = JSON.stringify({
     quoteId: input.quoteId,
     lineItems: input.lineItems.map((item) => ({
       name: item.name,
       description: item.description || '',
-      quantity: item.quantity,
-      rate: item.rate,
-      amount: item.amount,
+      quantity: Number(item.quantity),
+      rate: Number(item.rate),
+      amount: Number(item.amount),
     })),
     terms: input.terms,
     notes: input.notes,
-    subtotal: input.subtotal,
-    total: input.total,
+    subtotal: Number(input.subtotal),
+    total: Number(input.total),
     signerName: input.signerName,
     signedAt: input.signedAt,
   });
@@ -74,6 +75,8 @@ export function computeContractDocumentHash(input: ContractHashInput): string {
  * Verify a document hash matches the expected value.
  * Returns true if the hash matches, false if tampered.
  */
+// Bug #96: Use constant-time comparison to prevent timing side-channel attacks
 export function verifyDocumentHash(computedHash: string, storedHash: string): boolean {
-  return computedHash === storedHash;
+  if (computedHash.length !== storedHash.length) return false;
+  return timingSafeEqual(Buffer.from(computedHash), Buffer.from(storedHash));
 }

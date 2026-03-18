@@ -69,8 +69,8 @@ export async function authenticateApiRequest(
     };
   }
 
-  // Check expiry
-  if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+  // CR #7: Check expiry with 5-second buffer for clock skew
+  if (apiKey.expiresAt && apiKey.expiresAt.getTime() < Date.now() - 5000) {
     return {
       error: NextResponse.json(
         { error: 'API key has expired' },

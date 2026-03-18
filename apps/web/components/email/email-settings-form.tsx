@@ -38,6 +38,7 @@ export function EmailSettingsForm() {
     loadSettings();
   }, []);
 
+  // HIGH #37: Email settings are now properly persisted via updateEmailSettings server action.
   const handleSave = async () => {
     setIsSaving(true);
     try {

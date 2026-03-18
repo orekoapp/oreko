@@ -30,6 +30,11 @@ export async function generateMetadata({ params }: ProjectPageProps) {
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
 
+  // Bug #189: Validate UUID format before querying database
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    notFound();
+  }
+
   try {
     const [project, stats, activity, notes, contracts] = await Promise.all([
       getProject(id),

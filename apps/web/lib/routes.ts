@@ -34,9 +34,6 @@ export const ROUTES = {
   projects: '/projects',
   projectDetail: (id: string) => `/projects/${id}`,
 
-  // Rate Cards
-  rateCards: '/rate-cards',
-
   // Templates & Contracts
   templates: '/templates',
   contracts: '/contracts',

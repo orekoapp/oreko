@@ -75,7 +75,9 @@ function formatAddress(address: unknown): string {
  */
 function getBaseStyles(primaryColor: string = '#3B82F6'): string {
   return `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    /* Bug #91: Removed external Google Fonts import to avoid latency, SSRF risk,
+       and dependency on external services during PDF generation.
+       Using system font stack instead — Inter is still preferred if locally available. */
 
     * {
       margin: 0;

@@ -14,7 +14,7 @@ const DEFAULT_PAGE_SIZE = 25;
  * Get the current user's active workspace
  */
 async function getActiveWorkspace() {
-  const { workspaceId, userId } = await getCurrentUserWorkspace();
+  const { workspaceId, userId, role } = await getCurrentUserWorkspace();
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
@@ -27,6 +27,7 @@ async function getActiveWorkspace() {
   return {
     userId,
     workspace,
+    role,
   };
 }
 
@@ -50,7 +51,12 @@ export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
  * Create a new project
  */
 export async function createProject(data: CreateProjectInput) {
-  const { workspace } = await getActiveWorkspace();
+  const { workspace, role } = await getActiveWorkspace();
+
+  // MEDIUM #25: Viewers cannot create projects
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const validated = createProjectSchema.parse(data);
 
@@ -229,7 +235,19 @@ export async function getProject(projectId: string) {
     throw new Error('Project not found');
   }
 
-  return project;
+  // Convert Prisma Decimal objects to plain numbers for client components
+  return {
+    ...project,
+    quotes: project.quotes.map((q) => ({
+      ...q,
+      total: Number(q.total),
+    })),
+    invoices: project.invoices.map((i) => ({
+      ...i,
+      total: Number(i.total),
+      amountDue: Number(i.amountDue),
+    })),
+  };
 }
 
 /**
@@ -239,7 +257,12 @@ export async function updateProject(
   projectId: string,
   data: UpdateProjectInput
 ) {
-  const { workspace } = await getActiveWorkspace();
+  const { workspace, role } = await getActiveWorkspace();
+
+  // MEDIUM #25: Viewers cannot update projects
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const validated = updateProjectSchema.parse(data);
 
@@ -281,7 +304,12 @@ export async function updateProject(
  * Soft delete a project (sets deletedAt timestamp)
  */
 export async function deleteProject(projectId: string) {
-  const { workspace } = await getActiveWorkspace();
+  const { workspace, role } = await getActiveWorkspace();
+
+  // MEDIUM #25: Viewers cannot delete projects
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const project = await prisma.project.findFirst({
     where: {

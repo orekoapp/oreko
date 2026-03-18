@@ -10,6 +10,8 @@ import type {
 export interface BusinessProfileData {
   businessName: string;
   logoUrl: string | null;
+  darkLogoUrl: string | null;
+  socialLinks: { platform: string; url: string }[] | null;
   email: string | null;
   phone: string | null;
   website: string | null;
@@ -34,6 +36,7 @@ export interface BrandingSettingsData {
   secondaryColor: string | null;
   accentColor: string | null;
   logoUrl: string | null;
+  darkLogoUrl: string | null;
   faviconUrl: string | null;
   customCss: string | null;
   fontFamily: string | null;
@@ -94,6 +97,7 @@ export interface UpdateBusinessProfileInput {
   phone?: string;
   website?: string;
   address?: Address;
+  socialLinks?: { platform: string; url: string }[];
   taxId?: string;
   currency?: string;
   timezone?: string;
@@ -105,6 +109,7 @@ export interface UpdateBrandingSettingsInput {
   secondaryColor?: string;
   accentColor?: string;
   logoUrl?: string;
+  darkLogoUrl?: string;
   faviconUrl?: string;
   customCss?: string;
   fontFamily?: string;

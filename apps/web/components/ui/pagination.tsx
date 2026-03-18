@@ -37,6 +37,7 @@ const PaginationItem = React.forwardRef<
 ));
 PaginationItem.displayName = 'PaginationItem';
 
+// Low #99: Use <button> when no href is provided for keyboard accessibility
 type PaginationLinkProps = {
   isActive?: boolean;
 } & Pick<ButtonProps, 'size'> &
@@ -46,20 +47,37 @@ const PaginationLink = ({
   className,
   isActive,
   size = 'icon',
+  href,
   ...props
-}: PaginationLinkProps) => (
-  <a
-    aria-current={isActive ? 'page' : undefined}
-    className={cn(
-      buttonVariants({
-        variant: isActive ? 'outline' : 'ghost',
-        size,
-      }),
-      className
-    )}
-    {...props}
-  />
-);
+}: PaginationLinkProps) => {
+  const classes = cn(
+    buttonVariants({
+      variant: isActive ? 'outline' : 'ghost',
+      size,
+    }),
+    className
+  );
+
+  if (!href) {
+    return (
+      <button
+        type="button"
+        aria-current={isActive ? 'page' : undefined}
+        className={classes}
+        {...(props as React.ComponentProps<'button'>)}
+      />
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      aria-current={isActive ? 'page' : undefined}
+      className={classes}
+      {...props}
+    />
+  );
+};
 PaginationLink.displayName = 'PaginationLink';
 
 const PaginationPrevious = ({

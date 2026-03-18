@@ -26,24 +26,30 @@ export async function verifyCredentials(email: string, password: string) {
     },
   });
 
+  // Bug #84: Reject soft-deleted users — also checked in JWT callback for existing tokens
   if (!user || user.deletedAt) {
+    const reason = !user ? 'user not found' : 'soft-deleted account';
+    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail} at ${new Date().toISOString()} — reason: ${reason}`);
     return null;
   }
 
   if (!user.passwordHash) {
     // User signed up with OAuth, doesn't have a password
+    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail} at ${new Date().toISOString()} — reason: OAuth-only account (no password)`);
     return null;
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash);
 
   if (!isValid) {
+    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail} at ${new Date().toISOString()} — reason: wrong password`);
     return null;
   }
 
   // Bug #17: Enforce email verification before allowing login
   // Use dedicated env var instead of NODE_ENV (Vercel previews may use NODE_ENV=development)
-  if (!user.emailVerifiedAt && process.env.SKIP_EMAIL_VERIFICATION !== 'true') {
+  const skipVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true' && process.env.NODE_ENV !== 'production';
+  if (!user.emailVerifiedAt && !skipVerification) {
     throw new Error('Please verify your email before logging in. Check your inbox for a verification link.');
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ImageIcon, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,11 @@ export function ImageBlockContent({ block }: ImageBlockContentProps) {
   const isEditing = selectedBlockId === block.id && !previewMode;
   const [urlInput, setUrlInput] = useState(block.content.src);
 
+  // Bug #52: Sync urlInput when block.content.src changes from outside
+  useEffect(() => {
+    setUrlInput(block.content.src);
+  }, [block.content.src]);
+
   const alignmentClass = {
     left: 'justify-start',
     center: 'justify-center',
@@ -25,7 +30,12 @@ export function ImageBlockContent({ block }: ImageBlockContentProps) {
   }[block.content.alignment];
 
   const handleUrlSubmit = () => {
-    updateBlock(block.id, { src: urlInput });
+    // Bug #65: Validate URL to prevent javascript: protocol injection
+    const trimmedUrl = urlInput.trim();
+    if (trimmedUrl && !trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://') && !trimmedUrl.startsWith('data:image/')) {
+      return; // Reject invalid URLs silently
+    }
+    updateBlock(block.id, { src: trimmedUrl });
   };
 
   const widthStyle =

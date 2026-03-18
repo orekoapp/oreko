@@ -3,10 +3,20 @@ import { QUOTE_STATUS, INVOICE_STATUS, type QuoteStatus, type InvoiceStatus } fr
 /**
  * Generate a random string
  */
+// Low #31: Use rejection sampling to avoid modulo bias
 export function generateRandomString(length: number = 32): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(bytes, (byte) => chars[byte % chars.length]).join('');
+  const maxValid = 256 - (256 % chars.length); // 256 - (256 % 62) = 248
+  const result: string[] = [];
+  while (result.length < length) {
+    const bytes = crypto.getRandomValues(new Uint8Array(length * 2)); // Over-allocate to reduce loops
+    for (const byte of bytes) {
+      if (byte < maxValid && result.length < length) {
+        result.push(chars[byte % chars.length]!);
+      }
+    }
+  }
+  return result.join('');
 }
 
 /**

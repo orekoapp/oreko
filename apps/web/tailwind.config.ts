@@ -218,7 +218,19 @@ const config: Config = {
 					opacity: '0.4',
 					transform: 'scale(1)'
 				}
-			}
+			},
+			shimmer: {
+				'0%': { backgroundPosition: '200% 0' },
+				'100%': { backgroundPosition: '-200% 0' },
+			},
+			marquee: {
+				'0%': { transform: 'translateX(0)' },
+				'100%': { transform: 'translateX(calc(-100% - var(--gap)))' },
+			},
+			'border-spin': {
+				'0%': { rotate: '0deg' },
+				'100%': { rotate: '360deg' },
+			},
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
@@ -229,11 +241,14 @@ const config: Config = {
   			'slide-in-from-bottom': 'slide-in-from-bottom 0.2s ease-out',
   			'slide-in-from-left': 'slide-in-from-left 0.2s ease-out',
   			'slide-in-from-right': 'slide-in-from-right 0.2s ease-out',
-			'cell-ripple': 'cell-ripple var(--duration) ease-out var(--delay)'
+			'cell-ripple': 'cell-ripple var(--duration) ease-out var(--delay)',
+			shimmer: 'shimmer 3s ease-in-out infinite',
+			marquee: 'marquee var(--duration, 40s) linear infinite',
+			'border-spin': 'border-spin 7s linear infinite',
   		}
   	}
   },
-  plugins: [tailwindcssAnimate],
+  plugins: [tailwindcssAnimate, require("tailwindcss-animate")],
 };
 
 export default config;

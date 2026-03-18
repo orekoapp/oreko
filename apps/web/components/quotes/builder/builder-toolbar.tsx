@@ -20,7 +20,6 @@ import {
   ZoomIn,
   ZoomOut,
   Loader2,
-  Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
@@ -47,12 +46,10 @@ export function BuilderToolbar() {
     zoom,
     showBlocksPanel,
     showPropertiesPanel,
-    showRateCardPanel,
     historyIndex,
     history,
     toggleBlocksPanel,
     togglePropertiesPanel,
-    toggleRateCardPanel,
     togglePreviewMode,
     setZoom,
     undo,
@@ -197,17 +194,6 @@ export function BuilderToolbar() {
           ) : (
             <PanelLeftOpen className="h-4 w-4" />
           )}
-        </Button>
-
-        <Button
-          variant={showRateCardPanel ? 'secondary' : 'ghost'}
-          size="icon"
-          onClick={toggleRateCardPanel}
-          title={showRateCardPanel ? 'Hide rate cards' : 'Show rate cards'}
-          aria-label={showRateCardPanel ? 'Hide rate cards' : 'Show rate cards'}
-          className="hidden sm:inline-flex"
-        >
-          <Package className="h-4 w-4" />
         </Button>
 
         <Button

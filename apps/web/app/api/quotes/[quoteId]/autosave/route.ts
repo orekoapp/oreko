@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { validateRequestOrigin } from '@/lib/csrf';
 
 /**
  * POST /api/quotes/[quoteId]/autosave
@@ -12,17 +14,35 @@ export async function POST(
   { params }: { params: Promise<{ quoteId: string }> }
 ) {
   try {
+    // MEDIUM #5: CSRF protection on autosave
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
     const { quoteId } = await params;
     if (!quoteId || typeof quoteId !== 'string') {
       return NextResponse.json({ error: 'Invalid quote ID' }, { status: 400 });
     }
 
     let workspaceId: string;
+    let userId: string;
     try {
       const result = await getCurrentUserWorkspace();
       workspaceId = result.workspaceId;
+      userId = result.userId;
     } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // MEDIUM #3: Rate limit autosave to prevent abuse
+    const rateLimitResult = checkRateLimit(`autosave:${userId}:${quoteId}`, {
+      limit: 30,
+      windowMs: 60000, // 30 saves per minute per user per quote
+    });
+    if (rateLimitResult.limited) {
+      return NextResponse.json(
+        { error: 'Too many autosave requests' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
     }
 
     const body = await request.json();
@@ -52,6 +72,20 @@ export async function POST(
       updateData.internalNotes = body.internalNotes.slice(0, 10000);
     }
     if (Array.isArray(body.blocks)) {
+      // MEDIUM #4: Basic shape validation for blocks array
+      const validBlocks = body.blocks.every(
+        (block: unknown) =>
+          typeof block === 'object' &&
+          block !== null &&
+          typeof (block as Record<string, unknown>).id === 'string' &&
+          typeof (block as Record<string, unknown>).type === 'string'
+      );
+      if (!validBlocks) {
+        return NextResponse.json(
+          { error: 'Invalid blocks format: each block must have id and type' },
+          { status: 400 }
+        );
+      }
       const existingSettings =
         typeof quote.settings === 'object' && quote.settings !== null
           ? quote.settings

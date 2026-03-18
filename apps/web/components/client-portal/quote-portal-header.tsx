@@ -1,52 +1,20 @@
 'use client';
 
-import { Download, Building2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import type { PublicQuoteData } from '@/lib/quotes/portal-actions';
+const statusColors: Record<string, { bg: string; text: string }> = {
+  sent: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-700 dark:text-blue-300' },
+  viewed: { bg: 'bg-yellow-100 dark:bg-yellow-900', text: 'text-yellow-700 dark:text-yellow-300' },
+  accepted: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-700 dark:text-green-300' },
+  declined: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-700 dark:text-red-300' },
+  expired: { bg: 'bg-orange-100 dark:bg-orange-900', text: 'text-orange-700 dark:text-orange-300' },
+  converted: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-700 dark:text-purple-300' },
+};
 
-interface QuotePortalHeaderProps {
-  quote: PublicQuoteData;
-}
-
-export function QuotePortalHeader({ quote }: QuotePortalHeaderProps) {
-  const primaryColor = quote.branding?.primaryColor || '#3B82F6';
-
+export function QuoteStatusBadge({ status }: { status: string }) {
+  const defaultStyle = { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-700 dark:text-blue-300' };
+  const style = statusColors[status] ?? defaultStyle;
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto max-w-4xl px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Business Logo or Icon */}
-            {(quote.branding?.logoUrl || quote.business.logoUrl) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={(quote.branding?.logoUrl || quote.business.logoUrl)!}
-                alt={quote.business.name || 'Business'}
-                className="h-10 w-auto max-w-[120px] object-contain"
-              />
-            ) : (
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
-            )}
-            <div>
-              <p className="text-sm text-muted-foreground">{quote.business.name}</p>
-              <h1 className="font-semibold">{quote.title}</h1>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Download PDF
-          </Button>
-        </div>
-      </div>
-    </header>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${style.bg} ${style.text}`}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
   );
 }

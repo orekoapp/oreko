@@ -99,6 +99,27 @@ async function generateQuoteNumber(workspaceId: string): Promise<string> {
   return parts.join('-');
 }
 
+/**
+ * Preview the next quote number without incrementing the counter.
+ * Used in the new quote form to show what number will be assigned.
+ */
+export async function getNextQuoteNumber(): Promise<string> {
+  const { workspace } = await getActiveWorkspace();
+
+  const seq = await prisma.numberSequence.findUnique({
+    where: { workspaceId_type: { workspaceId: workspace.id, type: 'quote' } },
+  });
+
+  const nextValue = (seq?.currentValue ?? 0) + 1;
+  const prefix = (seq?.prefix || 'QT').replace(/-$/, '');
+  const padding = seq?.padding ?? 4;
+  const paddedValue = String(nextValue).padStart(padding, '0');
+
+  const parts = [prefix, paddedValue];
+  if (seq?.suffix) parts.push(seq.suffix);
+  return parts.join('-');
+}
+
 /** Allowed block types for server-side validation */
 const VALID_BLOCK_TYPES = new Set([
   'header', 'text', 'service-item', 'service-group',
@@ -157,17 +178,30 @@ export async function createQuote(data: {
 
   const quoteNumber = await generateQuoteNumber(workspace.id);
 
-  // Extract service items from blocks to create line items
-  const serviceItems = data.blocks
-    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item') || [];
+  // Bug #49: Extract service items recursively (includes items inside service-group blocks)
+  const serviceItems: ServiceItemBlock[] = [];
+  function extractServiceItems(blocks: QuoteBlock[]) {
+    for (const block of blocks) {
+      if (block.type === 'service-item') {
+        serviceItems.push(block as ServiceItemBlock);
+      } else if (block.type === 'service-group') {
+        const groupContent = block.content as { items?: QuoteBlock[] };
+        if (Array.isArray(groupContent.items)) {
+          extractServiceItems(groupContent.items);
+        }
+      }
+    }
+  }
+  if (data.blocks) extractServiceItems(data.blocks);
 
   // Validate line item values
+  // CR #8: Also reject Infinity/NaN to prevent PDF generation crashes
   for (const block of serviceItems) {
-    if (block.content.rate < 0) {
-      return { success: false, error: 'Line item rate cannot be negative' };
+    if (!Number.isFinite(block.content.rate) || block.content.rate < 0 || block.content.rate > 1_000_000) {
+      return { success: false, error: 'Line item rate must be between 0 and 1,000,000' };
     }
-    if (block.content.quantity < 0) {
-      return { success: false, error: 'Line item quantity cannot be negative' };
+    if (!Number.isFinite(block.content.quantity) || block.content.quantity < 0 || block.content.quantity > 1_000_000) {
+      return { success: false, error: 'Line item quantity must be between 0 and 1,000,000' };
     }
   }
 
@@ -278,11 +312,12 @@ export async function updateQuote(
     return { success: false as const, error: 'Insufficient permissions: viewers cannot edit quotes' };
   }
 
-  // Verify quote belongs to workspace
+  // CR #10: Verify quote belongs to workspace (include deletedAt filter)
   const existingQuote = await prisma.quote.findFirst({
     where: {
       id: quoteId,
       workspaceId: workspace.id,
+      deletedAt: null,
     },
   });
 
@@ -295,9 +330,24 @@ export async function updateQuote(
     return { success: false as const, error: 'Cannot modify a quote that has been accepted or signed' };
   }
 
-  // Extract service items from blocks
-  const serviceBlocks = data.blocks
-    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item');
+  // Bug #49: Extract service items recursively (includes items inside service-group blocks)
+  let serviceBlocks: ServiceItemBlock[] | undefined;
+  if (data.blocks) {
+    serviceBlocks = [];
+    function extractUpdateServiceItems(blocks: QuoteBlock[]) {
+      for (const block of blocks) {
+        if (block.type === 'service-item') {
+          serviceBlocks!.push(block as ServiceItemBlock);
+        } else if (block.type === 'service-group') {
+          const groupContent = block.content as { items?: QuoteBlock[] };
+          if (Array.isArray(groupContent.items)) {
+            extractUpdateServiceItems(groupContent.items);
+          }
+        }
+      }
+    }
+    extractUpdateServiceItems(data.blocks);
+  }
 
   // Validate line item values
   if (serviceBlocks) {
@@ -657,6 +707,7 @@ export async function duplicateQuote(quoteId: string) {
     where: {
       id: quoteId,
       workspaceId: workspace.id,
+      deletedAt: null, // MEDIUM #17: Filter out soft-deleted quotes
     },
     include: {
       lineItems: true,
@@ -793,7 +844,14 @@ export async function updateQuoteStatus(
  * Send quote to client
  * Updates status to 'sent' and triggers email notification
  */
-export async function sendQuote(quoteId: string) {
+// Bug #105: Accept optional email customization from SendEmailDialog
+interface SendEmailOptions {
+  recipients?: string[];
+  subject?: string;
+  message?: string;
+}
+
+export async function sendQuote(quoteId: string, emailOptions?: SendEmailOptions) {
   const { userId, workspace } = await getActiveWorkspace();
   const { role } = await getCurrentUserWorkspace();
 
@@ -807,6 +865,7 @@ export async function sendQuote(quoteId: string) {
     where: {
       id: quoteId,
       workspaceId: workspace.id,
+      deletedAt: null,
     },
     include: {
       client: true,
@@ -815,6 +874,12 @@ export async function sendQuote(quoteId: string) {
 
   if (!quote) {
     return { success: false, error: 'Quote not found' };
+  }
+
+  // HIGH #8: Validate that the current status allows transition to 'sent'
+  const validSendStatuses = ['draft', 'sent', 'viewed']; // Can send/resend from these states
+  if (!validSendStatuses.includes(quote.status)) {
+    return { success: false, error: 'Cannot send a quote with status: ' + quote.status };
   }
 
   if (!quote.client?.email) {
@@ -826,7 +891,48 @@ export async function sendQuote(quoteId: string) {
     return { success: false, error: 'Cannot send a quote with zero total. Add line items first.' };
   }
 
-  // Update quote status to sent
+  // Send email notification
+  // TODO: Bug #11 — Custom email templates are never used here. Before sending,
+  // we should query for a workspace-specific custom email template:
+  //   const customTemplate = await prisma.emailTemplate.findFirst({
+  //     where: { workspaceId: workspace.id, isDefault: true },
+  //   });
+  // If found, use customTemplate.subject / customTemplate.body with variable
+  // substitution (e.g., {{clientName}}, {{quoteNumber}}, {{quoteUrl}}).
+  // If not found, fall back to the existing hardcoded sendQuoteSentEmail below.
+  const baseUrl = getBaseUrl();
+  const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
+
+  // MEDIUM #29: Send email before updating status so we don't mark as 'sent'
+  // when the email actually failed to deliver.
+  // Bug #105: Use custom recipients/subject/message from dialog if provided
+  const emailRecipients = emailOptions?.recipients?.length
+    ? emailOptions.recipients
+    : [quote.client.email];
+
+  let emailSent = false;
+  try {
+    const emailResult = await sendQuoteSentEmail({
+      to: emailRecipients,
+      clientName: quote.client.name,
+      quoteName: quote.title || `Quote ${quote.quoteNumber}`,
+      quoteUrl,
+      businessName: workspace.name,
+      validUntil: quote.expirationDate ?? undefined,
+      message: emailOptions?.message || undefined,
+      rateLimitKey: workspace.id,
+    });
+    emailSent = emailResult.success;
+    if (!emailResult.success) {
+      console.error('Failed to send quote email:', emailResult.error);
+      return { success: false, error: 'Failed to send email. Quote status was not changed.' };
+    }
+  } catch (err) {
+    console.error('Failed to send quote email:', err);
+    return { success: false, error: 'Failed to send email. Quote status was not changed.' };
+  }
+
+  // Update quote status to sent (only after email succeeds)
   await prisma.quote.update({
     where: {
       id: quoteId,
@@ -846,34 +952,11 @@ export async function sendQuote(quoteId: string) {
       actorId: userId,
       actorType: 'user',
       metadata: {
-        recipientEmail: quote.client.email,
+        recipientEmail: emailRecipients.join(', '),
         sentAt: new Date().toISOString(),
       },
     },
   });
-
-  // Send email notification
-  const baseUrl = getBaseUrl();
-  const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
-
-  let emailSent = false;
-  try {
-    const emailResult = await sendQuoteSentEmail({
-      to: quote.client.email,
-      clientName: quote.client.name,
-      quoteName: quote.title || `Quote ${quote.quoteNumber}`,
-      quoteUrl,
-      businessName: workspace.name,
-      validUntil: quote.expirationDate ?? undefined,
-      rateLimitKey: workspace.id,
-    });
-    emailSent = emailResult.success;
-    if (!emailResult.success) {
-      console.error('Failed to send quote email:', emailResult.error);
-    }
-  } catch (err) {
-    console.error('Failed to send quote email:', err);
-  }
 
   // Create notification for sender
   createNotification({

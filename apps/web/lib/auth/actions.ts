@@ -69,6 +69,23 @@ export async function changePassword(input: ChangePasswordInput): Promise<Action
       data: { passwordHash },
     });
 
+    // Bug #10: Invalidate existing sessions on password change.
+    // App uses JWT strategy so DB sessions aren't the primary auth mechanism,
+    // but we delete them for defense-in-depth (PrismaAdapter may still create them).
+    await prisma.session.deleteMany({
+      where: { userId: user.id },
+    });
+
+    // TODO: For full JWT invalidation, add a `passwordChangedAt` DateTime field to the User model,
+    // set it here, and check it in the JWT callback (lib/auth/config.ts):
+    //   jwt({ token, user }) {
+    //     // On every request, verify token was issued after last password change
+    //     if (token.iat && user?.passwordChangedAt && token.iat < passwordChangedAt.getTime() / 1000) {
+    //       throw new Error('Token invalidated by password change');
+    //     }
+    //   }
+    // This requires a schema migration: add `passwordChangedAt DateTime? @map("password_changed_at")` to User model.
+
     revalidatePath('/settings/account');
 
     return { success: true };

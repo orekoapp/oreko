@@ -5,7 +5,7 @@ import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 
 export interface SearchResult {
   id: string;
-  type: 'quote' | 'invoice' | 'client' | 'contract' | 'project';
+  type: 'quote' | 'invoice' | 'client' | 'contract' | 'project' | 'email-template';
   title: string;
   subtitle: string;
   href: string;
@@ -17,7 +17,8 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   const { workspaceId } = await getCurrentUserWorkspace();
   const search = query.trim();
 
-  const [quotes, invoices, clients, contracts, projects] = await Promise.all([
+  // Bug #128: Added email templates to global search
+  const [quotes, invoices, clients, contracts, projects, emailTemplates] = await Promise.all([
     prisma.quote.findMany({
       where: {
         workspaceId,
@@ -82,6 +83,19 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       take: 5,
       orderBy: { createdAt: 'desc' },
     }),
+    // Bug #128: Search email templates
+    prisma.emailTemplate.findMany({
+      where: {
+        workspaceId,
+        deletedAt: null,
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { subject: { contains: search, mode: 'insensitive' } },
+        ],
+      },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+    }),
   ]);
 
   const results: SearchResult[] = [
@@ -119,6 +133,13 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       title: p.name,
       subtitle: p.client?.name || 'No client',
       href: `/projects/${p.id}`,
+    })),
+    ...emailTemplates.map((et) => ({
+      id: et.id,
+      type: 'email-template' as const,
+      title: et.name,
+      subtitle: et.subject,
+      href: `/settings/emails/${et.id}`,
     })),
   ];
 

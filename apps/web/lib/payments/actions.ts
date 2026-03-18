@@ -128,7 +128,7 @@ export async function createStripeOnboardingLink(options?: {
 
   try {
     // Get or create payment settings
-    let settings = await prisma.paymentSettings.findUnique({
+    const settings = await prisma.paymentSettings.findUnique({
       where: { workspaceId },
     });
 
@@ -238,37 +238,50 @@ export async function checkStripeAccountStatus(): Promise<{
 /**
  * Get payments for workspace
  */
+// Low #63: Added page/offset pagination support
 export async function getPayments(filter?: {
   invoiceId?: string;
   status?: string;
   limit?: number;
-}): Promise<PaymentListItem[]> {
+  page?: number;
+}): Promise<{ data: PaymentListItem[]; total: number }> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
-  const payments = await prisma.payment.findMany({
-    where: {
-      invoice: {
-        workspaceId,
-        ...(filter?.invoiceId && { id: filter.invoiceId }),
-      },
-      ...(filter?.status && { status: filter.status }),
+  const limit = filter?.limit ?? 50;
+  const page = filter?.page ?? 1;
+  const skip = (page - 1) * limit;
+
+  const where = {
+    invoice: {
+      workspaceId,
+      ...(filter?.invoiceId && { id: filter.invoiceId }),
     },
-    include: {
-      invoice: {
-        select: {
-          invoiceNumber: true,
-          client: {
-            select: {
-              name: true,
-              company: true,
+    ...(filter?.status && { status: filter.status }),
+    deletedAt: null,
+  };
+
+  const [payments, total] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      include: {
+        invoice: {
+          select: {
+            invoiceNumber: true,
+            client: {
+              select: {
+                name: true,
+                company: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: filter?.limit ?? 50,
-  });
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip,
+    }),
+    prisma.payment.count({ where }),
+  ]);
 
   return payments.map((p) => ({
     id: p.id,
@@ -289,6 +302,8 @@ export async function getPayments(filter?: {
       },
     },
   }));
+
+  return { data: items, total };
 }
 
 /**
@@ -377,6 +392,21 @@ export async function refundPayment(
 
     if (!payment.stripePaymentIntentId) {
       return { success: false, error: 'No Stripe payment intent linked to this payment' };
+    }
+
+    // Bug #14: Validate refund amount does not exceed payment amount
+    if (params?.amount !== undefined) {
+      if (params.amount <= 0) {
+        return { success: false, error: 'Refund amount must be greater than zero' };
+      }
+      if (params.amount > Number(payment.amount)) {
+        return { success: false, error: 'Refund amount cannot exceed payment amount' };
+      }
+      // Check for prior partial refunds
+      const maxRefundable = Number(payment.amount) - Number(payment.refundAmount || 0);
+      if (params.amount > maxRefundable) {
+        return { success: false, error: 'Refund amount exceeds remaining refundable amount' };
+      }
     }
 
     // Amount in cents for Stripe (DB stores dollars)

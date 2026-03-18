@@ -113,26 +113,39 @@ export async function getActiveTemplateByType(type: EmailTemplateType): Promise<
 export async function createEmailTemplate(
   input: CreateEmailTemplateInput
 ): Promise<EmailTemplateDetail> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
 
-  // If setting as default, unset other defaults of same type
-  if (input.isDefault) {
-    await prisma.emailTemplate.updateMany({
-      where: { workspaceId, type: input.type, isDefault: true },
-      data: { isDefault: false },
-    });
+  // HIGH #12: Viewers cannot create email templates
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
   }
 
-  const template = await prisma.emailTemplate.create({
-    data: {
-      workspaceId,
-      type: input.type,
-      name: input.name,
-      subject: input.subject,
-      body: input.body,
-      isActive: input.isActive ?? true,
-      isDefault: input.isDefault ?? false,
-    },
+  // MEDIUM #15: Basic input validation
+  if (!input.name || typeof input.name !== 'string' || !input.name.trim()) {
+    throw new Error('Email template name is required');
+  }
+
+  // MEDIUM #27: Wrap default swap + create in a transaction for atomicity
+  const template = await prisma.$transaction(async (tx) => {
+    // If setting as default, unset other defaults of same type
+    if (input.isDefault) {
+      await tx.emailTemplate.updateMany({
+        where: { workspaceId, type: input.type, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+
+    return tx.emailTemplate.create({
+      data: {
+        workspaceId,
+        type: input.type,
+        name: input.name,
+        subject: input.subject,
+        body: input.body,
+        isActive: input.isActive ?? true,
+        isDefault: input.isDefault ?? false,
+      },
+    });
   });
 
   revalidatePath('/settings/emails');
@@ -155,7 +168,17 @@ export async function createEmailTemplate(
 export async function updateEmailTemplate(
   input: UpdateEmailTemplateInput
 ): Promise<EmailTemplateDetail> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #12: Viewers cannot update email templates
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
+
+  // MEDIUM #15: Basic input validation
+  if (input.name !== undefined && (typeof input.name !== 'string' || !input.name.trim())) {
+    throw new Error('Email template name cannot be empty');
+  }
 
   const existing = await prisma.emailTemplate.findFirst({
     where: { id: input.id, workspaceId, deletedAt: null },
@@ -165,23 +188,26 @@ export async function updateEmailTemplate(
     throw new Error('Email template not found');
   }
 
-  // If setting as default, unset other defaults of same type
-  if (input.isDefault) {
-    await prisma.emailTemplate.updateMany({
-      where: { workspaceId, type: existing.type, isDefault: true, id: { not: input.id } },
-      data: { isDefault: false },
-    });
-  }
+  // MEDIUM #28: Wrap default swap + update in a transaction for atomicity
+  const template = await prisma.$transaction(async (tx) => {
+    // If setting as default, unset other defaults of same type
+    if (input.isDefault) {
+      await tx.emailTemplate.updateMany({
+        where: { workspaceId, type: existing.type, isDefault: true, id: { not: input.id } },
+        data: { isDefault: false },
+      });
+    }
 
-  const template = await prisma.emailTemplate.update({
-    where: { id: input.id },
-    data: {
-      ...(input.name !== undefined && { name: input.name }),
-      ...(input.subject !== undefined && { subject: input.subject }),
-      ...(input.body !== undefined && { body: input.body }),
-      ...(input.isActive !== undefined && { isActive: input.isActive }),
-      ...(input.isDefault !== undefined && { isDefault: input.isDefault }),
-    },
+    return tx.emailTemplate.update({
+      where: { id: input.id },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.subject !== undefined && { subject: input.subject }),
+        ...(input.body !== undefined && { body: input.body }),
+        ...(input.isActive !== undefined && { isActive: input.isActive }),
+        ...(input.isDefault !== undefined && { isDefault: input.isDefault }),
+      },
+    });
   });
 
   revalidatePath('/settings/emails');
@@ -203,7 +229,12 @@ export async function updateEmailTemplate(
 
 // Delete email template
 export async function deleteEmailTemplate(id: string): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #12: Viewers cannot delete email templates
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const existing = await prisma.emailTemplate.findFirst({
     where: { id, workspaceId, deletedAt: null },

@@ -73,18 +73,22 @@ interface LineItem {
 type PreviewTab = 'payment' | 'email' | 'pdf';
 
 // ─── Invoice Templates ───────────────────────────────────
+// Each template defines a completely different visual design approach
 interface InvoiceTemplate {
   label: string;
+  // Design style determines the entire layout approach
   style: 'clean' | 'stripe' | 'minimal' | 'accent-bar' | 'glassmorphism' | 'receipt';
-  accent: string;
-  accentBg: string;
-  accentLight: string;
-  separatorClass: string;
-  cardClass: string;
-  amountSize: string;
-  buttonColor: string;
-  topBorder?: string;
-  bgTint?: string;
+  // Colors
+  accent: string;               // accent color for totals, balance due
+  accentBg: string;             // accent background for highlight areas
+  accentLight: string;          // lighter accent for borders/subtle elements
+  separatorClass: string;       // Separator override class
+  cardClass: string;            // outer card class
+  amountSize: string;           // tw class for the $ amount
+  buttonColor: string;          // download button color
+  // Style-specific
+  topBorder?: string;           // top border color/gradient for accent-bar style
+  bgTint?: string;              // subtle background tint
 }
 
 const INVOICE_TEMPLATES: Record<string, InvoiceTemplate> = {
@@ -238,21 +242,11 @@ interface TaxRateOption {
   isActive: boolean;
 }
 
-interface RateCardOption {
-  id: string;
-  name: string;
-  description: string | null;
-  rate: number;
-  unit: string | null;
-  categoryName: string | null;
-}
-
 interface NewInvoiceFormProps {
   clients: ClientOption[];
   taxRates?: TaxRateOption[];
   currency?: string;
   nextInvoiceNumber: string;
-  rateCards?: RateCardOption[];
   businessName?: string;
 }
 
@@ -269,7 +263,6 @@ export function NewInvoiceForm({
   taxRates = [],
   currency = 'USD',
   nextInvoiceNumber,
-  rateCards = [],
   businessName = 'Your Business',
 }: NewInvoiceFormProps) {
   const router = useRouter();
@@ -344,10 +337,12 @@ export function NewInvoiceForm({
       if (quoteData.quoteId === fromQuoteId) {
         setFromQuoteNumber(quoteData.quoteNumber || fromQuoteId);
 
+        // Pre-fill client
         if (quoteData.clientId) {
           setSelectedClientId(quoteData.clientId);
         }
 
+        // Pre-fill line items
         if (quoteData.lineItems && quoteData.lineItems.length > 0) {
           setLineItems(
             quoteData.lineItems.map((item: any) => ({
@@ -360,10 +355,12 @@ export function NewInvoiceForm({
           );
         }
 
+        // Pre-fill notes
         if (quoteData.notes) {
           setNotes(quoteData.notes);
         }
 
+        // Clean up localStorage
         localStorage.removeItem('qc-convert-quote');
       }
     } catch {
@@ -379,10 +376,11 @@ export function NewInvoiceForm({
 
   const tpl = (INVOICE_TEMPLATES[templateName] ?? INVOICE_TEMPLATES.clean) as InvoiceTemplate;
 
-  const subtotal = lineItems.reduce(
-    (acc, item) => acc + item.quantity * item.rate,
+  // Bug #178: Round each line item to avoid floating-point precision errors
+  const subtotal = Math.round(lineItems.reduce(
+    (acc, item) => acc + Math.round(item.quantity * item.rate * 100) / 100,
     0
-  );
+  ) * 100) / 100;
 
   // Parse tax rate from the select value
   const parsedTaxPercent = useMemo(() => {
@@ -407,19 +405,6 @@ export function NewInvoiceForm({
         description: '',
         quantity: 1,
         rate: 0,
-      },
-    ]);
-  };
-
-  const addFromRateCard = (rc: RateCardOption) => {
-    setLineItems([
-      ...lineItems,
-      {
-        id: Math.random().toString(36).substr(2, 9),
-        name: rc.name,
-        description: rc.description || '',
-        quantity: 1,
-        rate: rc.rate,
       },
     ]);
   };
@@ -704,7 +689,7 @@ export function NewInvoiceForm({
                 )}
 
                 {/* Issue Date / Due Date / Invoice Number / Tax Rate — Compact Row */}
-                <div className={cn('grid gap-4', showIssueDate ? 'grid-cols-4' : 'grid-cols-3')}>
+                <div className={cn('grid gap-4', showIssueDate ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3')}>
                   {showIssueDate && (
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">
@@ -719,10 +704,12 @@ export function NewInvoiceForm({
                               !issueDate && 'text-muted-foreground'
                             )}
                           >
-                            <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                            {issueDate
-                              ? format(issueDate, 'MMM do, yyyy')
-                              : 'Pick date'}
+                            <CalendarIcon className="mr-1 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                            <span className="truncate">
+                              {issueDate
+                                ? format(issueDate, 'MMM dd, yyyy')
+                                : 'Pick date'}
+                            </span>
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -749,10 +736,12 @@ export function NewInvoiceForm({
                             !dueDate && 'text-muted-foreground'
                           )}
                         >
-                          <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                          {dueDate
-                            ? format(dueDate, 'MMM do, yyyy')
-                            : 'Pick date'}
+                          <CalendarIcon className="mr-1 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                          <span className="truncate">
+                            {dueDate
+                              ? format(dueDate, 'MMM dd, yyyy')
+                              : 'Pick date'}
+                          </span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -865,91 +854,92 @@ export function NewInvoiceForm({
                 )}
               </div>
 
-              {/* Enhancement fields — shown when toggled */}
-              {(showDescription || showAttachments || showEvent) && (
-                <div className="mt-8 space-y-6">
-                  {showDescription && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs text-muted-foreground">Description</Label>
-                        <button
-                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                          onClick={() => { setShowDescription(false); setDescription(''); }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <Textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="resize-none min-h-[80px]"
-                        placeholder="Describe this project or service..."
-                      />
-                    </div>
-                  )}
-                  {showAttachments && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs text-muted-foreground">Attachments</Label>
-                        <button
-                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                          onClick={() => setShowAttachments(false)}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="border-2 border-dashed rounded-lg px-4 py-6 text-center text-muted-foreground text-sm hover:border-primary/30 transition-colors cursor-pointer bg-muted/10">
-                        <Paperclip className="h-5 w-5 mx-auto mb-2 opacity-50" />
-                        <p>Click to upload or drag files here</p>
-                        <p className="text-xs mt-1">PDF, Images up to 10MB</p>
-                      </div>
-                    </div>
-                  )}
-                  {showEvent && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs text-muted-foreground">Event Details</Label>
-                        <button
-                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                          onClick={() => { setShowEvent(false); setEventName(''); setEventDate(undefined); }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Input
-                          value={eventName}
-                          onChange={(e) => setEventName(e.target.value)}
-                          className="h-10"
-                          placeholder="Event name"
+              {/* ─── Add Enhancements — Dropdown ─────── */}
+                {/* Enhancement fields — shown when toggled */}
+                {(showDescription || showAttachments || showEvent) && (
+                  <div className="mt-8 space-y-6">
+                    {showDescription && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Description</Label>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            onClick={() => { setShowDescription(false); setDescription(''); }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <Textarea
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          className="resize-none min-h-[80px]"
+                          placeholder="Describe this project or service..."
                         />
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal h-10 text-sm',
-                                !eventDate && 'text-muted-foreground'
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                              {eventDate ? format(eventDate, 'MMM do, yyyy') : 'Event date'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={eventDate}
-                              onSelect={setEventDate}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                    {showAttachments && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Attachments</Label>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            onClick={() => setShowAttachments(false)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="border-2 border-dashed rounded-lg px-4 py-6 text-center text-muted-foreground text-sm hover:border-primary/30 transition-colors cursor-pointer bg-muted/10">
+                          <Paperclip className="h-5 w-5 mx-auto mb-2 opacity-50" />
+                          <p>Click to upload or drag files here</p>
+                          <p className="text-xs mt-1">PDF, Images up to 10MB</p>
+                        </div>
+                      </div>
+                    )}
+                    {showEvent && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Event Details</Label>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            onClick={() => { setShowEvent(false); setEventName(''); setEventDate(undefined); }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Input
+                            value={eventName}
+                            onChange={(e) => setEventName(e.target.value)}
+                            className="h-10"
+                            placeholder="Event name"
+                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full justify-start text-left font-normal h-10 text-sm',
+                                  !eventDate && 'text-muted-foreground'
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                                {eventDate ? format(eventDate, 'MMM do, yyyy') : 'Event date'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={eventDate}
+                                onSelect={setEventDate}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
               <Separator className="bg-border/60" />
 
@@ -959,115 +949,86 @@ export function NewInvoiceForm({
                   <h3 className="text-xl font-semibold tracking-tight font-display">
                     Items
                   </h3>
-                  {rateCards.length > 0 ? (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
-                          Templates
-                          <ChevronDown className="h-3.5 w-3.5" />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
+                        Templates
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-64 p-1">
+                      <p className="text-xs font-medium text-muted-foreground px-2 py-1.5">Load a template</p>
+                      {[
+                        {
+                          name: 'Web Design Project',
+                          icon: Palette,
+                          items: [
+                            { name: 'UI/UX Design', description: 'Wireframes, mockups & prototypes', quantity: 1, rate: 2500 },
+                            { name: 'Frontend Development', description: 'Responsive HTML/CSS/JS build', quantity: 1, rate: 4000 },
+                            { name: 'CMS Integration', description: 'Content management setup', quantity: 1, rate: 1500 },
+                            { name: 'QA & Testing', description: 'Cross-browser & device testing', quantity: 4, rate: 150 },
+                          ],
+                        },
+                        {
+                          name: 'Photography Session',
+                          icon: Camera,
+                          items: [
+                            { name: 'Photo Session', description: '2-hour on-location shoot', quantity: 1, rate: 800 },
+                            { name: 'Photo Editing', description: 'Color correction & retouching', quantity: 30, rate: 25 },
+                            { name: 'Digital Delivery', description: 'High-res files via gallery', quantity: 1, rate: 100 },
+                          ],
+                        },
+                        {
+                          name: 'Consulting Retainer',
+                          icon: Briefcase,
+                          items: [
+                            { name: 'Strategy Consultation', description: 'Business strategy sessions', quantity: 4, rate: 350 },
+                            { name: 'Market Research', description: 'Competitor & market analysis', quantity: 1, rate: 1200 },
+                            { name: 'Report & Deliverables', description: 'Written recommendations', quantity: 1, rate: 800 },
+                          ],
+                        },
+                        {
+                          name: 'Marketing Campaign',
+                          icon: Megaphone,
+                          items: [
+                            { name: 'Campaign Strategy', description: 'Planning & positioning', quantity: 1, rate: 1800 },
+                            { name: 'Content Creation', description: 'Copy, graphics & video', quantity: 5, rate: 400 },
+                            { name: 'Social Media Management', description: 'Monthly management', quantity: 1, rate: 1200 },
+                            { name: 'Analytics & Reporting', description: 'Performance tracking', quantity: 1, rate: 500 },
+                          ],
+                        },
+                        {
+                          name: 'Event Planning',
+                          icon: PartyPopper,
+                          items: [
+                            { name: 'Event Coordination', description: 'Full-day event management', quantity: 1, rate: 3000 },
+                            { name: 'Venue Setup & Decor', description: 'Decoration & arrangement', quantity: 1, rate: 2000 },
+                            { name: 'Catering Coordination', description: 'Vendor management', quantity: 1, rate: 500 },
+                            { name: 'Post-Event Cleanup', description: 'Teardown & restoration', quantity: 1, rate: 400 },
+                          ],
+                        },
+                      ].map((template) => (
+                        <button
+                          key={template.name}
+                          onClick={() => {
+                            setLineItems(
+                              template.items.map((item) => ({
+                                id: Math.random().toString(36).substr(2, 9),
+                                name: item.name,
+                                description: item.description,
+                                quantity: item.quantity,
+                                rate: item.rate,
+                              }))
+                            );
+                          }}
+                          className="w-full flex items-center gap-2.5 px-2 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
+                        >
+                          <template.icon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{template.name}</span>
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent align="end" className="w-64 p-1">
-                        <p className="text-xs font-medium text-muted-foreground px-2 py-1.5">Load from rate cards</p>
-                        {rateCards.map((rc) => (
-                          <button
-                            key={rc.id}
-                            onClick={() => addFromRateCard(rc)}
-                            className="w-full flex items-center gap-2.5 px-2 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-medium">{rc.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatMoney(rc.rate, currency)}
-                                {rc.unit ? ` / ${rc.unit}` : ''}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </PopoverContent>
-                    </Popover>
-                  ) : (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
-                          Templates
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent align="end" className="w-64 p-1">
-                        <p className="text-xs font-medium text-muted-foreground px-2 py-1.5">Load a template</p>
-                        {[
-                          {
-                            name: 'Web Design Project',
-                            icon: Palette,
-                            items: [
-                              { name: 'UI/UX Design', description: 'Wireframes, mockups & prototypes', quantity: 1, rate: 2500 },
-                              { name: 'Frontend Development', description: 'Responsive HTML/CSS/JS build', quantity: 1, rate: 4000 },
-                              { name: 'CMS Integration', description: 'Content management setup', quantity: 1, rate: 1500 },
-                              { name: 'QA & Testing', description: 'Cross-browser & device testing', quantity: 4, rate: 150 },
-                            ],
-                          },
-                          {
-                            name: 'Photography Session',
-                            icon: Camera,
-                            items: [
-                              { name: 'Photo Session', description: '2-hour on-location shoot', quantity: 1, rate: 800 },
-                              { name: 'Photo Editing', description: 'Color correction & retouching', quantity: 30, rate: 25 },
-                              { name: 'Digital Delivery', description: 'High-res files via gallery', quantity: 1, rate: 100 },
-                            ],
-                          },
-                          {
-                            name: 'Consulting Retainer',
-                            icon: Briefcase,
-                            items: [
-                              { name: 'Strategy Consultation', description: 'Business strategy sessions', quantity: 4, rate: 350 },
-                              { name: 'Market Research', description: 'Competitor & market analysis', quantity: 1, rate: 1200 },
-                              { name: 'Report & Deliverables', description: 'Written recommendations', quantity: 1, rate: 800 },
-                            ],
-                          },
-                          {
-                            name: 'Marketing Campaign',
-                            icon: Megaphone,
-                            items: [
-                              { name: 'Campaign Strategy', description: 'Planning & positioning', quantity: 1, rate: 1800 },
-                              { name: 'Content Creation', description: 'Copy, graphics & video', quantity: 5, rate: 400 },
-                              { name: 'Social Media Management', description: 'Monthly management', quantity: 1, rate: 1200 },
-                              { name: 'Analytics & Reporting', description: 'Performance tracking', quantity: 1, rate: 500 },
-                            ],
-                          },
-                          {
-                            name: 'Event Planning',
-                            icon: PartyPopper,
-                            items: [
-                              { name: 'Event Coordination', description: 'Full-day event management', quantity: 1, rate: 3000 },
-                              { name: 'Venue Setup & Decor', description: 'Decoration & arrangement', quantity: 1, rate: 2000 },
-                              { name: 'Catering Coordination', description: 'Vendor management', quantity: 1, rate: 500 },
-                              { name: 'Post-Event Cleanup', description: 'Teardown & restoration', quantity: 1, rate: 400 },
-                            ],
-                          },
-                        ].map((template) => (
-                          <button
-                            key={template.name}
-                            onClick={() => {
-                              setLineItems(
-                                template.items.map((item) => ({
-                                  id: Math.random().toString(36).substr(2, 9),
-                                  name: item.name,
-                                  description: item.description,
-                                  quantity: item.quantity,
-                                  rate: item.rate,
-                                }))
-                              );
-                            }}
-                            className="w-full flex items-center gap-2.5 px-2 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
-                          >
-                            <template.icon className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{template.name}</span>
-                          </button>
-                        ))}
-                      </PopoverContent>
-                    </Popover>
-                  )}
+                      ))}
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Items Table Header */}
@@ -1128,7 +1089,8 @@ export function NewInvoiceForm({
                             updateLineItem(
                               item.id,
                               'quantity',
-                              parseInt(e.target.value) || 1
+                              // Low #58: Use parseFloat to support fractional quantities (e.g. 0.5 hours)
+                              parseFloat(e.target.value) || 1
                             )
                           }
                           className="h-9 text-sm"
@@ -1209,18 +1171,22 @@ export function NewInvoiceForm({
                         onClick={() => setAllowTipping(!allowTipping)}
                       >
                         <div className="flex items-center gap-2.5">
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          <span className="h-4 w-4 text-muted-foreground flex items-center justify-center text-xs">&#128176;</span>
                           <span>Tipping</span>
                         </div>
-                        <Switch checked={allowTipping} onCheckedChange={setAllowTipping} className="scale-75" />
+                        <Switch
+                          checked={allowTipping}
+                          onCheckedChange={setAllowTipping}
+                          className="scale-75"
+                        />
                       </button>
-                      <div className="h-px bg-border/50 my-1" />
                       <button
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
                         onClick={() => setShowRecurring(!showRecurring)}
                       >
                         <RotateCcw className="h-4 w-4 text-muted-foreground" />
                         <span>Recurring Invoice</span>
+                        <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
                         {showRecurring && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
                       </button>
                       <button
@@ -1229,6 +1195,7 @@ export function NewInvoiceForm({
                       >
                         <Link2 className="h-4 w-4 text-muted-foreground" />
                         <span>Custom Links</span>
+                        <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
                         {showCustomLinks && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
                       </button>
                       <button
@@ -1236,56 +1203,93 @@ export function NewInvoiceForm({
                         onClick={() => setPdfPaymentLink(!pdfPaymentLink)}
                       >
                         <div className="flex items-center gap-2.5">
-                          <FileTextIcon className="h-4 w-4 text-muted-foreground" />
-                          <span>PDF payment link</span>
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span>PDF Payment Link</span>
+                          <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
                         </div>
-                        <Switch checked={pdfPaymentLink} onCheckedChange={setPdfPaymentLink} className="scale-75" />
+                        {pdfPaymentLink && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </button>
+                      <Separator className="my-1" />
+                      <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Payment methods</p>
+                      <button className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors">
+                        <Plus className="h-4 w-4 text-muted-foreground" />
+                        <span>Add Payment Options</span>
                       </button>
                     </PopoverContent>
                   </Popover>
                 </div>
 
-                {/* Payment sub-sections */}
+                {/* Payment settings fields — shown when toggled */}
                 {(showDeposit || showDiscount || showRecurring || showCustomLinks) && (
-                  <div className="mt-6 space-y-5">
-                    {showDeposit && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-muted-foreground">Deposit Amount</Label>
-                          <button className="text-xs text-muted-foreground hover:text-destructive transition-colors" onClick={() => { setShowDeposit(false); setDepositAmount(0); }}>Remove</button>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Input type="number" min="0" step="0.01" value={depositAmount || ''} onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)} className="h-10 max-w-[200px]" placeholder="0.00" />
-                          <span className="text-sm text-muted-foreground">of {formatMoney(total, currency)}</span>
-                        </div>
-                      </div>
-                    )}
+                  <div className="mt-4 pt-3 border-t border-dashed space-y-3">
                     {showDiscount && (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs text-muted-foreground">Discount</Label>
-                          <button className="text-xs text-muted-foreground hover:text-destructive transition-colors" onClick={() => { setShowDiscount(false); setDiscount(0); }}>Remove</button>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            onClick={() => { setShowDiscount(false); setDiscount(0); }}
+                          >
+                            Remove
+                          </button>
                         </div>
                         <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            value={discount || ''}
+                            onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                            className="h-10"
+                            placeholder="0.00"
+                          />
                           <Select value={discountType} onValueChange={(v) => setDiscountType(v as 'flat' | 'percent')}>
-                            <SelectTrigger className="h-10 w-24"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="w-[100px] h-10">
+                              <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="flat">Flat</SelectItem>
                               <SelectItem value="percent">%</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Input type="number" min="0" step="0.01" value={discount || ''} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="h-10 max-w-[140px]" placeholder="0" />
                         </div>
                       </div>
                     )}
-                    {showRecurring && (
-                      <div className="space-y-2">
+                    {showDeposit && (
+                      <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <Label className="text-xs text-muted-foreground">Recurring Interval</Label>
-                          <button className="text-xs text-muted-foreground hover:text-destructive transition-colors" onClick={() => setShowRecurring(false)}>Remove</button>
+                          <Label className="text-xs text-muted-foreground">Deposit Required</Label>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            onClick={() => { setShowDeposit(false); setDepositAmount(0); }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={depositAmount || ''}
+                          onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
+                          className="h-10"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    )}
+                    {showRecurring && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Recurring Schedule</Label>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            onClick={() => setShowRecurring(false)}
+                          >
+                            Remove
+                          </button>
                         </div>
                         <Select value={recurringInterval} onValueChange={setRecurringInterval}>
-                          <SelectTrigger className="h-10 max-w-[200px]"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-10">
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="weekly">Weekly</SelectItem>
                             <SelectItem value="biweekly">Bi-weekly</SelectItem>
@@ -1297,14 +1301,29 @@ export function NewInvoiceForm({
                       </div>
                     )}
                     {showCustomLinks && (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs text-muted-foreground">Custom Link</Label>
-                          <button className="text-xs text-muted-foreground hover:text-destructive transition-colors" onClick={() => { setShowCustomLinks(false); setCustomLinkUrl(''); setCustomLinkLabel(''); }}>Remove</button>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            onClick={() => { setShowCustomLinks(false); setCustomLinkUrl(''); setCustomLinkLabel(''); }}
+                          >
+                            Remove
+                          </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <Input value={customLinkLabel} onChange={(e) => setCustomLinkLabel(e.target.value)} className="h-10" placeholder="Label" />
-                          <Input value={customLinkUrl} onChange={(e) => setCustomLinkUrl(e.target.value)} className="h-10" placeholder="https://..." />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input
+                            value={customLinkLabel}
+                            onChange={(e) => setCustomLinkLabel(e.target.value)}
+                            className="h-10"
+                            placeholder="Link label"
+                          />
+                          <Input
+                            value={customLinkUrl}
+                            onChange={(e) => setCustomLinkUrl(e.target.value)}
+                            className="h-10"
+                            placeholder="https://..."
+                          />
                         </div>
                       </div>
                     )}
@@ -1314,160 +1333,197 @@ export function NewInvoiceForm({
 
               <Separator className="bg-border/60" />
 
-              {/* ─── Notes / Memo Section ─────────────── */}
+              {/* ─── Memo Section ─────────────────────── */}
               <div className="py-8">
-                <h3 className="text-xl font-semibold tracking-tight font-display mb-4">
-                  Notes
+                <h3 className="text-xl font-semibold tracking-tight font-display mb-5">
+                  Memo
                 </h3>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="resize-none min-h-[80px]"
-                  placeholder="Thank you for your business!"
-                />
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Memo</Label>
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="resize-none min-h-[80px] text-sm"
+                    placeholder="Thank you for your business!"
+                  />
+                </div>
               </div>
 
-              <Separator className="bg-border/60" />
-
-              {/* ─── Action Buttons ───────────────────── */}
-              <div className="py-8 flex items-center justify-between gap-4">
+              {/* ─── Bottom Action Bar ────────────────── */}
+              <div className="flex items-center gap-3 pt-4 pb-8 border-t">
+                <Button
+                  onClick={() => handleSubmit(false)}
+                  disabled={loading}
+                  size="lg"
+                  className="bg-red-500 hover:bg-red-600 text-white px-8"
+                >
+                  {loading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Create & Send
+                </Button>
                 <Button
                   variant="outline"
-                  onClick={() => router.push('/invoices')}
+                  size="lg"
+                  onClick={() => handleSubmit(true)}
+                  disabled={loading}
                 >
-                  Cancel
+                  Save Draft
                 </Button>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleSubmit(true)}
-                    disabled={loading}
-                  >
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Draft
-                  </Button>
-                  <Button
-                    onClick={() => handleSubmit(false)}
-                    disabled={loading}
-                  >
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Invoice
-                  </Button>
-                </div>
               </div>
             </div>
           </div>
 
           {/* ═══════════════════════════════════════════ */}
-          {/* RIGHT PANEL — Preview                      */}
+          {/* RIGHT PANEL — Live Preview                 */}
           {/* ═══════════════════════════════════════════ */}
           <div className="overflow-y-auto bg-muted/30 flex flex-col">
             {/* Preview Tabs */}
-            <div className="sticky top-0 z-10 bg-muted/30 backdrop-blur-sm border-b px-4 pt-4 pb-0">
-              <Tabs value={previewTab} onValueChange={(v) => setPreviewTab(v as PreviewTab)}>
-                <TabsList className="w-full grid grid-cols-3">
-                  <TabsTrigger value="payment" className="gap-1.5 text-xs">
-                    <CreditCard className="h-3.5 w-3.5" />
-                    Payment
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 pt-4 pb-3">
+              <Tabs
+                value={previewTab}
+                onValueChange={(v) => setPreviewTab(v as PreviewTab)}
+              >
+                <TabsList className="w-full grid grid-cols-3 h-10">
+                  <TabsTrigger
+                    value="payment"
+                    className="text-xs data-[state=active]:text-foreground"
+                  >
+                    Payment Page
                   </TabsTrigger>
-                  <TabsTrigger value="email" className="gap-1.5 text-xs">
-                    <Mail className="h-3.5 w-3.5" />
-                    Email
+                  <TabsTrigger
+                    value="email"
+                    className="text-xs data-[state=active]:text-foreground"
+                  >
+                    Email Preview
                   </TabsTrigger>
-                  <TabsTrigger value="pdf" className="gap-1.5 text-xs">
-                    <FileText className="h-3.5 w-3.5" />
-                    PDF
+                  <TabsTrigger
+                    value="pdf"
+                    className="text-xs data-[state=active]:text-foreground"
+                  >
+                    Invoice PDF
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
-
-              {/* Template Switcher */}
-              <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-none">
-                {Object.entries(INVOICE_TEMPLATES).map(([key, t]) => (
-                  <button
-                    key={key}
-                    onClick={() => setTemplateName(key as TemplateName)}
-                    className={cn(
-                      'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all',
-                      templateName === key
-                        ? 'text-white shadow-sm'
-                        : 'bg-background hover:bg-muted text-muted-foreground border border-border/60'
-                    )}
-                    style={templateName === key ? { backgroundColor: t.accent } : undefined}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* ═══ PAYMENT PAGE TAB ═══════════════════ */}
             {previewTab === 'payment' && (
-              <div className="p-4 flex-1">
-                <div className={cn('bg-card border shadow-sm overflow-hidden transition-all duration-300 relative', tpl.cardClass)}>
-                  {/* Top accent bar */}
-                  {tpl.topBorder && (
-                    <div className="w-full" style={{ height: '4px', background: tpl.topBorder }} />
-                  )}
+            <div className="p-4 flex-1">
+              <div className={cn(
+                'bg-card border shadow-sm overflow-hidden transition-all duration-300 relative',
+                tpl.cardClass,
+                tpl.style === 'glassmorphism' && 'backdrop-blur-xl bg-white/70 border-white/40',
+              )}
+              style={tpl.bgTint ? { background: tpl.bgTint } : undefined}
+              >
+                {/* ─── Subtle top-left wave decoration ─── */}
+                <svg className="absolute top-0 left-0 pointer-events-none" viewBox="0 0 200 120" fill="none" style={{ width: '45%', height: '100px' }}>
+                  <path d="M0 0 L0 80 Q60 72 120 40 Q160 18 200 0 Z" fill={tpl.accent} opacity="0.05" />
+                  <path d="M0 0 L0 50 Q40 44 80 24 Q110 10 140 0 Z" fill={tpl.accent} opacity="0.03" />
+                </svg>
 
-                  {/* Subtle wave */}
-                  <svg className="absolute top-0 left-0 pointer-events-none" viewBox="0 0 200 120" fill="none" style={{ width: '45%', height: '100px' }}>
-                    <path d="M0 0 L0 80 Q60 72 120 40 Q160 18 200 0 Z" fill={tpl.accent} opacity="0.05" />
-                    <path d="M0 0 L0 50 Q40 44 80 24 Q110 10 140 0 Z" fill={tpl.accent} opacity="0.03" />
-                  </svg>
-
-                  {/* Header */}
-                  <div className="px-6 pt-8 pb-5 text-center relative">
-                    <div className="inline-flex items-center justify-center w-10 h-10 rounded-full mb-3" style={{ backgroundColor: tpl.accentLight }}>
-                      <Check className="h-5 w-5" style={{ color: tpl.accent }} />
-                    </div>
-                    <h3 className="text-base font-semibold tracking-tight">
-                      {selectedClient?.name || businessName}
-                    </h3>
-                    <p className={cn('font-bold tracking-tight mt-1', tpl.amountSize)} style={{ color: tpl.accent }}>
-                      {formatMoney(total, currency)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Invoice #{invoiceNumber} &middot; Due {dueDate ? format(dueDate, 'MMM dd, yyyy') : '...'}
-                    </p>
-                  </div>
-
-                  <Separator className={tpl.separatorClass} />
-
-                  {/* Client + Line Items (Collapsible) */}
-                  <div className="px-6 py-4">
-                    <Collapsible open={showPreviewDetails} onOpenChange={setShowPreviewDetails}>
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="font-semibold text-sm">
-                            {selectedClient?.name || 'Select a customer'}
-                          </p>
-                          {selectedClient?.company && selectedClient.company !== selectedClient.name && (
-                            <p className="text-xs text-muted-foreground">
-                              {selectedClient.company}
-                            </p>
+                {/* ─── Theme Picker ─── */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="absolute top-3 right-3 h-7 w-7 rounded-full bg-muted/60 hover:bg-muted transition-colors flex items-center justify-center z-20"
+                      title="Change template"
+                    >
+                      <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-3" align="end" side="bottom">
+                    <p className="text-xs font-medium text-muted-foreground mb-2.5">Invoice Style</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {Object.entries(INVOICE_TEMPLATES).map(([key, t]) => (
+                        <button
+                          key={key}
+                          onClick={() => setTemplateName(key as TemplateName)}
+                          className={cn(
+                            'flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all hover:bg-muted',
+                            templateName === key && 'ring-2 ring-primary ring-offset-1 bg-muted'
                           )}
-                        </div>
-                        <CollapsibleTrigger asChild>
-                          <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-                            {showPreviewDetails ? 'Hide' : 'Details'}
-                            <ChevronUp className={cn('h-3 w-3 transition-transform', !showPreviewDetails && 'rotate-180')} />
-                          </button>
-                        </CollapsibleTrigger>
-                      </div>
+                        >
+                          <div className="w-full h-10 rounded-md overflow-hidden relative border border-border/50 bg-white flex flex-col items-center justify-center gap-0.5">
+                            {/* Unified mini preview: circle + lines */}
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: `${t.accent}20`, border: `1.5px solid ${t.accent}` }} />
+                            <div className="h-0.5 w-5 rounded-full bg-muted-foreground/15" />
+                            <div className="h-0.5 w-3 rounded-full" style={{ background: t.accent, opacity: 0.5 }} />
+                          </div>
+                          <span className="text-[10px] leading-tight text-muted-foreground">{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-                      <CollapsibleContent>
-                        <Separator className={cn('mb-4', tpl.separatorClass)} />
-                        <div className="space-y-2">
-                          {lineItems.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between py-2 text-sm">
+                {/* ─── Top accent bar (accent-bar style) ─── */}
+                {tpl.style === 'accent-bar' && tpl.topBorder && (
+                  <div className="w-full h-1" style={{ background: tpl.topBorder }} />
+                )}
+
+                {/* ─── Header Area (centered for all styles) ─── */}
+                <div className="px-6 pt-8 pb-5 text-center">
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-full mb-3"
+                    style={{ backgroundColor: tpl.accentLight }}>
+                    <Check className="h-5 w-5" style={{ color: tpl.accent }} />
+                  </div>
+                  <h3 className="text-base font-semibold tracking-tight">{businessName}</h3>
+                  <p className={cn('font-bold tracking-tight mt-1', tpl.amountSize)} style={{ color: tpl.accent }}>
+                    {formatMoney(total, currency)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Invoice #{invoiceNumber} &middot; Due {dueDate ? format(dueDate, 'MMM dd, yyyy') : '...'}
+                  </p>
+                </div>
+
+                <Separator className={tpl.separatorClass} />
+
+                {/* ─── Client + Invoice Details (Collapsible) ── */}
+                <div className="px-6 py-4">
+                  <Collapsible
+                    open={showPreviewDetails}
+                    onOpenChange={setShowPreviewDetails}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-semibold text-sm">
+                          {selectedClient?.name || 'Select a customer'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedClient?.company || ''}
+                        </p>
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                          {showPreviewDetails ? 'Hide' : 'Details'}
+                          <ChevronUp
+                            className={cn(
+                              'h-3 w-3 transition-transform',
+                              !showPreviewDetails && 'rotate-180'
+                            )}
+                          />
+                        </button>
+                      </CollapsibleTrigger>
+                    </div>
+
+                    <CollapsibleContent>
+                      <Separator className={cn('mb-4', tpl.separatorClass)} />
+                      <div className="space-y-2">
+                        {lineItems.length > 0 &&
+                          lineItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between py-2 text-sm"
+                            >
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">{item.name || 'Untitled Item'}</p>
+                                <p className="font-medium text-sm truncate">
+                                  {item.name || 'Untitled Item'}
+                                </p>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
                                   {item.quantity} &times; {formatMoney(item.rate, currency)}
-                                  {item.description && (
-                                    <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>
-                                  )}
+                                  {item.description && <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>}
                                 </p>
                               </div>
                               <span className="ml-4 font-medium tabular-nums text-sm">
@@ -1476,326 +1532,354 @@ export function NewInvoiceForm({
                             </div>
                           ))}
 
-                          <Separator className={cn('my-4', tpl.separatorClass)} />
+                        {lineItems.length === 0 && (
+                          <p className="text-sm text-muted-foreground italic">
+                            No items added yet
+                          </p>
+                        )}
 
-                          {discountAmount > 0 && (
-                            <div className="space-y-2 mb-3">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Subtotal</span>
-                                <span className="tabular-nums">{formatMoney(subtotal, currency)}</span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Discount</span>
-                                <span className="tabular-nums text-green-600">-{formatMoney(discountAmount, currency)}</span>
-                              </div>
+                        <Separator className={cn('my-4', tpl.separatorClass)} />
+
+                        {discountAmount > 0 && (
+                          <div className="space-y-2 mb-3">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Subtotal</span>
+                              <span className="tabular-nums">{formatMoney(subtotal, currency)}</span>
                             </div>
-                          )}
-                          {taxAmount > 0 && (
-                            <div className="flex justify-between text-sm mb-3">
-                              <span className="text-muted-foreground">Tax ({parsedTaxPercent}%)</span>
-                              <span className="tabular-nums">{formatMoney(taxAmount, currency)}</span>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Discount</span>
+                              <span className="tabular-nums text-green-600">-{formatMoney(discountAmount, currency)}</span>
                             </div>
-                          )}
-                          <div className={cn('flex justify-between items-baseline rounded-lg px-3 py-3 -mx-3 border-l-2', tpl.accentBg)}
-                            style={{ borderLeftColor: tpl.accent }}>
-                            <span className="font-semibold text-sm">Total Due</span>
-                            <span className="text-lg font-bold tabular-nums" style={{ color: tpl.accent }}>
-                              {formatMoney(total, currency)}
-                            </span>
                           </div>
+                        )}
+                        {taxAmount > 0 && (
+                          <div className="flex justify-between text-sm mb-3">
+                            <span className="text-muted-foreground">Tax ({parsedTaxPercent}%)</span>
+                            <span className="tabular-nums">{formatMoney(taxAmount, currency)}</span>
+                          </div>
+                        )}
+                        <div className={cn('flex justify-between items-baseline rounded-lg px-3 py-3 -mx-3 border-l-2', tpl.accentBg)}
+                          style={{ borderLeftColor: tpl.accent }}>
+                          <span className="font-semibold text-sm">Total Due</span>
+                          <span className="text-lg font-bold tabular-nums" style={{ color: tpl.accent }}>
+                            {formatMoney(total, currency)}
+                          </span>
                         </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </div>
-
-                  {/* Memo */}
-                  {notes && (
-                    <>
-                      <Separator className={tpl.separatorClass} />
-                      <div className="px-6 py-5">
-                        <p className="text-sm text-muted-foreground">{notes}</p>
                       </div>
-                    </>
-                  )}
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
 
-                  {/* Download Button */}
-                  <div className="px-6 pb-6 pt-2">
-                    <button
-                      onClick={handleDownloadPdf}
-                      disabled={pdfGenerating}
-                      className={cn(
-                        'w-full h-12 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors',
-                        tpl.buttonColor,
-                        pdfGenerating && 'opacity-70 cursor-not-allowed'
-                      )}
-                    >
-                      {pdfGenerating ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4" />
-                          Download Invoice
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="px-6 pb-5">
-                    <div className="flex items-center gap-2 justify-center">
-                      <div className="h-px flex-1 bg-border/40" />
-                      <p className="text-[10px] text-muted-foreground/50 whitespace-nowrap">
-                        Powered by QuoteCraft
-                      </p>
-                      <div className="h-px flex-1 bg-border/40" />
+                {/* ─── Memo ─── */}
+                {notes && (
+                  <>
+                    <Separator className={tpl.separatorClass} />
+                    <div className="px-6 py-5">
+                      <p className="text-sm text-muted-foreground">{notes}</p>
                     </div>
+                  </>
+                )}
+
+                {/* ─── Download Button ─── */}
+                <div className="px-6 pb-6 pt-2">
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={pdfGenerating}
+                    className={cn(
+                      'w-full h-12 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors',
+                      tpl.buttonColor,
+                      pdfGenerating && 'opacity-70 cursor-not-allowed'
+                    )}
+                  >
+                    {pdfGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        Download Invoice
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* ─── Footer ─── */}
+                <div className="px-6 pb-5">
+                  <div className="flex items-center gap-2 justify-center">
+                    <div className="h-px flex-1 bg-border/40" />
+                    <p className="text-[10px] text-muted-foreground/50 whitespace-nowrap">
+                      Powered by QuoteCraft
+                    </p>
+                    <div className="h-px flex-1 bg-border/40" />
                   </div>
                 </div>
               </div>
+            </div>
             )}
 
             {/* ═══ INVOICE PDF TAB ═════════════════════ */}
             {previewTab === 'pdf' && (
-              <div className="p-4 flex-1 flex flex-col items-center">
-                <p className="text-xs text-muted-foreground mb-3 w-full">
-                  A4 Preview &middot; {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
-                </p>
+            <div className="p-4 flex-1 flex flex-col items-center">
+              {/* Info line */}
+              <p className="text-xs text-muted-foreground mb-3 w-full">
+                A4 Preview &middot; {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
+              </p>
 
-                <div className="w-full overflow-hidden flex-1 flex items-start justify-center">
-                  <div
-                    style={{
-                      width: '595px',
-                      height: '842px',
-                      transform: 'scale(var(--pdf-scale, 0.68))',
-                      transformOrigin: 'top center',
-                    }}
-                    className="bg-white shadow-2xl rounded-sm border border-border/40 flex-shrink-0 relative"
+              {/* A4 Scaled Preview */}
+              <div className="w-full overflow-hidden flex-1 flex items-start justify-center">
+                <div
+                  style={{
+                    width: '595px',
+                    height: '842px',
+                    transform: 'scale(var(--pdf-scale, 0.68))',
+                    transformOrigin: 'top center',
+                  }}
+                  className="bg-white shadow-2xl rounded-sm border border-border/40 flex-shrink-0 relative"
+                >
+                  {/* Download floating button */}
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={pdfGenerating}
+                    className={cn(
+                      'absolute top-2.5 right-2.5 h-7 w-7 rounded-full bg-muted/80 hover:bg-muted transition-colors flex items-center justify-center z-20',
+                      pdfGenerating && 'opacity-70 cursor-not-allowed'
+                    )}
+                    title="Download PDF"
                   >
-                    {/* Download floating button */}
-                    <button
-                      onClick={handleDownloadPdf}
-                      disabled={pdfGenerating}
-                      className={cn(
-                        'absolute top-2.5 right-2.5 h-7 w-7 rounded-full bg-muted/80 hover:bg-muted transition-colors flex items-center justify-center z-20',
-                        pdfGenerating && 'opacity-70 cursor-not-allowed'
-                      )}
-                      title="Download PDF"
-                    >
-                      {pdfGenerating ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      ) : (
-                        <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                      )}
-                    </button>
+                    {pdfGenerating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </button>
 
-                    {/* A4 Page Content */}
-                    <div className="w-full h-full flex flex-col text-black" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                      {tpl.topBorder && (
-                        <div className="w-full" style={{ height: '4px', background: tpl.topBorder }} />
-                      )}
+                  {/* A4 Page Content */}
+                  <div className="w-full h-full flex flex-col text-black" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                    {/* Top accent bar */}
+                    {tpl.topBorder && (
+                      <div className="w-full" style={{ height: '4px', background: tpl.topBorder }} />
+                    )}
 
-                      {/* Header */}
-                      <div className="flex items-start justify-between px-10 pt-8 pb-6">
-                        <div>
-                          <h2 className="text-xl font-bold" style={{ color: '#111' }}>{businessName}</h2>
-                          <p className="text-xs mt-1" style={{ color: '#666' }}>hello@company.com</p>
-                        </div>
-                        <div className="text-right">
-                          <h1 className="text-2xl font-bold tracking-tight" style={{ color: tpl.accent }}>INVOICE</h1>
-                          <p className="text-xs mt-1" style={{ color: '#666' }}>#{invoiceNumber}</p>
-                          <p className="text-xs" style={{ color: '#666' }}>
-                            Date: {dueDate ? format(dueDate, 'MMM dd, yyyy') : 'Not set'}
-                          </p>
-                        </div>
+                    {/* Header */}
+                    <div className="flex items-start justify-between px-10 pt-8 pb-6">
+                      <div>
+                        <h2 className="text-xl font-bold" style={{ color: '#111' }}>{businessName}</h2>
+                        <p className="text-xs mt-1" style={{ color: '#666' }}>hello@company.com</p>
                       </div>
-
-                      {/* Bill To */}
-                      <div className="px-10 pb-6">
-                        <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: '#999' }}>Bill To</p>
-                        <p className="text-sm font-medium" style={{ color: '#111' }}>
-                          {selectedClient?.name || 'Customer Name'}
+                      <div className="text-right">
+                        <h1 className="text-2xl font-bold tracking-tight" style={{ color: tpl.accent }}>INVOICE</h1>
+                        <p className="text-xs mt-1" style={{ color: '#666' }}>#{invoiceNumber}</p>
+                        <p className="text-xs" style={{ color: '#666' }}>
+                          Date: {dueDate ? format(dueDate, 'MMM dd, yyyy') : 'Not set'}
                         </p>
-                        {selectedClient?.company && (
-                          <p className="text-xs" style={{ color: '#666' }}>{selectedClient.company}</p>
-                        )}
                       </div>
+                    </div>
 
-                      {/* Line Items Table */}
-                      <div className="px-10 flex-1">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                              <th className="text-left py-2 font-semibold" style={{ color: '#333', width: '50%' }}>Description</th>
-                              <th className="text-center py-2 font-semibold" style={{ color: '#333' }}>Qty</th>
-                              <th className="text-right py-2 font-semibold" style={{ color: '#333' }}>Rate</th>
-                              <th className="text-right py-2 font-semibold" style={{ color: '#333' }}>Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {lineItems.length > 0 ? lineItems.map((item) => (
-                              <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                <td className="py-2">
-                                  <p className="font-medium" style={{ color: '#111' }}>{item.name || 'Untitled'}</p>
-                                  {item.description && <p style={{ color: '#888' }}>{item.description}</p>}
-                                </td>
-                                <td className="py-2 text-center" style={{ color: '#333' }}>{item.quantity}</td>
-                                <td className="py-2 text-right tabular-nums" style={{ color: '#333' }}>${item.rate.toFixed(2)}</td>
-                                <td className="py-2 text-right tabular-nums font-medium" style={{ color: '#111' }}>${(item.quantity * item.rate).toFixed(2)}</td>
-                              </tr>
-                            )) : (
-                              <tr>
-                                <td colSpan={4} className="py-6 text-center" style={{ color: '#999' }}>
-                                  No items added
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Totals */}
-                      <div className="px-10 pb-8">
-                        <div className="ml-auto" style={{ width: '200px' }}>
-                          <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
-                            <span>Subtotal</span>
-                            <span className="tabular-nums">${subtotal.toFixed(2)}</span>
-                          </div>
-                          {discountAmount > 0 && (
-                            <div className="flex justify-between py-1 text-xs" style={{ color: '#22c55e' }}>
-                              <span>Discount</span>
-                              <span className="tabular-nums">-${discountAmount.toFixed(2)}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between py-1 text-xs" style={{ borderTop: '1px solid #e5e7eb', color: '#333' }}>
-                            <span className="font-medium">Total</span>
-                            <span className="tabular-nums font-medium">${total.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between py-2 mt-1 rounded px-2 -mx-2"
-                            style={{ background: `${tpl.accent}10` }}
-                          >
-                            <span className="text-xs font-bold" style={{ color: '#111' }}>Balance Due</span>
-                            <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      {notes && (
-                        <div className="px-10 pb-4">
-                          <p className="text-[10px]" style={{ color: '#999' }}>{notes}</p>
-                        </div>
+                    {/* Bill To */}
+                    <div className="px-10 pb-6">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: '#999' }}>Bill To</p>
+                      <p className="text-sm font-medium" style={{ color: '#111' }}>
+                        {selectedClient?.name || 'Customer Name'}
+                      </p>
+                      {selectedClient?.company && (
+                        <p className="text-xs" style={{ color: '#666' }}>{selectedClient.company}</p>
                       )}
                     </div>
+
+                    {/* Line Items Table */}
+                    <div className="px-10 flex-1">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                            <th className="text-left py-2 font-semibold" style={{ color: '#333', width: '50%' }}>Description</th>
+                            <th className="text-center py-2 font-semibold" style={{ color: '#333' }}>Qty</th>
+                            <th className="text-right py-2 font-semibold" style={{ color: '#333' }}>Rate</th>
+                            <th className="text-right py-2 font-semibold" style={{ color: '#333' }}>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lineItems.length > 0 ? lineItems.map((item) => (
+                            <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                              <td className="py-2">
+                                <p className="font-medium" style={{ color: '#111' }}>{item.name || 'Untitled'}</p>
+                                {item.description && <p style={{ color: '#888' }}>{item.description}</p>}
+                              </td>
+                              <td className="py-2 text-center" style={{ color: '#333' }}>{item.quantity}</td>
+                              <td className="py-2 text-right tabular-nums" style={{ color: '#333' }}>${item.rate.toFixed(2)}</td>
+                              <td className="py-2 text-right tabular-nums font-medium" style={{ color: '#111' }}>${(item.quantity * item.rate).toFixed(2)}</td>
+                            </tr>
+                          )) : (
+                            <tr>
+                              <td colSpan={4} className="py-6 text-center" style={{ color: '#999' }}>
+                                No items added
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Totals */}
+                    <div className="px-10 pb-8">
+                      <div className="ml-auto" style={{ width: '200px' }}>
+                        <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
+                          <span>Subtotal</span>
+                          <span className="tabular-nums">${subtotal.toFixed(2)}</span>
+                        </div>
+                        {discountAmount > 0 && (
+                          <div className="flex justify-between py-1 text-xs" style={{ color: '#22c55e' }}>
+                            <span>Discount</span>
+                            <span className="tabular-nums">-${discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {taxAmount > 0 && (
+                          <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
+                            <span>Tax ({parsedTaxPercent}%)</span>
+                            <span className="tabular-nums">${taxAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between py-1 text-xs" style={{ borderTop: '1px solid #e5e7eb', color: '#333' }}>
+                          <span className="font-medium">Total</span>
+                          <span className="tabular-nums font-medium">${total.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between py-2 mt-1 rounded px-2 -mx-2"
+                          style={{ background: tpl.accentBg.replace('bg-', '').includes('50') ? `${tpl.accent}10` : '#f5f5f5' }}
+                        >
+                          <span className="text-xs font-bold" style={{ color: '#111' }}>Balance Due</span>
+                          <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    {notes && (
+                      <div className="px-10 pb-4">
+                        <p className="text-[10px]" style={{ color: '#999' }}>{notes}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+            </div>
             )}
 
             {/* ═══ EMAIL PREVIEW TAB ═══════════════════ */}
             {previewTab === 'email' && (
-              <div className="p-4 flex-1">
-                <div className={cn('bg-card border shadow-sm overflow-hidden transition-all duration-300 relative', tpl.cardClass)}>
-                  {tpl.topBorder && (
-                    <div className="w-full h-1" style={{ background: tpl.topBorder }} />
-                  )}
+            <div className="p-4 flex-1">
+              <div className={cn('bg-card border shadow-sm overflow-hidden transition-all duration-300 relative', tpl.cardClass)}>
 
-                  {/* Email Header */}
-                  <div className="px-6 pb-4 pt-6">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold tracking-tight">{businessName}</h3>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">{businessName}</p>
-                        <p className="font-bold text-lg mt-0.5" style={{ color: tpl.accent }}>Invoice</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Due {dueDate ? format(dueDate, 'MMM dd, yyyy') : '...'}
-                        </p>
-                      </div>
+                {/* ─── Top accent ─── */}
+                {tpl.topBorder && (
+                  <div className="w-full h-1" style={{ background: tpl.topBorder }} />
+                )}
+
+                {/* ─── Email Header ─── */}
+                <div className="px-6 pb-4 pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold tracking-tight">{businessName}</h3>
                     </div>
-                  </div>
-
-                  {/* CTA Buttons */}
-                  <div className="px-6 pb-4 flex gap-3">
-                    <button className={cn('flex-1 h-11 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors', tpl.buttonColor)}>
-                      Pay this Invoice
-                    </button>
-                    <button className="flex-1 h-11 rounded-lg font-medium text-sm flex items-center justify-center gap-2 border border-border hover:bg-muted transition-colors">
-                      Download PDF
-                    </button>
-                  </div>
-
-                  <Separator className={tpl.separatorClass} />
-
-                  {/* Invoice Summary */}
-                  <div className="px-6 py-4 space-y-3">
-                    <p className="text-sm font-medium">Invoice #{invoiceNumber}</p>
-
-                    {lineItems.length > 0 && (
-                      <div className="space-y-1">
-                        {lineItems.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between py-1.5 text-sm">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{item.name || 'Untitled Item'}</p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {item.quantity} x ${item.rate.toFixed(2)}
-                                {item.description && <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>}
-                              </p>
-                            </div>
-                            <span className="ml-4 font-medium tabular-nums text-sm">${(item.quantity * item.rate).toFixed(2)}</span>
-                          </div>
-                        ))}
-                        <Separator className={tpl.separatorClass} />
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      {discountAmount > 0 && (
-                        <>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Subtotal</span>
-                            <span className="tabular-nums">${subtotal.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Discount</span>
-                            <span className="tabular-nums text-green-600">-${discountAmount.toFixed(2)}</span>
-                          </div>
-                          <Separator className={tpl.separatorClass} />
-                        </>
-                      )}
-                      <div className="flex justify-between text-sm font-semibold">
-                        <span>Total Due</span>
-                        <span className="tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
-                      </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">{businessName}</p>
+                      <p className="font-bold text-lg mt-0.5" style={{ color: tpl.accent }}>Invoice</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Due {dueDate ? format(dueDate, 'MMM dd, yyyy') : '...'}
+                      </p>
                     </div>
-                  </div>
-
-                  {/* Memo */}
-                  {notes && (
-                    <>
-                      <Separator className={tpl.separatorClass} />
-                      <div className="px-6 py-4">
-                        <p className="text-sm italic text-muted-foreground">{notes}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Contact us at <span className="underline">hello@company.com</span>
-                        </p>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Legal Footer */}
-                  <div className="px-6 py-4 bg-muted/30 border-t">
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      This email and any attachments are intended solely for the use of the individual
-                      or entity to whom they are addressed. If you have received this message in error,
-                      please notify {businessName} immediately.
-                    </p>
                   </div>
                 </div>
+
+                {/* ─── CTA Buttons (like Bloom) ─── */}
+                <div className="px-6 pb-4 flex gap-3">
+                  <button
+                    className={cn('flex-1 h-11 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors', tpl.buttonColor)}
+                  >
+                    Pay this Invoice
+                  </button>
+                  <button
+                    className="flex-1 h-11 rounded-lg font-medium text-sm flex items-center justify-center gap-2 border border-border hover:bg-muted transition-colors"
+                  >
+                    Download PDF
+                  </button>
+                </div>
+
+                <Separator className={tpl.separatorClass} />
+
+                {/* ─── Invoice Summary ─── */}
+                <div className="px-6 py-4 space-y-3">
+                  <p className="text-sm font-medium">Invoice #{invoiceNumber}</p>
+
+                  {/* Line Items */}
+                  {lineItems.length > 0 && (
+                    <div className="space-y-1">
+                      {lineItems.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between py-1.5 text-sm">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{item.name || 'Untitled Item'}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {item.quantity} &times; ${item.rate.toFixed(2)}
+                              {item.description && <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>}
+                            </p>
+                          </div>
+                          <span className="ml-4 font-medium tabular-nums text-sm">${(item.quantity * item.rate).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <Separator className={tpl.separatorClass} />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {discountAmount > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Subtotal</span>
+                          <span className="tabular-nums">${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Discount</span>
+                          <span className="tabular-nums text-green-600">-${discountAmount.toFixed(2)}</span>
+                        </div>
+                        <Separator className={tpl.separatorClass} />
+                      </>
+                    )}
+                    {taxAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Tax ({parsedTaxPercent}%)</span>
+                        <span className="tabular-nums">${taxAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm font-semibold">
+                      <span>Total Due</span>
+                      <span className="tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─── Memo ─── */}
+                {notes && (
+                  <>
+                    <Separator className={tpl.separatorClass} />
+                    <div className="px-6 py-4">
+                      <p className="text-sm italic text-muted-foreground">{notes}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Contact us at <span className="underline">hello@company.com</span>
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* ─── Legal Footer ─── */}
+                <div className="px-6 py-4 bg-muted/30 border-t">
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    This email and any attachments are intended solely for the use of the individual
+                    or entity to whom they are addressed. If you have received this message in error,
+                    please notify {businessName} immediately.
+                  </p>
+                </div>
               </div>
+            </div>
             )}
 
             {/* ═══ HIDDEN A4 RENDER DIV (for PDF capture) ═══ */}
@@ -1813,10 +1897,12 @@ export function NewInvoiceForm({
                 zIndex: -1,
               }}
             >
+              {/* Top accent bar */}
               {tpl.topBorder && (
                 <div style={{ width: '100%', height: '4px', background: tpl.topBorder }} />
               )}
 
+              {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '32px 40px 24px' }}>
                 <div>
                   <p style={{ fontSize: '18px', fontWeight: 700 }}>{businessName}</p>
@@ -1831,6 +1917,7 @@ export function NewInvoiceForm({
                 </div>
               </div>
 
+              {/* Bill To */}
               <div style={{ padding: '0 40px 24px' }}>
                 <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#999', marginBottom: '4px' }}>Bill To</p>
                 <p style={{ fontSize: '13px', fontWeight: 500 }}>
@@ -1841,6 +1928,7 @@ export function NewInvoiceForm({
                 )}
               </div>
 
+              {/* Items Table */}
               <div style={{ padding: '0 40px' }}>
                 <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
                   <thead>
@@ -1873,6 +1961,7 @@ export function NewInvoiceForm({
                 </table>
               </div>
 
+              {/* Totals */}
               <div style={{ padding: '16px 40px', marginTop: 'auto' }}>
                 <div style={{ marginLeft: 'auto', width: '200px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
@@ -1883,6 +1972,12 @@ export function NewInvoiceForm({
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#22c55e' }}>
                       <span>Discount</span>
                       <span>-${discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {taxAmount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
+                      <span>Tax ({parsedTaxPercent}%)</span>
+                      <span>${taxAmount.toFixed(2)}</span>
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', borderTop: '1px solid #e5e7eb', color: '#333', fontWeight: 500 }}>
@@ -1900,6 +1995,7 @@ export function NewInvoiceForm({
                 </div>
               </div>
 
+              {/* Notes */}
               {notes && (
                 <div style={{ padding: '0 40px 16px' }}>
                   <p style={{ fontSize: '10px', color: '#999' }}>{notes}</p>

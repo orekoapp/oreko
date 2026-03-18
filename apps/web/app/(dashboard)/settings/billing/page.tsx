@@ -50,8 +50,9 @@ export default async function BillingSettingsPage() {
                 <div>
                   <h3 className="font-semibold capitalize">{currentPlan === 'free' ? 'Free Plan' : `${currentPlan} Plan`}</h3>
                   <p className="text-sm text-muted-foreground">
+                    {/* Low #51: Fixed label — nextBillingDate is not the start date */}
                     {billing?.nextBillingDate
-                      ? `Started on ${new Date(billing.nextBillingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                      ? `Next billing on ${new Date(billing.nextBillingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                       : 'Free tier — no billing'}
                   </p>
                 </div>

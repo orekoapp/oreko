@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
@@ -39,8 +39,12 @@ export function useQuoteForm() {
   const [expirationDays, setExpirationDays] = useState('30');
   const [taxRate, setTaxRate] = useState('0');
 
+  // Bug #79: Track initialization to prevent re-init loops
+  const hasInitializedRef = useRef(false);
+
   // Initialize document if not exists or has empty ID (from resetDocument())
   useEffect(() => {
+    if (hasInitializedRef.current && document?.id) return;
     if (!document || !document.id) {
       const now = new Date().toISOString();
       const expDate = new Date();
@@ -80,6 +84,7 @@ export function useQuoteForm() {
         terms: '',
         internalNotes: '',
       });
+      hasInitializedRef.current = true;
     }
   }, [document, initDocument, clientId]);
 

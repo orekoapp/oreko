@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Eraser, Type, PenTool } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -116,7 +116,7 @@ export function SignaturePad({ onSignatureChange, signerName = '' }: SignaturePa
     onSignatureChange(null);
   };
 
-  const updateSignature = () => {
+  const updateSignature = useCallback(() => {
     if (signatureType === 'typed') {
       if (typedSignature && name) {
         onSignatureChange({
@@ -141,11 +141,11 @@ export function SignaturePad({ onSignatureChange, signerName = '' }: SignaturePa
         onSignatureChange(null);
       }
     }
-  };
+  }, [signatureType, typedSignature, name, hasDrawn, onSignatureChange]);
 
   useEffect(() => {
     updateSignature();
-  }, [typedSignature, name, signatureType, hasDrawn]);
+  }, [updateSignature]);
 
   return (
     <Card>

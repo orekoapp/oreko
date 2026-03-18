@@ -130,7 +130,13 @@ export async function createInvoicePaymentIntent(
 
     // Get currency from invoice model (falls back to settings for legacy data)
     const settings = invoice.settings as Record<string, unknown>;
-    const currency = invoice.currency || (settings?.currency as string) || 'USD';
+    const currency = (invoice.currency || (settings?.currency as string) || 'USD').toLowerCase();
+
+    // Bug #18: Validate currency is supported by Stripe before creating PaymentIntent
+    const SUPPORTED_CURRENCIES = ['usd', 'eur', 'gbp', 'cad', 'aud', 'jpy', 'inr', 'sgd', 'hkd', 'nzd', 'chf', 'sek', 'nok', 'dkk', 'mxn', 'brl'];
+    if (!SUPPORTED_CURRENCIES.includes(currency)) {
+      return { success: false, error: `Unsupported currency: ${currency.toUpperCase()}. Please update the invoice currency.` };
+    }
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer({
@@ -244,7 +250,6 @@ export async function processRefundWebhook(
   try {
     const payment = await prisma.payment.findFirst({
       where: { stripePaymentIntentId: paymentIntentId, status: 'completed' },
-      include: { invoice: true },
     });
 
     if (!payment) {
@@ -253,9 +258,15 @@ export async function processRefundWebhook(
     }
 
     const refundAmount = amountRefundedCents / 100; // Convert cents to dollars
-    const isFullRefund = refundAmount >= Number(payment.amount);
+    // Bug #15: Use tolerance for floating-point comparison to avoid missing full refunds
+    const isFullRefund = refundAmount >= Number(payment.amount) - 0.01;
 
     await prisma.$transaction(async (tx) => {
+      // Read invoice INSIDE the transaction to avoid stale data from concurrent webhooks
+      const invoice = await tx.invoice.findUniqueOrThrow({
+        where: { id: payment.invoiceId },
+      });
+
       // Update payment with refund info
       await tx.payment.update({
         where: { id: payment.id },
@@ -267,13 +278,13 @@ export async function processRefundWebhook(
         },
       });
 
-      // Recalculate invoice amounts
-      const invoiceTotal = Number(payment.invoice.total);
-      const currentAmountPaid = Number(payment.invoice.amountPaid);
+      // Recalculate invoice amounts using fresh data from within the transaction
+      const invoiceTotal = Number(invoice.total);
+      const currentAmountPaid = Number(invoice.amountPaid);
       const newAmountPaid = Math.max(0, currentAmountPaid - refundAmount);
       const newAmountDue = Math.max(0, invoiceTotal - newAmountPaid);
 
-      let newStatus = payment.invoice.status;
+      let newStatus = invoice.status;
       if (newAmountPaid <= 0) {
         newStatus = 'sent'; // Fully refunded, back to sent
       } else if (newAmountPaid < invoiceTotal) {

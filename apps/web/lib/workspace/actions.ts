@@ -158,7 +158,7 @@ export async function switchWorkspace(workspaceId: string): Promise<void> {
   cookieStore.set(ACTIVE_WORKSPACE_COOKIE, workspaceId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     maxAge: 60 * 60 * 24 * 365, // 1 year
     path: '/',
   });
@@ -275,9 +275,10 @@ export async function deleteWorkspace(workspaceId: string): Promise<void> {
     throw new Error('Cannot delete your only workspace');
   }
 
-  // Delete workspace (cascades to all related data)
-  await prisma.workspace.delete({
+  // HIGH #15: Soft-delete workspace instead of hard delete to preserve data
+  await prisma.workspace.update({
     where: { id: workspaceId },
+    data: { deletedAt: new Date() },
   });
 
   // Switch to another workspace

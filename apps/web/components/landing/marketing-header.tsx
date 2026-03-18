@@ -22,6 +22,12 @@ export function MarketingHeader() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Low #85: Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
+
   return (
     <header
       className={cn(
@@ -75,8 +81,15 @@ export function MarketingHeader() {
         </button>
       </nav>
 
+      {/* Bug #114: Close mobile menu on route change + Bug #115: Close on Escape */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background">
+        <div
+          className="md:hidden border-t border-border bg-background"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation menu"
+          onKeyDown={(e) => { if (e.key === 'Escape') setIsMobileMenuOpen(false); }}
+        >
           <div className="max-w-6xl mx-auto px-6 py-4 space-y-1">
             {navLinks.map((link) => (
               <Link
@@ -89,11 +102,12 @@ export function MarketingHeader() {
               </Link>
             ))}
             <div className="pt-3 mt-2 border-t border-border space-y-2">
-              <Link href="/login" className="block text-sm text-muted-foreground py-2">
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="block text-sm text-muted-foreground py-2">
                 Sign in
               </Link>
               <Link
                 href="/register"
+                onClick={() => setIsMobileMenuOpen(false)}
                 className="block text-center text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-4 py-2.5 rounded-md"
               >
                 Start free trial

@@ -17,7 +17,7 @@ export default async function TeamSettingsPage() {
   const canManageTeam = currentUserRole === 'owner' || currentUserRole === 'admin';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {canManageTeam && (
         <div className="flex justify-end">
           <InviteMemberButton />

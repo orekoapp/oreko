@@ -39,7 +39,8 @@ export function validateRequestOrigin(request: { headers: { get(name: string): s
     }
   }
 
-  // No Origin or Referer — allow same-origin requests (e.g., from curl, Postman, server-side)
-  // These won't have Origin/Referer headers. Browser cross-origin requests always include Origin.
-  return true;
+  // No Origin or Referer — reject by default.
+  // Browser requests always include at least one of these headers.
+  // Server-side callers (curl, Postman) should use API key auth, not CSRF-protected routes.
+  return false;
 }

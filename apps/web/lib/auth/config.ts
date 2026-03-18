@@ -23,7 +23,7 @@ export const authConfig: NextAuthConfig = {
         '/invoices',
         '/clients',
         '/settings',
-        '/rate-cards',
+
         '/templates',
         '/contracts',
         '/onboarding',
@@ -56,7 +56,7 @@ export const authConfig: NextAuthConfig = {
 
       return true;
     },
-    jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         if (!user.id) {
           console.warn('[AUTH] JWT callback received user without id — this may indicate an OAuth provider issue');
@@ -71,6 +71,30 @@ export const authConfig: NextAuthConfig = {
       if (trigger === 'update' && session) {
         token.name = session.name;
         token.avatarUrl = session.avatarUrl;
+      }
+
+      // Bug #84: Check if user is soft-deleted on every request (invalidate existing sessions)
+      // Only check periodically to avoid hitting DB on every request — use token.lastChecked
+      if (token.id && typeof token.id === 'string') {
+        const now = Math.floor(Date.now() / 1000);
+        const lastChecked = typeof token.lastChecked === 'number' ? token.lastChecked : 0;
+        // Check every 5 minutes
+        if (now - lastChecked > 300) {
+          try {
+            const { prisma } = await import('@quotecraft/database');
+            const dbUser = await prisma.user.findUnique({
+              where: { id: token.id },
+              select: { deletedAt: true },
+            });
+            if (!dbUser || dbUser.deletedAt) {
+              // User deleted — invalidate token
+              return { ...token, id: '', email: '', name: '' };
+            }
+            token.lastChecked = now;
+          } catch {
+            // Don't block auth if DB check fails — just skip
+          }
+        }
       }
 
       return token;

@@ -22,11 +22,12 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
     justify: 'text-justify',
   }[block.content.alignment];
 
+  // Bug #51: Include block.content.html in deps to avoid stale closure in contentEditable
   useEffect(() => {
     if (isEditing && editorRef.current) {
       editorRef.current.focus();
     }
-  }, [isEditing]);
+  }, [isEditing, block.content.html]);
 
   const handleBlur = () => {
     if (editorRef.current) {

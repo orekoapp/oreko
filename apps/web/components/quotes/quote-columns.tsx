@@ -69,6 +69,7 @@ export function createQuoteColumns({
       enableHiding: false,
     },
     {
+      id: 'quote',
       accessorKey: 'quoteNumber',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Quote" />
@@ -153,12 +154,13 @@ export function createQuoteColumns({
       },
     },
     {
+      id: 'created',
       accessorKey: 'issueDate',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Created" />
       ),
       cell: ({ row }) => {
-        const issueDate = new Date(row.getValue('issueDate') as string);
+        const issueDate = new Date(row.original.issueDate);
         return (
           <div className="text-sm text-muted-foreground">
             {issueDate.toLocaleDateString()}
@@ -167,12 +169,13 @@ export function createQuoteColumns({
       },
     },
     {
+      id: 'expires',
       accessorKey: 'expirationDate',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Expires" />
       ),
       cell: ({ row }) => {
-        const expirationDate = row.getValue('expirationDate') as string | null;
+        const expirationDate = row.original.expirationDate as string | null;
         if (!expirationDate) {
           return <div className="text-sm text-muted-foreground">-</div>;
         }

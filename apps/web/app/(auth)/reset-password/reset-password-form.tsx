@@ -38,8 +38,9 @@ export function ResetPasswordForm() {
   const [isInvalidToken, setIsInvalidToken] = React.useState(!token);
 
   // Bug #12: Clear token from URL/history to prevent exposure in browser history
+  // Bug #48: Guard against missing window.history.replaceState in edge environments
   React.useEffect(() => {
-    if (token) {
+    if (token && typeof window !== 'undefined' && window.history?.replaceState) {
       window.history.replaceState({}, '', '/reset-password');
     }
   }, [token]);

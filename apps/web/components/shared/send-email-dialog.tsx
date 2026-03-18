@@ -16,6 +16,8 @@ import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -93,7 +95,7 @@ export function SendEmailDialog({
   documentNumber,
   recipientEmail,
   recipientName,
-  businessName = 'Robert P. Loving',
+  businessName = 'Your Business',
   total = 0,
   dueDate,
   lineItems = [],
@@ -159,6 +161,7 @@ export function SendEmailDialog({
     setRecipients((prev) => prev.filter((r) => r.id !== id));
   };
 
+  // Bug #105: Pass custom recipients, subject, and message to server actions
   const handleSend = async () => {
     if (recipients.length === 0) {
       toast.error('Please add at least one recipient');
@@ -167,14 +170,20 @@ export function SendEmailDialog({
 
     setIsSending(true);
     try {
+      const emailOptions = {
+        recipients: recipients.map((r) => r.email),
+        subject: subject || undefined,
+        message: message || undefined,
+      };
+
       let result: { success: boolean; error?: string; emailSent?: boolean };
 
       if (type === 'quote') {
-        result = await sendQuote(documentId);
+        result = await sendQuote(documentId, emailOptions);
       } else if (type === 'invoice') {
-        result = await sendInvoice(documentId);
+        result = await sendInvoice(documentId, emailOptions);
       } else {
-        const contractResult = await sendContractInstance(documentId);
+        const contractResult = await sendContractInstance(documentId, emailOptions);
         result = { success: true, emailSent: contractResult.emailSent };
       }
 
@@ -214,10 +223,10 @@ export function SendEmailDialog({
         {/* ─── Header ───────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-background shrink-0">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">Send {label}</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <DialogTitle className="text-xl font-semibold tracking-tight">Send {label}</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-0.5">
               {label} #{documentNumber}
-            </p>
+            </DialogDescription>
           </div>
         </div>
 
@@ -437,13 +446,17 @@ export function SendEmailDialog({
 
                 {/* Message preview */}
                 <div className="px-6 pb-4">
+                  {/* CR #24: Split once, not twice per render */}
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {message ? message.split('\n').map((line, i) => (
-                      <span key={i}>
-                        {line}
-                        {i < message.split('\n').length - 1 && <br />}
-                      </span>
-                    )) : (
+                    {message ? (() => {
+                      const lines = message.split('\n');
+                      return lines.map((line, i) => (
+                        <span key={i}>
+                          {line}
+                          {i < lines.length - 1 && <br />}
+                        </span>
+                      ));
+                    })() : (
                       <span className="italic">Your message preview will appear here...</span>
                     )}
                   </p>

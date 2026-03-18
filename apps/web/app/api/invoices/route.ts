@@ -86,14 +86,14 @@ export async function GET(request: NextRequest) {
         (sum, payment) => sum + Number(payment.amount),
         0
       );
-      const total = Number(invoice.total);
-      const amountDue = total - amountPaid;
+      const invoiceTotal = Number(invoice.total);
+      const amountDue = invoiceTotal - amountPaid;
 
       return {
         id: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
         status: invoice.status,
-        total,
+        total: invoiceTotal,
         subtotal: Number(invoice.subtotal),
         taxTotal: Number(invoice.taxTotal),
         amountPaid,

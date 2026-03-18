@@ -13,7 +13,7 @@ export default async function InvoiceSettingsPage() {
   const invoiceSequence = sequences.find((s) => s.type === 'invoice') || null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <NumberSequenceForm
         type="invoice"
         title="Invoice Numbering"

@@ -20,6 +20,7 @@ export function EditClientFormWrapper({ client }: EditClientFormWrapperProps) {
   const handleSubmit = async (data: CreateClientInput) => {
     setIsSaving(true);
     setServerError(null);
+    // Low #77: Use finally to always reset isSaving
     try {
       await updateClient({ ...data, id: client.id });
       toast.success('Client updated successfully');
@@ -28,6 +29,7 @@ export function EditClientFormWrapper({ client }: EditClientFormWrapperProps) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update client';
       setServerError(errorMessage);
       toast.error(errorMessage);
+    } finally {
       setIsSaving(false);
     }
   };

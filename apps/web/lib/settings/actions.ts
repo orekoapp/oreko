@@ -56,7 +56,12 @@ export async function getWorkspace(): Promise<WorkspaceData> {
 
 // Update workspace name
 export async function updateWorkspaceName(name: string): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #10: Only owner/admin can rename workspace
+  if (role === 'viewer' || role === 'editor') {
+    throw new Error('Only admins can rename the workspace');
+  }
 
   await prisma.workspace.update({
     where: { id: workspaceId },
@@ -85,6 +90,8 @@ export async function getBusinessProfile(): Promise<BusinessProfileData | null> 
   return {
     businessName: profile.businessName,
     logoUrl: profile.logoUrl,
+    darkLogoUrl: profile.darkLogoUrl,
+    socialLinks: profile.socialLinks as { platform: string; url: string }[] | null,
     email: profile.email,
     phone: profile.phone,
     website: profile.website,
@@ -119,6 +126,9 @@ export async function updateBusinessProfile(
         ...(input.taxId !== undefined && { taxId: input.taxId || null }),
         ...(input.currency !== undefined && { currency: input.currency }),
         ...(input.timezone !== undefined && { timezone: input.timezone }),
+        ...(input.socialLinks !== undefined && {
+          socialLinks: input.socialLinks ? (input.socialLinks as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+        }),
       },
     });
   } else {
@@ -130,6 +140,7 @@ export async function updateBusinessProfile(
         phone: input.phone || null,
         website: input.website || null,
         address: input.address ? (input.address as Prisma.InputJsonValue) : Prisma.JsonNull,
+        socialLinks: input.socialLinks ? (input.socialLinks as unknown as Prisma.InputJsonValue) : undefined,
         taxId: input.taxId || null,
         currency: input.currency || 'USD',
         timezone: input.timezone || 'UTC',
@@ -246,6 +257,7 @@ export async function getBrandingSettings(): Promise<BrandingSettingsData | null
     secondaryColor: branding.secondaryColor,
     accentColor: branding.accentColor,
     logoUrl: branding.logoUrl,
+    darkLogoUrl: branding.darkLogoUrl,
     faviconUrl: branding.faviconUrl,
     customCss: branding.customCss,
     fontFamily: branding.fontFamily,
@@ -270,6 +282,7 @@ export async function updateBrandingSettings(
         ...(input.secondaryColor !== undefined && { secondaryColor: input.secondaryColor || null }),
         ...(input.accentColor !== undefined && { accentColor: input.accentColor || null }),
         ...(input.logoUrl !== undefined && { logoUrl: input.logoUrl || null }),
+        ...(input.darkLogoUrl !== undefined && { darkLogoUrl: input.darkLogoUrl || null }),
         ...(input.faviconUrl !== undefined && { faviconUrl: input.faviconUrl || null }),
         ...(input.customCss !== undefined && { customCss: input.customCss || null }),
         ...(input.fontFamily !== undefined && { fontFamily: input.fontFamily || null }),
@@ -283,6 +296,7 @@ export async function updateBrandingSettings(
         secondaryColor: input.secondaryColor || '#8B5CF6',
         accentColor: input.accentColor || '#F59E0B',
         logoUrl: input.logoUrl || null,
+        darkLogoUrl: input.darkLogoUrl || null,
         faviconUrl: input.faviconUrl || null,
         customCss: input.customCss || null,
         fontFamily: input.fontFamily || null,
@@ -390,6 +404,11 @@ export async function getTaxRates(): Promise<TaxRateData[]> {
 export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: string }> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
+  // MEDIUM #10: Validate rate bounds
+  if (input.rate < 0 || input.rate > 100) {
+    throw new Error('Tax rate must be between 0 and 100');
+  }
+
   // If setting as default, unset other defaults
   if (input.isDefault) {
     await prisma.taxRate.updateMany({
@@ -418,6 +437,11 @@ export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: st
 // Update tax rate
 export async function updateTaxRate(input: UpdateTaxRateInput): Promise<void> {
   const { workspaceId } = await getCurrentUserWorkspace();
+
+  // MEDIUM #10: Validate rate bounds
+  if (input.rate !== undefined && (input.rate < 0 || input.rate > 100)) {
+    throw new Error('Tax rate must be between 0 and 100');
+  }
 
   // Verify ownership
   const existing = await prisma.taxRate.findFirst({
@@ -660,7 +684,7 @@ export async function updateMemberRole(
   newRole: WorkspaceMemberRole
 ): Promise<{ success: boolean; error?: string }> {
   // Validate role at runtime (TypeScript types are erased, server actions accept any value)
-  const validRoles = ['member', 'admin', 'owner'] as const;
+  const validRoles = ['viewer', 'member', 'admin', 'owner'] as const;
   if (!validRoles.includes(newRole as typeof validRoles[number])) {
     return { success: false, error: 'Invalid role' };
   }
@@ -712,6 +736,26 @@ export async function updateMemberRole(
     }
   }
 
+  // Only one owner allowed per workspace — transfer ownership
+  if (newRole === 'owner') {
+    // Demote current owner(s) to admin before promoting new owner
+    await prisma.workspaceMember.updateMany({
+      where: { workspaceId, role: 'owner' },
+      data: { role: 'admin' },
+    });
+    // Update workspace.ownerId to the new owner
+    const targetUser = await prisma.workspaceMember.findFirst({
+      where: { id: memberId },
+      select: { userId: true },
+    });
+    if (targetUser) {
+      await prisma.workspace.update({
+        where: { id: workspaceId },
+        data: { ownerId: targetUser.userId },
+      });
+    }
+  }
+
   const oldRole = targetMember.role;
 
   await prisma.workspaceMember.update({
@@ -748,7 +792,7 @@ export async function inviteMember(
   const normalizedEmail = emailResult.data.toLowerCase().trim();
 
   // Validate role at runtime (TypeScript types are erased, server actions accept any value)
-  const validRoles = ['member', 'admin', 'owner'] as const;
+  const validRoles = ['viewer', 'member', 'admin', 'owner'] as const;
   if (!validRoles.includes(role as typeof validRoles[number])) {
     return { success: false, error: 'Invalid role' };
   }
@@ -1519,12 +1563,27 @@ export async function getIntegrations(): Promise<IntegrationData[]> {
 }
 
 // ============================================
-// WEBHOOKS (STUB)
+// WEBHOOKS
 // ============================================
 
 export async function getWebhooks(): Promise<WebhookData[]> {
-  // TODO: Wire up to database when webhooks table is added
-  return [];
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const endpoints = await prisma.webhookEndpoint.findMany({
+    where: { workspaceId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return endpoints.map((ep) => ({
+    id: ep.id,
+    name: ep.name || ep.url,
+    url: ep.url,
+    secret: ep.secret,
+    events: ep.events as WebhookData['events'],
+    isActive: ep.isActive,
+    createdAt: ep.createdAt,
+    updatedAt: ep.updatedAt,
+  }));
 }
 
 export async function createWebhook(input: {
@@ -1533,10 +1592,28 @@ export async function createWebhook(input: {
   events: string[];
   secret?: string;
 }): Promise<{ id: string }> {
-  // TODO: Wire up to database
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot create webhooks');
+  }
+
+  // Generate a signing secret if none provided
+  const secret = input.secret || `whsec_${randomBytes(24).toString('hex')}`;
+
+  const endpoint = await prisma.webhookEndpoint.create({
+    data: {
+      workspaceId,
+      name: input.name.trim(),
+      url: input.url.trim(),
+      events: input.events,
+      secret,
+      isActive: true,
+    },
+  });
 
   revalidatePath('/settings/webhooks');
-  return { id: crypto.randomUUID() };
+  return { id: endpoint.id };
 }
 
 export async function updateWebhook(input: {
@@ -1547,13 +1624,55 @@ export async function updateWebhook(input: {
   secret?: string;
   isActive?: boolean;
 }): Promise<void> {
-  // TODO: Wire up to database
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot update webhooks');
+  }
+
+  // Verify the webhook belongs to this workspace
+  const existing = await prisma.webhookEndpoint.findFirst({
+    where: { id: input.id, workspaceId },
+  });
+
+  if (!existing) {
+    throw new Error('Webhook not found');
+  }
+
+  const data: Record<string, unknown> = {};
+  if (input.name !== undefined) data.name = input.name.trim();
+  if (input.url !== undefined) data.url = input.url.trim();
+  if (input.events !== undefined) data.events = input.events;
+  if (input.secret !== undefined) data.secret = input.secret;
+  if (input.isActive !== undefined) data.isActive = input.isActive;
+
+  await prisma.webhookEndpoint.update({
+    where: { id: input.id },
+    data,
+  });
 
   revalidatePath('/settings/webhooks');
 }
 
 export async function deleteWebhook(id: string): Promise<void> {
-  // TODO: Wire up to database
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot delete webhooks');
+  }
+
+  // Verify the webhook belongs to this workspace
+  const existing = await prisma.webhookEndpoint.findFirst({
+    where: { id, workspaceId },
+  });
+
+  if (!existing) {
+    throw new Error('Webhook not found');
+  }
+
+  await prisma.webhookEndpoint.delete({
+    where: { id },
+  });
 
   revalidatePath('/settings/webhooks');
 }

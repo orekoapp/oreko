@@ -27,6 +27,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { duplicateQuote, deleteQuote, getQuote } from '@/lib/quotes/actions';
@@ -38,10 +39,10 @@ const ACCENT = '#3786b3';
 const ACCENT_LIGHT = '#e3f2fa';
 const ACCENT_BG = 'bg-sky-50/60';
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
   }).format(amount);
 }
 
@@ -142,12 +143,15 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
     setSendTarget(null);
   }, [sendTarget]);
 
-  // Copy Link
+  // Bug #75: Copy Link — use access token URL (not quoteNumber).
+  // QuoteListItem doesn't include accessToken, so we fall back to the quote detail page.
   const handleCopyLink = useCallback(async (quote: QuoteListItem) => {
-    const url = `${window.location.origin}/accept/${quote.quoteNumber}`;
+    // The public portal URL requires an access token which isn't available on the list item.
+    // Copy the internal quote link instead so the user can share from the detail page.
+    const url = `${window.location.origin}/quotes/${quote.id}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
+      toast.success('Link copied — share the portal link from the quote detail page');
     } catch {
       toast.error('Failed to copy link');
     }
@@ -266,13 +270,14 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
         statusFilterKey="status"
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
-        onRowClick={(quote) => router.push(`/quotes/${quote.id}`)}
+        onRowClick={(quote) => handleView(quote)}
         bulkActions={bulkActions}
       />
 
       {/* Quote View Dialog — Payment Page Style */}
       <Dialog open={!!viewingQuote} onOpenChange={(open) => !open && handleCloseView()}>
         <DialogContent className="!flex !flex-col !max-w-[520px] !max-h-[90vh] !p-0 !gap-0 overflow-hidden">
+          <DialogTitle className="sr-only">Quote Preview</DialogTitle>
           {quote && (
             <>
               {/* Scrollable content */}
@@ -462,23 +467,6 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                 </div>
               </div>
 
-              {/* Footer Actions — Edit only for drafts */}
-              {(quote.status as string) === 'draft' && (
-                <div className="border-t p-3 flex items-center justify-end bg-background">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={() => {
-                      handleCloseView();
-                      router.push(`/quotes/${quote.id}/builder`);
-                    }}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
-              )}
             </>
           )}
         </DialogContent>

@@ -111,13 +111,26 @@ export async function POST(request: NextRequest) {
   });
   const quoteNumber = `${seq.prefix || 'Q-'}${String(seq.currentValue).padStart(seq.padding, '0')}`;
 
-  // Calculate totals
+  // CR #5: Validate line item values — reject Infinity/NaN
   const items = lineItems || [];
+  for (const item of items) {
+    if (!Number.isFinite(item.quantity) || !Number.isFinite(item.rate)) {
+      return apiError('Line item quantity and rate must be valid numbers', 400);
+    }
+    if (item.quantity < 0 || item.rate < 0) {
+      return apiError('Line item quantity and rate cannot be negative', 400);
+    }
+    if (item.taxRate !== undefined && (!Number.isFinite(item.taxRate) || item.taxRate < 0 || item.taxRate > 100)) {
+      return apiError('Tax rate must be between 0 and 100', 400);
+    }
+  }
+
+  // Calculate totals
   let subtotal = 0;
   let taxTotal = 0;
   const processedItems = items.map((item, i) => {
-    const amount = item.quantity * item.rate;
-    const taxAmount = item.taxRate ? amount * (item.taxRate / 100) : 0;
+    const amount = Math.round(item.quantity * item.rate * 100) / 100;
+    const taxAmount = item.taxRate ? Math.round(amount * (item.taxRate / 100) * 100) / 100 : 0;
     subtotal += amount;
     taxTotal += taxAmount;
     return {

@@ -22,6 +22,9 @@ import { toNumber } from '@/lib/utils';
 // ============================================
 // RATE CARD ACTIONS
 // ============================================
+// HIGH #19: All Prisma Decimal fields (rate, taxRate.rate, amount, quantity)
+// MUST be converted with toNumber() before returning to client components.
+// Prisma returns Decimal objects, not plain numbers, which breaks serialization.
 
 // Get rate cards with pagination and filters
 export async function getRateCards(filter?: RateCardFilter): Promise<PaginatedRateCards> {
@@ -165,7 +168,12 @@ export async function getRateCardById(id: string): Promise<RateCardDetail> {
 
 // Create rate card
 export async function createRateCard(input: CreateRateCardInput): Promise<{ id: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #211: Viewers cannot create rate cards
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot create rate cards');
+  }
 
   const rateCard = await prisma.rateCard.create({
     data: {
@@ -188,7 +196,12 @@ export async function createRateCard(input: CreateRateCardInput): Promise<{ id: 
 
 // Update rate card
 export async function updateRateCard(input: UpdateRateCardInput): Promise<{ id: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #211: Viewers cannot update rate cards
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot update rate cards');
+  }
 
   // Verify ownership
   const existing = await prisma.rateCard.findFirst({
@@ -235,7 +248,12 @@ export async function updateRateCard(input: UpdateRateCardInput): Promise<{ id: 
 
 // Delete rate card (soft delete)
 export async function deleteRateCard(id: string): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #211: Viewers cannot delete rate cards
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot delete rate cards');
+  }
 
   // Verify ownership
   const existing = await prisma.rateCard.findFirst({
@@ -260,7 +278,12 @@ export async function deleteRateCard(id: string): Promise<void> {
 
 // Bulk delete rate cards
 export async function bulkDeleteRateCards(ids: string[]): Promise<{ deleted: number }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #211: Viewers cannot delete rate cards
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot delete rate cards');
+  }
 
   const result = await prisma.rateCard.updateMany({
     where: {

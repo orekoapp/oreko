@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Table } from '@tanstack/react-table';
-import { Search, X, SlidersHorizontal } from 'lucide-react';
+import { Search, X, Columns3 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export interface BulkAction<TData> {
   label: string;
@@ -44,6 +50,9 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const [searchValue, setSearchValue] = React.useState('');
   const debouncedSearchRef = React.useRef<NodeJS.Timeout | null>(null);
+  // Low #84: Use ref for table to avoid unstable dependency in useCallback
+  const tableRef = React.useRef(table);
+  tableRef.current = table;
 
   // Debounced search (300ms as per spec)
   const handleSearchChange = React.useCallback(
@@ -56,11 +65,11 @@ export function DataTableToolbar<TData>({
 
       debouncedSearchRef.current = setTimeout(() => {
         if (filterKey) {
-          table.getColumn(filterKey)?.setFilterValue(value);
+          tableRef.current.getColumn(filterKey)?.setFilterValue(value);
         }
       }, 300);
     },
-    [filterKey, table]
+    [filterKey]
   );
 
   // Cleanup timeout on unmount
@@ -137,11 +146,6 @@ export function DataTableToolbar<TData>({
             </SelectContent>
           </Select>
         )}
-        {/* Filter/settings icon */}
-        <Button variant="outline" size="icon" className="h-9 w-9">
-          <SlidersHorizontal className="h-4 w-4" />
-          <span className="sr-only">Column settings</span>
-        </Button>
         {isFiltered && (
           <Button
             variant="ghost"
@@ -155,6 +159,30 @@ export function DataTableToolbar<TData>({
             <X className="ml-2 h-4 w-4" />
           </Button>
         )}
+        {/* Column visibility toggle */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9">
+              <Columns3 className="mr-2 h-4 w-4" />
+              Columns
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  className="capitalize"
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                >
+                  {column.id}
+                </DropdownMenuCheckboxItem>
+              ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div className="flex items-center space-x-2">
         {table.getFilteredSelectedRowModel().rows.length > 0 && (

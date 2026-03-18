@@ -336,13 +336,14 @@
   background: transparent;
 }
 
+/* Bug #131: Fixed — was using rgb() with OKLCH values. Using direct color with opacity. */
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--muted-foreground) / 0.3);
+  background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--muted-foreground) / 0.5);
+  background: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
 }
 
 /* Print styles for quotes/invoices */

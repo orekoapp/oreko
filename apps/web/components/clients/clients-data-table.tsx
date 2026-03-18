@@ -47,6 +47,9 @@ export function ClientsDataTable({ data }: ClientsDataTableProps) {
     }
   };
 
+  // Bug #214: Track confirmation state for bulk delete
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
   const handleBulkDelete = async () => {
     if (selectedRows.length === 0) return;
 
@@ -55,6 +58,7 @@ export function ClientsDataTable({ data }: ClientsDataTableProps) {
       const result = await deleteClients(selectedRows.map((c) => c.id));
       toast.success(`${result.deleted} clients deleted successfully`);
       setSelectedRows([]);
+      setShowBulkDeleteConfirm(false);
       router.refresh();
     } catch {
       toast.error('Failed to delete clients');
@@ -104,15 +108,40 @@ export function ClientsDataTable({ data }: ClientsDataTableProps) {
           <span className="text-sm text-muted-foreground">
             {selectedRows.length} selected
           </span>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleBulkDelete}
-            disabled={isDeleting}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Selected
-          </Button>
+          {/* Bug #214: Confirmation before bulk delete */}
+          {showBulkDeleteConfirm ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-destructive font-medium">
+                Delete {selectedRows.length} clients?
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Confirm'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              disabled={isDeleting}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Selected
+            </Button>
+          )}
         </div>
       )}
 

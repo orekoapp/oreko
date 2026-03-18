@@ -30,18 +30,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Idempotency check: skip already-processed events
-    const existing = await prisma.stripeWebhookEvent.findUnique({
-      where: { id: event.id },
-    });
-    if (existing) {
-      return NextResponse.json({ received: true, duplicate: true });
+    // Idempotency check: atomically insert the event record.
+    // If a concurrent webhook already inserted it, the unique constraint
+    // violation is caught and we skip processing (prevents race condition
+    // where two concurrent requests both pass a findUnique check).
+    try {
+      await prisma.stripeWebhookEvent.create({
+        data: { id: event.id, type: event.type },
+      });
+    } catch (err: unknown) {
+      // P2002 = Prisma unique constraint violation — event already processed
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'P2002') {
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+      throw err; // Re-throw unexpected errors
     }
-
-    // Record event before processing to prevent concurrent duplicates
-    await prisma.stripeWebhookEvent.create({
-      data: { id: event.id, type: event.type },
-    });
 
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -72,6 +75,8 @@ export async function POST(request: NextRequest) {
           : charge.payment_intent?.id;
         if (paymentIntentId) {
           await processRefundWebhook(paymentIntentId, charge.amount_refunded);
+        } else {
+          console.warn(`[stripe-webhook] Orphaned refund event ${event.id}: charge.payment_intent is null. Refund processed by Stripe but no matching payment in QuoteCraft.`);
         }
         break;
       }

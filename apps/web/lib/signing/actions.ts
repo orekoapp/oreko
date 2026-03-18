@@ -38,8 +38,9 @@ export async function sendSigningOtp(input: {
     let documentId: string;
 
     if (input.type === 'quote') {
+      // Bug #155: Only allow OTP for quotes in signable status
       const quote = await prisma.quote.findFirst({
-        where: { accessToken: input.accessToken, deletedAt: null },
+        where: { accessToken: input.accessToken, deletedAt: null, status: { in: ['sent', 'viewed'] } },
         select: {
           id: true,
           client: { select: { email: true, name: true } },
@@ -61,8 +62,10 @@ export async function sendSigningOtp(input: {
       businessName = quote.workspace.businessProfile?.businessName || quote.workspace.name;
       documentId = quote.id;
     } else {
+      // MEDIUM #19: Filter out soft-deleted contract instances
+      // Bug #155: Only allow OTP for contracts in signable status
       const contract = await prisma.contractInstance.findFirst({
-        where: { accessToken: input.accessToken },
+        where: { accessToken: input.accessToken, deletedAt: null, status: { in: ['sent', 'viewed'] } },
         select: {
           id: true,
           client: { select: { email: true, name: true } },
@@ -92,12 +95,14 @@ export async function sendSigningOtp(input: {
     // Send email with OTP
     const emailResult = await sendEmail({
       to: clientEmail,
-      subject: `Your verification code: ${code}`,
+      // Low #33: Don't expose OTP code in subject line (visible in notifications/previews)
+      subject: 'Your QuoteCraft verification code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Verify your identity</h2>
-          <p>Hi ${clientName},</p>
-          <p>${businessName} has requested your signature on a document. To verify your identity, please enter this code:</p>
+          <!-- Low #34: Escape client/business names to prevent XSS in email -->
+          <p>Hi ${clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;')},</p>
+          <p>${businessName.replace(/</g, '&lt;').replace(/>/g, '&gt;')} has requested your signature on a document. To verify your identity, please enter this code:</p>
           <div style="margin: 24px 0; text-align: center;">
             <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; background: #f3f4f6; padding: 16px 32px; border-radius: 8px; display: inline-block;">
               ${code}
@@ -151,8 +156,9 @@ export async function verifySigningOtpAction(input: {
       if (!quote) return { success: false, error: 'Document not found' };
       documentId = quote.id;
     } else {
+      // MEDIUM #19: Filter out soft-deleted contract instances
       const contract = await prisma.contractInstance.findFirst({
-        where: { accessToken: input.accessToken },
+        where: { accessToken: input.accessToken, deletedAt: null },
         select: { id: true },
       });
       if (!contract) return { success: false, error: 'Document not found' };
@@ -191,8 +197,9 @@ export async function checkSigningVerification(input: {
       if (!quote) return false;
       documentId = quote.id;
     } else {
+      // MEDIUM #19: Filter out soft-deleted contract instances
       const contract = await prisma.contractInstance.findFirst({
-        where: { accessToken: input.accessToken },
+        where: { accessToken: input.accessToken, deletedAt: null },
         select: { id: true },
       });
       if (!contract) return false;

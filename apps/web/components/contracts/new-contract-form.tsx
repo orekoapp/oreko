@@ -147,11 +147,13 @@ export default function NewContractForm({
 
     setLoading(true);
     try {
+      // Bug #186: Pass sendImmediately flag based on isDraft
       const instance = await createContractInstance({
         contractId: selectedTemplateId,
         clientId: selectedClientId,
         quoteId: selectedQuoteId || undefined,
         variableValues,
+        sendImmediately: !isDraft,
       });
       toast.success(
         isDraft

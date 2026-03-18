@@ -23,6 +23,7 @@ model User {
   avatarUrl       String?   @map("avatar_url")
   emailVerifiedAt DateTime? @map("email_verified_at")
   locale          String    @default("en") @db.VarChar(10)
+  preferences     Json?     @db.JsonB
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
@@ -41,7 +42,7 @@ model User {
   attachments         Attachment[]
   notifications       Notification[]
 
-  @@index([email])
+  // Low #29: Removed redundant @@index([email]) — @unique already creates an index
   @@index([deletedAt])
   @@map("users")
 }
@@ -167,11 +168,13 @@ model Workspace {
   @@map("workspaces")
 }
 
+// Low #1: role is a plain String — using @db.VarChar with CHECK-like validation in app layer.
+// A Prisma enum would be cleaner but requires data migration for existing rows.
 model WorkspaceMember {
   id          String    @id @default(uuid())
   workspaceId String    @map("workspace_id")
   userId      String    @map("user_id")
-  role        String    @default("member")
+  role        String    @default("member") @db.VarChar(20)
   invitedAt   DateTime? @map("invited_at")
   acceptedAt  DateTime? @map("accepted_at")
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -210,6 +213,8 @@ model BusinessProfile {
   workspaceId  String   @id @map("workspace_id")
   businessName String   @map("business_name")
   logoUrl      String?  @map("logo_url")
+  darkLogoUrl  String?  @map("dark_logo_url")
+  socialLinks  Json?    @default("[]") @map("social_links")
   email        String?
   phone        String?  @db.VarChar(50)
   website      String?
@@ -287,6 +292,7 @@ model Client {
   invoices          Invoice[]
   contractInstances ContractInstance[]
 
+  @@unique([workspaceId, email])
   @@index([workspaceId])
   @@index([email])
   @@index([company])
@@ -409,7 +415,8 @@ model Quote {
 
   // Relations
   workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  client            Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  // HIGH #24: Restrict client deletion when they have quotes — users should archive clients instead
+  client            Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
   project           Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
   lineItems         QuoteLineItem[]
   events            QuoteEvent[]
@@ -421,7 +428,7 @@ model Quote {
   @@index([clientId])
   @@index([projectId])
   @@index([status])
-  @@index([accessToken])
+  // Low #30: Removed redundant @@index([accessToken]) — @unique already creates an index
   @@index([workspaceId, status])
   @@index([expirationDate])
   @@index([createdAt(sort: Desc)])
@@ -466,6 +473,7 @@ model QuoteEvent {
   actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([quoteId])
+  @@index([actorId]) // Low #5
   @@index([createdAt(sort: Desc)])
   @@map("quote_events")
 }
@@ -511,7 +519,8 @@ model Invoice {
 
   // Relations
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  // HIGH #24: Restrict client deletion when they have invoices — users should archive clients instead
+  client           Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
   project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
   quote            Quote?            @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   lineItems        InvoiceLineItem[]
@@ -526,7 +535,7 @@ model Invoice {
   @@index([projectId])
   @@index([quoteId])
   @@index([status])
-  @@index([accessToken])
+  // Low #30: Removed redundant @@index([accessToken]) — @unique already creates an index
   @@index([workspaceId, status])
   @@index([dueDate])
   @@index([createdAt(sort: Desc)])
@@ -571,6 +580,7 @@ model InvoiceEvent {
   actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
+  @@index([actorId]) // Low #5
   @@index([createdAt(sort: Desc)])
   @@map("invoice_events")
 }
@@ -597,8 +607,10 @@ model Payment {
   refundReason          String?   @map("refund_reason") @db.Text
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at") // Low #2: Support soft-delete for payments
 
-  invoice          Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  // HIGH #18: Restrict deletion — invoices with payments cannot be deleted
+  invoice          Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
   paymentSchedules PaymentSchedule[]
 
   @@index([invoiceId])
@@ -677,19 +689,20 @@ model ContractInstance {
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
 
-  // Bug #99-#107: Use SetNull to preserve signed contract instances when parent is deleted
-  contract  Contract?  @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  // Bug #24: Restrict template deletion when signed instances exist (archive templates instead)
+  contract  Contract?  @relation(fields: [contractId], references: [id], onDelete: Restrict)
   quote     Quote?     @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   client    Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
   project   Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // Bug #9: Restrict workspace deletion when signed contracts exist (preserves audit trail)
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
 
   @@index([contractId])
   @@index([quoteId])
   @@index([clientId])
   @@index([projectId])
   @@index([workspaceId])
-  @@index([accessToken])
+  // Low #30: Removed redundant @@index([accessToken]) — @unique already creates an index
   @@map("contract_instances")
 }
 
@@ -792,6 +805,7 @@ model BrandingSettings {
   secondaryColor String?  @map("secondary_color") @db.VarChar(7)
   accentColor    String?  @map("accent_color") @db.VarChar(7)
   logoUrl        String?  @map("logo_url")
+  darkLogoUrl    String?  @map("dark_logo_url")
   faviconUrl     String?  @map("favicon_url")
   customCss      String?  @map("custom_css") @db.Text
   fontFamily     String?  @map("font_family") @db.VarChar(100)
@@ -831,11 +845,12 @@ model Attachment {
   entityId     String    @map("entity_id")
   filename     String
   filePath     String    @map("file_path")
-  fileSize     Int       @map("file_size")
+  fileSize     BigInt    @map("file_size") // Low #38: BigInt for future-proofing (Int caps at ~2.1GB)
   mimeType     String    @map("mime_type") @db.VarChar(100)
   uploadedById String    @map("uploaded_by_id")
   isPublic     Boolean   @default(false) @map("is_public")
   uploadedAt   DateTime  @default(now()) @map("uploaded_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at") // Low #3
   deletedAt    DateTime? @map("deleted_at")
 
   workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -918,11 +933,12 @@ model CreditNote {
   status          String   @default("draft") @db.VarChar(20)
   issuedAt        DateTime? @map("issued_at")
   notes           String?  @db.Text
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  invoice   Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
   lineItems CreditNoteLineItem[]
   events    CreditNoteEvent[]
 
@@ -942,6 +958,7 @@ model CreditNoteLineItem {
   amount       Decimal @db.Decimal(12, 2)
   sortOrder    Int     @default(0) @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at") // Low #4
 
   creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
 
@@ -1021,6 +1038,7 @@ model InvoiceTemplate {
 model WebhookEndpoint {
   id          String   @id @default(uuid())
   workspaceId String   @map("workspace_id")
+  name        String   @default("") @db.VarChar(200)
   url         String   @db.VarChar(500)
   secret      String   @db.VarChar(100)
   events      String[] @default([])

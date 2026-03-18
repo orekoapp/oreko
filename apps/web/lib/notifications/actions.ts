@@ -16,17 +16,23 @@ export interface NotificationData {
   createdAt: Date;
 }
 
-// Get notifications for the current user
-export async function getNotifications(limit = 20): Promise<NotificationData[]> {
+// Low #91: Added offset pagination support
+export async function getNotifications(limit = 20, offset = 0): Promise<{ data: NotificationData[]; total: number }> {
   const { userId, workspaceId } = await getCurrentUserWorkspace();
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId, workspaceId },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
+  const where = { userId, workspaceId };
 
-  return notifications;
+  const [notifications, total] = await Promise.all([
+    prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.notification.count({ where }),
+  ]);
+
+  return { data: notifications, total };
 }
 
 // Get unread notification count
@@ -40,10 +46,11 @@ export async function getUnreadNotificationCount(): Promise<number> {
 
 // Mark a single notification as read
 export async function markNotificationRead(notificationId: string): Promise<void> {
-  const { userId } = await getCurrentUserWorkspace();
+  const { userId, workspaceId } = await getCurrentUserWorkspace();
 
+  // HIGH #51: Include workspaceId to prevent cross-workspace notification manipulation
   await prisma.notification.updateMany({
-    where: { id: notificationId, userId },
+    where: { id: notificationId, userId, workspaceId },
     data: { isRead: true, readAt: new Date() },
   });
 

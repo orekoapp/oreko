@@ -1,60 +1,61 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-
 export function InvoicePortalSkeleton() {
   return (
-    <div className="min-h-screen">
-      {/* Header skeleton */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto max-w-4xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <div className="h-5 w-32 animate-pulse rounded bg-muted" />
-              <div className="h-8 w-64 animate-pulse rounded bg-muted" />
-            </div>
-            <div className="h-10 w-24 animate-pulse rounded bg-muted" />
-          </div>
+    <div className="flex min-h-screen items-start justify-center bg-gray-100/80 px-4 py-8 dark:bg-neutral-950 sm:py-12">
+      <div className="w-full max-w-[520px] overflow-hidden rounded-2xl border bg-card shadow-lg">
+        {/* Hero */}
+        <div className="px-6 pb-5 pt-8 text-center">
+          <div className="mx-auto mb-3 h-10 w-10 animate-pulse rounded-full bg-muted" />
+          <div className="mx-auto h-4 w-28 animate-pulse rounded bg-muted" />
+          <div className="mx-auto mt-2 h-8 w-36 animate-pulse rounded bg-muted" />
+          <div className="mx-auto mt-2 h-3 w-44 animate-pulse rounded bg-muted" />
         </div>
-      </header>
 
-      {/* Content skeleton */}
-      <main className="container mx-auto max-w-4xl px-4 py-8">
-        {/* Status banner skeleton */}
-        <div className="mb-6 h-16 animate-pulse rounded-lg bg-muted" />
+        <div className="border-t border-gray-100" />
 
-        {/* Invoice content skeleton */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="space-y-3">
-              <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+        {/* Client + Line Items */}
+        <div className="px-6 py-4">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="space-y-1.5">
               <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-24 animate-pulse rounded bg-muted" />
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
-            ))}
-          </CardContent>
-        </Card>
+            <div className="h-3 w-10 animate-pulse rounded bg-muted" />
+          </div>
 
-        {/* Totals skeleton */}
-        <Card className="mb-6">
-          <CardContent className="py-4">
-            <div className="ml-auto w-64 space-y-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex justify-between">
-                  <div className="h-4 w-20 animate-pulse rounded bg-muted" />
-                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+          <div className="border-t border-gray-100 pt-4">
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-36 animate-pulse rounded bg-muted" />
+                    <div className="h-3 w-48 animate-pulse rounded bg-muted" />
+                  </div>
+                  <div className="h-4 w-16 animate-pulse rounded bg-muted" />
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Pay button skeleton */}
-        <div className="flex justify-center">
-          <div className="h-11 w-40 animate-pulse rounded bg-muted" />
+            <div className="my-4 border-t border-gray-100" />
+
+            <div className="rounded-lg bg-muted/30 px-3 py-3">
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+                <div className="h-6 w-24 animate-pulse rounded bg-muted" />
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* Button */}
+        <div className="px-6 pb-6 pt-2">
+          <div className="h-12 animate-pulse rounded-lg bg-muted" />
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-5">
+          <div className="mx-auto h-3 w-28 animate-pulse rounded bg-muted" />
+        </div>
+      </div>
     </div>
   );
 }

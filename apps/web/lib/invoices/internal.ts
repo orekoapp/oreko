@@ -122,6 +122,7 @@ export async function createInvoiceFromQuoteInternal(
         title: quote.title || 'Invoice',
         accessToken: generateAccessToken(),
         status: 'sent', // Auto-generated from quote acceptance — ready for client payment
+        sentAt: new Date(), // Bug #8: Set sentAt when auto-creating with 'sent' status
         issueDate: new Date(),
         dueDate,
         subtotal: quote.subtotal,

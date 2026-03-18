@@ -88,10 +88,6 @@ const faqs = [
     question: 'Can I customize the look of my quotes?',
     answer: 'Yes! Go to Settings > Branding to customize colors, fonts, and add your logo to all your documents.',
   },
-  {
-    question: 'How do rate cards work?',
-    answer: 'Rate cards let you save your common services with preset prices. When creating a quote, you can quickly add items from your rate cards.',
-  },
 ];
 
 export default function HelpPage() {
@@ -104,8 +100,8 @@ export default function HelpPage() {
         </p>
       </div>
 
-      {/* Help Topics */}
-      <section>
+      {/* Low #78: Added IDs for anchor navigation from help topic links */}
+      <section id="getting-started">
         <h2 className="text-sm font-medium text-muted-foreground mb-3">Resources</h2>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           {helpTopics.map((topic) => (
@@ -127,7 +123,7 @@ export default function HelpPage() {
       </section>
 
       {/* FAQs */}
-      <section>
+      <section id="tips">
         <h2 className="text-sm font-medium text-muted-foreground mb-3">Frequently Asked Questions</h2>
         <div className="rounded-lg border">
           <Accordion type="single" collapsible className="px-4">
@@ -146,7 +142,7 @@ export default function HelpPage() {
       </section>
 
       {/* Support Options */}
-      <section>
+      <section id="docs">
         <h2 className="text-sm font-medium text-muted-foreground mb-3">Get Support</h2>
         <div className="rounded-lg border divide-y">
           {supportOptions.map((option) => (

@@ -88,7 +88,7 @@ const pathNameMap: Record<string, string> = {
   quotes: 'Quotes',
   invoices: 'Invoices',
   clients: 'Clients',
-  'rate-cards': 'Rate Cards',
+
   templates: 'Templates',
   settings: 'Settings',
   help: 'Help & Support',
@@ -118,7 +118,7 @@ function isUUID(str: string): boolean {
 
 // Check if a string looks like an entity ID (e.g., demo-client-1, client-jane, test-project-1)
 function isEntityId(str: string): boolean {
-  return /^(demo-|client-|test-|invoice-|quote-|contract-|ratecard-)/.test(str);
+  return /^(demo-|client-|test-|invoice-|quote-|contract-)/.test(str);
 }
 
 function generateBreadcrumbs(pathname: string) {

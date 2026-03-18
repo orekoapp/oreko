@@ -170,6 +170,9 @@ export async function issueCreditNote(creditNoteId: string) {
     return { success: false, error: 'Only draft credit notes can be issued' };
   }
 
+  // HIGH #14 + #17: Update invoice balance and wrap in transaction
+  const creditNoteTotal = Number(creditNote.amount);
+
   await prisma.$transaction([
     prisma.creditNote.update({
       where: { id: creditNoteId },
@@ -185,6 +188,14 @@ export async function issueCreditNote(creditNoteId: string) {
         actorId: userId,
         actorType: 'user',
         metadata: {},
+      },
+    }),
+    // HIGH #14: Update the invoice balance to reflect the credit note
+    prisma.invoice.update({
+      where: { id: creditNote.invoiceId },
+      data: {
+        amountPaid: { increment: creditNoteTotal },
+        amountDue: { decrement: creditNoteTotal },
       },
     }),
   ]);

@@ -128,10 +128,11 @@ export async function getInvoiceByAccessToken(
     }
 
     // Bug #22: Reject access to invoices created more than 365 days ago (general expiration)
+    // Low #59: TODO — Make expiry configurable per workspace (currently hardcoded 365/90 days)
     const daysSinceCreated = Math.ceil(
       (new Date().getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24)
     );
-    if (daysSinceCreated > 365 && invoice.status !== 'sent' && invoice.status !== 'viewed') {
+    if (daysSinceCreated > 365) {
       return { success: false, error: 'This invoice link has expired' };
     }
 
@@ -253,8 +254,9 @@ export async function trackInvoiceView(accessToken: string): Promise<void> {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
-    const invoice = await prisma.invoice.findUnique({
-      where: { accessToken },
+    // HIGH #3-7: Add deletedAt check to prevent tracking views on soft-deleted invoices
+    const invoice = await prisma.invoice.findFirst({
+      where: { accessToken, deletedAt: null },
       select: { id: true, status: true, viewedAt: true, workspaceId: true, invoiceNumber: true },
     });
 

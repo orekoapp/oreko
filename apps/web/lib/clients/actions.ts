@@ -28,14 +28,19 @@ import { toNumber } from '@/lib/utils';
 export async function getClients(filter: ClientFilter = {}): Promise<PaginatedClients> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
+  // Bug #209: Validate sortBy against allowlist to prevent column injection
+  const SORTABLE_COLUMNS = ['name', 'email', 'company', 'type', 'createdAt', 'updatedAt'];
+
   const {
     search: rawSearch,
     type,
     page: rawPage = 1,
     limit: rawLimit = 20,
-    sortBy = 'createdAt',
+    sortBy: rawSortBy = 'createdAt',
     sortOrder = 'desc',
   } = filter;
+
+  const sortBy = SORTABLE_COLUMNS.includes(rawSortBy) ? rawSortBy : 'createdAt';
 
   const search = rawSearch ? rawSearch.slice(0, 200) : undefined;
   const page = Math.max(1, rawPage);
@@ -354,13 +359,19 @@ export async function getClientActivity(clientId: string): Promise<ClientActivit
     }
 
     // Compute overdue at runtime (status 'overdue' is never stored in DB)
-    const isOverdue = invoice.status !== 'paid' && invoice.status !== 'voided' && invoice.status !== 'draft' && invoice.dueDate < new Date();
+    // Low #105: Compare at day granularity to avoid timezone edge cases
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDay = new Date(invoice.dueDate);
+    dueDay.setHours(0, 0, 0, 0);
+    const isOverdue = invoice.status !== 'paid' && invoice.status !== 'voided' && invoice.status !== 'draft' && dueDay < today;
     if (isOverdue) {
       activities.push({
         id: `invoice-overdue-${invoice.id}`,
         type: 'invoice_overdue',
         title: `Invoice overdue: ${invoice.invoiceNumber}`,
-        description: `Due date was ${invoice.dueDate.toLocaleDateString()}`,
+        // Low #100: Use consistent date format instead of toLocaleDateString (server locale may differ)
+        description: `Due date was ${invoice.dueDate.toISOString().split('T')[0]}`,
         amount: toNumber(invoice.total),
         date: invoice.dueDate,
         relatedId: invoice.id,
@@ -377,6 +388,17 @@ export async function getClientActivity(clientId: string): Promise<ClientActivit
 // Create client
 export async function createClient(input: CreateClientInput): Promise<{ id: string }> {
   const { workspaceId } = await getCurrentUserWorkspace();
+
+  // MEDIUM #8: Basic input validation
+  if (!input.name || typeof input.name !== 'string' || !input.name.trim()) {
+    throw new Error('Client name is required');
+  }
+  if (input.email !== undefined && input.email !== null && input.email !== '') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(input.email)) {
+      throw new Error('Invalid email address');
+    }
+  }
 
   // Build metadata
   const metadata: ClientMetadata = {
@@ -416,6 +438,19 @@ export async function createClient(input: CreateClientInput): Promise<{ id: stri
 // Update client
 export async function updateClient(input: UpdateClientInput): Promise<{ id: string }> {
   const { workspaceId } = await getCurrentUserWorkspace();
+
+  // MEDIUM #9: Basic input validation
+  if (input.name !== undefined) {
+    if (typeof input.name !== 'string' || !input.name.trim()) {
+      throw new Error('Client name cannot be empty');
+    }
+  }
+  if (input.email !== undefined && input.email !== null && input.email !== '') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(input.email)) {
+      throw new Error('Invalid email address');
+    }
+  }
 
   // Verify ownership
   const existing = await prisma.client.findFirst({
@@ -537,10 +572,10 @@ export async function getClientStats(): Promise<ClientStats> {
       _count: {
         select: {
           quotes: {
-            where: { status: { in: ['draft', 'sent', 'viewed'] } },
+            where: { status: { in: ['draft', 'sent', 'viewed'] }, deletedAt: null },
           },
           invoices: {
-            where: { status: { in: ['sent', 'viewed', 'partial'] } },
+            where: { status: { in: ['sent', 'viewed', 'partial'] }, deletedAt: null },
           },
         },
       },
@@ -601,24 +636,36 @@ export async function importClients(
     errors: [],
   };
 
+  // Bug #210: Batch duplicate check instead of N+1 per-row queries
+  let existingEmailSet = new Set<string>();
+  if (skipDuplicates) {
+    const existingClients = await prisma.client.findMany({
+      where: {
+        workspaceId,
+        email: { in: data.map((r) => r.email) },
+        deletedAt: null,
+      },
+      select: { email: true },
+    });
+    existingEmailSet = new Set(existingClients.map((c) => c.email.toLowerCase()));
+  }
+
   for (let i = 0; i < data.length; i++) {
     const row = data[i]!;
 
     try {
-      // Check for duplicate email
-      if (skipDuplicates) {
-        const existing = await prisma.client.findFirst({
-          where: {
-            workspaceId,
-            email: row.email,
-            deletedAt: null,
-          },
-        });
+      // CR #13: Validate email format before importing
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!row.email || !emailRegex.test(row.email)) {
+        result.failed++;
+        result.errors.push({ row: i + 1, message: `Invalid email: ${row.email || '(empty)'}` });
+        continue;
+      }
 
-        if (existing) {
-          result.skipped++;
-          continue;
-        }
+      // Check for duplicate email (using pre-fetched set)
+      if (skipDuplicates && existingEmailSet.has(row.email.toLowerCase())) {
+        result.skipped++;
+        continue;
       }
 
       // Build address if any address fields provided

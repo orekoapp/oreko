@@ -1,7 +1,9 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { auth } from '@/lib/auth';
 import { LoginForm } from './login-form';
 
 export const metadata: Metadata = {
@@ -17,7 +19,12 @@ function LoginFormFallback() {
   );
 }
 
-export default function LoginPage() {
+// Low #68: Redirect logged-in users to dashboard
+export default async function LoginPage() {
+  const session = await auth();
+  if (session?.user) {
+    redirect('/dashboard');
+  }
   return (
     <div className="flex flex-col space-y-6">
       <div className="flex flex-col space-y-2 text-center">

@@ -1,6 +1,10 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import {
+  getUserPreferences,
+  updateUserPreferences,
+} from '@/lib/user/preferences-actions';
 
 export type FontSizeKey = 'xs' | 'sm' | 'default' | 'md' | 'lg' | 'xl';
 export type SidebarStyleKey = 'default' | 'elevated';
@@ -68,34 +72,70 @@ function applySidebarStyle(key: SidebarStyleKey) {
   document.documentElement.setAttribute('data-sidebar-style', key);
 }
 
+function isValidFontSize(v: unknown): v is FontSizeKey {
+  return typeof v === 'string' && FONT_SIZE_OPTIONS.some((o) => o.key === v);
+}
+
+function isValidSidebarStyle(v: unknown): v is SidebarStyleKey {
+  return typeof v === 'string' && SIDEBAR_STYLE_OPTIONS.some((o) => o.key === v);
+}
+
 export function FontSizeProvider({ children }: { children: React.ReactNode }) {
   const [fontSize, setFontSizeState] = useState<FontSizeKey>('default');
   const [sidebarStyle, setSidebarStyleState] = useState<SidebarStyleKey>('default');
+  const serverLoaded = useRef(false);
 
+  // On mount: apply localStorage immediately (avoids FOUC), then fetch server prefs
   useEffect(() => {
-    const storedFont = localStorage.getItem(FONT_SIZE_STORAGE_KEY) as FontSizeKey | null;
-    if (storedFont && FONT_SIZE_OPTIONS.some((o) => o.key === storedFont)) {
+    // 1. Apply localStorage instantly
+    const storedFont = localStorage.getItem(FONT_SIZE_STORAGE_KEY);
+    if (isValidFontSize(storedFont)) {
       setFontSizeState(storedFont);
       applyFontSize(storedFont);
     }
 
-    const storedSidebar = localStorage.getItem(SIDEBAR_STYLE_STORAGE_KEY) as SidebarStyleKey | null;
-    if (storedSidebar && SIDEBAR_STYLE_OPTIONS.some((o) => o.key === storedSidebar)) {
+    const storedSidebar = localStorage.getItem(SIDEBAR_STYLE_STORAGE_KEY);
+    if (isValidSidebarStyle(storedSidebar)) {
       setSidebarStyleState(storedSidebar);
       applySidebarStyle(storedSidebar);
     }
+
+    // 2. Fetch server preferences (authoritative source)
+    getUserPreferences()
+      .then((prefs) => {
+        serverLoaded.current = true;
+
+        if (isValidFontSize(prefs.fontSize)) {
+          setFontSizeState(prefs.fontSize);
+          applyFontSize(prefs.fontSize);
+          localStorage.setItem(FONT_SIZE_STORAGE_KEY, prefs.fontSize);
+        }
+
+        if (isValidSidebarStyle(prefs.sidebarStyle)) {
+          setSidebarStyleState(prefs.sidebarStyle);
+          applySidebarStyle(prefs.sidebarStyle);
+          localStorage.setItem(SIDEBAR_STYLE_STORAGE_KEY, prefs.sidebarStyle);
+        }
+      })
+      .catch(() => {
+        // Server fetch failed — localStorage values are already applied, so no-op
+      });
   }, []);
 
   const setFontSize = useCallback((size: FontSizeKey) => {
     setFontSizeState(size);
     localStorage.setItem(FONT_SIZE_STORAGE_KEY, size);
     applyFontSize(size);
+    // Fire-and-forget server save
+    updateUserPreferences({ fontSize: size }).catch(() => {});
   }, []);
 
   const setSidebarStyle = useCallback((style: SidebarStyleKey) => {
     setSidebarStyleState(style);
     localStorage.setItem(SIDEBAR_STYLE_STORAGE_KEY, style);
     applySidebarStyle(style);
+    // Fire-and-forget server save
+    updateUserPreferences({ sidebarStyle: style }).catch(() => {});
   }, []);
 
   return (

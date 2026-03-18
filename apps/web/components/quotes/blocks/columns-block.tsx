@@ -30,6 +30,10 @@ const gapStyles: Record<ColumnsBlock['content']['gap'], string> = {
   lg: 'gap-8',
 };
 
+// TODO Bug #54: Column child blocks render only `{childBlock.type}` (e.g. "text")
+// instead of actual content. Needs a block renderer component that dispatches to
+// the correct block content component (TextBlockContent, ImageBlockContent, etc.)
+// based on childBlock.type.
 export function ColumnsBlockContent({ block }: ColumnsBlockContentProps) {
   const { updateBlock, selectedBlockId, previewMode } = useQuoteBuilderStore();
   const isEditing = selectedBlockId === block.id && !previewMode;

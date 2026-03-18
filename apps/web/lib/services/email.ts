@@ -105,14 +105,33 @@ export async function sendEmail(
   const config = getDefaultConfig();
 
   try {
-    // Strip newlines from subject to prevent email header injection
-    const safeSubject = options.subject.replace(/[\r\n]+/g, ' ').trim();
+    // Strip newlines and non-printable characters to prevent email header injection
+    // Low #32: Also remove control characters that can break email client rendering
+    const safeSubject = options.subject
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .trim();
+
+    // Bug #89: Generate plaintext fallback by stripping HTML tags if no text provided
+    const htmlContent = options.html || options.text || 'This email has no content';
+    const textContent = options.text || htmlContent
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
 
     const { data, error } = await client.emails.send({
       from: config.from,
       to: Array.isArray(options.to) ? options.to : [options.to],
       subject: safeSubject,
-      html: options.html || options.text || 'This email has no content',
+      html: htmlContent,
+      text: textContent,
       replyTo: options.replyTo ?? config.replyTo,
       cc: options.cc,
       bcc: options.bcc,
@@ -144,7 +163,7 @@ export async function sendEmail(
 
 // Pre-built email templates
 export async function sendQuoteSentEmail(params: {
-  to: string;
+  to: string | string[];
   clientName: string;
   quoteName: string;
   quoteUrl: string;
@@ -191,7 +210,7 @@ export async function sendQuoteSentEmail(params: {
 }
 
 export async function sendInvoiceSentEmail(params: {
-  to: string;
+  to: string | string[];
   clientName: string;
   invoiceNumber: string;
   invoiceUrl: string;

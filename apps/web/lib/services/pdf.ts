@@ -36,8 +36,16 @@ const defaultOptions: PdfOptions = {
 let browserInstance: Browser | null = null;
 
 async function getBrowser(): Promise<Browser> {
+  // Bug #148: Check if existing browser is still alive before reusing
   if (browserInstance) {
-    return browserInstance;
+    try {
+      if (browserInstance.connected) {
+        return browserInstance;
+      }
+    } catch {
+      // Browser disconnected — fall through to create new one
+    }
+    browserInstance = null;
   }
 
   // In serverless environments (Vercel), use @sparticuz/chromium
@@ -140,9 +148,14 @@ export async function generatePdfFromHtml(
   try {
     page = await browser.newPage();
 
-    // Set content with a reasonable timeout
+    // HIGH #28: Disable JS before rendering to prevent script injection from user content
+    await page.setJavaScriptEnabled(false);
+
+    // Bug #147: Use domcontentloaded instead of networkidle0 to prevent
+    // outbound requests from user content (SSRF via crafted image URLs).
+    // Since we removed external Google Fonts import, no external requests needed.
     await page.setContent(html, {
-      waitUntil: 'networkidle0',
+      waitUntil: 'domcontentloaded',
       timeout: 15000,
     });
 

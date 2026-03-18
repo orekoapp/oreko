@@ -1,6 +1,6 @@
 import { getClientsForSelect } from '@/lib/clients/actions';
 import { getTaxRates, getNumberSequences, getBusinessProfile } from '@/lib/settings/actions';
-import { getRateCardsForSelection } from '@/lib/rate-cards/actions';
+
 import { NewInvoiceForm } from './new-invoice-form';
 
 export const metadata = {
@@ -8,12 +8,11 @@ export const metadata = {
 };
 
 export default async function NewInvoicePage() {
-  const [clients, taxRates, sequences, businessProfile, rateCards] = await Promise.all([
+  const [clients, taxRates, sequences, businessProfile] = await Promise.all([
     getClientsForSelect(),
     getTaxRates(),
     getNumberSequences(),
     getBusinessProfile(),
-    getRateCardsForSelection(),
   ]);
 
   // Compute next invoice number
@@ -33,7 +32,6 @@ export default async function NewInvoicePage() {
       taxRates={taxRates}
       currency={businessProfile?.currency || 'USD'}
       nextInvoiceNumber={nextInvoiceNumber}
-      rateCards={rateCards}
       businessName={businessProfile?.businessName || 'Your Business'}
     />
   );

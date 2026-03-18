@@ -65,9 +65,10 @@ export async function POST(request: Request) {
       where: { email },
     });
 
+    // MEDIUM #2: Use generic error to prevent user enumeration
     if (existingUser) {
       return NextResponse.json(
-        { error: 'An account with this email already exists' },
+        { error: 'Unable to create account. Please try again.' },
         { status: 400 }
       );
     }

@@ -86,8 +86,9 @@ export function TableBlockContent({ block }: TableBlockContentProps) {
           <table className="w-full border-collapse">
             <thead>
               <tr>
+                {/* Bug #77: Use stable keys instead of array index */}
                 {block.content.headers.map((header, colIndex) => (
-                  <th key={colIndex} className="p-2 text-left">
+                  <th key={`header-${block.id}-${colIndex}-${header}`} className="p-2 text-left">
                     <div className="flex items-center gap-1">
                       <Input
                         value={header}
@@ -116,9 +117,9 @@ export function TableBlockContent({ block }: TableBlockContentProps) {
             </thead>
             <tbody>
               {block.content.rows.map((row, rowIndex) => (
-                <tr key={rowIndex}>
+                <tr key={`edit-row-${block.id}-${rowIndex}`}>
                   {row.map((cell, colIndex) => (
-                    <td key={colIndex} className="p-2">
+                    <td key={`edit-cell-${block.id}-${rowIndex}-${colIndex}`} className="p-2">
                       <Input
                         value={cell}
                         onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
@@ -164,7 +165,7 @@ export function TableBlockContent({ block }: TableBlockContentProps) {
           <tr className={cn(block.content.bordered && 'border-b border-border')}>
             {block.content.headers.map((header, index) => (
               <th
-                key={index}
+                key={`preview-header-${block.id}-${index}`}
                 className={cn(
                   'p-3 text-left font-medium bg-muted/50',
                   block.content.bordered && 'border border-border'
@@ -178,7 +179,7 @@ export function TableBlockContent({ block }: TableBlockContentProps) {
         <tbody>
           {block.content.rows.map((row, rowIndex) => (
             <tr
-              key={rowIndex}
+              key={`preview-row-${block.id}-${rowIndex}`}
               className={cn(
                 block.content.striped && rowIndex % 2 === 1 && 'bg-muted/30',
                 block.content.bordered && 'border-b border-border'
@@ -186,7 +187,7 @@ export function TableBlockContent({ block }: TableBlockContentProps) {
             >
               {row.map((cell, colIndex) => (
                 <td
-                  key={colIndex}
+                  key={`preview-cell-${block.id}-${rowIndex}-${colIndex}`}
                   className={cn(
                     'p-3',
                     block.content.bordered && 'border border-border'

@@ -16,7 +16,8 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes) - handled separately
+     * - api (API routes) — intentionally excluded; API routes handle their own
+     *   auth via API-key validation or NextAuth session checks in each handler.
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)

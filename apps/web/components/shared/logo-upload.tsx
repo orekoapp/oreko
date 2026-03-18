@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Upload, X, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -26,7 +27,9 @@ export function LogoUpload({ value, onChange, className }: LogoUploadProps) {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  // Bug #110: Removed useCallback with empty deps that captured stale handleFile.
+  // These are DOM event handlers — useCallback is unnecessary here.
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
 
@@ -34,23 +37,24 @@ export function LogoUpload({ value, onChange, className }: LogoUploadProps) {
     if (file) {
       handleFile(file);
     }
-  }, []);
+  };
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       handleFile(file);
     }
-  }, []);
+  };
 
   const handleFile = async (file: File) => {
-    // Validate file type
+    // Low #46: Show toast feedback on validation failure instead of silent return
     if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file (PNG, JPG, or WebP)');
       return;
     }
 
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size must be under 2MB');
       return;
     }
 

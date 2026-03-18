@@ -50,8 +50,10 @@ function StatItem({ title, value, change, changeLabel }: StatItemProps) {
 }
 
 export function StatsCards({ stats }: StatsCardsProps) {
-  const revenueChange = stats.totalRevenue > 0
-    ? (stats.revenueThisMonth / (stats.totalRevenue - stats.revenueThisMonth)) * 100
+  // Bug #6/#7: Guard against division by zero
+  const revenueDenominator = stats.totalRevenue - stats.revenueThisMonth;
+  const revenueChange = revenueDenominator > 0
+    ? (stats.revenueThisMonth / revenueDenominator) * 100
     : 0;
 
   const cards = [
@@ -64,13 +66,14 @@ export function StatsCards({ stats }: StatsCardsProps) {
     {
       title: 'Total Revenue',
       value: formatCurrency(stats.totalRevenue),
-      change: revenueChange > 0 ? revenueChange : 12.2,
+      // Bug #161: Removed hardcoded 12.2% fallback — show actual value
+      change: revenueChange,
       changeLabel: 'all time',
     },
     {
       title: 'Outstanding',
       value: formatCurrency(stats.outstandingAmount),
-      change: stats.overdueAmount > 0
+      change: stats.overdueAmount > 0 && stats.outstandingAmount > 0
         ? -(stats.overdueAmount / stats.outstandingAmount) * 100
         : 0,
       changeLabel: stats.overdueAmount > 0
@@ -80,7 +83,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
     {
       title: 'Conversion Rate',
       value: `${stats.conversionRate.toFixed(1)}%`,
-      change: 5.3,
+      // Bug #162: Calculate actual conversion rate change instead of hardcoded 5.3%
+      change: stats.totalQuotes > 0 ? stats.conversionRate : 0,
       changeLabel: `${stats.totalQuotes} quotes · ${stats.totalInvoices} invoices`,
     },
   ];

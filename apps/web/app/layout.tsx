@@ -8,6 +8,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { FontSizeProvider } from '@/components/providers/font-size-provider';
 import { SessionProvider } from '@/components/providers/session-provider';
+import { GlobalErrorHandler } from '@/components/providers/global-error-handler';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -163,6 +164,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             >
               <FontSizeProvider>
                 {children}
+                <GlobalErrorHandler />
                 <Toaster richColors position="top-right" />
               </FontSizeProvider>
             </ThemeProvider>

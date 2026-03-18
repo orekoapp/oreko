@@ -176,6 +176,7 @@ export function ContractInstanceList({
             <SelectItem value="sent">Sent</SelectItem>
             <SelectItem value="viewed">Viewed</SelectItem>
             <SelectItem value="signed">Signed</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
           </SelectContent>
         </Select>
       </div>

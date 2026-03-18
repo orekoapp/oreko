@@ -1,6 +1,10 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { FileText, ArrowRightLeft, CreditCard, BarChart3, ChevronRight } from 'lucide-react';
+import { FileText, ArrowRightLeft, ScrollText, BarChart3, ChevronRight } from 'lucide-react';
+import { motion } from 'motion/react';
+import { SpotlightCard } from '@/components/ui/spotlight-card';
 
 const features = [
   {
@@ -9,29 +13,29 @@ const features = [
     title: 'Create professional quotes in minutes',
     description:
       'Build branded quotes with our visual editor. Add line items, apply discounts, set payment terms, and send to clients for review and approval.',
-    screenshot: '/screenshots/quote-preview.png',
-    screenshotAlt: 'QuoteCraft quote preview with line items and totals',
+    screenshot: '/screenshots/quote-detail.png',
+    screenshotAlt: 'QuoteCraft quote builder with live preview panel',
     link: '/features#quotes',
   },
   {
     tag: 'Invoicing',
     icon: ArrowRightLeft,
-    title: 'Convert quotes to invoices instantly',
+    title: 'Send invoices and get paid faster',
     description:
-      'When a client accepts a quote, convert it to an invoice with one click. No re-entering data. Everything carries over — line items, client details, payment terms.',
-    screenshot: '/screenshots/invoice-preview.png',
-    screenshotAlt: 'QuoteCraft invoice preview with payment tracking',
+      'Create invoices from scratch or convert accepted quotes with one click. Track payment status, send reminders, and let clients pay online.',
+    screenshot: '/screenshots/invoice-detail.png',
+    screenshotAlt: 'QuoteCraft invoice popup with line items, totals, and download option',
     link: '/features#invoicing',
   },
   {
-    tag: 'Clients',
-    icon: CreditCard,
-    title: 'Keep all your clients in one place',
+    tag: 'Contracts',
+    icon: ScrollText,
+    title: 'Manage contracts and e-signatures',
     description:
-      'Manage contacts, track quote and invoice history, and see lifetime value at a glance. Know exactly where each client relationship stands.',
-    screenshot: '/screenshots/clients.png',
-    screenshotAlt: 'QuoteCraft client management interface',
-    link: '/features#clients',
+      'Send contracts for review, track signature status, and keep everything organized. From draft to signed — all in one place.',
+    screenshot: '/screenshots/contracts.png',
+    screenshotAlt: 'QuoteCraft contracts management with status tracking',
+    link: '/features#contracts',
   },
   {
     tag: 'Analytics',
@@ -40,56 +44,63 @@ const features = [
     description:
       'Track revenue trends, quote conversion rates, and client insights. See what is working and where you can improve.',
     screenshot: '/screenshots/analytics.png',
-    screenshotAlt: 'QuoteCraft analytics dashboard',
+    screenshotAlt: 'QuoteCraft analytics dashboard with revenue and client data',
     link: '/features#analytics',
   },
 ];
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="bg-background py-24">
-      <div className="max-w-6xl mx-auto px-6 space-y-32">
-        {features.map((feature, i) => {
-          const isReversed = i % 2 === 1;
-          return (
-            <div
-              key={feature.tag}
-              className={`flex flex-col ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-20`}
+    <section id="features" className="bg-transparent py-24">
+      <div className="max-w-6xl mx-auto px-6 space-y-28">
+        {features.map((feature, i) => (
+          <div key={feature.tag} className="space-y-8">
+            {/* Text — always left-aligned */}
+            <motion.div
+              className="max-w-xl"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
             >
-              <div className="flex-1 max-w-md">
-                <div className="inline-flex items-center gap-2 text-sm font-medium text-primary mb-4">
-                  <feature.icon className="h-4 w-4" />
-                  <span>{feature.tag}</span>
-                </div>
-                <h2 className="font-display text-3xl font-medium text-foreground tracking-tight leading-snug">
-                  {feature.title}
-                </h2>
-                <p className="mt-4 text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
-                <Link
-                  href={feature.link}
-                  className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                >
-                  Learn more
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-primary mb-3">
+                <feature.icon className="h-4 w-4" />
+                <span>{feature.tag}</span>
               </div>
+              <h2 className="font-display text-3xl font-medium text-foreground tracking-tight leading-snug">
+                {feature.title}
+              </h2>
+              <p className="mt-4 text-muted-foreground leading-relaxed">
+                {feature.description}
+              </p>
+              <Link
+                href={feature.link}
+                className="group mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                Learn more
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </motion.div>
 
-              <div className="flex-1 w-full">
-                <div className="rounded-xl border border-border shadow-lg overflow-hidden bg-card">
-                  <Image
-                    src={feature.screenshot}
-                    alt={feature.screenshotAlt}
-                    width={1280}
-                    height={800}
-                    className="w-full h-auto"
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+            {/* Screenshot — full width below with spotlight hover */}
+            <motion.div
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.55, delay: 0.1, ease: 'easeOut' }}
+            >
+              <SpotlightCard className="rounded-xl border border-border shadow-lg overflow-hidden bg-card transition-shadow duration-500 hover:shadow-xl">
+                <Image
+                  src={feature.screenshot}
+                  alt={feature.screenshotAlt}
+                  width={1280}
+                  height={800}
+                  className="w-full h-auto"
+                />
+              </SpotlightCard>
+            </motion.div>
+          </div>
+        ))}
       </div>
     </section>
   );

@@ -33,27 +33,33 @@ export function ProjectSelector({
   const [projects, setProjects] = React.useState<ProjectListItem[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
+  // Low #25: Cancel stale requests on rapid clientId changes
   React.useEffect(() => {
     if (!clientId) {
       setProjects([]);
       return;
     }
 
+    let cancelled = false;
+
     async function loadProjects() {
       if (!clientId) return;
       setIsLoading(true);
       try {
         const data = await getClientProjects(clientId);
-        setProjects(data);
+        if (!cancelled) setProjects(data);
       } catch {
-        setProjects([]);
-        toast.error('Failed to load projects');
+        if (!cancelled) {
+          setProjects([]);
+          toast.error('Failed to load projects');
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
 
     loadProjects();
+    return () => { cancelled = true; };
   }, [clientId]);
 
   if (!clientId) {

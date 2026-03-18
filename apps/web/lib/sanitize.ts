@@ -19,9 +19,10 @@ const ALLOWED_TAGS = [
   'sub', 'sup',
 ];
 
+// Bug #46: 'style' removed to prevent CSS-based data exfiltration
 const ALLOWED_ATTR = [
   'href', 'target', 'rel', 'src', 'alt', 'width', 'height',
-  'class', 'style', 'id',
+  'class', 'id',
   'colspan', 'rowspan',
 ];
 
@@ -51,8 +52,8 @@ const PURIFY_CONFIG = {
 // Build the allowedAttributes map that sanitize-html expects:
 //   { '*': ['class', 'style', 'id'], a: ['href', 'target', 'rel'], img: ['src', 'alt', 'width', 'height'], ... }
 function buildServerConfig() {
-  // Attributes that apply to any tag
-  const globalAttrs = ['class', 'style', 'id'];
+  // Attributes that apply to any tag (Bug #46: 'style' removed)
+  const globalAttrs = ['class', 'id'];
 
   // Tag-specific attributes
   const tagAttrs: Record<string, string[]> = {

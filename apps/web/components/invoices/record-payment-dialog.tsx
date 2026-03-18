@@ -120,11 +120,10 @@ export function RecordPaymentDialog({
       });
 
       if (result.success) {
+        // CR #23: Use callback instead of full reload to preserve state
         toast.success('Payment recorded successfully');
         onOpenChange(false);
         onPaymentRecorded?.();
-        // Full reload to ensure all server-rendered amounts update
-        window.location.reload();
       } else {
         setError(result.error || 'Failed to record payment');
       }

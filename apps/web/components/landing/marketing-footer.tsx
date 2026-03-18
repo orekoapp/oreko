@@ -77,16 +77,23 @@ export function MarketingFooter() {
           <div>
             <h3 className="text-sm font-medium text-foreground mb-4">Resources</h3>
             <ul className="space-y-3">
+              {/* Low #26: Use Next.js Link for internal links, <a> for external */}
               {footerLinks.resources.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target={link.external ? '_blank' : undefined}
-                    rel={link.external ? 'noopener noreferrer' : undefined}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -119,8 +126,9 @@ export function MarketingFooter() {
           </div>
         </div>
 
+        {/* Low #98: Suppress hydration warning since year is computed at render time */}
         <div className="mt-12 pt-8 border-t border-border">
-          <p className="text-sm text-muted-foreground/60">
+          <p className="text-sm text-muted-foreground/60" suppressHydrationWarning>
             &copy; {new Date().getFullYear()} QuoteCraft. Open source under MIT License.
           </p>
         </div>

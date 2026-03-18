@@ -1,4 +1,4 @@
-import { randomInt } from 'crypto';
+import { randomInt, timingSafeEqual } from 'crypto';
 
 /**
  * OTP verification for signer identity.
@@ -69,7 +69,10 @@ export function verifySigningOtp(
 
   record.attempts++;
 
-  if (record.code !== code) {
+  // Bug #154: Use constant-time comparison to prevent timing side-channel attacks
+  const codeMatch = record.code.length === code.length &&
+    timingSafeEqual(Buffer.from(record.code), Buffer.from(code));
+  if (!codeMatch) {
     otpStore.set(key, record);
     return { valid: false, error: `Invalid code. ${MAX_ATTEMPTS - record.attempts} attempts remaining.` };
   }

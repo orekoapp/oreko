@@ -43,7 +43,8 @@ export const getCurrentUserWorkspace = cache(async (): Promise<WorkspaceContext>
     }
   }
 
-  // Fall back to first workspace
+  // CR #12: Fall back to first workspace — log warning since stored workspace was invalid
+  console.warn(`[workspace] Stored workspace ID not found for user ${userId}, falling back to first workspace`);
   const firstMembership = await prisma.workspaceMember.findFirst({
     where: { userId },
     select: { workspaceId: true, role: true },

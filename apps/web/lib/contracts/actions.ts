@@ -23,7 +23,8 @@ import type {
 } from './types';
 import { sendEmail } from '@/lib/services/email';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/internal';
-import { computeContractDocumentHash } from '@/lib/signing/document-hash';
+import { checkRateLimit, strictRateLimitOptions } from '@/lib/rate-limit';
+import { computeContractDocumentHash, verifyDocumentHash } from '@/lib/signing/document-hash';
 
 // HTML escape for safe email template interpolation
 function escapeHtml(str: string): string {
@@ -35,12 +36,14 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// CR #4: Log parse failures instead of silently returning empty array
 function safeParseVariables(variables: unknown): ContractVariable[] {
   try {
     if (Array.isArray(variables)) return variables;
     if (typeof variables === 'string') return JSON.parse(variables);
     return [];
-  } catch {
+  } catch (error) {
+    console.warn('[contracts] Failed to parse contract variables:', error);
     return [];
   }
 }
@@ -149,7 +152,17 @@ export async function getContractTemplateById(id: string): Promise<ContractTempl
 export async function createContractTemplate(
   input: CreateContractTemplateInput
 ): Promise<ContractTemplateDetail> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #11: Viewers cannot create contract templates
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
+
+  // MEDIUM #12: Basic input validation
+  if (!input.name || typeof input.name !== 'string' || !input.name.trim()) {
+    throw new Error('Contract template name is required');
+  }
 
   const contract = await prisma.contract.create({
     data: {
@@ -186,7 +199,17 @@ export async function createContractTemplate(
 export async function updateContractTemplate(
   input: UpdateContractTemplateInput
 ): Promise<ContractTemplateDetail> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #11: Viewers cannot update contract templates
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
+
+  // MEDIUM #12: Basic input validation
+  if (input.name !== undefined && (typeof input.name !== 'string' || !input.name.trim())) {
+    throw new Error('Contract template name cannot be empty');
+  }
 
   // Verify the contract belongs to the workspace
   const existing = await prisma.contract.findFirst({
@@ -231,7 +254,12 @@ export async function updateContractTemplate(
 
 // Delete a contract template (soft delete)
 export async function deleteContractTemplate(id: string): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #11: Viewers cannot delete contract templates
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const existing = await prisma.contract.findFirst({
     where: { id, workspaceId, deletedAt: null },
@@ -317,8 +345,9 @@ export async function getContractInstances(
 export async function getContractInstanceById(id: string): Promise<ContractInstanceDetail | null> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
+  // MEDIUM #20: Filter out soft-deleted contract instances
   const instance = await prisma.contractInstance.findFirst({
-    where: { id, workspaceId },
+    where: { id, workspaceId, deletedAt: null },
     include: {
       contract: { select: { name: true } },
       client: { select: { name: true, email: true, company: true } },
@@ -359,8 +388,9 @@ export async function getContractInstanceById(id: string): Promise<ContractInsta
 
 // Get contract instance by access token (for public client view)
 export async function getContractInstanceByToken(token: string): Promise<ContractInstanceDetail | null> {
-  const instance = await prisma.contractInstance.findUnique({
-    where: { accessToken: token },
+  // HIGH #3-7: Add deletedAt check to prevent accessing soft-deleted contract instances
+  const instance = await prisma.contractInstance.findFirst({
+    where: { accessToken: token, deletedAt: null },
     include: {
       contract: { select: { name: true } },
       client: { select: { name: true, email: true, company: true } },
@@ -382,12 +412,32 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
     return null;
   }
 
-  // Mark as viewed if first time
-  if (!instance.viewedAt) {
+  // HIGH #44: Only update to 'viewed' if current status is 'sent' (don't overwrite signed/pending)
+  if (instance.status === 'sent') {
     await prisma.contractInstance.update({
       where: { id: instance.id },
-      data: { viewedAt: new Date(), status: 'viewed' },
+      data: { viewedAt: instance.viewedAt ?? new Date(), status: 'viewed' },
     });
+  }
+
+  // Verify document hash integrity for signed contracts
+  let documentIntegrity: 'verified' | 'tampered' | 'unchecked' = 'unchecked';
+  if (instance.signedAt && instance.signatureData) {
+    try {
+      const sigData = instance.signatureData as Record<string, unknown>;
+      const storedHash = sigData.documentHash as string | undefined;
+      if (storedHash) {
+        const recomputedHash = computeContractDocumentHash({
+          contractInstanceId: instance.id,
+          content: instance.content,
+          signerName: (sigData.signerName as string) || (sigData.name as string) || 'Unknown',
+          signedAt: (sigData.signedAt as string) || instance.signedAt.toISOString(),
+        });
+        documentIntegrity = verifyDocumentHash(recomputedHash, storedHash) ? 'verified' : 'tampered';
+      }
+    } catch (err) {
+      console.error('Document hash verification failed:', err);
+    }
   }
 
   return {
@@ -414,6 +464,7 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
     pdfUrl: instance.pdfUrl,
     createdAt: instance.createdAt,
     updatedAt: instance.updatedAt,
+    documentIntegrity,
   };
 }
 
@@ -421,7 +472,12 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
 export async function createContractInstance(
   input: CreateContractInstanceInput
 ): Promise<ContractInstanceDetail> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #43: Viewers cannot create contract instances
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   // Get the template
   const template = await prisma.contract.findFirst({
@@ -460,19 +516,21 @@ export async function createContractInstance(
       // Support both 'key' (type definition) and 'name' (seed data) fields
       const varKey = variable.key || variable.name || '';
       if (!varKey) continue;
-      const value = input.variableValues[varKey] || variable.defaultValue || '';
-      // Escape regex special characters in variable key to prevent regex injection
-      const escapedKey = varKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      content = content.replace(new RegExp(`{{${escapedKey}}}`, 'g'), value);
+      const rawValue = input.variableValues[varKey] || variable.defaultValue || '';
+      // HIGH #45: Escape HTML to prevent XSS via contract variable injection
+      const value = escapeHtml(rawValue);
+      // CR #9: Use replaceAll instead of RegExp to avoid ReDoS risk
+      content = content.replaceAll(`{{${varKey}}}`, value);
     }
   }
 
-  // Replace common placeholders
+  // Replace common placeholders (HIGH #45: escape to prevent XSS)
   content = content
-    .replace(/{{clientName}}/g, client.company || client.name)
-    .replace(/{{clientEmail}}/g, client.email)
-    .replace(/{{date}}/g, new Date().toLocaleDateString());
+    .replace(/{{clientName}}/g, escapeHtml(client.company || client.name))
+    .replace(/{{clientEmail}}/g, escapeHtml(client.email))
+    .replace(/{{date}}/g, escapeHtml(new Date().toLocaleDateString()));
 
+  // Bug #186: Support creating and immediately sending via sendImmediately flag
   const instance = await prisma.contractInstance.create({
     data: {
       contractId: input.contractId,
@@ -480,7 +538,8 @@ export async function createContractInstance(
       quoteId: input.quoteId,
       workspaceId,
       content,
-      status: 'draft',
+      status: input.sendImmediately ? 'sent' : 'draft',
+      ...(input.sendImmediately ? { sentAt: new Date() } : {}),
     },
     include: {
       contract: { select: { name: true } },
@@ -519,11 +578,24 @@ export async function createContractInstance(
 }
 
 // Send a contract instance to client
-export async function sendContractInstance(id: string): Promise<{ emailSent: boolean }> {
-  const { workspaceId, userId } = await getCurrentUserWorkspace();
+// Bug #105: Accept optional email customization from SendEmailDialog
+interface SendEmailOptions {
+  recipients?: string[];
+  subject?: string;
+  message?: string;
+}
 
+export async function sendContractInstance(id: string, emailOptions?: SendEmailOptions): Promise<{ emailSent: boolean }> {
+  const { workspaceId, userId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #43: Viewers cannot send contract instances
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
+
+  // MEDIUM #21: Filter out soft-deleted contract instances
   const instance = await prisma.contractInstance.findFirst({
-    where: { id, workspaceId },
+    where: { id, workspaceId, deletedAt: null },
     include: {
       client: true,
       contract: { select: { name: true } },
@@ -558,20 +630,25 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
     const contractUrl = `${baseUrl}/c/${instance.accessToken}`;
     const contractName = instance.contract?.name || 'Contract';
 
+    // Bug #105: Use custom recipients from dialog if provided
+    const emailRecipients = emailOptions?.recipients?.length
+      ? emailOptions.recipients
+      : [instance.client.email];
+
     try {
       const safeWorkspaceName = escapeHtml(workspace.name);
       const safeClientName = escapeHtml(instance.client?.name || 'Client');
       const safeContractName = escapeHtml(contractName);
 
       const emailResult = await sendEmail({
-        to: instance.client?.email || '',
-        subject: `Contract: ${contractName} from ${workspace.name}`,
+        to: emailRecipients,
+        subject: emailOptions?.subject || `Contract: ${contractName} from ${workspace.name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2>Contract from ${safeWorkspaceName}</h2>
             <p>Hi ${safeClientName},</p>
             <p>${safeWorkspaceName} has sent you a contract: <strong>${safeContractName}</strong></p>
-            <p>Please review and sign at your earliest convenience.</p>
+            ${emailOptions?.message ? `<p>${escapeHtml(emailOptions.message)}</p>` : '<p>Please review and sign at your earliest convenience.</p>'}
             <p style="margin: 24px 0;">
               <a href="${contractUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                 Review &amp; Sign Contract
@@ -614,7 +691,18 @@ export async function sendContractInstance(id: string): Promise<{ emailSent: boo
 }
 
 // Sign a contract (called from public client view)
+// SECURITY TODO: Enforce OTP verification before allowing signature.
+// The current OTP store is in-memory and broken in serverless environments.
+// Once the OTP infrastructure is moved to Redis/DB, add a `verifiedOtpToken`
+// parameter here and validate it server-side before proceeding with signing.
 export async function signContract(input: SignContractInput, ipAddress?: string, userAgent?: string): Promise<void> {
+  // HIGH #13: Rate limit contract signing to prevent abuse
+  const rateLimitKey = `sign-contract:${ipAddress || input.token}`;
+  const rateLimitResult = checkRateLimit(rateLimitKey, strictRateLimitOptions);
+  if (rateLimitResult.limited) {
+    throw new Error('Too many signing attempts. Please try again later.');
+  }
+
   const instance = await prisma.contractInstance.findUnique({
     where: { accessToken: input.token },
   });
@@ -626,6 +714,15 @@ export async function signContract(input: SignContractInput, ipAddress?: string,
   if (instance.signedAt) {
     throw new Error('Contract already signed');
   }
+
+  // MEDIUM #22: Only allow signing contracts that have been sent or viewed
+  if (instance.status !== 'sent' && instance.status !== 'viewed') {
+    throw new Error(`Cannot sign a contract with status: ${instance.status}`);
+  }
+
+  // SECURITY TODO: Enforce OTP verification before allowing signature.
+  // When the business profile has e-signature OTP enabled, require a valid
+  // OTP token here. Blocked on migrating OTP store from in-memory to DB/Redis.
 
   // Compute document hash for tamper-proofing
   const signedAt = new Date();
@@ -765,7 +862,12 @@ export async function counterSignContract(
 
 // Delete a contract instance
 export async function deleteContractInstance(id: string): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // HIGH #43: Viewers cannot delete contract instances
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const instance = await prisma.contractInstance.findFirst({
     where: { id, workspaceId, deletedAt: null },
@@ -773,6 +875,11 @@ export async function deleteContractInstance(id: string): Promise<void> {
 
   if (!instance) {
     throw new Error('Contract instance not found');
+  }
+
+  // Bug #182: Prevent deletion of signed contracts (legal documents)
+  if (instance.status === 'signed') {
+    throw new Error('Cannot delete a signed contract. Signed contracts are legal records.');
   }
 
   await prisma.contractInstance.update({

@@ -40,6 +40,8 @@ export function RegisterForm() {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -164,14 +166,13 @@ export function RegisterForm() {
           </div>
 
           <div className="flex items-start space-x-2">
+            {/* Bug #194: Use setValue instead of fragile synthetic event hack */}
             <Checkbox
               id="termsAccepted"
               disabled={isLoading}
-              {...register('termsAccepted')}
+              checked={watch('termsAccepted')}
               onCheckedChange={(checked) => {
-                // react-hook-form expects a change event, but Checkbox uses onCheckedChange
-                const event = { target: { name: 'termsAccepted', value: checked === true } };
-                register('termsAccepted').onChange(event as any);
+                setValue('termsAccepted', checked === true, { shouldValidate: true });
               }}
             />
             <div className="grid gap-1.5 leading-none">
