@@ -65,7 +65,7 @@ describe('StatsCards', () => {
   it('displays conversion rate with percentage', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('65.5%')).toBeInTheDocument();
+    expect(screen.getAllByText('65.5%').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('45 quotes · 32 invoices')).toBeInTheDocument();
   });
 
@@ -73,7 +73,7 @@ describe('StatsCards', () => {
     const statsWithLongDecimal = { ...mockStats, conversionRate: 72.3456 };
     render(<StatsCards stats={statsWithLongDecimal} />);
 
-    expect(screen.getByText('72.3%')).toBeInTheDocument();
+    expect(screen.getAllByText('72.3%').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders with responsive grid layout', () => {

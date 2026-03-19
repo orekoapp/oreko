@@ -46,11 +46,11 @@ describe('CSRF Origin Validation', () => {
     expect(validateRequestOrigin(request)).toBe(false);
   });
 
-  it('allows same-origin requests with no Origin/Referer (browser same-origin)', () => {
+  it('rejects requests with no Origin/Referer', () => {
     const request = {
       headers: { get: () => null },
     };
-    expect(validateRequestOrigin(request)).toBe(true);
+    expect(validateRequestOrigin(request)).toBe(false);
   });
 
   it('handles malformed Origin header gracefully', () => {
