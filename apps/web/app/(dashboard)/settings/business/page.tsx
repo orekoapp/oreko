@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { BusinessProfileForm } from '@/components/settings';
 import { getBusinessProfile } from '@/lib/settings/actions';
 

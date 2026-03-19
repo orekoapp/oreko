@@ -83,9 +83,9 @@ export function safeParseMetadata(raw: unknown): ClientMetadata {
     tags: Array.isArray(meta.tags) ? meta.tags.filter((t): t is string => typeof t === 'string') : [],
     // Low #104: Validate each contact object's shape before casting
     contacts: Array.isArray(meta.contacts)
-      ? (meta.contacts as Record<string, unknown>[]).filter(
+      ? (meta.contacts as unknown as ClientContact[]).filter(
           (c) => c && typeof c === 'object' && typeof c.id === 'string' && typeof c.name === 'string' && typeof c.email === 'string'
-        ) as ClientContact[]
+        )
       : [],
   };
 }

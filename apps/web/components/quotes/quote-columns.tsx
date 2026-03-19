@@ -193,11 +193,12 @@ export function createQuoteColumns({
       cell: ({ row }) => {
         const status = row.original.status;
         const canDelete = status === 'draft';
+        const canEdit = status === 'draft';
         return (
           <DataTableRowActions
             row={row.original}
             onView={onView}
-            onEdit={onEdit}
+            onEdit={canEdit ? onEdit : undefined}
             onDuplicate={onDuplicate}
             onDelete={canDelete ? onDelete : undefined}
             onDownload={onDownload}

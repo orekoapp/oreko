@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
 import { Plus, Mail } from 'lucide-react';
 import { EmailSettingsForm } from '@/components/email/email-settings-form';

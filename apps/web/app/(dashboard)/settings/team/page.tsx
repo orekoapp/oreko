@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { TeamMemberList } from '@/components/settings/team-member-list';
 import { InviteMemberButton } from '@/components/settings/invite-member-button';
 import { getWorkspaceMembers, getCurrentUserRole, getPendingInvitations } from '@/lib/settings/actions';

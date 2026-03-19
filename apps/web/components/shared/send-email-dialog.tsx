@@ -133,11 +133,77 @@ export function SendEmailDialog({
     }
   }, [open, templatesLoaded]);
 
+  const stripHtml = (html: string): string => {
+    // First decode all HTML entities (handles double-encoded HTML)
+    let text = html
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+    // Decode again in case of double-encoding
+    text = text
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+    // Now strip all HTML tags
+    text = text
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p>/gi, '\n\n')
+      .replace(/<\/?(p|div|h[1-6]|ul|ol|li|blockquote|section|article|header|footer|main|nav|aside|figure|figcaption|details|summary)[^>]*>/gi, '\n')
+      .replace(/<\/?(strong|b|em|i|u|s|strike|del|ins|sub|sup|small|mark|abbr|code|kbd|samp|var|span)[^>]*>/gi, '')
+      .replace(/<a[^>]*href="([^"]*)"[^>]*>[^<]*<\/a>/gi, '$1')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    return text;
+  };
+
+  const replaceVariables = (text: string): string => {
+    return text
+      .replace(/\{\{client_name\}\}/gi, recipientName || '')
+      .replace(/\{\{clientName\}\}/gi, recipientName || '')
+      .replace(/\{\{business_name\}\}/gi, businessName || '')
+      .replace(/\{\{businessName\}\}/gi, businessName || '')
+      .replace(/\{\{document_number\}\}/gi, documentNumber || '')
+      .replace(/\{\{documentNumber\}\}/gi, documentNumber || '')
+      .replace(/\{\{quote_number\}\}/gi, documentNumber || '')
+      .replace(/\{\{quoteNumber\}\}/gi, documentNumber || '')
+      .replace(/\{\{invoice_number\}\}/gi, documentNumber || '')
+      .replace(/\{\{invoiceNumber\}\}/gi, documentNumber || '')
+      .replace(/\{\{quote_total\}\}/gi, total ? formatCurrency(total) : '$0.00')
+      .replace(/\{\{quoteTotal\}\}/gi, total ? formatCurrency(total) : '$0.00')
+      .replace(/\{\{invoice_total\}\}/gi, total ? formatCurrency(total) : '$0.00')
+      .replace(/\{\{invoiceTotal\}\}/gi, total ? formatCurrency(total) : '$0.00')
+      .replace(/\{\{total\}\}/gi, total ? formatCurrency(total) : '$0.00')
+      .replace(/\{\{amount\}\}/gi, total ? formatCurrency(total) : '$0.00')
+      .replace(/\{\{due_date\}\}/gi, dueDate ? formatDate(dueDate) : '')
+      .replace(/\{\{dueDate\}\}/gi, dueDate ? formatDate(dueDate) : '')
+      .replace(/\{\{quote_valid_until\}\}/gi, dueDate ? formatDate(dueDate) : '')
+      .replace(/\{\{quoteValidUntil\}\}/gi, dueDate ? formatDate(dueDate) : '')
+      .replace(/\{\{contract_name\}\}/gi, contractName || '')
+      .replace(/\{\{contractName\}\}/gi, contractName || '')
+      .replace(/\{\{quote_name\}\}/gi, contractName || documentNumber || '')
+      .replace(/\{\{quoteName\}\}/gi, contractName || documentNumber || '')
+      .replace(/\{\{#if\s+\w+\}\}[\s\S]*?\{\{\/if\}\}/gi, '')
+      .replace(/\{\{quote_url\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{quoteUrl\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{invoice_url\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{invoiceUrl\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{contract_url\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{contractUrl\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{message\}\}/gi, '');
+  };
+
   const handleImportTemplate = async (templateId: string) => {
     const detail = await getEmailTemplateById(templateId);
     if (detail) {
-      setSubject(detail.subject);
-      setMessage(detail.body);
+      setSubject(replaceVariables(detail.subject));
+      setMessage(replaceVariables(stripHtml(detail.body)));
       toast.success('Template imported');
     }
   };

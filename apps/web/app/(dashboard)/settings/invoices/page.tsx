@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NumberSequenceForm, InvoiceDefaultsForm } from '@/components/settings';
 import { getNumberSequences, getInvoiceDefaults } from '@/lib/settings/actions';
 
@@ -13,7 +15,7 @@ export default async function InvoiceSettingsPage() {
   const invoiceSequence = sequences.find((s) => s.type === 'invoice') || null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <NumberSequenceForm
         type="invoice"
         title="Invoice Numbering"

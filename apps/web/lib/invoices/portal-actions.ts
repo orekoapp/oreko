@@ -43,12 +43,16 @@ export interface PublicInvoiceData {
     email: string | null;
     phone: string | null;
     logoUrl: string | null;
-    address: unknown;
+    address: string | Record<string, string> | null;
+    website?: string | null;
   };
   branding: {
     primaryColor: string | null;
     accentColor: string | null;
     logoUrl: string | null;
+    companyName?: string;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
   } | null;
   lineItems: Array<{
     id: string;
@@ -211,7 +215,7 @@ export async function getInvoiceByAccessToken(
         email: invoice.workspace.businessProfile?.email || null,
         phone: invoice.workspace.businessProfile?.phone || null,
         logoUrl: invoice.workspace.businessProfile?.logoUrl || null,
-        address: invoice.workspace.businessProfile?.address || null,
+        address: (invoice.workspace.businessProfile?.address as string | Record<string, string>) || null,
       },
       branding: invoice.workspace.brandingSettings
         ? {

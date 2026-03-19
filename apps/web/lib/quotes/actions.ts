@@ -5,11 +5,11 @@ import { revalidatePath } from 'next/cache';
 import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
-import { sendQuoteSentEmail } from '@/lib/services/email';
+import { sendTemplatedEmail } from '@/lib/email/actions';
 import { createNotification } from '@/lib/notifications/internal';
 import { ROUTES } from '@/lib/routes';
 import { domainEvents } from '@/lib/events/emitter';
-import { toNumber, getBaseUrl } from '@/lib/utils';
+import { toNumber, getBaseUrl, formatCurrency } from '@/lib/utils';
 
 /**
  * Bug #134: Safely parse quote settings from JSON with runtime validation.
@@ -135,6 +135,7 @@ export async function createQuote(data: {
   projectId?: string | null;
   currency?: string;
   blocks?: QuoteBlock[];
+  isDraft?: boolean;
 }) {
   const { userId, workspace } = await getActiveWorkspace();
   const { role } = await getCurrentUserWorkspace();
@@ -231,7 +232,7 @@ export async function createQuote(data: {
       projectId: data.projectId || null,
       quoteNumber,
       title: data.title,
-      status: 'draft',
+      status: data.isDraft !== false ? 'draft' : 'sent',
       accessToken: generateAccessToken(),
       subtotal,
       taxTotal,
@@ -891,45 +892,40 @@ export async function sendQuote(quoteId: string, emailOptions?: SendEmailOptions
     return { success: false, error: 'Cannot send a quote with zero total. Add line items first.' };
   }
 
-  // Send email notification
-  // TODO: Bug #11 — Custom email templates are never used here. Before sending,
-  // we should query for a workspace-specific custom email template:
-  //   const customTemplate = await prisma.emailTemplate.findFirst({
-  //     where: { workspaceId: workspace.id, isDefault: true },
-  //   });
-  // If found, use customTemplate.subject / customTemplate.body with variable
-  // substitution (e.g., {{clientName}}, {{quoteNumber}}, {{quoteUrl}}).
-  // If not found, fall back to the existing hardcoded sendQuoteSentEmail below.
   const baseUrl = getBaseUrl();
   const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
 
-  // MEDIUM #29: Send email before updating status so we don't mark as 'sent'
-  // when the email actually failed to deliver.
-  // Bug #105: Use custom recipients/subject/message from dialog if provided
   const emailRecipients = emailOptions?.recipients?.length
     ? emailOptions.recipients
     : [quote.client.email];
 
   let emailSent = false;
   try {
-    const emailResult = await sendQuoteSentEmail({
+    const emailResult = await sendTemplatedEmail({
+      type: 'quote_sent',
       to: emailRecipients,
-      clientName: quote.client.name,
-      quoteName: quote.title || `Quote ${quote.quoteNumber}`,
-      quoteUrl,
-      businessName: workspace.name,
-      validUntil: quote.expirationDate ?? undefined,
-      message: emailOptions?.message || undefined,
-      rateLimitKey: workspace.id,
+      variables: {
+        businessName: workspace.name,
+        clientName: quote.client.name,
+        clientEmail: quote.client.email,
+        quoteName: quote.title || `Quote ${quote.quoteNumber}`,
+        quoteNumber: quote.quoteNumber,
+        quoteUrl,
+        quoteTotal: formatCurrency(toNumber(quote.total)),
+        quoteValidUntil: quote.expirationDate?.toISOString() ?? undefined,
+        message: emailOptions?.message || undefined,
+      },
+      customSubject: emailOptions?.subject || undefined,
+      customBody: emailOptions?.message || undefined,
     });
     emailSent = emailResult.success;
     if (!emailResult.success) {
       console.error('Failed to send quote email:', emailResult.error);
-      return { success: false, error: 'Failed to send email. Quote status was not changed.' };
+      return { success: false, error: 'Email could not be sent. Please check your email settings.' };
     }
   } catch (err) {
     console.error('Failed to send quote email:', err);
-    return { success: false, error: 'Failed to send email. Quote status was not changed.' };
+    return { success: false, error: 'Email could not be sent. Please check your email settings.' };
   }
 
   // Update quote status to sent (only after email succeeds)

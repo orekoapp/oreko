@@ -132,7 +132,7 @@ export function AnimatedDemo() {
           </div>
           <div className="flex-1 flex justify-center">
             <div className="px-4 py-1 rounded-md bg-background border border-border text-xs text-muted-foreground min-w-[220px] text-center font-mono">
-              app.quotecraft.io/{activeTab.id}
+              app.quotecraft.io/{activeTab?.id}
             </div>
           </div>
           <div className="w-[52px]" />
@@ -142,7 +142,7 @@ export function AnimatedDemo() {
         <div className="relative aspect-[16/10] bg-background">
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeTab.id}
+              key={activeTab?.id}
               className="absolute inset-0"
               initial={{ opacity: 0, scale: 1.02 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -150,8 +150,8 @@ export function AnimatedDemo() {
               transition={{ duration: 0.4, ease: 'easeInOut' }}
             >
               <Image
-                src={activeTab.screenshot}
-                alt={activeTab.alt}
+                src={activeTab?.screenshot || ''}
+                alt={activeTab?.alt || ''}
                 fill
                 className="object-cover object-top"
                 sizes="(max-width: 768px) 100vw, 1200px"

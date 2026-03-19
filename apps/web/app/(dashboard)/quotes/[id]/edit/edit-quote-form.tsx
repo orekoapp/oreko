@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSavedLineItems, type SavedLineItemData } from '@/lib/saved-items/actions';
 import {
@@ -17,21 +17,20 @@ import {
   Download,
   Palette,
   Building2,
-  FileText as FileTextIcon,
   Paperclip,
   Link2,
   CalendarPlus,
-  RotateCcw,
   DollarSign,
-  Hash,
   HelpCircle,
   Check,
   Camera,
   Briefcase,
   Megaphone,
   PartyPopper,
+  CheckCircle2,
+  PenTool,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays, differenceInDays } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -51,6 +50,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import {
@@ -68,11 +68,11 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command';
-import { toast } from 'sonner';
-import { updateInvoice, updateInvoiceStatus, getInvoiceTemplates } from '@/lib/invoices/actions';
+import { searchClients } from '@/lib/clients/actions';
+import { updateQuote } from '@/lib/quotes/actions';
+import { getInvoiceTemplates } from '@/lib/invoices/actions';
 import type { InvoiceTemplateLineItem } from '@/lib/invoices/actions';
-import type { InvoiceDocument } from '@/lib/invoices/types';
-
+import { getBusinessProfile, getWorkspace } from '@/lib/settings/actions';
 
 // ─── Types ───────────────────────────────────────────────
 interface LineItem {
@@ -83,10 +83,69 @@ interface LineItem {
   rate: number;
 }
 
-type PreviewTab = 'payment' | 'email' | 'pdf';
+type PreviewTab = 'quote' | 'email' | 'pdf';
 
-// ─── Invoice Templates ───────────────────────────────────
-interface InvoiceTemplate {
+// ─── Quote Data from Server ─────────────────────────────
+interface QuoteData {
+  id: string;
+  workspaceId: string;
+  clientId: string;
+  projectId: string | null;
+  quoteNumber: string;
+  status: string;
+  title: string;
+  issueDate: string;
+  expirationDate: string | null;
+  blocks: Array<{
+    id: string;
+    type: string;
+    content: Record<string, unknown> & {
+      name?: string;
+      description?: string;
+      quantity?: number;
+      rate?: number;
+      unit?: string;
+      taxRate?: number | null;
+      rateCardId?: string | null;
+    };
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  settings: {
+    requireSignature: boolean;
+    autoConvertToInvoice: boolean;
+    depositRequired: boolean;
+    depositType: string;
+    depositValue: number;
+    showLineItemPrices: boolean;
+    allowPartialAcceptance: boolean;
+    currency: string;
+    taxInclusive: boolean;
+  };
+  totals: {
+    subtotal: number;
+    discountType: 'percentage' | 'fixed' | null;
+    discountValue: number | null;
+    discountAmount: number;
+    taxTotal: number;
+    total: number;
+  };
+  notes: string;
+  terms: string;
+  internalNotes: string;
+  client?: {
+    id: string;
+    name: string;
+    email: string | null;
+    company: string | null;
+  } | null;
+  linkedInvoice?: unknown;
+  signatureData?: unknown;
+  acceptedAt?: string | null;
+}
+
+// ─── Quote Templates ───────────────────────────────────
+interface QuoteTemplate {
   label: string;
   style: 'clean' | 'stripe' | 'minimal' | 'accent-bar' | 'glassmorphism' | 'receipt';
   accent: string;
@@ -100,7 +159,7 @@ interface InvoiceTemplate {
   bgTint?: string;
 }
 
-const INVOICE_TEMPLATES: Record<string, InvoiceTemplate> = {
+const QUOTE_TEMPLATES: Record<string, QuoteTemplate> = {
   clean: {
     label: 'Clean',
     style: 'clean',
@@ -205,117 +264,95 @@ const INVOICE_TEMPLATES: Record<string, InvoiceTemplate> = {
   },
 };
 
-type TemplateName = keyof typeof INVOICE_TEMPLATES;
-
-// ─── Section Header Component ────────────────────────────
-function SectionHeader({
-  title,
-  action,
-  actionLabel,
-  onAction,
-}: {
-  title: string;
-  action?: boolean;
-  actionLabel?: string;
-  onAction?: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-      {action && (
-        <button
-          onClick={onAction}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-        >
-          {actionLabel}
-          <ChevronDown className="h-3.5 w-3.5" />
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ─── Props (from server component) ──────────────────────
-interface ClientOption {
-  id: string;
-  name: string;
-  email: string | null;
-  company: string | null;
-}
-
-interface TaxRateOption {
-  id: string;
-  name: string;
-  rate: number;
-  isDefault: boolean;
-  isActive: boolean;
-}
-
-interface EditInvoiceFormProps {
-  invoice: InvoiceDocument;
-  clients: ClientOption[];
-  taxRates?: TaxRateOption[];
-  currency?: string;
-  businessName?: string;
-}
-
-function formatMoney(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-  }).format(amount);
-}
+type TemplateName = keyof typeof QUOTE_TEMPLATES;
 
 // ─── Main Component ──────────────────────────────────────
-export function EditInvoiceForm({
-  invoice,
-  clients,
-  taxRates = [],
-  currency = 'USD',
-  businessName = 'Your Business',
-}: EditInvoiceFormProps) {
+interface EditQuoteFormProps {
+  quote: QuoteData;
+}
+
+export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  // Derive initial tax rate from first line item
-  const existingTaxRate = invoice.lineItems[0]?.taxRate;
+  // Real clients from DB
+  const [clients, setClients] = useState<Array<{ id: string; name: string; email: string; company: string | null }>>([]);
 
-  // Form State — pre-filled from invoice
-  const [invoiceNumber] = useState(invoice.invoiceNumber);
-  const [dueDate, setDueDate] = useState<Date | undefined>(
-    invoice.dueDate ? new Date(invoice.dueDate + 'T00:00:00') : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+  const [businessName, setBusinessName] = useState('Your Business');
+
+  useEffect(() => {
+    searchClients('', 50).then(setClients).catch(() => {});
+    // Try business profile first, fall back to workspace name
+    Promise.all([getBusinessProfile(), getWorkspace()])
+      .then(([bp, ws]) => {
+        setBusinessName(bp?.businessName || ws.name || 'Your Business');
+      })
+      .catch(() => {});
+  }, []);
+
+  // ─── Pre-fill form state from quote data ─────────────
+  const [quoteNumber] = useState(quote.quoteNumber);
+  const [issueDate, setIssueDate] = useState<Date | undefined>(
+    quote.issueDate ? new Date(quote.issueDate) : new Date()
   );
-  const [selectedClientId, setSelectedClientId] = useState<string>(invoice.clientId);
+
+  // Calculate expiration days from issue/expiration dates
+  const initialExpirationDays = (() => {
+    if (quote.issueDate && quote.expirationDate) {
+      const days = differenceInDays(new Date(quote.expirationDate), new Date(quote.issueDate));
+      // Match to nearest preset
+      const presets = [7, 14, 30, 45, 60, 90];
+      const closest = presets.find(p => p === days) || 30;
+      return String(closest);
+    }
+    return '30';
+  })();
+
+  const [expirationDays, setExpirationDays] = useState(initialExpirationDays);
+  const [selectedClientId, setSelectedClientId] = useState<string>(quote.clientId || '');
+
+  // Convert blocks to line items
+  const initialLineItems: LineItem[] = quote.blocks
+    .filter(b => b.type === 'service-item')
+    .map(b => ({
+      id: b.id,
+      name: b.content.name || '',
+      description: b.content.description || '',
+      quantity: b.content.quantity || 1,
+      rate: b.content.rate || 0,
+    }));
+
   const [lineItems, setLineItems] = useState<LineItem[]>(
-    invoice.lineItems.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description || '',
-      quantity: item.quantity,
-      rate: item.rate,
-    }))
-  );
-  const [taxRate, setTaxRate] = useState(
-    existingTaxRate ? `${existingTaxRate}%` : '0% - Default'
-  );
-  const [customTaxRate, setCustomTaxRate] = useState('');
-  const [notes, setNotes] = useState(invoice.notes || 'Thank you for your business!');
-
-  // Discount — pre-fill from invoice
-  const [discount, setDiscount] = useState(invoice.totals.discountValue ?? 0);
-  const [discountType, setDiscountType] = useState<'flat' | 'percent'>(
-    invoice.totals.discountType === 'percentage' ? 'percent' : 'flat'
+    initialLineItems.length > 0 ? initialLineItems : []
   );
 
-  // Invoice Details Options
+  // Determine initial tax rate from blocks
+  const firstTaxRate = quote.blocks.find(b => b.type === 'service-item')?.content.taxRate;
+  const initialTaxRate = (() => {
+    if (!firstTaxRate || firstTaxRate === 0) return '0% - Default';
+    if (firstTaxRate === 5) return '5% - GST';
+    if (firstTaxRate === 10) return '10% - VAT';
+    if (firstTaxRate === 18) return '18% - GST';
+    return 'custom';
+  })();
+
+  const [taxRate, setTaxRate] = useState(initialTaxRate);
+  const [customTaxRate, setCustomTaxRate] = useState(
+    initialTaxRate === 'custom' && firstTaxRate ? String(firstTaxRate) : ''
+  );
+  const [notes, setNotes] = useState(quote.notes || '');
+  const [terms, setTerms] = useState(quote.terms || '');
+
+  // Discount
+  const initialDiscountValue = quote.totals.discountValue || 0;
+  const initialDiscountType = quote.totals.discountType === 'percentage' ? 'percent' as const : 'flat' as const;
+  const [discount, setDiscount] = useState(initialDiscountValue);
+  const [discountType, setDiscountType] = useState<'flat' | 'percent'>(initialDiscountType);
+
+  // Quote Details Options
   const [showBillAsCompany, setShowBillAsCompany] = useState(false);
   const [companyName, setCompanyName] = useState('');
-  const [showIssueDate, setShowIssueDate] = useState(true);
-  const [issueDate, setIssueDate] = useState<Date | undefined>(
-    invoice.issueDate ? new Date(invoice.issueDate + 'T00:00:00') : new Date()
-  );
-  const [showPoNumber, setShowPoNumber] = useState(false);
-  const [poNumber, setPoNumber] = useState('');
   const [showCustomField, setShowCustomField] = useState(false);
   const [customFieldLabel, setCustomFieldLabel] = useState('');
   const [customFieldValue, setCustomFieldValue] = useState('');
@@ -323,60 +360,24 @@ export function EditInvoiceForm({
   // Add Enhancements
   const [showDescription, setShowDescription] = useState(false);
   const [description, setDescription] = useState('');
+  const [showContract, setShowContract] = useState(false);
+  const [contractRef, setContractRef] = useState('');
   const [showAttachments, setShowAttachments] = useState(false);
   const [showEvent, setShowEvent] = useState(false);
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
 
-  // Payment Settings
-  const [showDeposit, setShowDeposit] = useState(false);
-  const [depositAmount, setDepositAmount] = useState(0);
-  const [showDiscount, setShowDiscount] = useState((invoice.totals.discountValue ?? 0) > 0);
-  const [allowTipping, setAllowTipping] = useState(false);
-  const [showRecurring, setShowRecurring] = useState(false);
-  const [recurringInterval, setRecurringInterval] = useState('monthly');
-  const [showCustomLinks, setShowCustomLinks] = useState(false);
-  const [customLinkUrl, setCustomLinkUrl] = useState('');
-  const [customLinkLabel, setCustomLinkLabel] = useState('');
-  const [pdfPaymentLink, setPdfPaymentLink] = useState(true);
+  // Quote Settings
+  const [showDeposit, setShowDeposit] = useState(quote.settings.depositRequired || false);
+  const [depositAmount, setDepositAmount] = useState(quote.settings.depositValue || 0);
+  const [showDiscount, setShowDiscount] = useState(initialDiscountValue > 0);
+  const [signatureRequired, setSignatureRequired] = useState(quote.settings.requireSignature || false);
 
   // UI State
-  const [previewTab, setPreviewTab] = useState<PreviewTab>('payment');
+  const [previewTab, setPreviewTab] = useState<PreviewTab>('quote');
   const [showPreviewDetails, setShowPreviewDetails] = useState(true);
   const [templateName, setTemplateName] = useState<TemplateName>('quotecraft');
   const [pdfGenerating, setPdfGenerating] = useState(false);
-
-  // Refs
-  const pdfRef = useRef<HTMLDivElement>(null);
-
-  // Derived State
-  const selectedClient = useMemo(
-    () => clients.find((c) => c.id === selectedClientId),
-    [clients, selectedClientId]
-  );
-
-  const tpl = (INVOICE_TEMPLATES[templateName] ?? INVOICE_TEMPLATES.clean) as InvoiceTemplate;
-
-  // Bug #178: Round each line item to avoid floating-point precision errors
-  const subtotal = Math.round(lineItems.reduce(
-    (acc, item) => acc + Math.round(item.quantity * item.rate * 100) / 100,
-    0
-  ) * 100) / 100;
-
-  // Parse tax rate from the select value
-  const parsedTaxPercent = useMemo(() => {
-    if (taxRate === 'custom') {
-      return parseFloat(customTaxRate) || 0;
-    }
-    const match = taxRate.match(/^(\d+(?:\.\d+)?)/);
-    return match?.[1] ? parseFloat(match[1]) : 0;
-  }, [taxRate, customTaxRate]);
-
-  const taxAmount = subtotal * (parsedTaxPercent / 100);
-  const discountAmount = discountType === 'percent' ? subtotal * (discount / 100) : discount;
-  const total = Math.max(0, subtotal + taxAmount - discountAmount);
-
-  // ─── Handlers ────────────────────────────────────────
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [savedItems, setSavedItems] = useState<SavedLineItemData[]>([]);
 
@@ -388,6 +389,31 @@ export function EditInvoiceForm({
     }).catch(() => {});
   }, []);
 
+  // Refs
+  const pdfRef = useRef<HTMLDivElement>(null);
+
+  // Derived State
+  const selectedClient = useMemo(
+    () => clients.find((c) => c.id === selectedClientId) || quote.client,
+    [selectedClientId, clients, quote.client]
+  );
+
+  const tpl = (QUOTE_TEMPLATES[templateName] ?? QUOTE_TEMPLATES.clean) as QuoteTemplate;
+
+  const subtotal = lineItems.reduce(
+    (acc, item) => acc + item.quantity * item.rate,
+    0
+  );
+  const discountAmount = discountType === 'percent'
+    ? Math.round(subtotal * (discount / 100) * 100) / 100
+    : discount;
+  const total = Math.max(0, subtotal - discountAmount);
+
+  const expirationDate = issueDate
+    ? addDays(issueDate, parseInt(expirationDays) || 30)
+    : undefined;
+
+  // ─── Handlers ────────────────────────────────────────
   const addLineItem = () => {
     setLineItems([
       ...lineItems,
@@ -400,7 +426,6 @@ export function EditInvoiceForm({
       },
     ]);
   };
-
 
   const removeLineItem = (id: string) => {
     setLineItems(lineItems.filter((item) => item.id !== id));
@@ -420,52 +445,80 @@ export function EditInvoiceForm({
 
   const handleSubmit = async (isDraft: boolean) => {
     if (!selectedClientId) {
-      toast.error('Please select a client');
+      toast({ title: 'Error', description: 'Please select a client', variant: 'destructive' });
       return;
     }
-    if (lineItems.length === 0 || lineItems.every((item) => !item.name)) {
-      toast.error('Please add at least one line item');
+    if (lineItems.length === 0 || !lineItems.some(i => i.name.trim())) {
+      toast({ title: 'Error', description: 'Please add at least one line item', variant: 'destructive' });
       return;
     }
 
     setLoading(true);
     try {
-      const result = await updateInvoice(invoice.id, {
-        title: 'Invoice',
-        dueDate: dueDate ? dueDate.toISOString().split('T')[0]! : new Date().toISOString().split('T')[0]!,
-        lineItems: lineItems
-          .filter((item) => item.name.trim())
-          .map((item) => ({
-            name: item.name,
-            description: item.description || undefined,
-            quantity: item.quantity,
-            rate: item.rate,
-            taxRate: parsedTaxPercent || undefined,
-          })),
-        discountType: discountAmount > 0 ? (discountType === 'percent' ? 'percentage' : 'fixed') : null,
-        discountValue: discountAmount > 0 ? discount : null,
-        notes: notes || undefined,
+      const blocks = lineItems.filter(i => i.name.trim()).map(item => ({
+        id: item.id,
+        type: 'service-item' as const,
+        content: {
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          rate: item.rate,
+          unit: 'unit',
+          taxRate: customTaxRate ? parseFloat(customTaxRate) : null,
+          rateCardId: null,
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+
+      const settings: Record<string, unknown> = {
+        requireSignature: signatureRequired,
+        depositRequired: showDeposit,
+        depositValue: depositAmount,
+        currency: quote.settings.currency || 'USD',
+      };
+
+      if (showDiscount && discount > 0) {
+        settings.discountType = discountType === 'percent' ? 'percentage' : 'fixed';
+        settings.discountValue = discount;
+      } else {
+        settings.discountType = null;
+        settings.discountValue = 0;
+      }
+
+      const result = await updateQuote(quote.id, {
+        title: lineItems[0]?.name || quote.title || 'Untitled Quote',
+        blocks,
+        notes,
+        terms,
+        settings,
       });
 
       if (result.success) {
-        // If not draft, also send the invoice
-        if (!isDraft) {
-          await updateInvoiceStatus(invoice.id, 'sent');
-          toast.success('Invoice Updated & Sent');
-        } else {
-          toast.success('Draft Updated');
-        }
-        router.push('/invoices');
-      } else if ('error' in result) {
-        toast.error(result.error);
+        toast({
+          title: isDraft ? 'Draft Updated' : 'Quote Updated',
+          description: `Quote ${quoteNumber} updated successfully`,
+        });
+        router.push('/quotes');
+      } else {
+        toast({ title: 'Error', description: result.error || 'Failed to update quote', variant: 'destructive' });
       }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to update invoice';
-      toast.error(message);
+    } catch (err) {
+      console.error('Update quote error:', err);
+      toast({ title: 'Error', description: 'Failed to update quote. Check console for details.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadDefaultTerms = () => {
+    setTerms(
+      '1. This quote is valid for the period specified above.\n' +
+      '2. Payment terms: 50% deposit upon acceptance, balance due on completion.\n' +
+      '3. Additional work outside the scope of this quote will be billed separately.\n' +
+      '4. All prices are in USD unless otherwise stated.\n' +
+      '5. By accepting this quote, you agree to these terms and conditions.'
+    );
   };
 
   // ─── PDF Download Handler ─────────────────────────────
@@ -487,14 +540,14 @@ export function EditInvoiceForm({
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       pdf.addImage(imgData, 'PNG', 0, 0, 595, 842);
-      pdf.save(`Invoice-${invoiceNumber}.pdf`);
+      pdf.save(`Quote-${quoteNumber}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      toast.error('Failed to generate PDF. Please try again.');
+      toast({ title: 'Error', description: 'Failed to generate PDF. Please try again.' });
     } finally {
       setPdfGenerating(false);
     }
-  }, [invoiceNumber]);
+  }, [quoteNumber, toast]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
@@ -507,11 +560,11 @@ export function EditInvoiceForm({
           {/* ═══════════════════════════════════════════ */}
           <div className="overflow-y-auto no-scrollbar border-r bg-background">
             <div className="max-w-[640px] mx-auto py-10 px-8 space-y-0">
-              {/* ─── Invoice Details Section ─────────── */}
+              {/* ─── Quote Details Section ──────────── */}
               <div className="pb-8">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-semibold tracking-tight font-display">
-                    Edit Invoice
+                    Edit Quote
                   </h3>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -538,22 +591,6 @@ export function EditInvoiceForm({
                       </div>
                       <button
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
-                        onClick={() => setShowIssueDate(!showIssueDate)}
-                      >
-                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                        <span>Edit Issue Date</span>
-                        {showIssueDate && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
-                      </button>
-                      <button
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
-                        onClick={() => setShowPoNumber(!showPoNumber)}
-                      >
-                        <Hash className="h-4 w-4 text-muted-foreground" />
-                        <span>Add PO Number</span>
-                        {showPoNumber && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
-                      </button>
-                      <button
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
                         onClick={() => setShowCustomField(!showCustomField)}
                       >
                         <Pencil className="h-4 w-4 text-muted-foreground" />
@@ -568,6 +605,14 @@ export function EditInvoiceForm({
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         <span>Add Description</span>
                         {showDescription && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
+                      </button>
+                      <button
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
+                        onClick={() => setShowContract(!showContract)}
+                      >
+                        <Link2 className="h-4 w-4 text-muted-foreground" />
+                        <span>Add Contract</span>
+                        {showContract && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
                       </button>
                       <button
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
@@ -643,24 +688,16 @@ export function EditInvoiceForm({
                           <SelectValue placeholder="Select a customer" />
                         </SelectTrigger>
                         <SelectContent>
-                          {clients.length === 0 ? (
-                            <SelectItem value="_none" disabled>
-                              No clients found
+                          {clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              <div className="flex items-center gap-2">
+                                <span>{client.name}</span>
+                                <span className="text-muted-foreground text-xs">
+                                  {client.email}
+                                </span>
+                              </div>
                             </SelectItem>
-                          ) : (
-                            clients.map((client) => (
-                              <SelectItem key={client.id} value={client.id}>
-                                <div className="flex items-center gap-2">
-                                  <span>{client.name}</span>
-                                  {client.email && (
-                                    <span className="text-muted-foreground text-xs">
-                                      {client.email}
-                                    </span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -680,44 +717,11 @@ export function EditInvoiceForm({
                   </div>
                 )}
 
-                {/* Issue Date / Due Date / Invoice Number / Tax Rate — Compact Row */}
-                <div className={cn('grid gap-4', showIssueDate ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3')}>
-                  {showIssueDate && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">
-                        Issue Date
-                      </Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'w-full justify-start text-left font-normal h-11 text-sm bg-card shadow-none',
-                              !issueDate && 'text-muted-foreground'
-                            )}
-                          >
-                            <CalendarIcon className="mr-1 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-                            <span className="truncate">
-                              {issueDate
-                                ? format(issueDate, 'MMM dd, yyyy')
-                                : 'Pick date'}
-                            </span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={issueDate}
-                            onSelect={setIssueDate}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  )}
+                {/* Issue Date / Quote Number / Tax Rate — Compact Row */}
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">
-                      Due Date
+                      Issue Date
                     </Label>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -725,22 +729,20 @@ export function EditInvoiceForm({
                           variant="outline"
                           className={cn(
                             'w-full justify-start text-left font-normal h-11 text-sm bg-card shadow-none',
-                            !dueDate && 'text-muted-foreground'
+                            !issueDate && 'text-muted-foreground'
                           )}
                         >
-                          <CalendarIcon className="mr-1 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-                          <span className="truncate">
-                            {dueDate
-                              ? format(dueDate, 'MMM dd, yyyy')
-                              : 'Pick date'}
-                          </span>
+                          <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                          {issueDate
+                            ? format(issueDate, 'MMM do, yyyy')
+                            : 'Pick date'}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={dueDate}
-                          onSelect={setDueDate}
+                          selected={issueDate}
+                          onSelect={setIssueDate}
                           initialFocus
                         />
                       </PopoverContent>
@@ -748,12 +750,12 @@ export function EditInvoiceForm({
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">
-                      Invoice Number
+                      Quote Number
                     </Label>
                     <Input
-                      value={invoiceNumber}
-                      disabled
+                      value={quoteNumber}
                       className="h-11"
+                      disabled
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -771,20 +773,9 @@ export function EditInvoiceForm({
                         <SelectItem value="0% - Default">
                           0% - Default
                         </SelectItem>
-                        {taxRates
-                          .filter((t) => t.isActive)
-                          .map((tr) => (
-                            <SelectItem key={tr.id} value={`${tr.rate}% - ${tr.name}`}>
-                              {tr.rate}% - {tr.name}
-                            </SelectItem>
-                          ))}
-                        {taxRates.filter((t) => t.isActive).length === 0 && (
-                          <>
-                            <SelectItem value="5% - GST">5% - GST</SelectItem>
-                            <SelectItem value="10% - VAT">10% - VAT</SelectItem>
-                            <SelectItem value="18% - GST">18% - GST</SelectItem>
-                          </>
-                        )}
+                        <SelectItem value="5% - GST">5% - GST</SelectItem>
+                        <SelectItem value="10% - VAT">10% - VAT</SelectItem>
+                        <SelectItem value="18% - GST">18% - GST</SelectItem>
                         <SelectItem value="custom">Set Custom Rate</SelectItem>
                       </SelectContent>
                     </Select>
@@ -808,18 +799,23 @@ export function EditInvoiceForm({
                   </div>
                 )}
 
-                {/* PO Number — shown when toggled */}
-                {showPoNumber && (
-                  <div className="mt-3 space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Purchase Order #</Label>
-                    <Input
-                      value={poNumber}
-                      onChange={(e) => setPoNumber(e.target.value)}
-                      placeholder="PO-0000"
-                      className="h-10 max-w-[200px]"
-                    />
-                  </div>
-                )}
+                {/* Expiration Period */}
+                <div className="mt-3 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Valid For</Label>
+                  <Select value={expirationDays} onValueChange={setExpirationDays}>
+                    <SelectTrigger className="h-10 max-w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">7 days</SelectItem>
+                      <SelectItem value="14">14 days</SelectItem>
+                      <SelectItem value="30">30 days</SelectItem>
+                      <SelectItem value="45">45 days</SelectItem>
+                      <SelectItem value="60">60 days</SelectItem>
+                      <SelectItem value="90">90 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 {/* Custom Field — shown when toggled */}
                 {showCustomField && (
@@ -847,91 +843,109 @@ export function EditInvoiceForm({
               </div>
 
               {/* ─── Add Enhancements — Dropdown ─────── */}
-                {/* Enhancement fields — shown when toggled */}
-                {(showDescription || showAttachments || showEvent) && (
-                  <div className="mt-8 space-y-6">
-                    {showDescription && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-muted-foreground">Description</Label>
-                          <button
-                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                            onClick={() => { setShowDescription(false); setDescription(''); }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <Textarea
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          className="resize-none min-h-[80px]"
-                          placeholder="Describe this project or service..."
+              {(showDescription || showContract || showAttachments || showEvent) && (
+                <div className="mt-8 space-y-6">
+                  {showDescription && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Description</Label>
+                        <button
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                          onClick={() => { setShowDescription(false); setDescription(''); }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <Textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="resize-none min-h-[80px]"
+                        placeholder="Describe this project or service..."
+                      />
+                    </div>
+                  )}
+                  {showContract && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Contract Reference</Label>
+                        <button
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                          onClick={() => { setShowContract(false); setContractRef(''); }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <Input
+                        value={contractRef}
+                        onChange={(e) => setContractRef(e.target.value)}
+                        className="h-10"
+                        placeholder="Link or reference to contract..."
+                      />
+                    </div>
+                  )}
+                  {showAttachments && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Attachments</Label>
+                        <button
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                          onClick={() => setShowAttachments(false)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="border-2 border-dashed rounded-lg px-4 py-6 text-center text-muted-foreground text-sm hover:border-primary/30 transition-colors cursor-pointer bg-muted/10">
+                        <Paperclip className="h-5 w-5 mx-auto mb-2 opacity-50" />
+                        <p>Click to upload or drag files here</p>
+                        <p className="text-xs mt-1">PDF, Images up to 10MB</p>
+                      </div>
+                    </div>
+                  )}
+                  {showEvent && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Event Details</Label>
+                        <button
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                          onClick={() => { setShowEvent(false); setEventName(''); setEventDate(undefined); }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          value={eventName}
+                          onChange={(e) => setEventName(e.target.value)}
+                          className="h-10"
+                          placeholder="Event name"
                         />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full justify-start text-left font-normal h-10 text-sm',
+                                !eventDate && 'text-muted-foreground'
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                              {eventDate ? format(eventDate, 'MMM do, yyyy') : 'Event date'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={eventDate}
+                              onSelect={setEventDate}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
-                    )}
-                    {showAttachments && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-muted-foreground">Attachments</Label>
-                          <button
-                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                            onClick={() => setShowAttachments(false)}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <div className="border-2 border-dashed rounded-lg px-4 py-6 text-center text-muted-foreground text-sm hover:border-primary/30 transition-colors cursor-pointer bg-muted/10">
-                          <Paperclip className="h-5 w-5 mx-auto mb-2 opacity-50" />
-                          <p>Click to upload or drag files here</p>
-                          <p className="text-xs mt-1">PDF, Images up to 10MB</p>
-                        </div>
-                      </div>
-                    )}
-                    {showEvent && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-muted-foreground">Event Details</Label>
-                          <button
-                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                            onClick={() => { setShowEvent(false); setEventName(''); setEventDate(undefined); }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <Input
-                            value={eventName}
-                            onChange={(e) => setEventName(e.target.value)}
-                            className="h-10"
-                            placeholder="Event name"
-                          />
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  'w-full justify-start text-left font-normal h-10 text-sm',
-                                  !eventDate && 'text-muted-foreground'
-                                )}
-                              >
-                                <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                                {eventDate ? format(eventDate, 'MMM do, yyyy') : 'Event date'}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={eventDate}
-                                onSelect={setEventDate}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <Separator className="bg-border/60" />
 
@@ -1044,8 +1058,7 @@ export function EditInvoiceForm({
                             updateLineItem(
                               item.id,
                               'quantity',
-                              // Low #58: Use parseFloat to support fractional quantities (e.g. 0.5 hours)
-                              parseFloat(e.target.value) || 1
+                              parseInt(e.target.value) || 1
                             )
                           }
                           className="h-9 text-sm"
@@ -1155,15 +1168,15 @@ export function EditInvoiceForm({
 
               <Separator className="bg-border/60" />
 
-              {/* ─── Payment Settings ─────────────────── */}
+              {/* ─── Quote Settings ─────────────────── */}
               <div className="py-8">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-semibold tracking-tight font-display">
-                      Payment Settings
+                      Quote Settings
                     </h3>
                     <p className="text-[13px] text-muted-foreground mt-1">
-                      Payment methods are setup in your settings page.
+                      Configure deposit, discount, and signature requirements.
                     </p>
                   </div>
                   <Popover>
@@ -1174,79 +1187,42 @@ export function EditInvoiceForm({
                       </button>
                     </PopoverTrigger>
                     <PopoverContent align="end" className="w-56 p-1">
-                      <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Payment settings</p>
                       <button
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
                         onClick={() => setShowDeposit(!showDeposit)}
                       >
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span>Deposit/Payments</span>
+                        <span>Deposit Required</span>
                         {showDeposit && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
                       </button>
                       <button
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
                         onClick={() => setShowDiscount(!showDiscount)}
                       >
-                        <span className="h-4 w-4 text-muted-foreground flex items-center justify-center font-bold text-xs">%</span>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
                         <span>Discount</span>
                         {showDiscount && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
                       </button>
                       <div
-                        role="menuitem"
                         className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors cursor-pointer"
-                        onClick={() => setAllowTipping(!allowTipping)}
+                        onClick={() => setSignatureRequired(!signatureRequired)}
                       >
                         <div className="flex items-center gap-2.5">
-                          <span className="h-4 w-4 text-muted-foreground flex items-center justify-center text-xs">&#128176;</span>
-                          <span>Tipping</span>
+                          <PenTool className="h-4 w-4 text-muted-foreground" />
+                          <span>Require Signature</span>
                         </div>
                         <Switch
-                          checked={allowTipping}
-                          onCheckedChange={setAllowTipping}
+                          checked={signatureRequired}
+                          onCheckedChange={setSignatureRequired}
                           className="scale-75"
                         />
                       </div>
-                      <button
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
-                        onClick={() => setShowRecurring(!showRecurring)}
-                      >
-                        <RotateCcw className="h-4 w-4 text-muted-foreground" />
-                        <span>Recurring Invoice</span>
-                        <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
-                        {showRecurring && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
-                      </button>
-                      <button
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
-                        onClick={() => setShowCustomLinks(!showCustomLinks)}
-                      >
-                        <Link2 className="h-4 w-4 text-muted-foreground" />
-                        <span>Custom Links</span>
-                        <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
-                        {showCustomLinks && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
-                      </button>
-                      <button
-                        className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
-                        onClick={() => setPdfPaymentLink(!pdfPaymentLink)}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span>PDF Payment Link</span>
-                          <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
-                        </div>
-                        {pdfPaymentLink && <Check className="h-3.5 w-3.5 text-primary" />}
-                      </button>
-                      <Separator className="my-1" />
-                      <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Payment methods</p>
-                      <button className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors">
-                        <Plus className="h-4 w-4 text-muted-foreground" />
-                        <span>Add Payment Options</span>
-                      </button>
                     </PopoverContent>
                   </Popover>
                 </div>
 
-                {/* Payment settings fields — shown when toggled */}
-                {(showDeposit || showDiscount || showRecurring || showCustomLinks) && (
+                {/* Conditional Settings Fields */}
+                {(showDeposit || showDiscount) && (
                   <div className="mt-4 pt-3 border-t border-dashed space-y-3">
                     {showDiscount && (
                       <div className="space-y-1.5">
@@ -1301,77 +1277,44 @@ export function EditInvoiceForm({
                         />
                       </div>
                     )}
-                    {showRecurring && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-muted-foreground">Recurring Schedule</Label>
-                          <button
-                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                            onClick={() => setShowRecurring(false)}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <Select value={recurringInterval} onValueChange={setRecurringInterval}>
-                          <SelectTrigger className="h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                            <SelectItem value="quarterly">Quarterly</SelectItem>
-                            <SelectItem value="yearly">Yearly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    {showCustomLinks && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-muted-foreground">Custom Link</Label>
-                          <button
-                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                            onClick={() => { setShowCustomLinks(false); setCustomLinkUrl(''); setCustomLinkLabel(''); }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Input
-                            value={customLinkLabel}
-                            onChange={(e) => setCustomLinkLabel(e.target.value)}
-                            className="h-10"
-                            placeholder="Link label"
-                          />
-                          <Input
-                            value={customLinkUrl}
-                            onChange={(e) => setCustomLinkUrl(e.target.value)}
-                            className="h-10"
-                            placeholder="https://..."
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
 
               <Separator className="bg-border/60" />
 
-              {/* ─── Memo Section ─────────────────────── */}
+              {/* ─── Notes & Terms Section ──────────── */}
               <div className="py-8">
                 <h3 className="text-xl font-semibold tracking-tight font-display mb-5">
-                  Memo
+                  Notes & Terms
                 </h3>
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Memo</Label>
-                  <Textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="resize-none min-h-[80px] text-sm"
-                    placeholder="Thank you for your business!"
-                  />
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Notes</Label>
+                    <Textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="resize-none min-h-[80px] text-sm"
+                      placeholder="Additional notes for the client..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Terms & Conditions</Label>
+                      <button
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        onClick={loadDefaultTerms}
+                      >
+                        Use Default
+                      </button>
+                    </div>
+                    <Textarea
+                      value={terms}
+                      onChange={(e) => setTerms(e.target.value)}
+                      className="resize-none min-h-[100px] text-sm"
+                      placeholder="Terms and conditions..."
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1381,7 +1324,7 @@ export function EditInvoiceForm({
                   onClick={() => handleSubmit(false)}
                   disabled={loading}
                   size="lg"
-                  className="bg-red-500 hover:bg-red-600 text-white px-8"
+                  className="px-8"
                 >
                   {loading && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1412,10 +1355,10 @@ export function EditInvoiceForm({
               >
                 <TabsList className="w-full grid grid-cols-3 h-10">
                   <TabsTrigger
-                    value="payment"
+                    value="quote"
                     className="text-xs data-[state=active]:text-foreground"
                   >
-                    Payment Page
+                    Quote Page
                   </TabsTrigger>
                   <TabsTrigger
                     value="email"
@@ -1427,14 +1370,14 @@ export function EditInvoiceForm({
                     value="pdf"
                     className="text-xs data-[state=active]:text-foreground"
                   >
-                    Invoice PDF
+                    Quote PDF
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
 
-            {/* ═══ PAYMENT PAGE TAB ═══════════════════ */}
-            {previewTab === 'payment' && (
+            {/* ═══ QUOTE PAGE TAB ════════════════════ */}
+            {previewTab === 'quote' && (
             <div className="p-4 flex-1">
               <div className={cn(
                 'bg-card border shadow-sm overflow-hidden transition-all duration-300 relative',
@@ -1460,9 +1403,9 @@ export function EditInvoiceForm({
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[280px] p-3" align="end" side="bottom">
-                    <p className="text-xs font-medium text-muted-foreground mb-2.5">Invoice Style</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-2.5">Quote Style</p>
                     <div className="grid grid-cols-3 gap-1.5">
-                      {Object.entries(INVOICE_TEMPLATES).map(([key, t]) => (
+                      {Object.entries(QUOTE_TEMPLATES).map(([key, t]) => (
                         <button
                           key={key}
                           onClick={() => setTemplateName(key as TemplateName)}
@@ -1488,7 +1431,7 @@ export function EditInvoiceForm({
                   <div className="w-full h-1" style={{ background: tpl.topBorder }} />
                 )}
 
-                {/* ─── Header Area (centered for all styles) ─── */}
+                {/* ─── Header Area (centered) ─── */}
                 <div className="px-6 pt-8 pb-5 text-center">
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-full mb-3"
                     style={{ backgroundColor: tpl.accentLight }}>
@@ -1496,16 +1439,16 @@ export function EditInvoiceForm({
                   </div>
                   <h3 className="text-base font-semibold tracking-tight">{businessName}</h3>
                   <p className={cn('font-bold tracking-tight mt-1', tpl.amountSize)} style={{ color: tpl.accent }}>
-                    {formatMoney(total, currency)}
+                    ${total.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Invoice #{invoiceNumber} &middot; Due {dueDate ? format(dueDate, 'MMM dd, yyyy') : '...'}
+                    Quote #{quoteNumber} · {expirationDate ? `Valid until ${format(expirationDate, 'MMM dd, yyyy')}` : `Issued ${issueDate ? format(issueDate, 'MMM dd, yyyy') : '...'}`}
                   </p>
                 </div>
 
                 <Separator className={tpl.separatorClass} />
 
-                {/* ─── Client + Invoice Details (Collapsible) ── */}
+                {/* ─── Client + Details (Collapsible) ── */}
                 <div className="px-6 py-4">
                   <Collapsible
                     open={showPreviewDetails}
@@ -1547,12 +1490,12 @@ export function EditInvoiceForm({
                                   {item.name || 'Untitled Item'}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {item.quantity} &times; {formatMoney(item.rate, currency)}
-                                  {item.description && <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>}
+                                  {item.quantity} × ${item.rate.toFixed(2)}
+                                  {item.description && <span className="ml-1.5 text-muted-foreground/70">· {item.description}</span>}
                                 </p>
                               </div>
                               <span className="ml-4 font-medium tabular-nums text-sm">
-                                {formatMoney(item.quantity * item.rate, currency)}
+                                ${(item.quantity * item.rate).toFixed(2)}
                               </span>
                             </div>
                           ))}
@@ -1569,25 +1512,19 @@ export function EditInvoiceForm({
                           <div className="space-y-2 mb-3">
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Subtotal</span>
-                              <span className="tabular-nums">{formatMoney(subtotal, currency)}</span>
+                              <span className="tabular-nums">${subtotal.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Discount</span>
-                              <span className="tabular-nums text-green-600">-{formatMoney(discountAmount, currency)}</span>
+                              <span className="tabular-nums text-green-600">-${discountAmount.toFixed(2)}</span>
                             </div>
-                          </div>
-                        )}
-                        {taxAmount > 0 && (
-                          <div className="flex justify-between text-sm mb-3">
-                            <span className="text-muted-foreground">Tax ({parsedTaxPercent}%)</span>
-                            <span className="tabular-nums">{formatMoney(taxAmount, currency)}</span>
                           </div>
                         )}
                         <div className={cn('flex justify-between items-baseline rounded-lg px-3 py-3 -mx-3 border-l-2', tpl.accentBg)}
                           style={{ borderLeftColor: tpl.accent }}>
-                          <span className="font-semibold text-sm">Total Due</span>
+                          <span className="font-semibold text-sm">Total</span>
                           <span className="text-lg font-bold tabular-nums" style={{ color: tpl.accent }}>
-                            {formatMoney(total, currency)}
+                            ${total.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -1595,7 +1532,7 @@ export function EditInvoiceForm({
                   </Collapsible>
                 </div>
 
-                {/* ─── Memo ─── */}
+                {/* ─── Notes ─── */}
                 {notes && (
                   <>
                     <Separator className={tpl.separatorClass} />
@@ -1605,33 +1542,27 @@ export function EditInvoiceForm({
                   </>
                 )}
 
-                {/* ─── Download Button ─── */}
-                <div className="px-6 pb-6 pt-2">
+                {/* ─── Action Buttons ─── */}
+                <div className="px-6 pb-4 pt-2 space-y-2">
                   <button
-                    onClick={handleDownloadPdf}
-                    disabled={pdfGenerating}
                     className={cn(
                       'w-full h-12 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors',
                       tpl.buttonColor,
-                      pdfGenerating && 'opacity-70 cursor-not-allowed'
                     )}
                   >
-                    {pdfGenerating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4" />
-                        Download Invoice
-                      </>
-                    )}
+                    <CheckCircle2 className="h-4 w-4" />
+                    Accept Quote
+                  </button>
+                  <button
+                    className="w-full h-10 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors border border-border text-muted-foreground hover:bg-muted/50 cursor-default"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download Quote
                   </button>
                 </div>
 
                 {/* ─── Footer ─── */}
-                <div className="px-6 pb-5">
+                <div className="px-6 pb-5 pt-2">
                   <div className="flex items-center gap-2 justify-center">
                     <div className="h-px flex-1 bg-border/40" />
                     <p className="text-[10px] text-muted-foreground/50 whitespace-nowrap">
@@ -1644,15 +1575,13 @@ export function EditInvoiceForm({
             </div>
             )}
 
-            {/* ═══ INVOICE PDF TAB ═════════════════════ */}
+            {/* ═══ QUOTE PDF TAB ═════════════════════ */}
             {previewTab === 'pdf' && (
             <div className="p-4 flex-1 flex flex-col items-center">
-              {/* Info line */}
               <p className="text-xs text-muted-foreground mb-3 w-full">
-                A4 Preview &middot; {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
+                A4 Preview · {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
               </p>
 
-              {/* A4 Scaled Preview */}
               <div className="w-full overflow-hidden flex-1 flex items-start justify-center">
                 <div
                   style={{
@@ -1663,7 +1592,6 @@ export function EditInvoiceForm({
                   }}
                   className="bg-white shadow-2xl rounded-sm border border-border/40 flex-shrink-0 relative"
                 >
-                  {/* Download floating button */}
                   <button
                     onClick={handleDownloadPdf}
                     disabled={pdfGenerating}
@@ -1680,31 +1608,32 @@ export function EditInvoiceForm({
                     )}
                   </button>
 
-                  {/* A4 Page Content */}
                   <div className="w-full h-full flex flex-col text-black" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                    {/* Top accent bar */}
                     {tpl.topBorder && (
                       <div className="w-full" style={{ height: '4px', background: tpl.topBorder }} />
                     )}
 
-                    {/* Header */}
                     <div className="flex items-start justify-between px-10 pt-8 pb-6">
                       <div>
                         <h2 className="text-xl font-bold" style={{ color: '#111' }}>{businessName}</h2>
                         <p className="text-xs mt-1" style={{ color: '#666' }}>hello@company.com</p>
                       </div>
                       <div className="text-right">
-                        <h1 className="text-2xl font-bold tracking-tight" style={{ color: tpl.accent }}>INVOICE</h1>
-                        <p className="text-xs mt-1" style={{ color: '#666' }}>#{invoiceNumber}</p>
+                        <h1 className="text-2xl font-bold tracking-tight" style={{ color: tpl.accent }}>QUOTE</h1>
+                        <p className="text-xs mt-1" style={{ color: '#666' }}>#{quoteNumber}</p>
                         <p className="text-xs" style={{ color: '#666' }}>
-                          Date: {dueDate ? format(dueDate, 'MMM dd, yyyy') : 'Not set'}
+                          Date: {issueDate ? format(issueDate, 'MMM dd, yyyy') : 'Not set'}
                         </p>
+                        {expirationDate && (
+                          <p className="text-xs" style={{ color: '#666' }}>
+                            Valid until: {format(expirationDate, 'MMM dd, yyyy')}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    {/* Bill To */}
                     <div className="px-10 pb-6">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: '#999' }}>Bill To</p>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: '#999' }}>Prepared For</p>
                       <p className="text-sm font-medium" style={{ color: '#111' }}>
                         {selectedClient?.name || 'Customer Name'}
                       </p>
@@ -1713,7 +1642,6 @@ export function EditInvoiceForm({
                       )}
                     </div>
 
-                    {/* Line Items Table */}
                     <div className="px-10 flex-1">
                       <table className="w-full text-xs">
                         <thead>
@@ -1746,7 +1674,6 @@ export function EditInvoiceForm({
                       </table>
                     </div>
 
-                    {/* Totals */}
                     <div className="px-10 pb-8">
                       <div className="ml-auto" style={{ width: '200px' }}>
                         <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
@@ -1759,26 +1686,19 @@ export function EditInvoiceForm({
                             <span className="tabular-nums">-${discountAmount.toFixed(2)}</span>
                           </div>
                         )}
-                        {taxAmount > 0 && (
-                          <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
-                            <span>Tax ({parsedTaxPercent}%)</span>
-                            <span className="tabular-nums">${taxAmount.toFixed(2)}</span>
-                          </div>
-                        )}
                         <div className="flex justify-between py-1 text-xs" style={{ borderTop: '1px solid #e5e7eb', color: '#333' }}>
                           <span className="font-medium">Total</span>
                           <span className="tabular-nums font-medium">${total.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between py-2 mt-1 rounded px-2 -mx-2"
-                          style={{ background: tpl.accentBg.replace('bg-', '').includes('50') ? `${tpl.accent}10` : '#f5f5f5' }}
+                          style={{ background: `${tpl.accent}10` }}
                         >
-                          <span className="text-xs font-bold" style={{ color: '#111' }}>Balance Due</span>
+                          <span className="text-xs font-bold" style={{ color: '#111' }}>Quote Total</span>
                           <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Footer */}
                     {notes && (
                       <div className="px-10 pb-4">
                         <p className="text-[10px]" style={{ color: '#999' }}>{notes}</p>
@@ -1795,12 +1715,10 @@ export function EditInvoiceForm({
             <div className="p-4 flex-1">
               <div className={cn('bg-card border shadow-sm overflow-hidden transition-all duration-300 relative', tpl.cardClass)}>
 
-                {/* ─── Top accent ─── */}
                 {tpl.topBorder && (
                   <div className="w-full h-1" style={{ background: tpl.topBorder }} />
                 )}
 
-                {/* ─── Email Header ─── */}
                 <div className="px-6 pb-4 pt-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -1808,20 +1726,19 @@ export function EditInvoiceForm({
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">{businessName}</p>
-                      <p className="font-bold text-lg mt-0.5" style={{ color: tpl.accent }}>Invoice</p>
+                      <p className="font-bold text-lg mt-0.5" style={{ color: tpl.accent }}>Quote</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Due {dueDate ? format(dueDate, 'MMM dd, yyyy') : '...'}
+                        Valid until {expirationDate ? format(expirationDate, 'MMM dd, yyyy') : '...'}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* ─── CTA Buttons (like Bloom) ─── */}
                 <div className="px-6 pb-4 flex gap-3">
                   <button
                     className={cn('flex-1 h-11 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors', tpl.buttonColor)}
                   >
-                    Pay this Invoice
+                    View Quote
                   </button>
                   <button
                     className="flex-1 h-11 rounded-lg font-medium text-sm flex items-center justify-center gap-2 border border-border hover:bg-muted transition-colors"
@@ -1832,11 +1749,9 @@ export function EditInvoiceForm({
 
                 <Separator className={tpl.separatorClass} />
 
-                {/* ─── Invoice Summary ─── */}
                 <div className="px-6 py-4 space-y-3">
-                  <p className="text-sm font-medium">Invoice #{invoiceNumber}</p>
+                  <p className="text-sm font-medium">Quote #{quoteNumber}</p>
 
-                  {/* Line Items */}
                   {lineItems.length > 0 && (
                     <div className="space-y-1">
                       {lineItems.map((item) => (
@@ -1844,8 +1759,8 @@ export function EditInvoiceForm({
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{item.name || 'Untitled Item'}</p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {item.quantity} &times; ${item.rate.toFixed(2)}
-                              {item.description && <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>}
+                              {item.quantity} × ${item.rate.toFixed(2)}
+                              {item.description && <span className="ml-1.5 text-muted-foreground/70">· {item.description}</span>}
                             </p>
                           </div>
                           <span className="ml-4 font-medium tabular-nums text-sm">${(item.quantity * item.rate).toFixed(2)}</span>
@@ -1869,20 +1784,13 @@ export function EditInvoiceForm({
                         <Separator className={tpl.separatorClass} />
                       </>
                     )}
-                    {taxAmount > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Tax ({parsedTaxPercent}%)</span>
-                        <span className="tabular-nums">${taxAmount.toFixed(2)}</span>
-                      </div>
-                    )}
                     <div className="flex justify-between text-sm font-semibold">
-                      <span>Total Due</span>
+                      <span>Total</span>
                       <span className="tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* ─── Memo ─── */}
                 {notes && (
                   <>
                     <Separator className={tpl.separatorClass} />
@@ -1895,7 +1803,6 @@ export function EditInvoiceForm({
                   </>
                 )}
 
-                {/* ─── Legal Footer ─── */}
                 <div className="px-6 py-4 bg-muted/30 border-t">
                   <p className="text-[10px] text-muted-foreground leading-relaxed">
                     This email and any attachments are intended solely for the use of the individual
@@ -1922,29 +1829,31 @@ export function EditInvoiceForm({
                 zIndex: -1,
               }}
             >
-              {/* Top accent bar */}
               {tpl.topBorder && (
                 <div style={{ width: '100%', height: '4px', background: tpl.topBorder }} />
               )}
 
-              {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '32px 40px 24px' }}>
                 <div>
                   <p style={{ fontSize: '18px', fontWeight: 700 }}>{businessName}</p>
                   <p style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>hello@company.com</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '22px', fontWeight: 700, color: tpl.accent, letterSpacing: '0.05em' }}>INVOICE</p>
-                  <p style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>#{invoiceNumber}</p>
+                  <p style={{ fontSize: '22px', fontWeight: 700, color: tpl.accent, letterSpacing: '0.05em' }}>QUOTE</p>
+                  <p style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>#{quoteNumber}</p>
                   <p style={{ fontSize: '11px', color: '#666' }}>
-                    Date: {dueDate ? format(dueDate, 'MMM dd, yyyy') : 'Not set'}
+                    Date: {issueDate ? format(issueDate, 'MMM dd, yyyy') : 'Not set'}
                   </p>
+                  {expirationDate && (
+                    <p style={{ fontSize: '11px', color: '#666' }}>
+                      Valid until: {format(expirationDate, 'MMM dd, yyyy')}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* Bill To */}
               <div style={{ padding: '0 40px 24px' }}>
-                <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#999', marginBottom: '4px' }}>Bill To</p>
+                <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#999', marginBottom: '4px' }}>Prepared For</p>
                 <p style={{ fontSize: '13px', fontWeight: 500 }}>
                   {selectedClient?.name || 'Customer Name'}
                 </p>
@@ -1953,7 +1862,6 @@ export function EditInvoiceForm({
                 )}
               </div>
 
-              {/* Items Table */}
               <div style={{ padding: '0 40px' }}>
                 <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
                   <thead>
@@ -1986,7 +1894,6 @@ export function EditInvoiceForm({
                 </table>
               </div>
 
-              {/* Totals */}
               <div style={{ padding: '16px 40px', marginTop: 'auto' }}>
                 <div style={{ marginLeft: 'auto', width: '200px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
@@ -1999,12 +1906,6 @@ export function EditInvoiceForm({
                       <span>-${discountAmount.toFixed(2)}</span>
                     </div>
                   )}
-                  {taxAmount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
-                      <span>Tax ({parsedTaxPercent}%)</span>
-                      <span>${taxAmount.toFixed(2)}</span>
-                    </div>
-                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', borderTop: '1px solid #e5e7eb', color: '#333', fontWeight: 500 }}>
                     <span>Total</span>
                     <span>${total.toFixed(2)}</span>
@@ -2014,13 +1915,12 @@ export function EditInvoiceForm({
                     padding: '8px', marginTop: '4px', borderRadius: '4px',
                     background: `${tpl.accent}15`,
                   }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700 }}>Balance Due</span>
+                    <span style={{ fontSize: '11px', fontWeight: 700 }}>Quote Total</span>
                     <span style={{ fontSize: '14px', fontWeight: 700, color: tpl.accent }}>${total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Notes */}
               {notes && (
                 <div style={{ padding: '0 40px 16px' }}>
                   <p style={{ fontSize: '10px', color: '#999' }}>{notes}</p>

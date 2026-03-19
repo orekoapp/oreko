@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { deleteInvoice, duplicateInvoice, getInvoice } from '@/lib/invoices/actions';
+import { getBusinessProfile } from '@/lib/settings/actions';
 import { cn } from '@/lib/utils';
 import { SendEmailDialog } from '@/components/shared/send-email-dialog';
 import { RecordPaymentDialog } from './record-payment-dialog';
@@ -65,6 +66,12 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
 
   // Local data state for status/payment updates
   const [data, setData] = useState(initialData);
+
+  // Business name for email dialog
+  const [businessName, setBusinessName] = useState('');
+  useEffect(() => {
+    getBusinessProfile().then((p) => setBusinessName(p?.businessName || '')).catch(() => {});
+  }, []);
 
   // Dialog states
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -466,6 +473,7 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
             documentNumber={sendTarget.invoiceNumber}
             recipientEmail={sendTarget.client.email || ''}
             recipientName={sendTarget.client.name}
+            businessName={businessName}
             total={sendTarget.total}
             dueDate={sendTarget.dueDate}
             onSent={handleSendComplete}

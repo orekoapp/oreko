@@ -289,7 +289,7 @@ function processTemplate(template: string, variables: EmailVariables): string {
 // Send email using template
 export async function sendTemplatedEmail(params: {
   type: EmailTemplateType;
-  to: string;
+  to: string | string[];
   variables: EmailVariables;
   customSubject?: string;
   customBody?: string;
@@ -303,8 +303,11 @@ export async function sendTemplatedEmail(params: {
     orderBy: { isDefault: 'desc' },
   });
 
-  const subject = customSubject || (template ? template.subject : '');
-  const body = customBody || (template ? template.body : '');
+  // Fallback chain: custom override → DB template → default template
+  const { DEFAULT_TEMPLATES } = await import('./types');
+  const defaultTemplate = DEFAULT_TEMPLATES[type];
+  const subject = customSubject || template?.subject || defaultTemplate?.subject || '';
+  const body = customBody || template?.body || defaultTemplate?.body || '';
 
   if (!subject || !body) {
     return { success: false, error: 'No active template found for this email type' };

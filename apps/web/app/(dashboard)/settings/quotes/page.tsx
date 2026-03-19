@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NumberSequenceForm } from '@/components/settings';
 import { getNumberSequences } from '@/lib/settings/actions';
 

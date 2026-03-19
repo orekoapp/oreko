@@ -53,7 +53,6 @@ export const settingsNavItems: SettingsNavItem[] = [
   { href: '/settings/emails', icon: Mail, label: 'Email Settings' },
   { href: '/settings/webhooks', icon: Webhook, label: 'Webhooks' },
   { href: '/settings/integrations', icon: Blocks, label: 'Integrations' },
-  { href: '/settings/api', icon: KeyRound, label: 'API Keys' },
   { href: '/settings/workspace', icon: Settings2, label: 'Workspace' },
 ];
 

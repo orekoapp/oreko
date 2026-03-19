@@ -19,7 +19,7 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
   const lineTotal = block.content.quantity * block.content.rate;
 
   // Bug #81: Use document locale instead of hardcoded en-US
-  const locale = document?.settings.locale ?? 'en-US';
+  const locale = (document?.settings as any)?.locale ?? 'en-US';
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat(locale, {
       style: 'currency',

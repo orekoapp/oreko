@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { getSavedLineItems, type SavedLineItemData } from '@/lib/saved-items/actions';
 import {
   CalendarIcon,
   Plus,
@@ -49,7 +50,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import {
@@ -69,6 +70,8 @@ import {
 } from '@/components/ui/command';
 import { searchClients } from '@/lib/clients/actions';
 import { createQuote, getNextQuoteNumber } from '@/lib/quotes/actions';
+import { getInvoiceTemplates } from '@/lib/invoices/actions';
+import type { InvoiceTemplateLineItem } from '@/lib/invoices/actions';
 import { getBusinessProfile, getWorkspace } from '@/lib/settings/actions';
 
 // ─── Types ───────────────────────────────────────────────
@@ -207,7 +210,7 @@ type TemplateName = keyof typeof QUOTE_TEMPLATES;
 // ─── Main Component ──────────────────────────────────────
 export default function NewQuoteForm() {
   const router = useRouter();
-  const { toast } = useToast();
+  // toast from sonner (imported at top)
   const [loading, setLoading] = useState(false);
 
   // Real clients from DB
@@ -268,6 +271,16 @@ export default function NewQuoteForm() {
   const [templateName, setTemplateName] = useState<TemplateName>('quotecraft');
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
+  const [savedItems, setSavedItems] = useState<SavedLineItemData[]>([]);
+
+  // Load saved items and invoice templates for dropdowns
+  const [invoiceTemplates, setInvoiceTemplates] = useState<{ id: string; name: string; lineItems: InvoiceTemplateLineItem[] }[]>([]);
+  useEffect(() => {
+    getSavedLineItems().then(setSavedItems).catch(() => {});
+    getInvoiceTemplates().then(({ data }) => {
+      setInvoiceTemplates(data.map((t) => ({ id: t.id, name: t.name, lineItems: t.lineItems })));
+    }).catch(() => {});
+  }, []);
 
   // Refs
   const pdfRef = useRef<HTMLDivElement>(null);
@@ -325,11 +338,11 @@ export default function NewQuoteForm() {
 
   const handleSubmit = async (isDraft: boolean) => {
     if (!selectedClientId) {
-      toast({ title: 'Error', description: 'Please select a client', variant: 'destructive' });
+      toast.error('Please select a client');
       return;
     }
     if (lineItems.length === 0 || !lineItems.some(i => i.name.trim())) {
-      toast({ title: 'Error', description: 'Please add at least one line item', variant: 'destructive' });
+      toast.error('Please add at least one line item');
       return;
     }
 
@@ -357,19 +370,20 @@ export default function NewQuoteForm() {
         clientId: selectedClientId,
         title: lineItems[0]?.name || 'Untitled Quote',
         blocks,
+        isDraft,
       });
 
       console.log('Create quote result:', result);
 
       if (result.success && result.quote?.id) {
-        toast({ title: isDraft ? 'Draft Saved' : 'Quote Created', description: `Quote ${quoteNumber} created successfully` });
-        router.push(`/quotes/${result.quote.id}`);
+        toast.success(isDraft ? 'Draft Saved' : 'Quote Sent');
+        router.push('/quotes');
       } else {
-        toast({ title: 'Error', description: result.error || 'Failed to create quote', variant: 'destructive' });
+        toast.error(result.error || 'Failed to create quote');
       }
     } catch (err) {
       console.error('Create quote error:', err);
-      toast({ title: 'Error', description: 'Failed to create quote. Check console for details.', variant: 'destructive' });
+      toast.error('Failed to create quote. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -409,7 +423,7 @@ export default function NewQuoteForm() {
       pdf.save(`Quote-${quoteNumber}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      toast({ title: 'Error', description: 'Failed to generate PDF. Please try again.' });
+      toast.error('Failed to generate PDF. Please try again.');
     } finally {
       setPdfGenerating(false);
     }
@@ -424,7 +438,7 @@ export default function NewQuoteForm() {
           {/* ═══════════════════════════════════════════ */}
           {/* LEFT PANEL — Editor                        */}
           {/* ═══════════════════════════════════════════ */}
-          <div className="overflow-y-auto border-r bg-background">
+          <div className="overflow-y-auto no-scrollbar border-r bg-background">
             <div className="max-w-[640px] mx-auto py-10 px-8 space-y-0">
               {/* ─── Quote Details Section ──────────── */}
               <div className="pb-8">
@@ -440,8 +454,9 @@ export default function NewQuoteForm() {
                       </button>
                     </PopoverTrigger>
                     <PopoverContent align="end" className="w-56 p-1">
-                      <button
-                        className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
+                      <div
+                        role="menuitem"
+                        className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors cursor-pointer"
                         onClick={() => setShowBillAsCompany(!showBillAsCompany)}
                       >
                         <div className="flex items-center gap-2.5">
@@ -453,7 +468,7 @@ export default function NewQuoteForm() {
                           onCheckedChange={setShowBillAsCompany}
                           className="scale-75"
                         />
-                      </button>
+                      </div>
                       <button
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
                         onClick={() => setShowCustomField(!showCustomField)}
@@ -619,8 +634,9 @@ export default function NewQuoteForm() {
                     </Label>
                     <Input
                       value={quoteNumber}
-                      onChange={(e) => setQuoteNumber(e.target.value)}
-                      className="h-11"
+                      readOnly
+                      disabled
+                      className="h-11 opacity-60"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -827,20 +843,40 @@ export default function NewQuoteForm() {
                         <ChevronDown className="h-3.5 w-3.5" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent align="end" className="w-64 p-2">
-                      <div className="flex flex-col items-center justify-center py-4 text-center">
-                        <FileText className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                        <p className="text-sm font-medium text-muted-foreground">No templates yet</p>
-                        <p className="text-xs text-muted-foreground/70 mt-1">
-                          Create invoice templates in Settings to quickly load line items here.
-                        </p>
-                        <button
-                          onClick={() => router.push('/templates/invoices')}
-                          className="mt-3 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-                        >
-                          Create Template →
-                        </button>
-                      </div>
+                    <PopoverContent align="end" className="w-64 p-1">
+                      <p className="text-xs font-medium text-muted-foreground px-2 py-1.5">Load a template</p>
+                      {invoiceTemplates.length === 0 ? (
+                        <div className="py-4 text-center">
+                          <p className="text-xs text-muted-foreground">No templates yet</p>
+                          <button
+                            onClick={() => router.push('/templates/invoices')}
+                            className="text-xs text-primary hover:text-primary/80 mt-1"
+                          >
+                            Create templates →
+                          </button>
+                        </div>
+                      ) : (
+                        invoiceTemplates.map((template) => (
+                          <button
+                            key={template.id}
+                            onClick={() => {
+                              setLineItems(
+                                template.lineItems.map((item) => ({
+                                  id: Math.random().toString(36).substr(2, 9),
+                                  name: item.name,
+                                  description: item.description || '',
+                                  quantity: item.qty,
+                                  rate: item.rate,
+                                }))
+                              );
+                            }}
+                            className="w-full flex items-center gap-2.5 px-2 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
+                          >
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{template.name}</span>
+                          </button>
+                        ))
+                      )}
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -965,15 +1001,45 @@ export default function NewQuoteForm() {
                         </CommandGroup>
                         <CommandSeparator />
                         <CommandGroup heading="Saved Items">
-                          <div className="py-4 text-center">
-                            <p className="text-xs text-muted-foreground">No saved items yet</p>
-                            <button
-                              onClick={() => { setAddItemOpen(false); router.push('/templates/invoice-items'); }}
-                              className="text-xs text-primary hover:text-primary/80 mt-1"
-                            >
-                              Create saved items →
-                            </button>
-                          </div>
+                          {savedItems.length === 0 ? (
+                            <div className="py-4 text-center">
+                              <p className="text-xs text-muted-foreground">No saved items yet</p>
+                              <button
+                                onClick={() => { setAddItemOpen(false); router.push('/templates/invoice-items'); }}
+                                className="text-xs text-primary hover:text-primary/80 mt-1"
+                              >
+                                Create saved items →
+                              </button>
+                            </div>
+                          ) : (
+                            savedItems.map((saved) => (
+                              <CommandItem
+                                key={saved.id}
+                                value={saved.name}
+                                onSelect={() => {
+                                  setLineItems([...lineItems, {
+                                    id: Math.random().toString(36).substr(2, 9),
+                                    name: saved.name,
+                                    description: saved.description || '',
+                                    quantity: 1,
+                                    rate: saved.price,
+                                  }]);
+                                  setAddItemOpen(false);
+                                }}
+                                className="py-2.5"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{saved.name}</p>
+                                  {saved.description && <p className="text-xs text-muted-foreground truncate">{saved.description}</p>}
+                                </div>
+                                {saved.price > 0 && (
+                                  <span className="ml-3 shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
+                                    ${saved.price.toFixed(2)}
+                                  </span>
+                                )}
+                              </CommandItem>
+                            ))
+                          )}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -1161,7 +1227,7 @@ export default function NewQuoteForm() {
           {/* ═══════════════════════════════════════════ */}
           {/* RIGHT PANEL — Live Preview                 */}
           {/* ═══════════════════════════════════════════ */}
-          <div className="overflow-y-auto bg-muted/30 flex flex-col">
+          <div className="overflow-y-auto no-scrollbar bg-muted/30 flex flex-col">
             {/* Preview Tabs */}
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 pt-4 pb-3">
               <Tabs

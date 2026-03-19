@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { duplicateQuote, deleteQuote, getQuote } from '@/lib/quotes/actions';
+import { getBusinessProfile } from '@/lib/settings/actions';
 import { createInvoiceFromQuote } from '@/lib/invoices/actions';
 import { cn } from '@/lib/utils';
 import { SendEmailDialog } from '@/components/shared/send-email-dialog';
@@ -122,6 +123,12 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
     }
   };
 
+  // Business name for email dialog
+  const [businessName, setBusinessName] = useState('');
+  useEffect(() => {
+    getBusinessProfile().then((p) => setBusinessName(p?.businessName || '')).catch(() => {});
+  }, []);
+
   // Dialog states
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendTarget, setSendTarget] = useState<QuoteListItem | null>(null);
@@ -188,7 +195,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
   const columns = getQuoteColumns({
     onView: handleView,
     onEdit: (quote) => {
-      router.push(`/quotes/${quote.id}/builder`);
+      router.push(`/quotes/${quote.id}/edit`);
     },
     onDuplicate: handleDuplicate,
     onDelete: handleDelete,
@@ -482,6 +489,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
           documentNumber={sendTarget.quoteNumber}
           recipientEmail={sendTarget.client?.email || ''}
           recipientName={sendTarget.client?.name || ''}
+          businessName={businessName}
           total={sendTarget.total}
           dueDate={sendTarget.expirationDate || undefined}
           onSent={handleSendComplete}

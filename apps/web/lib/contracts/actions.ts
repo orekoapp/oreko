@@ -22,6 +22,7 @@ import type {
   ContractSettingsData,
 } from './types';
 import { sendEmail } from '@/lib/services/email';
+import { sendTemplatedEmail } from '@/lib/email/actions';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/internal';
 import { checkRateLimit, strictRateLimitOptions } from '@/lib/rate-limit';
 import { computeContractDocumentHash, verifyDocumentHash } from '@/lib/signing/document-hash';
@@ -636,32 +637,19 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
       : [instance.client.email];
 
     try {
-      const safeWorkspaceName = escapeHtml(workspace.name);
-      const safeClientName = escapeHtml(instance.client?.name || 'Client');
-      const safeContractName = escapeHtml(contractName);
-
-      const emailResult = await sendEmail({
+      const emailResult = await sendTemplatedEmail({
+        type: 'contract_sent',
         to: emailRecipients,
-        subject: emailOptions?.subject || `Contract: ${contractName} from ${workspace.name}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Contract from ${safeWorkspaceName}</h2>
-            <p>Hi ${safeClientName},</p>
-            <p>${safeWorkspaceName} has sent you a contract: <strong>${safeContractName}</strong></p>
-            ${emailOptions?.message ? `<p>${escapeHtml(emailOptions.message)}</p>` : '<p>Please review and sign at your earliest convenience.</p>'}
-            <p style="margin: 24px 0;">
-              <a href="${contractUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Review &amp; Sign Contract
-              </a>
-            </p>
-            <p>Or copy this link: ${contractUrl}</p>
-            <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
-            <p style="color: #666; font-size: 14px;">
-              Sent via QuoteCraft on behalf of ${safeWorkspaceName}
-            </p>
-          </div>
-        `,
-        tags: [{ name: 'type', value: 'contract_sent' }],
+        variables: {
+          businessName: workspace.name,
+          clientName: instance.client?.name || 'Client',
+          clientEmail: instance.client.email,
+          contractName,
+          contractUrl,
+          message: emailOptions?.message || undefined,
+        },
+        customSubject: emailOptions?.subject || undefined,
+        customBody: emailOptions?.message || undefined,
       });
       emailSent = emailResult.success;
       if (!emailResult.success) {

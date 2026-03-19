@@ -209,7 +209,7 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
         const quote = row.original;
         const actions: RowAction<QuoteListItem>[] = [];
 
-        if (onEdit) {
+        if (onEdit && quote.status === 'draft') {
           actions.push({
             label: 'Edit',
             icon: <Pencil className="mr-2 h-4 w-4" />,

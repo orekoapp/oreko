@@ -47,6 +47,7 @@ const statusConfig: Record<
 
 interface ContractColumnsOptions {
   onView?: (contract: ContractInstanceListItem) => void;
+  onDetails?: (contract: ContractInstanceListItem) => void;
   onEdit?: (contract: ContractInstanceListItem) => void;
   onSend?: (contract: ContractInstanceListItem) => void;
   onCountersign?: (contract: ContractInstanceListItem) => void;
@@ -59,7 +60,7 @@ interface ContractColumnsOptions {
 export function getContractColumns(
   options: ContractColumnsOptions = {}
 ): ColumnDef<ContractInstanceListItem>[] {
-  const { onView, onEdit, onSend, onCountersign, onResend, onCopyLink, onDownload, onDelete } = options;
+  const { onView, onDetails, onEdit, onSend, onCountersign, onResend, onCopyLink, onDownload, onDelete } = options;
 
   return [
     {
@@ -188,11 +189,11 @@ export function getContractColumns(
         const contract = row.original;
         const actions: RowAction<ContractInstanceListItem>[] = [];
 
-        if (onView) {
+        if (onDetails) {
           actions.push({
-            label: 'View',
-            icon: <Eye className="mr-2 h-4 w-4" />,
-            onClick: onView,
+            label: 'Details',
+            icon: <FileText className="mr-2 h-4 w-4" />,
+            onClick: onDetails,
           });
         }
         if (onEdit && contract.status === 'draft') {
@@ -254,7 +255,6 @@ export function getContractColumns(
           <DataTableRowActions
             row={contract}
             actions={actions}
-            onView={onView}
             onDelete={onDelete}
           />
         );

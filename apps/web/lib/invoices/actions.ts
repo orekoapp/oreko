@@ -11,7 +11,7 @@ import type {
   CreateInvoiceData,
   UpdateInvoiceData,
 } from './types';
-import { sendInvoiceSentEmail } from '@/lib/services/email';
+import { sendTemplatedEmail } from '@/lib/email/actions';
 import { createNotification } from '@/lib/notifications/internal';
 import { formatCurrency, toNumber, getBaseUrl } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
@@ -192,7 +192,7 @@ export async function createInvoice(data: CreateInvoiceData) {
       projectId: data.projectId || null,
       invoiceNumber,
       title: data.title,
-      status: 'draft',
+      status: data.isDraft !== false ? 'draft' : 'sent',
       currency,
       accessToken: generateAccessToken(),
       issueDate: new Date(),
@@ -859,73 +859,83 @@ interface SendEmailOptions {
 }
 
 export async function sendInvoice(invoiceId: string, emailOptions?: SendEmailOptions) {
-  const result = await updateInvoiceStatus(invoiceId, 'sent');
-
-  if (!result.success) {
-    return { ...result, emailSent: false };
-  }
-
-  // Fetch invoice with client for email
+  // Fetch invoice with client for email first
   const { workspace } = await getActiveWorkspace();
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, workspaceId: workspace.id },
     include: { client: true },
   });
 
+  if (!invoice) {
+    return { success: false, error: 'Invoice not found', emailSent: false };
+  }
+
+  if (!invoice.client?.email) {
+    return { success: false, error: 'Client has no email address', emailSent: false };
+  }
+
+  // Try sending email FIRST — only update status if email succeeds
+  const baseUrl = getBaseUrl();
+  const invoiceUrl = `${baseUrl}/i/${invoice.accessToken}`;
+
+  // Bug #105: Use custom recipients from dialog if provided
+  const emailRecipients = emailOptions?.recipients?.length
+    ? emailOptions.recipients
+    : [invoice.client.email];
+
   let emailSent = false;
-
-  if (invoice?.client?.email) {
-    const baseUrl = getBaseUrl();
-    const invoiceUrl = `${baseUrl}/i/${invoice.accessToken}`;
-
-    // Bug #105: Use custom recipients from dialog if provided
-    const emailRecipients = emailOptions?.recipients?.length
-      ? emailOptions.recipients
-      : [invoice.client.email];
-
-    try {
-      const emailResult = await sendInvoiceSentEmail({
-        to: emailRecipients,
+  try {
+    const emailResult = await sendTemplatedEmail({
+      type: 'invoice_sent',
+      to: emailRecipients,
+      variables: {
+        businessName: workspace.name,
         clientName: invoice.client.name,
+        clientEmail: invoice.client.email,
         invoiceNumber: invoice.invoiceNumber,
         invoiceUrl,
-        businessName: workspace.name,
-        amount: formatCurrency(toNumber(invoice.total)),
-        dueDate: invoice.dueDate,
+        invoiceTotal: formatCurrency(toNumber(invoice.total)),
+        invoiceDueDate: invoice.dueDate?.toISOString() ?? undefined,
         message: emailOptions?.message || undefined,
-        rateLimitKey: workspace.id,
-      });
-      emailSent = emailResult.success;
-      if (!emailResult.success) {
-        console.error('Failed to send invoice email:', emailResult.error);
-      }
-    } catch (err) {
-      console.error('Failed to send invoice email:', err);
+      },
+      customSubject: emailOptions?.subject || undefined,
+      customBody: emailOptions?.message || undefined,
+    });
+    emailSent = emailResult.success;
+    if (!emailResult.success) {
+      console.error('Failed to send invoice email:', emailResult.error);
+      return { success: false, error: 'Email could not be sent. Please check your email settings.', emailSent: false };
     }
+  } catch (err) {
+    console.error('Failed to send invoice email:', err);
+    return { success: false, error: 'Email could not be sent. Please check your email settings.', emailSent: false };
+  }
+
+  // Email sent successfully — now update status to 'sent'
+  const result = await updateInvoiceStatus(invoiceId, 'sent');
+
+  if (!result.success) {
+    return { ...result, emailSent: true };
   }
 
   // Create notification for sender
-  if (invoice) {
-    const { userId } = await getCurrentUserWorkspace();
-    createNotification({
-      userId,
-      workspaceId: workspace.id,
-      type: 'invoice_sent',
-      title: `Invoice ${invoice.invoiceNumber} sent`,
-      message: invoice.client?.email ? `Sent to ${invoice.client.email}` : undefined,
-      entityType: 'invoice',
-      entityId: invoiceId,
-      link: `/invoices/${invoiceId}`,
-    }).catch(() => {});
-  }
+  const { userId } = await getCurrentUserWorkspace();
+  createNotification({
+    userId,
+    workspaceId: workspace.id,
+    type: 'invoice_sent',
+    title: `Invoice ${invoice.invoiceNumber} sent`,
+    message: `Sent to ${invoice.client.email}`,
+    entityType: 'invoice',
+    entityId: invoiceId,
+    link: `/invoices/${invoiceId}`,
+  }).catch(() => {});
 
   try {
-    if (invoice?.client?.email) {
-      domainEvents.emit({ type: 'invoice.sent', payload: { invoiceId, clientEmail: invoice.client.email } });
-    }
+    domainEvents.emit({ type: 'invoice.sent', payload: { invoiceId, clientEmail: invoice.client.email } });
   } catch {}
 
-  return { success: true, emailSent };
+  return { success: true, emailSent: true };
 }
 
 /**
@@ -1197,8 +1207,8 @@ export interface InvoiceTemplateListItem {
   terms: string;
   usageCount: number;
   isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export async function getInvoiceTemplates(filter?: { search?: string; page?: number }) {
@@ -1235,8 +1245,8 @@ export async function getInvoiceTemplates(filter?: { search?: string; page?: num
     terms: t.terms ?? '',
     usageCount: t.usageCount,
     isDefault: t.isDefault,
-    createdAt: t.createdAt,
-    updatedAt: t.updatedAt,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
   }));
 
   return {

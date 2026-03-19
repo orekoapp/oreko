@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { CustomFieldsManager } from '@/components/settings/custom-fields-manager';
 import { getCustomFields } from '@/lib/settings/actions';
 

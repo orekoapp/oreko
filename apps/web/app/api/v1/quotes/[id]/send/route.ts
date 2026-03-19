@@ -96,7 +96,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Create event
     await prisma.quoteEvent.create({
       data: {
-        id,
+        quoteId: id,
         eventType: 'sent',
         actorType: 'system',
         metadata: { via: 'api', emailSent },

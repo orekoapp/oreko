@@ -81,7 +81,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           </Button>
           {quote.status === 'draft' && (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/quotes/${id}/builder`}>
+              <Link href={`/quotes/${id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Link>

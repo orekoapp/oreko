@@ -8,21 +8,21 @@ import type { InvoiceLineItem, InvoiceSettings, InvoiceTotals, InvoiceStatus } f
 // ---- Shared ----
 
 export interface PortalBranding {
-  primaryColor: string;
-  accentColor: string;
+  primaryColor: string | null;
+  accentColor: string | null;
   logoUrl: string | null;
-  companyName: string;
-  contactEmail: string | null;
-  contactPhone: string | null;
+  companyName?: string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
 }
 
 export interface PortalBusinessInfo {
   name: string;
   email: string | null;
   phone: string | null;
-  address: string | null;
+  address: string | Record<string, string> | null;
   logoUrl: string | null;
-  website: string | null;
+  website?: string | null;
 }
 
 export interface PortalClientInfo {

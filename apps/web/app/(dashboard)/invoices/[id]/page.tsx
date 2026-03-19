@@ -120,7 +120,17 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           </p>
         </div>
 
-        <InvoiceActions invoice={invoice} isOverdue={isOverdue} />
+        <div className="flex items-center gap-2">
+          {invoice.status === 'draft' && (
+            <Button asChild>
+              <Link href={`/invoices/${invoice.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Invoice
+              </Link>
+            </Button>
+          )}
+          <InvoiceActions invoice={invoice} isOverdue={isOverdue} />
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

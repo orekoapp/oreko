@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getSavedLineItems, type SavedLineItemData } from '@/lib/saved-items/actions';
 import {
   CalendarIcon,
   Plus,
@@ -58,8 +59,19 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command';
 import { toast } from 'sonner';
-import { createInvoice } from '@/lib/invoices/actions';
+import { createInvoice, getInvoiceTemplates } from '@/lib/invoices/actions';
+import type { InvoiceTemplateLineItem } from '@/lib/invoices/actions';
+
 
 // ─── Types ───────────────────────────────────────────────
 interface LineItem {
@@ -392,10 +404,22 @@ export function NewInvoiceForm({
   }, [taxRate, customTaxRate]);
 
   const taxAmount = subtotal * (parsedTaxPercent / 100);
-  const discountAmount = discount;
+  const discountAmount = discountType === 'percent' ? subtotal * (discount / 100) : discount;
   const total = Math.max(0, subtotal + taxAmount - discountAmount);
 
   // ─── Handlers ────────────────────────────────────────
+  const [addItemOpen, setAddItemOpen] = useState(false);
+  const [savedItems, setSavedItems] = useState<SavedLineItemData[]>([]);
+
+  // Load saved items and invoice templates for dropdowns
+  const [invoiceTemplates, setInvoiceTemplates] = useState<{ id: string; name: string; lineItems: InvoiceTemplateLineItem[] }[]>([]);
+  useEffect(() => {
+    getSavedLineItems().then(setSavedItems).catch(() => {});
+    getInvoiceTemplates().then(({ data }) => {
+      setInvoiceTemplates(data.map((t) => ({ id: t.id, name: t.name, lineItems: t.lineItems })));
+    }).catch(() => {});
+  }, []);
+
   const addLineItem = () => {
     setLineItems([
       ...lineItems,
@@ -408,6 +432,7 @@ export function NewInvoiceForm({
       },
     ]);
   };
+
 
   const removeLineItem = (id: string) => {
     setLineItems(lineItems.filter((item) => item.id !== id));
@@ -440,7 +465,7 @@ export function NewInvoiceForm({
       const result = await createInvoice({
         clientId: selectedClientId,
         title: 'Invoice',
-        invoiceNumber: invoiceNumber.trim(),
+        isDraft,
         dueDate: dueDate ? dueDate.toISOString().split('T')[0]! : new Date().toISOString().split('T')[0]!,
         lineItems: lineItems
           .filter((item) => item.name.trim())
@@ -454,7 +479,7 @@ export function NewInvoiceForm({
       });
 
       if (result.success) {
-        toast.success(isDraft ? 'Draft Saved' : 'Invoice Created');
+        toast.success(isDraft ? 'Draft Saved' : 'Invoice Sent');
         router.push('/invoices');
       } else if ('error' in result) {
         toast.error(result.error);
@@ -514,7 +539,7 @@ export function NewInvoiceForm({
           {/* ═══════════════════════════════════════════ */}
           {/* LEFT PANEL — Editor                        */}
           {/* ═══════════════════════════════════════════ */}
-          <div className="overflow-y-auto border-r bg-background">
+          <div className="overflow-y-auto no-scrollbar border-r bg-background">
             <div className="max-w-[640px] mx-auto py-10 px-8 space-y-0">
               {/* ─── Invoice Details Section ─────────── */}
               <div className="pb-8">
@@ -530,8 +555,9 @@ export function NewInvoiceForm({
                       </button>
                     </PopoverTrigger>
                     <PopoverContent align="end" className="w-56 p-1">
-                      <button
-                        className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
+                      <div
+                        role="menuitem"
+                        className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors cursor-pointer"
                         onClick={() => setShowBillAsCompany(!showBillAsCompany)}
                       >
                         <div className="flex items-center gap-2.5">
@@ -543,7 +569,7 @@ export function NewInvoiceForm({
                           onCheckedChange={setShowBillAsCompany}
                           className="scale-75"
                         />
-                      </button>
+                      </div>
                       <button
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
                         onClick={() => setShowIssueDate(!showIssueDate)}
@@ -760,8 +786,9 @@ export function NewInvoiceForm({
                     </Label>
                     <Input
                       value={invoiceNumber}
-                      onChange={(e) => setInvoiceNumber(e.target.value)}
-                      className="h-11"
+                      readOnly
+                      disabled
+                      className="h-11 opacity-60"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -958,75 +985,38 @@ export function NewInvoiceForm({
                     </PopoverTrigger>
                     <PopoverContent align="end" className="w-64 p-1">
                       <p className="text-xs font-medium text-muted-foreground px-2 py-1.5">Load a template</p>
-                      {[
-                        {
-                          name: 'Web Design Project',
-                          icon: Palette,
-                          items: [
-                            { name: 'UI/UX Design', description: 'Wireframes, mockups & prototypes', quantity: 1, rate: 2500 },
-                            { name: 'Frontend Development', description: 'Responsive HTML/CSS/JS build', quantity: 1, rate: 4000 },
-                            { name: 'CMS Integration', description: 'Content management setup', quantity: 1, rate: 1500 },
-                            { name: 'QA & Testing', description: 'Cross-browser & device testing', quantity: 4, rate: 150 },
-                          ],
-                        },
-                        {
-                          name: 'Photography Session',
-                          icon: Camera,
-                          items: [
-                            { name: 'Photo Session', description: '2-hour on-location shoot', quantity: 1, rate: 800 },
-                            { name: 'Photo Editing', description: 'Color correction & retouching', quantity: 30, rate: 25 },
-                            { name: 'Digital Delivery', description: 'High-res files via gallery', quantity: 1, rate: 100 },
-                          ],
-                        },
-                        {
-                          name: 'Consulting Retainer',
-                          icon: Briefcase,
-                          items: [
-                            { name: 'Strategy Consultation', description: 'Business strategy sessions', quantity: 4, rate: 350 },
-                            { name: 'Market Research', description: 'Competitor & market analysis', quantity: 1, rate: 1200 },
-                            { name: 'Report & Deliverables', description: 'Written recommendations', quantity: 1, rate: 800 },
-                          ],
-                        },
-                        {
-                          name: 'Marketing Campaign',
-                          icon: Megaphone,
-                          items: [
-                            { name: 'Campaign Strategy', description: 'Planning & positioning', quantity: 1, rate: 1800 },
-                            { name: 'Content Creation', description: 'Copy, graphics & video', quantity: 5, rate: 400 },
-                            { name: 'Social Media Management', description: 'Monthly management', quantity: 1, rate: 1200 },
-                            { name: 'Analytics & Reporting', description: 'Performance tracking', quantity: 1, rate: 500 },
-                          ],
-                        },
-                        {
-                          name: 'Event Planning',
-                          icon: PartyPopper,
-                          items: [
-                            { name: 'Event Coordination', description: 'Full-day event management', quantity: 1, rate: 3000 },
-                            { name: 'Venue Setup & Decor', description: 'Decoration & arrangement', quantity: 1, rate: 2000 },
-                            { name: 'Catering Coordination', description: 'Vendor management', quantity: 1, rate: 500 },
-                            { name: 'Post-Event Cleanup', description: 'Teardown & restoration', quantity: 1, rate: 400 },
-                          ],
-                        },
-                      ].map((template) => (
-                        <button
-                          key={template.name}
-                          onClick={() => {
-                            setLineItems(
-                              template.items.map((item) => ({
-                                id: Math.random().toString(36).substr(2, 9),
-                                name: item.name,
-                                description: item.description,
-                                quantity: item.quantity,
-                                rate: item.rate,
-                              }))
-                            );
-                          }}
-                          className="w-full flex items-center gap-2.5 px-2 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
-                        >
-                          <template.icon className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{template.name}</span>
-                        </button>
-                      ))}
+                      {invoiceTemplates.length === 0 ? (
+                        <div className="py-4 text-center">
+                          <p className="text-xs text-muted-foreground">No templates yet</p>
+                          <button
+                            onClick={() => router.push('/templates/invoices')}
+                            className="text-xs text-primary hover:text-primary/80 mt-1"
+                          >
+                            Create templates →
+                          </button>
+                        </div>
+                      ) : (
+                        invoiceTemplates.map((template) => (
+                          <button
+                            key={template.id}
+                            onClick={() => {
+                              setLineItems(
+                                template.lineItems.map((item) => ({
+                                  id: Math.random().toString(36).substr(2, 9),
+                                  name: item.name,
+                                  description: item.description || '',
+                                  quantity: item.qty,
+                                  rate: item.rate,
+                                }))
+                              );
+                            }}
+                            className="w-full flex items-center gap-2.5 px-2 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
+                          >
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{template.name}</span>
+                          </button>
+                        ))
+                      )}
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -1117,15 +1107,85 @@ export function NewInvoiceForm({
                   ))}
                 </div>
 
-                {/* Add Items Button — Full Width */}
-                <Button
-                  variant="outline"
-                  className="w-full h-11 border-dashed border-2 text-sm font-medium text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary-50/50 transition-all"
-                  onClick={addLineItem}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Items
-                </Button>
+                {/* Add Items Dropdown */}
+                <Popover open={addItemOpen} onOpenChange={setAddItemOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full h-11 border-dashed border-2 text-sm font-medium text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary-50/50 transition-all"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Items
+                      <ChevronDown className="ml-2 h-3.5 w-3.5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="p-0"
+                    align="start"
+                    style={{ width: 'var(--radix-popover-trigger-width)' }}
+                  >
+                    <Command>
+                      <CommandInput placeholder="Search saved items..." />
+                      <CommandList className="max-h-[280px]">
+                        <CommandEmpty>No items found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            onSelect={() => {
+                              addLineItem();
+                              setAddItemOpen(false);
+                            }}
+                            className="py-2.5"
+                          >
+                            <Plus className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">Blank Item</span>
+                          </CommandItem>
+                        </CommandGroup>
+                        <CommandSeparator />
+                        <CommandGroup heading="Saved Items">
+                          {savedItems.length === 0 ? (
+                            <div className="py-4 text-center">
+                              <p className="text-xs text-muted-foreground">No saved items yet</p>
+                              <button
+                                onClick={() => { setAddItemOpen(false); router.push('/templates/invoice-items'); }}
+                                className="text-xs text-primary hover:text-primary/80 mt-1"
+                              >
+                                Create saved items →
+                              </button>
+                            </div>
+                          ) : (
+                            savedItems.map((saved) => (
+                              <CommandItem
+                                key={saved.id}
+                                value={saved.name}
+                                onSelect={() => {
+                                  setLineItems([...lineItems, {
+                                    id: Math.random().toString(36).substr(2, 9),
+                                    name: saved.name,
+                                    description: saved.description || '',
+                                    quantity: 1,
+                                    rate: saved.price,
+                                  }]);
+                                  setAddItemOpen(false);
+                                }}
+                                className="py-2.5"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{saved.name}</p>
+                                  {saved.description && <p className="text-xs text-muted-foreground truncate">{saved.description}</p>}
+                                </div>
+                                {saved.price > 0 && (
+                                  <span className="ml-3 shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
+                                    ${saved.price.toFixed(2)}
+                                  </span>
+                                )}
+                              </CommandItem>
+                            ))
+                          )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <Separator className="bg-border/60" />
@@ -1166,8 +1226,9 @@ export function NewInvoiceForm({
                         <span>Discount</span>
                         {showDiscount && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
                       </button>
-                      <button
-                        className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
+                      <div
+                        role="menuitem"
+                        className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors cursor-pointer"
                         onClick={() => setAllowTipping(!allowTipping)}
                       >
                         <div className="flex items-center gap-2.5">
@@ -1179,7 +1240,7 @@ export function NewInvoiceForm({
                           onCheckedChange={setAllowTipping}
                           className="scale-75"
                         />
-                      </button>
+                      </div>
                       <button
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
                         onClick={() => setShowRecurring(!showRecurring)}
@@ -1377,7 +1438,7 @@ export function NewInvoiceForm({
           {/* ═══════════════════════════════════════════ */}
           {/* RIGHT PANEL — Live Preview                 */}
           {/* ═══════════════════════════════════════════ */}
-          <div className="overflow-y-auto bg-muted/30 flex flex-col">
+          <div className="overflow-y-auto no-scrollbar bg-muted/30 flex flex-col">
             {/* Preview Tabs */}
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 pt-4 pb-3">
               <Tabs

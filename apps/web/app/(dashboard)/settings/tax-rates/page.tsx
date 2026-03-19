@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { TaxRatesManager } from '@/components/settings';
 import { getTaxRates } from '@/lib/settings/actions';
 

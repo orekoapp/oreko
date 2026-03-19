@@ -103,6 +103,7 @@ export interface CreateInvoiceData {
   invoiceNumber?: string;
   currency?: string;
   dueDate: string;
+  isDraft?: boolean;
   lineItems: Array<{
     name: string;
     description?: string;

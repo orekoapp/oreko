@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { cn } from '@/lib/utils';
@@ -18,7 +19,8 @@ interface QuoteBlockRendererProps {
   quote: PublicQuoteData;
 }
 
-export function QuoteBlockRenderer({ block, quote }: QuoteBlockRendererProps) {
+export function QuoteBlockRenderer({ block: rawBlock, quote }: QuoteBlockRendererProps) {
+  const block = { ...rawBlock, content: rawBlock.content as any };
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -88,7 +90,7 @@ export function QuoteBlockRenderer({ block, quote }: QuoteBlockRendererProps) {
       return (
         <div className="space-y-2">
           <div className="rounded-lg border bg-muted/30 p-4">
-            <h3 className="font-semibold">{block.content.title || block.content.name}</h3>
+            <h3 className="font-semibold">{block.content.title || (block.content as any).name}</h3>
             {block.content.description && (
               <p className="mt-1 text-sm text-muted-foreground">
                 {block.content.description}
@@ -97,14 +99,14 @@ export function QuoteBlockRenderer({ block, quote }: QuoteBlockRendererProps) {
           </div>
           {block.content.items && block.content.items.length > 0 && (
             <div className="ml-4 space-y-2">
-              {block.content.items.map((item: QuoteBlock) => (
+              {block.content.items.map((item: any) => (
                 <div
                   key={item.id}
                   className="flex items-start justify-between rounded-lg border p-3"
                 >
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{item.content.name}</p>
-                    {item.content.description && (
+                    <p className="text-sm font-medium">{item.content?.name}</p>
+                    {item.content?.description && (
                       <p className="text-xs text-muted-foreground">
                         {item.content.description}
                       </p>
@@ -213,7 +215,7 @@ export function QuoteBlockRenderer({ block, quote }: QuoteBlockRendererProps) {
         lg: '64px',
         xl: '96px',
       };
-      return <div style={{ height: spacerHeights[block.content.height] }} />;
+      return <div style={{ height: spacerHeights[block.content.height as keyof typeof spacerHeights] }} />;
     }
 
     case 'image':

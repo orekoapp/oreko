@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { IntegrationsManager } from '@/components/settings/integrations-manager';
 import { getIntegrations } from '@/lib/settings/actions';
 

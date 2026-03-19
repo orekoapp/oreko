@@ -155,17 +155,17 @@ export function ContractSigningView({
                     {contract.signedAt ? formatDate(contract.signedAt) : 'Not signed'}
                   </p>
                 </div>
-                {contract.clientIpAddress && (
+                {contract.signerIpAddress && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-0.5">Client IP</p>
-                    <p className="font-medium text-sm font-mono">{contract.clientIpAddress}</p>
+                    <p className="font-medium text-sm font-mono">{contract.signerIpAddress}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Signatures */}
-            {(contract.clientSignature || contract.businessSignature || showSignedView) && (
+            {(contract.signatureData || contract.countersignatureData || showSignedView) && (
               <>
                 <Separator className="bg-border/60" />
                 <div>
@@ -174,12 +174,12 @@ export function ContractSigningView({
                     {/* Client Signature */}
                     <div className="rounded-lg border bg-background p-4">
                       <p className="text-xs font-medium text-muted-foreground mb-2">Client Signature</p>
-                      {contract.clientSignature ? (
+                      {contract.signatureData ? (
                         <>
-                          {contract.clientSignature.type === 'drawn' ? (
+                          {contract.signatureData.type === 'drawn' ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={contract.clientSignature.value}
+                              src={contract.signatureData.value}
                               alt="Client Signature"
                               className="max-h-16"
                             />
@@ -188,12 +188,12 @@ export function ContractSigningView({
                               className="text-2xl"
                               style={{ fontFamily: "'Brush Script MT', cursive" }}
                             >
-                              {contract.clientSignature.value}
+                              {contract.signatureData.value}
                             </p>
                           )}
                           <p className="text-xs text-muted-foreground mt-2">
-                            Signed by {contract.clientSignature.name} on{' '}
-                            {formatDate(new Date(contract.clientSignature.date))}
+                            Signed by {contract.signatureData.name} on{' '}
+                            {formatDate(new Date(contract.signatureData.date))}
                           </p>
                         </>
                       ) : (
@@ -206,17 +206,17 @@ export function ContractSigningView({
                     {/* Business Signature */}
                     <div className="rounded-lg border bg-background p-4">
                       <p className="text-xs font-medium text-muted-foreground mb-2">Business Signature</p>
-                      {contract.businessSignature ? (
+                      {contract.countersignatureData ? (
                         <>
                           <p
                             className="text-2xl"
                             style={{ fontFamily: "'Brush Script MT', cursive" }}
                           >
-                            {contract.businessSignature.name}
+                            {contract.countersignatureData.name}
                           </p>
                           <p className="text-xs text-muted-foreground mt-2">
                             Countersigned on{' '}
-                            {formatDate(new Date(contract.businessSignature.date))}
+                            {formatDate(new Date(contract.countersignatureData.date))}
                           </p>
                         </>
                       ) : (

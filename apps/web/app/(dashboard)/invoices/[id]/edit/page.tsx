@@ -43,6 +43,7 @@ export default async function InvoiceEditPage({ params }: InvoiceEditPageProps) 
       clients={clients}
       taxRates={taxRates}
       currency={businessProfile?.currency || invoice.settings.currency || 'USD'}
+      businessName={businessProfile?.businessName || 'Your Business'}
     />
   );
 }

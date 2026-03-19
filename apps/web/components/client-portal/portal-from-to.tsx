@@ -28,7 +28,9 @@ export function PortalFromTo({
           )}
           {business.address && (
             <p className="whitespace-pre-line text-sm text-muted-foreground">
-              {business.address}
+              {typeof business.address === 'string'
+                ? business.address
+                : [business.address.street, business.address.city, business.address.state, business.address.postalCode, business.address.country].filter(Boolean).join(', ')}
             </p>
           )}
         </div>

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { WorkspaceSettingsForm } from '@/components/settings/workspace-settings-form';
 import { DangerZone } from '@/components/settings/danger-zone';

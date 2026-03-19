@@ -161,6 +161,7 @@ model Workspace {
   slugHistory        WorkspaceSlugHistory[]
   webhookEndpoints   WebhookEndpoint[]
   invoiceTemplates   InvoiceTemplate[]
+  savedLineItems     SavedLineItem[]
   apiKeys            ApiKey[]
 
   @@index([slug])
@@ -980,6 +981,27 @@ model CreditNoteEvent {
 
   @@index([creditNoteId])
   @@map("credit_note_events")
+}
+
+// ============================================
+// SAVED LINE ITEMS (reusable items for quotes/invoices)
+// ============================================
+
+model SavedLineItem {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  name        String   @db.VarChar(200)
+  description String?  @db.Text
+  price       Decimal  @default(0) @db.Decimal(12, 2)
+  duration    String?  @db.VarChar(20)
+  taxable     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("saved_line_items")
 }
 
 // ============================================

@@ -283,7 +283,7 @@ export async function getPayments(filter?: {
     prisma.payment.count({ where }),
   ]);
 
-  return payments.map((p) => ({
+  const items = payments.map((p) => ({
     id: p.id,
     invoiceId: p.invoiceId,
     amount: toNumber(p.amount),
