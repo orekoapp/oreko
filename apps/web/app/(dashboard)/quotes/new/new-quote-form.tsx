@@ -350,6 +350,10 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
       toast.error('Please add at least one line item');
       return;
     }
+    if (!terms.trim()) {
+      toast.error('Please add terms and conditions');
+      return;
+    }
 
     setLoading(true);
     try {

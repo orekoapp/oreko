@@ -454,6 +454,10 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
       toast({ title: 'Error', description: 'Please add at least one line item', variant: 'destructive' });
       return;
     }
+    if (!terms.trim()) {
+      toast({ title: 'Error', description: 'Please add terms and conditions', variant: 'destructive' });
+      return;
+    }
 
     setLoading(true);
     try {

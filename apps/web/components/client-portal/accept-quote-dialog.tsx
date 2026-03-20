@@ -62,7 +62,7 @@ export function AcceptQuoteDialog({
   const canSubmit =
     signerName.trim().length > 0 &&
     (!requiresSignature || signatureData) &&
-    (!hasTerms || agreedToTerms);
+    agreedToTerms;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -170,25 +170,23 @@ export function AcceptQuoteDialog({
               )}
 
               {/* Terms Agreement */}
-              {hasTerms && (
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="agree-terms"
-                    checked={agreedToTerms}
-                    onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
-                    disabled={isSubmitting}
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label
-                      htmlFor="agree-terms"
-                      className="text-sm font-normal leading-snug"
-                    >
-                      I have read and agree to the terms and conditions outlined in
-                      this quote.
-                    </Label>
-                  </div>
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="agree-terms"
+                  checked={agreedToTerms}
+                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                  disabled={isSubmitting}
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <Label
+                    htmlFor="agree-terms"
+                    className="text-sm font-normal leading-snug"
+                  >
+                    I have read and agree to the terms and conditions outlined in
+                    this quote.
+                  </Label>
                 </div>
-              )}
+              </div>
             </>
           )}
         </div>
