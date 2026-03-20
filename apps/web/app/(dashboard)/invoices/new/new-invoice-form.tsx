@@ -281,6 +281,7 @@ export function NewInvoiceForm({
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [fromQuoteNumber, setFromQuoteNumber] = useState<string | null>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState(currency);
 
   // Form State
   const [invoiceNumber, setInvoiceNumber] = useState(nextInvoiceNumber);
@@ -465,7 +466,7 @@ export function NewInvoiceForm({
       const result = await createInvoice({
         clientId: selectedClientId,
         title: 'Invoice',
-        currency,
+        currency: selectedCurrency,
         isDraft,
         dueDate: dueDate ? dueDate.toISOString().split('T')[0]! : new Date().toISOString().split('T')[0]!,
         lineItems: lineItems
@@ -844,6 +845,28 @@ export function NewInvoiceForm({
                   </div>
                 )}
 
+                {/* Currency Selector */}
+                <div className="mt-3 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Currency</Label>
+                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                    <SelectTrigger className="h-10 max-w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD - US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                      <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                      <SelectItem value="INR">INR - Indian Rupee</SelectItem>
+                      <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                      <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                      <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                      <SelectItem value="SGD">SGD - Singapore Dollar</SelectItem>
+                      <SelectItem value="NZD">NZD - New Zealand Dollar</SelectItem>
+                      <SelectItem value="CHF">CHF - Swiss Franc</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* PO Number — shown when toggled */}
                 {showPoNumber && (
                   <div className="mt-3 space-y-1.5">
@@ -1176,7 +1199,7 @@ export function NewInvoiceForm({
                                 </div>
                                 {saved.price > 0 && (
                                   <span className="ml-3 shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
-                                    {formatMoney(saved.price, currency)}
+                                    {formatMoney(saved.price, selectedCurrency)}
                                   </span>
                                 )}
                               </CommandItem>
@@ -1533,7 +1556,7 @@ export function NewInvoiceForm({
                   </div>
                   <h3 className="text-base font-semibold tracking-tight">{businessName}</h3>
                   <p className={cn('font-bold tracking-tight mt-1', tpl.amountSize)} style={{ color: tpl.accent }}>
-                    {formatMoney(total, currency)}
+                    {formatMoney(total, selectedCurrency)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Invoice #{invoiceNumber} &middot; Due {dueDate ? format(dueDate, 'MMM dd, yyyy') : '...'}
@@ -1584,12 +1607,12 @@ export function NewInvoiceForm({
                                   {item.name || 'Untitled Item'}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {item.quantity} &times; {formatMoney(item.rate, currency)}
+                                  {item.quantity} &times; {formatMoney(item.rate, selectedCurrency)}
                                   {item.description && <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>}
                                 </p>
                               </div>
                               <span className="ml-4 font-medium tabular-nums text-sm">
-                                {formatMoney(item.quantity * item.rate, currency)}
+                                {formatMoney(item.quantity * item.rate, selectedCurrency)}
                               </span>
                             </div>
                           ))}
@@ -1606,25 +1629,25 @@ export function NewInvoiceForm({
                           <div className="space-y-2 mb-3">
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Subtotal</span>
-                              <span className="tabular-nums">{formatMoney(subtotal, currency)}</span>
+                              <span className="tabular-nums">{formatMoney(subtotal, selectedCurrency)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Discount</span>
-                              <span className="tabular-nums text-green-600">-{formatMoney(discountAmount, currency)}</span>
+                              <span className="tabular-nums text-green-600">-{formatMoney(discountAmount, selectedCurrency)}</span>
                             </div>
                           </div>
                         )}
                         {taxAmount > 0 && (
                           <div className="flex justify-between text-sm mb-3">
                             <span className="text-muted-foreground">Tax ({parsedTaxPercent}%)</span>
-                            <span className="tabular-nums">{formatMoney(taxAmount, currency)}</span>
+                            <span className="tabular-nums">{formatMoney(taxAmount, selectedCurrency)}</span>
                           </div>
                         )}
                         <div className={cn('flex justify-between items-baseline rounded-lg px-3 py-3 -mx-3 border-l-2', tpl.accentBg)}
                           style={{ borderLeftColor: tpl.accent }}>
                           <span className="font-semibold text-sm">Total Due</span>
                           <span className="text-lg font-bold tabular-nums" style={{ color: tpl.accent }}>
-                            {formatMoney(total, currency)}
+                            {formatMoney(total, selectedCurrency)}
                           </span>
                         </div>
                       </div>
@@ -1769,8 +1792,8 @@ export function NewInvoiceForm({
                                 {item.description && <p style={{ color: '#888' }}>{item.description}</p>}
                               </td>
                               <td className="py-2 text-center" style={{ color: '#333' }}>{item.quantity}</td>
-                              <td className="py-2 text-right tabular-nums" style={{ color: '#333' }}>{formatMoney(item.rate, currency)}</td>
-                              <td className="py-2 text-right tabular-nums font-medium" style={{ color: '#111' }}>{formatMoney(item.quantity * item.rate, currency)}</td>
+                              <td className="py-2 text-right tabular-nums" style={{ color: '#333' }}>{formatMoney(item.rate, selectedCurrency)}</td>
+                              <td className="py-2 text-right tabular-nums font-medium" style={{ color: '#111' }}>{formatMoney(item.quantity * item.rate, selectedCurrency)}</td>
                             </tr>
                           )) : (
                             <tr>
@@ -1788,29 +1811,29 @@ export function NewInvoiceForm({
                       <div className="ml-auto" style={{ width: '200px' }}>
                         <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
                           <span>Subtotal</span>
-                          <span className="tabular-nums">{formatMoney(subtotal, currency)}</span>
+                          <span className="tabular-nums">{formatMoney(subtotal, selectedCurrency)}</span>
                         </div>
                         {discountAmount > 0 && (
                           <div className="flex justify-between py-1 text-xs" style={{ color: '#22c55e' }}>
                             <span>Discount</span>
-                            <span className="tabular-nums">-{formatMoney(discountAmount, currency)}</span>
+                            <span className="tabular-nums">-{formatMoney(discountAmount, selectedCurrency)}</span>
                           </div>
                         )}
                         {taxAmount > 0 && (
                           <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
                             <span>Tax ({parsedTaxPercent}%)</span>
-                            <span className="tabular-nums">{formatMoney(taxAmount, currency)}</span>
+                            <span className="tabular-nums">{formatMoney(taxAmount, selectedCurrency)}</span>
                           </div>
                         )}
                         <div className="flex justify-between py-1 text-xs" style={{ borderTop: '1px solid #e5e7eb', color: '#333' }}>
                           <span className="font-medium">Total</span>
-                          <span className="tabular-nums font-medium">{formatMoney(total, currency)}</span>
+                          <span className="tabular-nums font-medium">{formatMoney(total, selectedCurrency)}</span>
                         </div>
                         <div className="flex justify-between py-2 mt-1 rounded px-2 -mx-2"
                           style={{ background: tpl.accentBg.replace('bg-', '').includes('50') ? `${tpl.accent}10` : '#f5f5f5' }}
                         >
                           <span className="text-xs font-bold" style={{ color: '#111' }}>Balance Due</span>
-                          <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>{formatMoney(total, currency)}</span>
+                          <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>{formatMoney(total, selectedCurrency)}</span>
                         </div>
                       </div>
                     </div>
@@ -1881,11 +1904,11 @@ export function NewInvoiceForm({
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{item.name || 'Untitled Item'}</p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {item.quantity} &times; {formatMoney(item.rate, currency)}
+                              {item.quantity} &times; {formatMoney(item.rate, selectedCurrency)}
                               {item.description && <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>}
                             </p>
                           </div>
-                          <span className="ml-4 font-medium tabular-nums text-sm">{formatMoney(item.quantity * item.rate, currency)}</span>
+                          <span className="ml-4 font-medium tabular-nums text-sm">{formatMoney(item.quantity * item.rate, selectedCurrency)}</span>
                         </div>
                       ))}
                       <Separator className={tpl.separatorClass} />
@@ -1897,11 +1920,11 @@ export function NewInvoiceForm({
                       <>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Subtotal</span>
-                          <span className="tabular-nums">{formatMoney(subtotal, currency)}</span>
+                          <span className="tabular-nums">{formatMoney(subtotal, selectedCurrency)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Discount</span>
-                          <span className="tabular-nums text-green-600">-{formatMoney(discountAmount, currency)}</span>
+                          <span className="tabular-nums text-green-600">-{formatMoney(discountAmount, selectedCurrency)}</span>
                         </div>
                         <Separator className={tpl.separatorClass} />
                       </>
@@ -1909,12 +1932,12 @@ export function NewInvoiceForm({
                     {taxAmount > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Tax ({parsedTaxPercent}%)</span>
-                        <span className="tabular-nums">{formatMoney(taxAmount, currency)}</span>
+                        <span className="tabular-nums">{formatMoney(taxAmount, selectedCurrency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm font-semibold">
                       <span>Total Due</span>
-                      <span className="tabular-nums" style={{ color: tpl.accent }}>{formatMoney(total, currency)}</span>
+                      <span className="tabular-nums" style={{ color: tpl.accent }}>{formatMoney(total, selectedCurrency)}</span>
                     </div>
                   </div>
                 </div>
@@ -2009,8 +2032,8 @@ export function NewInvoiceForm({
                           {item.description && <p style={{ color: '#888', marginTop: '2px' }}>{item.description}</p>}
                         </td>
                         <td style={{ textAlign: 'center', padding: '8px 0', color: '#333' }}>{item.quantity}</td>
-                        <td style={{ textAlign: 'right', padding: '8px 0', color: '#333' }}>{formatMoney(item.rate, currency)}</td>
-                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>{formatMoney(item.quantity * item.rate, currency)}</td>
+                        <td style={{ textAlign: 'right', padding: '8px 0', color: '#333' }}>{formatMoney(item.rate, selectedCurrency)}</td>
+                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>{formatMoney(item.quantity * item.rate, selectedCurrency)}</td>
                       </tr>
                     )) : (
                       <tr>
@@ -2028,23 +2051,23 @@ export function NewInvoiceForm({
                 <div style={{ marginLeft: 'auto', width: '200px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
                     <span>Subtotal</span>
-                    <span>{formatMoney(subtotal, currency)}</span>
+                    <span>{formatMoney(subtotal, selectedCurrency)}</span>
                   </div>
                   {discountAmount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#22c55e' }}>
                       <span>Discount</span>
-                      <span>-{formatMoney(discountAmount, currency)}</span>
+                      <span>-{formatMoney(discountAmount, selectedCurrency)}</span>
                     </div>
                   )}
                   {taxAmount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
                       <span>Tax ({parsedTaxPercent}%)</span>
-                      <span>{formatMoney(taxAmount, currency)}</span>
+                      <span>{formatMoney(taxAmount, selectedCurrency)}</span>
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', borderTop: '1px solid #e5e7eb', color: '#333', fontWeight: 500 }}>
                     <span>Total</span>
-                    <span>{formatMoney(total, currency)}</span>
+                    <span>{formatMoney(total, selectedCurrency)}</span>
                   </div>
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
@@ -2052,7 +2075,7 @@ export function NewInvoiceForm({
                     background: `${tpl.accent}15`,
                   }}>
                     <span style={{ fontSize: '11px', fontWeight: 700 }}>Balance Due</span>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: tpl.accent }}>{formatMoney(total, currency)}</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: tpl.accent }}>{formatMoney(total, selectedCurrency)}</span>
                   </div>
                 </div>
               </div>

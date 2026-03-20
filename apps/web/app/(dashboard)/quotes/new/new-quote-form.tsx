@@ -216,7 +216,7 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
   const router = useRouter();
   // toast from sonner (imported at top)
   const [loading, setLoading] = useState(false);
-  const currency = defaultCurrency;
+  const [currency, setCurrency] = useState(defaultCurrency);
 
   // Real clients from DB
   const [clients, setClients] = useState<Array<{ id: string; name: string; email: string; company: string | null }>>([]);
@@ -700,6 +700,28 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
                       <SelectItem value="45">45 days</SelectItem>
                       <SelectItem value="60">60 days</SelectItem>
                       <SelectItem value="90">90 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Currency Selector */}
+                <div className="mt-3 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Currency</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger className="h-10 max-w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD - US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                      <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                      <SelectItem value="INR">INR - Indian Rupee</SelectItem>
+                      <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                      <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                      <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                      <SelectItem value="SGD">SGD - Singapore Dollar</SelectItem>
+                      <SelectItem value="NZD">NZD - New Zealand Dollar</SelectItem>
+                      <SelectItem value="CHF">CHF - Swiss Franc</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
