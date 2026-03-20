@@ -216,7 +216,7 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
             onClick: onEdit,
           });
         }
-        if (onSend) {
+        if (onSend && (quote.status === 'draft' || quote.status === 'sent')) {
           actions.push({
             label: 'Send Quote',
             icon: <Send className="mr-2 h-4 w-4" />,
