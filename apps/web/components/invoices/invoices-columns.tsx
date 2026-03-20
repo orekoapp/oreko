@@ -28,10 +28,10 @@ const statusLabels: Record<string, string> = {
   voided: 'Voided',
 };
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
   }).format(amount);
 }
 
@@ -192,18 +192,19 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const total = row.getValue('total') as number;
         const amountDue = row.original.amountDue;
         const status = row.original.status;
+        const curr = row.original.currency || 'USD';
 
         return (
           <div className="whitespace-nowrap">
-            <div className="font-medium">{formatCurrency(total)}</div>
+            <div className="font-medium">{formatCurrency(total, curr)}</div>
             {status === 'partial' && amountDue > 0 && (
               <div className="text-sm text-amber-600">
-                {formatCurrency(amountDue)} remaining
+                {formatCurrency(amountDue, curr)} remaining
               </div>
             )}
             {status !== 'partial' && amountDue > 0 && amountDue !== total && (
               <div className="text-sm text-orange-600">
-                Due: {formatCurrency(amountDue)}
+                Due: {formatCurrency(amountDue, curr)}
               </div>
             )}
           </div>
