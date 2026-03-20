@@ -233,6 +233,7 @@ export async function createQuote(data: {
       quoteNumber,
       title: data.title,
       status: data.isDraft !== false ? 'draft' : 'sent',
+      currency,
       accessToken: generateAccessToken(),
       subtotal,
       taxTotal,
