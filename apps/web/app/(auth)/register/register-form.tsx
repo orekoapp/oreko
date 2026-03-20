@@ -69,21 +69,8 @@ export function RegisterForm() {
         return;
       }
 
-      // Auto sign in after registration
-      const signInResult = await signIn('credentials', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        toast.error('Account created but failed to sign in. Please try logging in.');
-        router.push('/login');
-        return;
-      }
-
-      router.push('/onboarding');
-      router.refresh();
+      toast.success('Account created! Please check your email to verify.');
+      router.push('/verify-email');
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
