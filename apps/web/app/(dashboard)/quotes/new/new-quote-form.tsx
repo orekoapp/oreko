@@ -375,6 +375,7 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
         clientId: selectedClientId,
         title: lineItems[0]?.name || 'Untitled Quote',
         currency,
+        expirationDate: expirationDate?.toISOString(),
         blocks,
         isDraft,
       });

@@ -134,6 +134,7 @@ export async function createQuote(data: {
   clientId: string;
   projectId?: string | null;
   currency?: string;
+  expirationDate?: string;
   blocks?: QuoteBlock[];
   isDraft?: boolean;
 }) {
@@ -234,6 +235,7 @@ export async function createQuote(data: {
       title: data.title,
       status: data.isDraft !== false ? 'draft' : 'sent',
       currency,
+      expirationDate: data.expirationDate ? new Date(data.expirationDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       accessToken: generateAccessToken(),
       subtotal,
       taxTotal,
