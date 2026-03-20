@@ -136,6 +136,8 @@ export async function createQuote(data: {
   currency?: string;
   expirationDate?: string;
   blocks?: QuoteBlock[];
+  notes?: string;
+  terms?: string;
   isDraft?: boolean;
 }) {
   const { userId, workspace } = await getActiveWorkspace();
@@ -237,6 +239,8 @@ export async function createQuote(data: {
       currency,
       expirationDate: data.expirationDate ? new Date(data.expirationDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       accessToken: generateAccessToken(),
+      notes: data.notes || null,
+      terms: data.terms || null,
       subtotal,
       taxTotal,
       total,

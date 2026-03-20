@@ -381,6 +381,8 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
         currency,
         expirationDate: expirationDate?.toISOString(),
         blocks,
+        notes: notes || undefined,
+        terms: terms || undefined,
         isDraft,
       });
 

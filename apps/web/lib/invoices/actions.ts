@@ -1244,7 +1244,7 @@ export async function getInvoiceTemplates(filter?: { search?: string; page?: num
     description: t.description ?? '',
     paymentTerms: t.paymentTerms,
     currency: t.currency,
-    lineItems: (t.lineItems as unknown as InvoiceTemplateLineItem[]) ?? [],
+    lineItems: (typeof t.lineItems === 'string' ? JSON.parse(t.lineItems) : t.lineItems) as InvoiceTemplateLineItem[] ?? [],
     notes: t.notes ?? '',
     terms: t.terms ?? '',
     usageCount: t.usageCount,
