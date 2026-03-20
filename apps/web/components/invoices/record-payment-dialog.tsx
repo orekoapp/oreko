@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, Loader2, CreditCard, Building2, Banknote, Wallet, CalendarIcon } from 'lucide-react';
+import { Banknote, Loader2, CreditCard, Building2, Wallet, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -149,7 +149,7 @@ export function RecordPaymentDialog({
             <div className="grid gap-2">
               <Label htmlFor="payment-amount">Amount</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Banknote className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="payment-amount"
                   type="number"

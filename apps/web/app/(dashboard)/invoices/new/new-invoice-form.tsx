@@ -22,7 +22,7 @@ import {
   Link2,
   CalendarPlus,
   RotateCcw,
-  DollarSign,
+  Banknote,
   Hash,
   HelpCircle,
   Check,
@@ -1246,7 +1246,7 @@ export function NewInvoiceForm({
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md hover:bg-muted transition-colors"
                         onClick={() => setShowDeposit(!showDeposit)}
                       >
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <Banknote className="h-4 w-4 text-muted-foreground" />
                         <span>Deposit/Payments</span>
                         {showDeposit && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
                       </button>

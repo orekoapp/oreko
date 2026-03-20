@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DollarSign } from 'lucide-react';
+import { Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RecordPaymentDialog } from './record-payment-dialog';
 
@@ -17,7 +17,7 @@ export function RecordPaymentButton({ invoiceId, amountDue, currency = 'USD' }: 
   return (
     <>
       <Button className="w-full" onClick={() => setOpen(true)}>
-        <DollarSign className="mr-2 h-4 w-4" />
+        <Banknote className="mr-2 h-4 w-4" />
         Record Payment
       </Button>
       <RecordPaymentDialog

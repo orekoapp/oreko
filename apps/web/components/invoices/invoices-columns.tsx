@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
 import { DataTableRowActions, RowAction } from '@/components/ui/data-table/data-table-row-actions';
 import { InvoiceListItem } from '@/lib/invoices/types';
-import { AlertCircle, Pencil, Send, Link2, Copy, Download, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertCircle, Pencil, Send, Link2, Copy, Download, Banknote, RefreshCw, Trash2 } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
   draft: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
@@ -286,7 +286,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         if (onRecordPayment && invoice.status !== 'paid' && invoice.status !== 'voided') {
           actions.push({
             label: 'Record Payment',
-            icon: <DollarSign className="mr-2 h-4 w-4" />,
+            icon: <Banknote className="mr-2 h-4 w-4" />,
             onClick: onRecordPayment,
             separator: true,
           });

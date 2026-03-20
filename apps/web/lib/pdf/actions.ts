@@ -83,7 +83,7 @@ export async function getQuotePdfData(quoteId: string): Promise<QuotePdfData | n
       taxRate: item.taxRate ? Number(item.taxRate) : null,
       taxAmount: toNumber(item.taxAmount),
     })),
-    currency: (settings?.currency as string) ?? 'USD',
+    currency: quote.currency || (settings?.currency as string) || 'USD',
     signature: signatureData
       ? {
           signerName: signatureData.signerName as string,
@@ -181,7 +181,7 @@ export async function getQuotePdfDataByToken(accessToken: string): Promise<Quote
       taxRate: item.taxRate ? Number(item.taxRate) : null,
       taxAmount: toNumber(item.taxAmount),
     })),
-    currency: (settings?.currency as string) ?? 'USD',
+    currency: quote.currency || (settings?.currency as string) || 'USD',
     signature: signatureData
       ? {
           signerName: signatureData.signerName as string,
@@ -275,7 +275,7 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
       taxRate: item.taxRate ? Number(item.taxRate) : null,
       taxAmount: toNumber(item.taxAmount),
     })),
-    currency: (settings?.currency as string) ?? 'USD',
+    currency: invoice.currency || (settings?.currency as string) || 'USD',
     payments: invoice.payments.map((payment) => ({
       id: payment.id,
       amount: toNumber(payment.amount),
@@ -378,7 +378,7 @@ export async function getInvoicePdfDataByToken(accessToken: string): Promise<Inv
       taxRate: item.taxRate ? Number(item.taxRate) : null,
       taxAmount: toNumber(item.taxAmount),
     })),
-    currency: (settings?.currency as string) ?? 'USD',
+    currency: invoice.currency || (settings?.currency as string) || 'USD',
     payments: invoice.payments.map((payment) => ({
       id: payment.id,
       amount: toNumber(payment.amount),

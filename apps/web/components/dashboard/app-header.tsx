@@ -16,7 +16,7 @@ import {
   Receipt,
   Eye,
   CheckCircle,
-  DollarSign,
+  Banknote,
   XCircle,
 } from 'lucide-react';
 import { markAllNotificationsRead, markNotificationRead, type NotificationData } from '@/lib/notifications/actions';
@@ -64,7 +64,7 @@ const notificationIcons: Record<string, typeof Bell> = {
   quote_declined: XCircle,
   invoice_sent: Receipt,
   invoice_viewed: Eye,
-  invoice_paid: DollarSign,
+  invoice_paid: Banknote,
   invoice_overdue: XCircle,
   contract_sent: FileText,
   contract_signed: CheckCircle,

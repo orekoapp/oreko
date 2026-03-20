@@ -93,16 +93,16 @@ export default async function ContractDetailPage({ params }: PageProps) {
           </Link>
         </Button>
 
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold">{instance.contractName}</h1>
               <Badge variant={config?.variant ?? 'secondary'} className="gap-1">
                 {config?.icon}
                 {config?.label ?? instance.status}
               </Badge>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mt-1">
               For {instance.clientName} · Created {formatDate(instance.createdAt)}
             </p>
           </div>

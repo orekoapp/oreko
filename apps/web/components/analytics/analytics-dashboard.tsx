@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { subDays, startOfMonth, endOfMonth, startOfYear } from 'date-fns';
-import { ArrowUpRight, ArrowDownRight, DollarSign, FileText, Receipt, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Banknote, FileText, Receipt, TrendingUp } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
