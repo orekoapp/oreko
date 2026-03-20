@@ -297,6 +297,7 @@ export async function updateQuote(
   quoteId: string,
   data: {
     title?: string;
+    currency?: string;
     projectId?: string | null;
     blocks?: QuoteBlock[];
     notes?: string;
@@ -418,7 +419,7 @@ export async function updateQuote(
         data: {
           title: data.title,
           ...(data.projectId !== undefined && { projectId: data.projectId }),
-          currency: (data.settings?.currency as string) || undefined,
+          currency: data.currency || undefined,
           notes: data.notes,
           terms: data.terms,
           internalNotes: data.internalNotes,
