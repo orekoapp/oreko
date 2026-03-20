@@ -102,7 +102,7 @@ export function AcceptQuoteDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -113,7 +113,7 @@ export function AcceptQuoteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto flex-1">
           {/* Quote Summary */}
           <div className="rounded-lg bg-muted/50 p-4">
             <div className="flex justify-between text-sm">
