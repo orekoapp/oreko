@@ -69,7 +69,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { searchClients } from '@/lib/clients/actions';
-import { createQuote, getNextQuoteNumber } from '@/lib/quotes/actions';
+import { createQuote, sendQuote, getNextQuoteNumber } from '@/lib/quotes/actions';
 import { getInvoiceTemplates } from '@/lib/invoices/actions';
 import type { InvoiceTemplateLineItem } from '@/lib/invoices/actions';
 import { getBusinessProfile, getWorkspace } from '@/lib/settings/actions';
@@ -382,6 +382,14 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
       console.log('Create quote result:', result);
 
       if (result.success && result.quote?.id) {
+        if (!isDraft) {
+          const sendResult = await sendQuote(result.quote.id);
+          if (!sendResult.success) {
+            toast.error(sendResult.error || 'Quote created but email could not be sent. You can resend from the quotes list.');
+            router.push('/quotes');
+            return;
+          }
+        }
         toast.success(isDraft ? 'Draft Saved' : 'Quote Sent');
         router.push('/quotes');
       } else {

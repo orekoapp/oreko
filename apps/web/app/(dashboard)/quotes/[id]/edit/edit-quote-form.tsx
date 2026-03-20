@@ -69,7 +69,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { searchClients } from '@/lib/clients/actions';
-import { updateQuote } from '@/lib/quotes/actions';
+import { updateQuote, sendQuote } from '@/lib/quotes/actions';
 import { getInvoiceTemplates } from '@/lib/invoices/actions';
 import type { InvoiceTemplateLineItem } from '@/lib/invoices/actions';
 import { getBusinessProfile, getWorkspace } from '@/lib/settings/actions';
@@ -498,10 +498,28 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
       });
 
       if (result.success) {
-        toast({
-          title: isDraft ? 'Draft Updated' : 'Quote Updated',
-          description: `Quote ${quoteNumber} updated successfully`,
-        });
+        if (!isDraft) {
+          // Save & Send: also send the quote email
+          const sendResult = await sendQuote(quote.id);
+          if (!sendResult.success) {
+            toast({
+              title: 'Quote Updated',
+              description: sendResult.error || 'Quote saved but email could not be sent. You can resend from the quotes list.',
+              variant: 'destructive',
+            });
+            router.push('/quotes');
+            return;
+          }
+          toast({
+            title: 'Quote Sent',
+            description: `Quote ${quoteNumber} updated and sent successfully`,
+          });
+        } else {
+          toast({
+            title: 'Draft Updated',
+            description: `Quote ${quoteNumber} updated successfully`,
+          });
+        }
         router.push('/quotes');
       } else {
         toast({ title: 'Error', description: result.error || 'Failed to update quote', variant: 'destructive' });

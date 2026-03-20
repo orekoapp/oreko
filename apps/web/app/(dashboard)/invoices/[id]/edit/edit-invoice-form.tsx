@@ -69,7 +69,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { toast } from 'sonner';
-import { updateInvoice, updateInvoiceStatus, getInvoiceTemplates } from '@/lib/invoices/actions';
+import { updateInvoice, sendInvoice, getInvoiceTemplates } from '@/lib/invoices/actions';
 import type { InvoiceTemplateLineItem } from '@/lib/invoices/actions';
 import type { InvoiceDocument } from '@/lib/invoices/types';
 
@@ -450,9 +450,14 @@ export function EditInvoiceForm({
       });
 
       if (result.success) {
-        // If not draft, also send the invoice
+        // If not draft, actually send the invoice email
         if (!isDraft) {
-          await updateInvoiceStatus(invoice.id, 'sent');
+          const sendResult = await sendInvoice(invoice.id);
+          if (!sendResult.success) {
+            toast.error(sendResult.error || 'Invoice updated but email could not be sent. You can resend from the invoices list.');
+            router.push('/invoices');
+            return;
+          }
           toast.success('Invoice Updated & Sent');
         } else {
           toast.success('Draft Updated');

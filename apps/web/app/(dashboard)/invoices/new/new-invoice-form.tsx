@@ -69,7 +69,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { toast } from 'sonner';
-import { createInvoice, getInvoiceTemplates } from '@/lib/invoices/actions';
+import { createInvoice, sendInvoice, getInvoiceTemplates } from '@/lib/invoices/actions';
 import type { InvoiceTemplateLineItem } from '@/lib/invoices/actions';
 
 
@@ -480,7 +480,15 @@ export function NewInvoiceForm({
           })),
       });
 
-      if (result.success) {
+      if (result.success && result.invoice?.id) {
+        if (!isDraft) {
+          const sendResult = await sendInvoice(result.invoice.id);
+          if (!sendResult.success) {
+            toast.error(sendResult.error || 'Invoice created but email could not be sent. You can resend from the invoices list.');
+            router.push('/invoices');
+            return;
+          }
+        }
         toast.success(isDraft ? 'Draft Saved' : 'Invoice Sent');
         router.push('/invoices');
       } else if ('error' in result) {

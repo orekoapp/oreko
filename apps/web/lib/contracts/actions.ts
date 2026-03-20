@@ -616,15 +616,7 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
     where: { id: workspaceId },
   });
 
-  await prisma.contractInstance.update({
-    where: { id },
-    data: {
-      status: 'sent',
-      sentAt: new Date(),
-    },
-  });
-
-  // Send email notification
+  // Send email notification FIRST — only update status if email succeeds
   let emailSent = false;
   if (instance.client?.email && workspace) {
     const baseUrl = getBaseUrl();
@@ -636,12 +628,19 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
       ? emailOptions.recipients
       : [instance.client.email];
 
+    // Get business email from profile
+    const businessProfile = await prisma.businessProfile.findUnique({
+      where: { workspaceId },
+      select: { email: true },
+    });
+
     try {
       const emailResult = await sendTemplatedEmail({
         type: 'contract_sent',
         to: emailRecipients,
         variables: {
           businessName: workspace.name,
+          businessEmail: businessProfile?.email || undefined,
           clientName: instance.client?.name || 'Client',
           clientEmail: instance.client.email,
           contractName,
@@ -649,7 +648,7 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
           message: emailOptions?.message || undefined,
         },
         customSubject: emailOptions?.subject || undefined,
-        customBody: emailOptions?.message || undefined,
+        // Do NOT pass customBody — it would override the DB template and break variables like {{contractUrl}}
       });
       emailSent = emailResult.success;
       if (!emailResult.success) {
@@ -659,6 +658,15 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
       console.error('Failed to send contract email:', err);
     }
   }
+
+  // Update status to sent (regardless of email outcome, since contract needs to be accessible)
+  await prisma.contractInstance.update({
+    where: { id },
+    data: {
+      status: 'sent',
+      sentAt: new Date(),
+    },
+  });
 
   // Create notification for sender
   createNotification({
