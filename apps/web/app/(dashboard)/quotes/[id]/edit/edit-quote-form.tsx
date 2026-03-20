@@ -48,7 +48,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -275,6 +275,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const currency = quote.settings.currency || 'USD';
 
   // Real clients from DB
   const [clients, setClients] = useState<Array<{ id: string; name: string; email: string; company: string | null }>>([]);
@@ -516,7 +517,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
       '1. This quote is valid for the period specified above.\n' +
       '2. Payment terms: 50% deposit upon acceptance, balance due on completion.\n' +
       '3. Additional work outside the scope of this quote will be billed separately.\n' +
-      '4. All prices are in USD unless otherwise stated.\n' +
+      `4. All prices are in ${currency} unless otherwise stated.\n` +
       '5. By accepting this quote, you agree to these terms and conditions.'
     );
   };
@@ -1153,7 +1154,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                                 </div>
                                 {saved.price > 0 && (
                                   <span className="ml-3 shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
-                                    ${saved.price.toFixed(2)}
+                                    {formatCurrency(saved.price, currency)}
                                   </span>
                                 )}
                               </CommandItem>
@@ -1439,7 +1440,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                   </div>
                   <h3 className="text-base font-semibold tracking-tight">{businessName}</h3>
                   <p className={cn('font-bold tracking-tight mt-1', tpl.amountSize)} style={{ color: tpl.accent }}>
-                    ${total.toFixed(2)}
+                    {formatCurrency(total, currency)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Quote #{quoteNumber} · {expirationDate ? `Valid until ${format(expirationDate, 'MMM dd, yyyy')}` : `Issued ${issueDate ? format(issueDate, 'MMM dd, yyyy') : '...'}`}
@@ -1490,12 +1491,12 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                                   {item.name || 'Untitled Item'}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {item.quantity} × ${item.rate.toFixed(2)}
+                                  {item.quantity} × {formatCurrency(item.rate, currency)}
                                   {item.description && <span className="ml-1.5 text-muted-foreground/70">· {item.description}</span>}
                                 </p>
                               </div>
                               <span className="ml-4 font-medium tabular-nums text-sm">
-                                ${(item.quantity * item.rate).toFixed(2)}
+                                {formatCurrency(item.quantity * item.rate, currency)}
                               </span>
                             </div>
                           ))}
@@ -1512,11 +1513,11 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                           <div className="space-y-2 mb-3">
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Subtotal</span>
-                              <span className="tabular-nums">${subtotal.toFixed(2)}</span>
+                              <span className="tabular-nums">{formatCurrency(subtotal, currency)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Discount</span>
-                              <span className="tabular-nums text-green-600">-${discountAmount.toFixed(2)}</span>
+                              <span className="tabular-nums text-green-600">-{formatCurrency(discountAmount, currency)}</span>
                             </div>
                           </div>
                         )}
@@ -1524,7 +1525,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                           style={{ borderLeftColor: tpl.accent }}>
                           <span className="font-semibold text-sm">Total</span>
                           <span className="text-lg font-bold tabular-nums" style={{ color: tpl.accent }}>
-                            ${total.toFixed(2)}
+                            {formatCurrency(total, currency)}
                           </span>
                         </div>
                       </div>
@@ -1660,8 +1661,8 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                                 {item.description && <p style={{ color: '#888' }}>{item.description}</p>}
                               </td>
                               <td className="py-2 text-center" style={{ color: '#333' }}>{item.quantity}</td>
-                              <td className="py-2 text-right tabular-nums" style={{ color: '#333' }}>${item.rate.toFixed(2)}</td>
-                              <td className="py-2 text-right tabular-nums font-medium" style={{ color: '#111' }}>${(item.quantity * item.rate).toFixed(2)}</td>
+                              <td className="py-2 text-right tabular-nums" style={{ color: '#333' }}>{formatCurrency(item.rate, currency)}</td>
+                              <td className="py-2 text-right tabular-nums font-medium" style={{ color: '#111' }}>{formatCurrency(item.quantity * item.rate, currency)}</td>
                             </tr>
                           )) : (
                             <tr>
@@ -1678,23 +1679,23 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                       <div className="ml-auto" style={{ width: '200px' }}>
                         <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
                           <span>Subtotal</span>
-                          <span className="tabular-nums">${subtotal.toFixed(2)}</span>
+                          <span className="tabular-nums">{formatCurrency(subtotal, currency)}</span>
                         </div>
                         {discountAmount > 0 && (
                           <div className="flex justify-between py-1 text-xs" style={{ color: '#22c55e' }}>
                             <span>Discount</span>
-                            <span className="tabular-nums">-${discountAmount.toFixed(2)}</span>
+                            <span className="tabular-nums">-{formatCurrency(discountAmount, currency)}</span>
                           </div>
                         )}
                         <div className="flex justify-between py-1 text-xs" style={{ borderTop: '1px solid #e5e7eb', color: '#333' }}>
                           <span className="font-medium">Total</span>
-                          <span className="tabular-nums font-medium">${total.toFixed(2)}</span>
+                          <span className="tabular-nums font-medium">{formatCurrency(total, currency)}</span>
                         </div>
                         <div className="flex justify-between py-2 mt-1 rounded px-2 -mx-2"
                           style={{ background: `${tpl.accent}10` }}
                         >
                           <span className="text-xs font-bold" style={{ color: '#111' }}>Quote Total</span>
-                          <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
+                          <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>{formatCurrency(total, currency)}</span>
                         </div>
                       </div>
                     </div>
@@ -1759,11 +1760,11 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{item.name || 'Untitled Item'}</p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {item.quantity} × ${item.rate.toFixed(2)}
+                              {item.quantity} × {formatCurrency(item.rate, currency)}
                               {item.description && <span className="ml-1.5 text-muted-foreground/70">· {item.description}</span>}
                             </p>
                           </div>
-                          <span className="ml-4 font-medium tabular-nums text-sm">${(item.quantity * item.rate).toFixed(2)}</span>
+                          <span className="ml-4 font-medium tabular-nums text-sm">{formatCurrency(item.quantity * item.rate, currency)}</span>
                         </div>
                       ))}
                       <Separator className={tpl.separatorClass} />
@@ -1775,18 +1776,18 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                       <>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Subtotal</span>
-                          <span className="tabular-nums">${subtotal.toFixed(2)}</span>
+                          <span className="tabular-nums">{formatCurrency(subtotal, currency)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Discount</span>
-                          <span className="tabular-nums text-green-600">-${discountAmount.toFixed(2)}</span>
+                          <span className="tabular-nums text-green-600">-{formatCurrency(discountAmount, currency)}</span>
                         </div>
                         <Separator className={tpl.separatorClass} />
                       </>
                     )}
                     <div className="flex justify-between text-sm font-semibold">
                       <span>Total</span>
-                      <span className="tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
+                      <span className="tabular-nums" style={{ color: tpl.accent }}>{formatCurrency(total, currency)}</span>
                     </div>
                   </div>
                 </div>
@@ -1880,8 +1881,8 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                           {item.description && <p style={{ color: '#888', marginTop: '2px' }}>{item.description}</p>}
                         </td>
                         <td style={{ textAlign: 'center', padding: '8px 0', color: '#333' }}>{item.quantity}</td>
-                        <td style={{ textAlign: 'right', padding: '8px 0', color: '#333' }}>${item.rate.toFixed(2)}</td>
-                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>${(item.quantity * item.rate).toFixed(2)}</td>
+                        <td style={{ textAlign: 'right', padding: '8px 0', color: '#333' }}>{formatCurrency(item.rate, currency)}</td>
+                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>{formatCurrency(item.quantity * item.rate, currency)}</td>
                       </tr>
                     )) : (
                       <tr>
@@ -1898,17 +1899,17 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                 <div style={{ marginLeft: 'auto', width: '200px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{formatCurrency(subtotal, currency)}</span>
                   </div>
                   {discountAmount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#22c55e' }}>
                       <span>Discount</span>
-                      <span>-${discountAmount.toFixed(2)}</span>
+                      <span>-{formatCurrency(discountAmount, currency)}</span>
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', borderTop: '1px solid #e5e7eb', color: '#333', fontWeight: 500 }}>
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{formatCurrency(total, currency)}</span>
                   </div>
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
@@ -1916,7 +1917,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                     background: `${tpl.accent}15`,
                   }}>
                     <span style={{ fontSize: '11px', fontWeight: 700 }}>Quote Total</span>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: tpl.accent }}>${total.toFixed(2)}</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: tpl.accent }}>{formatCurrency(total, currency)}</span>
                   </div>
                 </div>
               </div>

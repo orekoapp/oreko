@@ -71,7 +71,7 @@ export default function QuotePortalPage({ params }: QuotePortalPageProps) {
       documentNumber={quote.quoteNumber}
       statusBadge={<QuoteStatusBadge status={quote.isExpired ? 'expired' : quote.status} />}
       onDownloadPdf={() => {
-        // TODO: Implement public PDF download via access token
+        window.open(`/api/download/quote/${quote.id}?token=${accessToken}`, '_blank');
       }}
     >
       <QuotePortalView quote={quote} accessToken={accessToken!} />

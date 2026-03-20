@@ -71,7 +71,7 @@ export default function InvoicePortalPage({ params }: InvoicePortalPageProps) {
       documentNumber={invoice.invoiceNumber}
       statusBadge={<InvoiceStatusBadge status={invoice.status} />}
       onDownloadPdf={() => {
-        window.open(`/api/download/invoice/${invoice.id}`, '_blank');
+        window.open(`/api/download/invoice/${invoice.id}?token=${accessToken}`, '_blank');
       }}
     >
       <InvoicePortalView invoice={invoice} accessToken={accessToken!} />

@@ -1140,7 +1140,7 @@ export function EditInvoiceForm({
                                 </div>
                                 {saved.price > 0 && (
                                   <span className="ml-3 shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
-                                    ${saved.price.toFixed(2)}
+                                    {formatMoney(saved.price, currency)}
                                   </span>
                                 )}
                               </CommandItem>
@@ -1732,8 +1732,8 @@ export function EditInvoiceForm({
                                 {item.description && <p style={{ color: '#888' }}>{item.description}</p>}
                               </td>
                               <td className="py-2 text-center" style={{ color: '#333' }}>{item.quantity}</td>
-                              <td className="py-2 text-right tabular-nums" style={{ color: '#333' }}>${item.rate.toFixed(2)}</td>
-                              <td className="py-2 text-right tabular-nums font-medium" style={{ color: '#111' }}>${(item.quantity * item.rate).toFixed(2)}</td>
+                              <td className="py-2 text-right tabular-nums" style={{ color: '#333' }}>{formatMoney(item.rate, currency)}</td>
+                              <td className="py-2 text-right tabular-nums font-medium" style={{ color: '#111' }}>{formatMoney(item.quantity * item.rate, currency)}</td>
                             </tr>
                           )) : (
                             <tr>
@@ -1751,29 +1751,29 @@ export function EditInvoiceForm({
                       <div className="ml-auto" style={{ width: '200px' }}>
                         <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
                           <span>Subtotal</span>
-                          <span className="tabular-nums">${subtotal.toFixed(2)}</span>
+                          <span className="tabular-nums">{formatMoney(subtotal, currency)}</span>
                         </div>
                         {discountAmount > 0 && (
                           <div className="flex justify-between py-1 text-xs" style={{ color: '#22c55e' }}>
                             <span>Discount</span>
-                            <span className="tabular-nums">-${discountAmount.toFixed(2)}</span>
+                            <span className="tabular-nums">-{formatMoney(discountAmount, currency)}</span>
                           </div>
                         )}
                         {taxAmount > 0 && (
                           <div className="flex justify-between py-1 text-xs" style={{ color: '#666' }}>
                             <span>Tax ({parsedTaxPercent}%)</span>
-                            <span className="tabular-nums">${taxAmount.toFixed(2)}</span>
+                            <span className="tabular-nums">{formatMoney(taxAmount, currency)}</span>
                           </div>
                         )}
                         <div className="flex justify-between py-1 text-xs" style={{ borderTop: '1px solid #e5e7eb', color: '#333' }}>
                           <span className="font-medium">Total</span>
-                          <span className="tabular-nums font-medium">${total.toFixed(2)}</span>
+                          <span className="tabular-nums font-medium">{formatMoney(total, currency)}</span>
                         </div>
                         <div className="flex justify-between py-2 mt-1 rounded px-2 -mx-2"
                           style={{ background: tpl.accentBg.replace('bg-', '').includes('50') ? `${tpl.accent}10` : '#f5f5f5' }}
                         >
                           <span className="text-xs font-bold" style={{ color: '#111' }}>Balance Due</span>
-                          <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
+                          <span className="text-sm font-bold tabular-nums" style={{ color: tpl.accent }}>{formatMoney(total, currency)}</span>
                         </div>
                       </div>
                     </div>
@@ -1844,11 +1844,11 @@ export function EditInvoiceForm({
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{item.name || 'Untitled Item'}</p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {item.quantity} &times; ${item.rate.toFixed(2)}
+                              {item.quantity} &times; {formatMoney(item.rate, currency)}
                               {item.description && <span className="ml-1.5 text-muted-foreground/70">&middot; {item.description}</span>}
                             </p>
                           </div>
-                          <span className="ml-4 font-medium tabular-nums text-sm">${(item.quantity * item.rate).toFixed(2)}</span>
+                          <span className="ml-4 font-medium tabular-nums text-sm">{formatMoney(item.quantity * item.rate, currency)}</span>
                         </div>
                       ))}
                       <Separator className={tpl.separatorClass} />
@@ -1860,11 +1860,11 @@ export function EditInvoiceForm({
                       <>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Subtotal</span>
-                          <span className="tabular-nums">${subtotal.toFixed(2)}</span>
+                          <span className="tabular-nums">{formatMoney(subtotal, currency)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Discount</span>
-                          <span className="tabular-nums text-green-600">-${discountAmount.toFixed(2)}</span>
+                          <span className="tabular-nums text-green-600">-{formatMoney(discountAmount, currency)}</span>
                         </div>
                         <Separator className={tpl.separatorClass} />
                       </>
@@ -1872,12 +1872,12 @@ export function EditInvoiceForm({
                     {taxAmount > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Tax ({parsedTaxPercent}%)</span>
-                        <span className="tabular-nums">${taxAmount.toFixed(2)}</span>
+                        <span className="tabular-nums">{formatMoney(taxAmount, currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm font-semibold">
                       <span>Total Due</span>
-                      <span className="tabular-nums" style={{ color: tpl.accent }}>${total.toFixed(2)}</span>
+                      <span className="tabular-nums" style={{ color: tpl.accent }}>{formatMoney(total, currency)}</span>
                     </div>
                   </div>
                 </div>
@@ -1972,8 +1972,8 @@ export function EditInvoiceForm({
                           {item.description && <p style={{ color: '#888', marginTop: '2px' }}>{item.description}</p>}
                         </td>
                         <td style={{ textAlign: 'center', padding: '8px 0', color: '#333' }}>{item.quantity}</td>
-                        <td style={{ textAlign: 'right', padding: '8px 0', color: '#333' }}>${item.rate.toFixed(2)}</td>
-                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>${(item.quantity * item.rate).toFixed(2)}</td>
+                        <td style={{ textAlign: 'right', padding: '8px 0', color: '#333' }}>{formatMoney(item.rate, currency)}</td>
+                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>{formatMoney(item.quantity * item.rate, currency)}</td>
                       </tr>
                     )) : (
                       <tr>
@@ -1991,23 +1991,23 @@ export function EditInvoiceForm({
                 <div style={{ marginLeft: 'auto', width: '200px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{formatMoney(subtotal, currency)}</span>
                   </div>
                   {discountAmount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#22c55e' }}>
                       <span>Discount</span>
-                      <span>-${discountAmount.toFixed(2)}</span>
+                      <span>-{formatMoney(discountAmount, currency)}</span>
                     </div>
                   )}
                   {taxAmount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
                       <span>Tax ({parsedTaxPercent}%)</span>
-                      <span>${taxAmount.toFixed(2)}</span>
+                      <span>{formatMoney(taxAmount, currency)}</span>
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', borderTop: '1px solid #e5e7eb', color: '#333', fontWeight: 500 }}>
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{formatMoney(total, currency)}</span>
                   </div>
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
@@ -2015,7 +2015,7 @@ export function EditInvoiceForm({
                     background: `${tpl.accent}15`,
                   }}>
                     <span style={{ fontSize: '11px', fontWeight: 700 }}>Balance Due</span>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: tpl.accent }}>${total.toFixed(2)}</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: tpl.accent }}>{formatMoney(total, currency)}</span>
                   </div>
                 </div>
               </div>

@@ -256,7 +256,7 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
               Pay {formatCurrency(invoice.totals.amountDue, currency)}
             </button>
             <button
-              onClick={() => window.open(`/api/download/invoice/${invoice.id}`, '_blank')}
+              onClick={() => window.open(`/api/download/invoice/${invoice.id}?token=${accessToken}`, '_blank')}
               className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-border text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50"
             >
               <Download className="h-4 w-4" />
@@ -265,7 +265,7 @@ export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewPro
           </>
         ) : (
           <button
-            onClick={() => window.open(`/api/download/invoice/${invoice.id}`, '_blank')}
+            onClick={() => window.open(`/api/download/invoice/${invoice.id}?token=${accessToken}`, '_blank')}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-medium text-white transition-colors"
             style={{ backgroundColor: accentColor }}
           >

@@ -292,7 +292,7 @@ export function QuotePortalView({ quote, accessToken }: QuotePortalViewProps) {
           </div>
         ) : (
           <button
-            onClick={() => window.open(`/api/pdf/quote/${quote.id}`, '_blank')}
+            onClick={() => window.open(`/api/download/quote/${quote.id}?token=${accessToken}`, '_blank')}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-medium text-white transition-colors"
             style={{ backgroundColor: accentColor }}
           >
