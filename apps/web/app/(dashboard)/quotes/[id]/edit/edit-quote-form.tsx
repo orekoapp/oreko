@@ -93,6 +93,7 @@ interface QuoteData {
   projectId: string | null;
   quoteNumber: string;
   status: string;
+  currency?: string;
   title: string;
   issueDate: string;
   expirationDate: string | null;
