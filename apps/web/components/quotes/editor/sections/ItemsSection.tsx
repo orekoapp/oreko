@@ -48,6 +48,7 @@ interface ItemsSectionProps {
   onAddBlock: (block: QuoteBlock, index?: number) => void;
   onUpdateBlock: (blockId: string, content: Partial<QuoteBlock['content']>) => void;
   onRemoveBlock: (blockId: string) => void;
+  currency?: string;
 }
 
 export function ItemsSection({
@@ -55,6 +56,7 @@ export function ItemsSection({
   onAddBlock,
   onUpdateBlock,
   onRemoveBlock,
+  currency = 'USD',
 }: ItemsSectionProps) {
   const [addItemOpen, setAddItemOpen] = useState(false);
 
@@ -148,7 +150,7 @@ export function ItemsSection({
                   />
                 </div>
                 <div className="col-span-2 text-right py-2 font-medium">
-                  {formatCurrency(item.content.quantity * item.content.rate)}
+                  {formatCurrency(item.content.quantity * item.content.rate, currency)}
                 </div>
                 <div className="col-span-1 flex justify-end">
                   <Button

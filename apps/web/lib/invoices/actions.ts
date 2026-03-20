@@ -616,7 +616,7 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
     accessToken: invoice.accessToken,
     status: invoice.status as InvoiceStatus,
     title: invoice.title || 'Invoice',
-    currency: invoice.currency || 'USD',
+    currency: invoice.currency,
     issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
     dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
     lineItems: invoice.lineItems.map((item: (typeof invoice.lineItems)[number]) => ({
@@ -719,7 +719,7 @@ export async function getInvoices(filters?: {
       // Bug #176: Partially-paid overdue invoices should also show as overdue
       status: (isOverdue ? 'overdue' : invoice.status) as InvoiceStatus,
       title: invoice.title || 'Invoice',
-      currency: invoice.currency || 'USD',
+      currency: invoice.currency,
       issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
       dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
       total: toNumber(invoice.total),

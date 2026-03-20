@@ -13,6 +13,7 @@ interface CreditNoteItem {
   creditNoteNumber: string;
   reason: string;
   amount: number;
+  currency: string;
   status: string;
   issuedAt: string | null;
   createdAt: string;
@@ -28,10 +29,10 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | '
   voided: 'destructive',
 };
 
-function formatCurrency(amount: number) {
+function formatCurrency(amount: number, currency: string = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
   }).format(amount);
 }
 
@@ -82,7 +83,7 @@ export function CreditNotesList({ creditNotes }: CreditNotesListProps) {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="font-semibold text-sm">{formatCurrency(cn.amount)}</span>
+            <span className="font-semibold text-sm">{formatCurrency(cn.amount, cn.currency)}</span>
             {cn.status === 'draft' && (
               <Button
                 variant="outline"

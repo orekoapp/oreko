@@ -95,7 +95,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               quoteId={quote.id}
               quoteTitle={quote.title}
               total={quote.totals.total}
-              currency={quote.settings.currency}
+              currency={quote.currency}
             />
           )}
         </div>
@@ -159,10 +159,10 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                             </div>
                             <div className="text-right">
                               <p className="text-sm text-muted-foreground">
-                                {block.content.quantity} x {formatCurrency(block.content.rate)}
+                                {block.content.quantity} x {formatCurrency(block.content.rate, quote.currency)}
                               </p>
                               <p className="font-semibold">
-                                {formatCurrency(lineTotal)}
+                                {formatCurrency(lineTotal, quote.currency)}
                               </p>
                             </div>
                           </div>
@@ -176,23 +176,23 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                   <div className="ml-auto w-64 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>{formatCurrency(quote.totals.subtotal)}</span>
+                      <span>{formatCurrency(quote.totals.subtotal, quote.currency)}</span>
                     </div>
                     {quote.totals.discountAmount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
-                        <span>-{formatCurrency(quote.totals.discountAmount)}</span>
+                        <span>-{formatCurrency(quote.totals.discountAmount, quote.currency)}</span>
                       </div>
                     )}
                     {quote.totals.taxTotal > 0 && (
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>{formatCurrency(quote.totals.taxTotal)}</span>
+                        <span>{formatCurrency(quote.totals.taxTotal, quote.currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between border-t pt-2 text-lg font-bold">
                       <span>Total</span>
-                      <span>{formatCurrency(quote.totals.total)}</span>
+                      <span>{formatCurrency(quote.totals.total, quote.currency)}</span>
                     </div>
                   </div>
                 </div>
@@ -228,7 +228,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(quote.totals.total)}
+                  {formatCurrency(quote.totals.total, quote.currency)}
                 </p>
               </div>
               <div>

@@ -14,6 +14,7 @@ export interface PublicInvoiceData {
   invoiceNumber: string;
   status: string;
   title: string;
+  currency: string;
   issueDate: string;
   dueDate: string;
   isOverdue: boolean;
@@ -186,6 +187,7 @@ export async function getInvoiceByAccessToken(
       invoiceNumber: invoice.invoiceNumber,
       status: isOverdue ? 'overdue' : invoice.status,
       title: invoice.title || 'Invoice',
+      currency: invoice.currency || (settings.currency as string) || 'USD',
       issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
       dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
       isOverdue,

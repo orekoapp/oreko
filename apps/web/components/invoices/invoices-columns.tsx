@@ -192,7 +192,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const total = row.getValue('total') as number;
         const amountDue = row.original.amountDue;
         const status = row.original.status;
-        const curr = row.original.currency || 'USD';
+        const curr = row.original.currency;
 
         return (
           <div className="whitespace-nowrap">

@@ -8,6 +8,7 @@ import {
   getClientLTVData,
   getRevenueForecast,
 } from '@/lib/dashboard/actions';
+import { getWorkspaceCurrency } from '@/lib/settings/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,11 +23,13 @@ async function AnalyticsContent() {
     topClients,
     clientLTV,
     revenueForecast,
+    currency,
   ] = await Promise.all([
     getAnalyticsStats(),
     getTopClientsByRevenue(5),
     getClientLTVData(5),
     getRevenueForecast(6, 3),
+    getWorkspaceCurrency(),
   ]);
 
   return (
@@ -35,6 +38,7 @@ async function AnalyticsContent() {
       topClients={topClients}
       clientLTV={clientLTV.clients}
       revenueForecast={revenueForecast}
+      currency={currency}
     />
   );
 }

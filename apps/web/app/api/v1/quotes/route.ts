@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       projectId: projectId || null,
       quoteNumber,
       title,
-      currency: currency || 'USD',
+      currency: currency || (await prisma.businessProfile.findUnique({ where: { workspaceId }, select: { currency: true } }))?.currency || 'USD',
       subtotal,
       taxTotal,
       total: subtotal + taxTotal,

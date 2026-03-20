@@ -89,6 +89,7 @@ export function QuoteEditor() {
 
   const { logoUrl, isUploadingLogo, handleLogoUpload } = useLogoUpload();
   const { serviceItems, subtotal, taxAmount, total } = useQuoteTotals(document?.blocks, taxRate);
+  const editorCurrency = document?.currency || document?.settings.currency || 'USD';
 
   const handleSwitchToBuilder = () => {
     if (client?.id) {
@@ -185,6 +186,7 @@ export function QuoteEditor() {
               onAddBlock={addBlock}
               onUpdateBlock={updateBlock}
               onRemoveBlock={removeBlock}
+              currency={editorCurrency}
             />
           )}
 
@@ -280,7 +282,7 @@ export function QuoteEditor() {
                     {document?.quoteNumber || 'DRAFT'}
                   </p>
                   <p className="text-2xl font-bold mt-2">
-                    {formatCurrency(total)}
+                    {formatCurrency(total, editorCurrency)}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Valid for {expirationDays} days
@@ -330,17 +332,17 @@ export function QuoteEditor() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
-                    <span>{formatCurrency(subtotal)}</span>
+                    <span>{formatCurrency(subtotal, editorCurrency)}</span>
                   </div>
                   {taxAmount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span>Tax ({taxRate}%)</span>
-                      <span>{formatCurrency(taxAmount)}</span>
+                      <span>{formatCurrency(taxAmount, editorCurrency)}</span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold pt-2 border-t">
                     <span>Total</span>
-                    <span>{formatCurrency(total)}</span>
+                    <span>{formatCurrency(total, editorCurrency)}</span>
                   </div>
                 </div>
 
@@ -363,7 +365,7 @@ export function QuoteEditor() {
                     </p>
                     <p className="text-muted-foreground mt-2">
                       Please find attached your quote for &quot;{title || 'New Quote'}&quot;
-                      totaling {formatCurrency(total)}.
+                      totaling {formatCurrency(total, editorCurrency)}.
                     </p>
                     <p className="text-muted-foreground mt-2">
                       This quote is valid for {expirationDays} days.

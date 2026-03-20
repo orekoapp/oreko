@@ -8,6 +8,7 @@ interface StatsCardsProps {
   stats: DashboardStats;
   revenueData?: RevenueDataPoint[];
   revenueSparkline?: unknown[];
+  currency?: string;
 }
 
 interface StatItemProps {
@@ -49,7 +50,7 @@ function StatItem({ title, value, change, changeLabel }: StatItemProps) {
   );
 }
 
-export function StatsCards({ stats }: StatsCardsProps) {
+export function StatsCards({ stats, currency = 'USD' }: StatsCardsProps) {
   // Bug #6/#7: Guard against division by zero
   const revenueDenominator = stats.totalRevenue - stats.revenueThisMonth;
   const revenueChange = revenueDenominator > 0
@@ -59,25 +60,25 @@ export function StatsCards({ stats }: StatsCardsProps) {
   const cards = [
     {
       title: 'Revenue this month',
-      value: formatCurrency(stats.revenueThisMonth),
+      value: formatCurrency(stats.revenueThisMonth, currency),
       change: Math.min(revenueChange, 999),
       changeLabel: 'vs last month',
     },
     {
       title: 'Total Revenue',
-      value: formatCurrency(stats.totalRevenue),
+      value: formatCurrency(stats.totalRevenue, currency),
       // Bug #161: Removed hardcoded 12.2% fallback — show actual value
       change: revenueChange,
       changeLabel: 'all time',
     },
     {
       title: 'Outstanding',
-      value: formatCurrency(stats.outstandingAmount),
+      value: formatCurrency(stats.outstandingAmount, currency),
       change: stats.overdueAmount > 0 && stats.outstandingAmount > 0
         ? -(stats.overdueAmount / stats.outstandingAmount) * 100
         : 0,
       changeLabel: stats.overdueAmount > 0
-        ? `${formatCurrency(stats.overdueAmount)} overdue`
+        ? `${formatCurrency(stats.overdueAmount, currency)} overdue`
         : 'No overdue',
     },
     {

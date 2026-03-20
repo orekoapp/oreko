@@ -57,10 +57,10 @@ function getDateRangeFromPreset(preset: string): DateRange {
   }
 }
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -113,6 +113,7 @@ interface AnalyticsDashboardProps {
   topClients?: TopClient[];
   clientLTV?: ClientLTV[];
   revenueForecast?: ForecastDataPoint[];
+  currency?: string;
 }
 
 export function AnalyticsDashboard({
@@ -120,6 +121,7 @@ export function AnalyticsDashboard({
   topClients,
   clientLTV,
   revenueForecast,
+  currency = 'USD',
 }: AnalyticsDashboardProps) {
   const [selectedPreset, setSelectedPreset] = useState('30d');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(
@@ -169,7 +171,7 @@ export function AnalyticsDashboard({
       <div className="grid grid-cols-2 lg:grid-cols-4 rounded-lg border bg-card divide-x divide-border">
         <StatItem
           title="Total Revenue"
-          value={formatCurrency(stats.totalRevenue)}
+          value={formatCurrency(stats.totalRevenue, currency)}
           trend={revenueTrend}
           detail="vs last month"
         />
@@ -186,8 +188,8 @@ export function AnalyticsDashboard({
         />
         <StatItem
           title="Outstanding"
-          value={formatCurrency(stats.outstandingAmount)}
-          detail={`${formatCurrency(stats.overdueAmount)} overdue`}
+          value={formatCurrency(stats.outstandingAmount, currency)}
+          detail={`${formatCurrency(stats.overdueAmount, currency)} overdue`}
         />
       </div>
 

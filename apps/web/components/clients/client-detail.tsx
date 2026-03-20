@@ -40,9 +40,10 @@ import { toast } from 'sonner';
 interface ClientDetailProps {
   client: ClientDetailType;
   activities: ClientActivity[];
+  currency?: string;
 }
 
-export function ClientDetail({ client, activities }: ClientDetailProps) {
+export function ClientDetail({ client, activities, currency = 'USD' }: ClientDetailProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -191,13 +192,13 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
           <div>
             <p className="text-sm text-muted-foreground">Total Revenue</p>
             <p className="text-2xl font-semibold tracking-tight mt-1">
-              {formatCurrency(totalRevenue)}
+              {formatCurrency(totalRevenue, currency)}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Outstanding</p>
             <p className="text-2xl font-semibold tracking-tight mt-1 text-amber-600">
-              {formatCurrency(outstanding)}
+              {formatCurrency(outstanding, currency)}
             </p>
           </div>
           <div>
@@ -256,7 +257,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium tabular-nums">
-                        {formatCurrency(Number(invoice.total))}
+                        {formatCurrency(Number(invoice.total), (invoice as any).currency || currency)}
                       </span>
                       <StatusBadge status={invoice.status} />
                     </div>
@@ -291,7 +292,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium tabular-nums">
-                        {formatCurrency(Number(quote.total))}
+                        {formatCurrency(Number(quote.total), (quote as any).currency || currency)}
                       </span>
                       <StatusBadge status={quote.status} />
                     </div>
@@ -385,7 +386,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
                       <p className="text-sm">{item.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {formatRelativeDate(item.date)}
-                        {item.amount != null && ` \u00b7 ${formatCurrency(item.amount)}`}
+                        {item.amount != null && ` \u00b7 ${formatCurrency(item.amount, currency)}`}
                       </p>
                     </div>
                   </div>

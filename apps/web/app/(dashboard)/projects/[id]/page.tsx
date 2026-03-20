@@ -7,6 +7,7 @@ import {
   getProjectNotes,
   getProjectContracts,
 } from '@/lib/projects/actions';
+import { getWorkspaceCurrency } from '@/lib/settings/actions';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -36,12 +37,13 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
 
   try {
-    const [project, stats, activity, notes, contracts] = await Promise.all([
+    const [project, stats, activity, notes, contracts, currency] = await Promise.all([
       getProject(id),
       getProjectStats(id),
       getProjectActivity(id),
       getProjectNotes(id),
       getProjectContracts(id),
+      getWorkspaceCurrency(),
     ]);
 
     return (
@@ -51,6 +53,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         activity={activity}
         notes={notes}
         contracts={contracts}
+        currency={currency}
       />
     );
   } catch {

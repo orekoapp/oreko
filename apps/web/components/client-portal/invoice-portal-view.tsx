@@ -37,7 +37,7 @@ function formatDate(date: string | Date): string {
 
 export function InvoicePortalView({ invoice, accessToken }: InvoicePortalViewProps) {
   const [showDetails, setShowDetails] = useState(true);
-  const currency = invoice.settings.currency;
+  const currency = invoice.currency;
   const accentColor = invoice.branding?.primaryColor || ACCENT;
   const accentLight = invoice.branding?.primaryColor
     ? `${invoice.branding.primaryColor}18`

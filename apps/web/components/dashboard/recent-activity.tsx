@@ -22,6 +22,7 @@ import type { ActivityItem } from '@/lib/dashboard/types';
 
 interface RecentActivityProps {
   activities: ActivityItem[];
+  currency?: string;
 }
 
 const activityIcons: Record<ActivityItem['type'], typeof FileText> = {
@@ -54,7 +55,7 @@ const activityColors: Record<ActivityItem['type'], string> = {
   client_created: 'text-[var(--primary-300)]',
 };
 
-export function RecentActivity({ activities }: RecentActivityProps) {
+export function RecentActivity({ activities, currency = 'USD' }: RecentActivityProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-4">
@@ -105,7 +106,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                           <>
                             <span>&middot;</span>
                             <span className="tabular-nums">
-                              {formatCurrency(activity.amount)}
+                              {formatCurrency(activity.amount, currency)}
                             </span>
                           </>
                         )}

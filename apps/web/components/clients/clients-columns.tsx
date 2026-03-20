@@ -15,10 +15,11 @@ interface ClientColumnsOptions {
   onDelete?: (client: ClientListItem) => void;
   onCreateQuote?: (client: ClientListItem) => void;
   onCreateInvoice?: (client: ClientListItem) => void;
+  currency?: string;
 }
 
 export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<ClientListItem>[] {
-  const { onView, onEdit, onDelete, onCreateQuote, onCreateInvoice } = options;
+  const { onView, onEdit, onDelete, onCreateQuote, onCreateInvoice, currency = 'USD' } = options;
 
   return [
     {
@@ -108,7 +109,7 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
       cell: ({ row }) => {
         const revenue = row.original.totalRevenue as number;
         return (
-          <div className="font-medium">{formatCurrency(revenue)}</div>
+          <div className="font-medium">{formatCurrency(revenue, currency)}</div>
         );
       },
     },

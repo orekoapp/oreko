@@ -5,6 +5,7 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { RecentQuotes, RecentInvoices } from '@/components/dashboard/recent-items';
 import { AnalyticsSection } from '@/components/dashboard/analytics-section';
 import { getDashboardData } from '@/lib/dashboard/actions';
+import { getWorkspaceCurrency } from '@/lib/settings/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +30,15 @@ function formatToday() {
 }
 
 async function DashboardContent() {
-  const data = await getDashboardData();
+  const [data, currency] = await Promise.all([
+    getDashboardData(),
+    getWorkspaceCurrency(),
+  ]);
 
   return (
     <>
       {/* Stats Cards */}
-      <StatsCards stats={data.stats} revenueData={data.revenueData} />
+      <StatsCards stats={data.stats} revenueData={data.revenueData} currency={currency} />
 
       {/* Revenue Chart (full width) */}
       <AnalyticsSection revenueData={data.revenueData} />
@@ -42,14 +46,14 @@ async function DashboardContent() {
       {/* Activity + Recent Items (2-column layout) */}
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-2">
-          <RecentActivity activities={data.recentActivity} />
+          <RecentActivity activities={data.recentActivity} currency={currency} />
         </div>
         <div className="lg:col-span-3 flex flex-col gap-6">
           <div className="flex-1 min-h-0">
-            <RecentQuotes quotes={data.recentQuotes} />
+            <RecentQuotes quotes={data.recentQuotes} currency={currency} />
           </div>
           <div className="flex-1 min-h-0">
-            <RecentInvoices invoices={data.recentInvoices} />
+            <RecentInvoices invoices={data.recentInvoices} currency={currency} />
           </div>
         </div>
       </div>

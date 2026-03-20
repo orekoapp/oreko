@@ -17,10 +17,10 @@ interface ClientLifetimeValueCardProps {
   data?: ClientLTV[];
 }
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);

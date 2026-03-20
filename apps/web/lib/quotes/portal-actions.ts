@@ -16,6 +16,7 @@ export interface PublicQuoteData {
   quoteNumber: string;
   status: string;
   title: string;
+  currency: string;
   issueDate: string;
   expirationDate: string | null;
   isExpired: boolean;
@@ -200,6 +201,7 @@ export async function getQuoteByAccessToken(
       quoteNumber: quote.quoteNumber,
       status: quote.status,
       title: quote.title || 'Quote',
+      currency: quote.currency || (settings.currency as string) || 'USD',
       issueDate: quote.issueDate.toISOString().split('T')[0] ?? '',
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] ?? null,
       isExpired,

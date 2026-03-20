@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import { getClientById } from '@/lib/clients/actions';
+import { getWorkspaceCurrency } from '@/lib/settings/actions';
 
 export interface ClientInfo {
   id: string;
@@ -46,45 +47,91 @@ export function useQuoteForm() {
   useEffect(() => {
     if (hasInitializedRef.current && document?.id) return;
     if (!document || !document.id) {
-      const now = new Date().toISOString();
-      const expDate = new Date();
-      expDate.setDate(expDate.getDate() + 30);
+      // Fetch workspace currency for new quotes
+      getWorkspaceCurrency().then((workspaceCurrency) => {
+        const now = new Date().toISOString();
+        const expDate = new Date();
+        expDate.setDate(expDate.getDate() + 30);
 
-      initDocument({
-        id: `temp-${Date.now()}`,
-        workspaceId: 'default',
-        clientId: clientId || '',
-        projectId: null,
-        quoteNumber: 'DRAFT',
-        status: 'draft',
-        title: 'New Quote',
-        issueDate: now,
-        expirationDate: expDate.toISOString(),
-        blocks: [],
-        settings: {
-          requireSignature: true,
-          autoConvertToInvoice: false,
-          depositRequired: false,
-          depositType: 'percentage',
-          depositValue: 50,
-          showLineItemPrices: true,
-          allowPartialAcceptance: false,
+        initDocument({
+          id: `temp-${Date.now()}`,
+          workspaceId: 'default',
+          clientId: clientId || '',
+          projectId: null,
+          quoteNumber: 'DRAFT',
+          status: 'draft',
+          title: 'New Quote',
+          currency: workspaceCurrency,
+          issueDate: now,
+          expirationDate: expDate.toISOString(),
+          blocks: [],
+          settings: {
+            requireSignature: true,
+            autoConvertToInvoice: false,
+            depositRequired: false,
+            depositType: 'percentage',
+            depositValue: 50,
+            showLineItemPrices: true,
+            allowPartialAcceptance: false,
+            currency: workspaceCurrency,
+            taxInclusive: false,
+          },
+          totals: {
+            subtotal: 0,
+            discountType: null,
+            discountValue: null,
+            discountAmount: 0,
+            taxTotal: 0,
+            total: 0,
+          },
+          notes: '',
+          terms: '',
+          internalNotes: '',
+        });
+        hasInitializedRef.current = true;
+      }).catch(() => {
+        // Fallback if workspace currency fetch fails
+        const now = new Date().toISOString();
+        const expDate = new Date();
+        expDate.setDate(expDate.getDate() + 30);
+
+        initDocument({
+          id: `temp-${Date.now()}`,
+          workspaceId: 'default',
+          clientId: clientId || '',
+          projectId: null,
+          quoteNumber: 'DRAFT',
+          status: 'draft',
+          title: 'New Quote',
           currency: 'USD',
-          taxInclusive: false,
-        },
-        totals: {
-          subtotal: 0,
-          discountType: null,
-          discountValue: null,
-          discountAmount: 0,
-          taxTotal: 0,
-          total: 0,
-        },
-        notes: '',
-        terms: '',
-        internalNotes: '',
+          issueDate: now,
+          expirationDate: expDate.toISOString(),
+          blocks: [],
+          settings: {
+            requireSignature: true,
+            autoConvertToInvoice: false,
+            depositRequired: false,
+            depositType: 'percentage',
+            depositValue: 50,
+            showLineItemPrices: true,
+            allowPartialAcceptance: false,
+            currency: 'USD',
+            taxInclusive: false,
+          },
+          totals: {
+            subtotal: 0,
+            discountType: null,
+            discountValue: null,
+            discountAmount: 0,
+            taxTotal: 0,
+            total: 0,
+          },
+          notes: '',
+          terms: '',
+          internalNotes: '',
+        });
+        hasInitializedRef.current = true;
       });
-      hasInitializedRef.current = true;
     }
   }, [document, initDocument, clientId]);
 

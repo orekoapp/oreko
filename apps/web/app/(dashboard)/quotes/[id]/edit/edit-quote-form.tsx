@@ -93,7 +93,7 @@ interface QuoteData {
   projectId: string | null;
   quoteNumber: string;
   status: string;
-  currency?: string;
+  currency: string;
   title: string;
   issueDate: string;
   expirationDate: string | null;
@@ -276,7 +276,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const currency = quote.currency || quote.settings.currency || 'USD';
+  const currency = quote.currency;
 
   // Real clients from DB
   const [clients, setClients] = useState<Array<{ id: string; name: string; email: string; company: string | null }>>([]);

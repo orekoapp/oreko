@@ -38,6 +38,7 @@ export interface PublicQuoteData {
   id: string;
   quoteNumber: string;
   title: string;
+  currency: string;
   status: QuoteStatus;
   issueDate: string;
   expirationDate: string | null;
@@ -69,6 +70,7 @@ export interface PublicInvoiceData {
   id: string;
   invoiceNumber: string;
   title: string;
+  currency: string;
   status: InvoiceStatus;
   issueDate: string;
   dueDate: string;

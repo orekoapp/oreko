@@ -170,7 +170,7 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
       // Bug #62: Use quote's currency field instead of hardcoded USD
       cell: ({ row }) => {
         return (
-          <div className="font-medium">{formatCurrency(row.getValue('total'), row.original.currency || 'USD')}</div>
+          <div className="font-medium">{formatCurrency(row.getValue('total'), row.original.currency)}</div>
         );
       },
     },

@@ -116,23 +116,23 @@ export function DocumentCanvas() {
                   <div className="w-64 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>{formatCurrency(document.totals.subtotal)}</span>
+                      <span>{formatCurrency(document.totals.subtotal, document.currency || document.settings.currency)}</span>
                     </div>
                     {document.totals.discountAmount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
-                        <span>-{formatCurrency(document.totals.discountAmount)}</span>
+                        <span>-{formatCurrency(document.totals.discountAmount, document.currency || document.settings.currency)}</span>
                       </div>
                     )}
                     {document.totals.taxTotal > 0 && (
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>{formatCurrency(document.totals.taxTotal)}</span>
+                        <span>{formatCurrency(document.totals.taxTotal, document.currency || document.settings.currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between border-t pt-2 text-lg font-bold">
                       <span>Total</span>
-                      <span>{formatCurrency(document.totals.total)}</span>
+                      <span>{formatCurrency(document.totals.total, document.currency || document.settings.currency)}</span>
                     </div>
                   </div>
                 </div>

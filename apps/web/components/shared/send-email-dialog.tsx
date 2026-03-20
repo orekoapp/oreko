@@ -59,6 +59,7 @@ interface SendEmailDialogProps {
   // Preview data
   businessName?: string;
   total?: number;
+  currency?: string;
   dueDate?: string;
   lineItems?: LineItemPreview[];
   notes?: string;
@@ -70,10 +71,10 @@ interface SendEmailDialogProps {
 const ACCENT = '#3786b3';
 const ACCENT_LIGHT = '#e3f2fa';
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
   }).format(amount);
 }
 
@@ -97,6 +98,7 @@ export function SendEmailDialog({
   recipientName,
   businessName = 'Your Business',
   total = 0,
+  currency: docCurrency = 'USD',
   dueDate,
   lineItems = [],
   notes,
@@ -175,12 +177,12 @@ export function SendEmailDialog({
       .replace(/\{\{quoteNumber\}\}/gi, documentNumber || '')
       .replace(/\{\{invoice_number\}\}/gi, documentNumber || '')
       .replace(/\{\{invoiceNumber\}\}/gi, documentNumber || '')
-      .replace(/\{\{quote_total\}\}/gi, total ? formatCurrency(total) : '$0.00')
-      .replace(/\{\{quoteTotal\}\}/gi, total ? formatCurrency(total) : '$0.00')
-      .replace(/\{\{invoice_total\}\}/gi, total ? formatCurrency(total) : '$0.00')
-      .replace(/\{\{invoiceTotal\}\}/gi, total ? formatCurrency(total) : '$0.00')
-      .replace(/\{\{total\}\}/gi, total ? formatCurrency(total) : '$0.00')
-      .replace(/\{\{amount\}\}/gi, total ? formatCurrency(total) : '$0.00')
+      .replace(/\{\{quote_total\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{quoteTotal\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{invoice_total\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{invoiceTotal\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{total\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{amount\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
       .replace(/\{\{due_date\}\}/gi, dueDate ? formatDate(dueDate) : '')
       .replace(/\{\{dueDate\}\}/gi, dueDate ? formatDate(dueDate) : '')
       .replace(/\{\{quote_valid_until\}\}/gi, dueDate ? formatDate(dueDate) : '')
@@ -570,7 +572,7 @@ export function SendEmailDialog({
                               {item.name || 'Untitled Item'}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {item.quantity} &times; {formatCurrency(item.rate)}
+                              {item.quantity} &times; {formatCurrency(item.rate, docCurrency)}
                               {item.description && (
                                 <span className="ml-1.5 text-muted-foreground/70">
                                   &middot; {item.description}
@@ -579,7 +581,7 @@ export function SendEmailDialog({
                             </p>
                           </div>
                           <span className="ml-4 font-medium tabular-nums text-sm">
-                            {formatCurrency(item.amount)}
+                            {formatCurrency(item.amount, docCurrency)}
                           </span>
                         </div>
                       ))}
@@ -592,7 +594,7 @@ export function SendEmailDialog({
                     <div className="flex justify-between text-sm font-semibold">
                       <span>{type === 'invoice' ? 'Total Due' : 'Total'}</span>
                       <span className="tabular-nums" style={{ color: ACCENT }}>
-                        {formatCurrency(total)}
+                        {formatCurrency(total, docCurrency)}
                       </span>
                     </div>
                   )}

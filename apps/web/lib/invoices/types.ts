@@ -143,6 +143,8 @@ export interface UpdateInvoiceData {
   internalNotes?: string;
 }
 
+// Note: default currency here is a fallback only; actual currency is set
+// from workspace settings when creating a new invoice or from the document itself.
 export const DEFAULT_INVOICE_SETTINGS: InvoiceSettings = {
   currency: 'USD',
   showLineItemPrices: true,

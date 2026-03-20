@@ -68,8 +68,8 @@ const paymentTermsLabel: Record<string, string> = {
 
 type TemplateLineItem = InvoiceTemplateLineItem;
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+function formatCurrency(amount: number, currency: string = 'USD') {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
 interface InvoiceTemplatesDataTableProps {

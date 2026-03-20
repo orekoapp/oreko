@@ -309,7 +309,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                       {quote.client?.name || 'Quote'}
                     </h3>
                     <p className="text-3xl font-bold tracking-tight mt-1" style={{ color: ACCENT }}>
-                      {formatCurrency(quote.totals.total)}
+                      {formatCurrency(quote.totals.total, quote.currency)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Quote #{quote.quoteNumber} &middot; {quote.expirationDate ? `Valid until ${formatDate(String(quote.expirationDate))}` : `Issued ${formatDate(String(quote.issueDate))}`}
@@ -358,7 +358,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                                   {item.name || 'Untitled Item'}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {item.quantity} &times; {formatCurrency(item.rate)}
+                                  {item.quantity} &times; {formatCurrency(item.rate, quote.currency)}
                                   {item.description && (
                                     <span className="ml-1.5 text-muted-foreground/70">
                                       &middot; {item.description}
@@ -367,7 +367,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                                 </p>
                               </div>
                               <span className="ml-4 font-medium tabular-nums text-sm">
-                                {formatCurrency(item.amount)}
+                                {formatCurrency(item.amount, quote.currency)}
                               </span>
                             </div>
                           ))}
@@ -379,11 +379,11 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                             <div className="space-y-2 mb-3">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span className="tabular-nums">{formatCurrency(quote.totals.subtotal)}</span>
+                                <span className="tabular-nums">{formatCurrency(quote.totals.subtotal, quote.currency)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Discount</span>
-                                <span className="tabular-nums text-green-600">-{formatCurrency(quote.totals.discountAmount)}</span>
+                                <span className="tabular-nums text-green-600">-{formatCurrency(quote.totals.discountAmount, quote.currency)}</span>
                               </div>
                             </div>
                           )}
@@ -394,12 +394,12 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                               {quote.totals.discountAmount === 0 && (
                                 <div className="flex justify-between text-sm">
                                   <span className="text-muted-foreground">Subtotal</span>
-                                  <span className="tabular-nums">{formatCurrency(quote.totals.subtotal)}</span>
+                                  <span className="tabular-nums">{formatCurrency(quote.totals.subtotal, quote.currency)}</span>
                                 </div>
                               )}
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Tax</span>
-                                <span className="tabular-nums">{formatCurrency(quote.totals.taxTotal)}</span>
+                                <span className="tabular-nums">{formatCurrency(quote.totals.taxTotal, quote.currency)}</span>
                               </div>
                             </div>
                           )}
@@ -414,7 +414,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                           >
                             <span className="font-semibold text-sm">Total</span>
                             <span className="text-lg font-bold tabular-nums" style={{ color: ACCENT }}>
-                              {formatCurrency(quote.totals.total)}
+                              {formatCurrency(quote.totals.total, quote.currency)}
                             </span>
                           </div>
                         </div>
@@ -491,6 +491,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
           recipientName={sendTarget.client?.name || ''}
           businessName={businessName}
           total={sendTarget.total}
+          currency={sendTarget.currency}
           dueDate={sendTarget.expirationDate || undefined}
           onSent={handleSendComplete}
         />

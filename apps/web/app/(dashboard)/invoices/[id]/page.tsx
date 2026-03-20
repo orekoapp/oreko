@@ -200,10 +200,10 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                             </td>
                             <td className="px-4 py-3 text-right">{item.quantity}</td>
                             <td className="px-4 py-3 text-right">
-                              {formatCurrency(item.rate, invoice.settings.currency)}
+                              {formatCurrency(item.rate, invoice.currency)}
                             </td>
                             <td className="px-4 py-3 text-right font-medium">
-                              {formatCurrency(item.amount, invoice.settings.currency)}
+                              {formatCurrency(item.amount, invoice.currency)}
                             </td>
                           </tr>
                         ))}
@@ -217,33 +217,33 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   <div className="ml-auto w-64 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>{formatCurrency(invoice.totals.subtotal, invoice.settings.currency)}</span>
+                      <span>{formatCurrency(invoice.totals.subtotal, invoice.currency)}</span>
                     </div>
                     {invoice.totals.discountAmount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
-                        <span>-{formatCurrency(invoice.totals.discountAmount, invoice.settings.currency)}</span>
+                        <span>-{formatCurrency(invoice.totals.discountAmount, invoice.currency)}</span>
                       </div>
                     )}
                     {invoice.totals.taxTotal > 0 && (
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>{formatCurrency(invoice.totals.taxTotal, invoice.settings.currency)}</span>
+                        <span>{formatCurrency(invoice.totals.taxTotal, invoice.currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between border-t pt-2 text-lg font-bold">
                       <span>Total</span>
-                      <span>{formatCurrency(invoice.totals.total, invoice.settings.currency)}</span>
+                      <span>{formatCurrency(invoice.totals.total, invoice.currency)}</span>
                     </div>
                     {invoice.totals.amountPaid > 0 && (
                       <>
                         <div className="flex justify-between text-sm text-green-600">
                           <span>Amount Paid</span>
-                          <span>-{formatCurrency(invoice.totals.amountPaid, invoice.settings.currency)}</span>
+                          <span>-{formatCurrency(invoice.totals.amountPaid, invoice.currency)}</span>
                         </div>
                         <div className={`flex justify-between border-t pt-2 font-bold ${invoice.totals.amountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                           <span>Amount Due</span>
-                          <span>{formatCurrency(invoice.totals.amountDue, invoice.settings.currency)}</span>
+                          <span>{formatCurrency(invoice.totals.amountDue, invoice.currency)}</span>
                         </div>
                       </>
                     )}
@@ -281,7 +281,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
                 <p data-testid="invoice-total" className="text-2xl font-bold">
-                  {formatCurrency(invoice.totals.total, invoice.settings.currency)}
+                  {formatCurrency(invoice.totals.total, invoice.currency)}
                 </p>
               </div>
               <div>
@@ -296,7 +296,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               <div>
                 <p className="text-sm text-muted-foreground">Amount Due</p>
                 <p data-testid="amount-due" className={`text-xl font-bold ${displayAmountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                  {formatCurrency(displayAmountDue, invoice.settings.currency)}
+                  {formatCurrency(displayAmountDue, invoice.currency)}
                 </p>
               </div>
               <div>
@@ -402,7 +402,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 <RecordPaymentButton
                   invoiceId={invoice.id}
                   amountDue={invoice.totals.amountDue}
-                  currency={invoice.settings.currency}
+                  currency={invoice.currency}
                 />
               </CardContent>
             </Card>
@@ -417,6 +417,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   <CreditNoteDialog
                     invoiceId={invoice.id}
                     invoiceLineItems={invoice.lineItems}
+                    currency={invoice.currency}
                   />
                 </div>
               </CardHeader>

@@ -24,7 +24,7 @@ export function QuoteBlockRenderer({ block: rawBlock, quote }: QuoteBlockRendere
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: quote.settings.currency,
+      currency: quote.currency,
     }).format(amount);
   };
 

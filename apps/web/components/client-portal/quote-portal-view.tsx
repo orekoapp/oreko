@@ -46,7 +46,7 @@ export function QuotePortalView({ quote, accessToken }: QuotePortalViewProps) {
   const [quoteStatus, setQuoteStatus] = useState(quote.status);
 
   const canRespond = ['sent', 'viewed'].includes(quoteStatus) && !quote.isExpired;
-  const currency = quote.settings.currency;
+  const currency = quote.currency;
   const accentColor = quote.branding?.primaryColor || ACCENT;
   const accentLight = quote.branding?.primaryColor
     ? `${quote.branding.primaryColor}18`

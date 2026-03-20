@@ -80,6 +80,8 @@ interface QuoteBuilderActions {
 
 type QuoteBuilderStore = QuoteBuilderState & QuoteBuilderActions;
 
+// Note: default currency here is a fallback only; actual currency is set
+// during document init from workspace settings or the document's own currency.
 const DEFAULT_SETTINGS: QuoteSettings = {
   requireSignature: true,
   autoConvertToInvoice: false,
@@ -109,6 +111,7 @@ const createEmptyDocument = (): QuoteDocument => ({
   quoteNumber: '',
   status: 'draft',
   title: 'Untitled Quote',
+  currency: 'USD',
   issueDate: new Date().toISOString().split('T')[0] ?? new Date().toISOString().slice(0, 10),
   expirationDate: null,
   blocks: [

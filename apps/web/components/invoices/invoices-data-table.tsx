@@ -295,7 +295,7 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
                       {invoice.client?.name || 'Invoice'}
                     </h3>
                     <p className="text-3xl font-bold tracking-tight mt-1" style={{ color: ACCENT }}>
-                      {formatCurrency(invoice.totals.total)}
+                      {formatCurrency(invoice.totals.total, invoice.currency)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Invoice #{invoice.invoiceNumber} &middot; Due {formatDate(invoice.dueDate)}
@@ -323,7 +323,7 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
                                 </p>
                               </div>
                               <span className="font-medium tabular-nums text-green-600 text-sm">
-                                +{formatCurrency(pmt.amount)}
+                                +{formatCurrency(pmt.amount, invoice.currency)}
                               </span>
                             </div>
                           ))}
@@ -373,7 +373,7 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
                                   {item.name || 'Untitled Item'}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {item.quantity} &times; {formatCurrency(item.rate)}
+                                  {item.quantity} &times; {formatCurrency(item.rate, invoice.currency)}
                                   {item.description && (
                                     <span className="ml-1.5 text-muted-foreground/70">
                                       &middot; {item.description}
@@ -382,7 +382,7 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
                                 </p>
                               </div>
                               <span className="ml-4 font-medium tabular-nums text-sm">
-                                {formatCurrency(item.amount)}
+                                {formatCurrency(item.amount, invoice.currency)}
                               </span>
                             </div>
                           ))}
@@ -394,11 +394,11 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
                             <div className="space-y-2 mb-3">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span className="tabular-nums">{formatCurrency(invoice.totals.subtotal)}</span>
+                                <span className="tabular-nums">{formatCurrency(invoice.totals.subtotal, invoice.currency)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Discount</span>
-                                <span className="tabular-nums text-green-600">-{formatCurrency(invoice.totals.discountAmount)}</span>
+                                <span className="tabular-nums text-green-600">-{formatCurrency(invoice.totals.discountAmount, invoice.currency)}</span>
                               </div>
                             </div>
                           )}
@@ -409,12 +409,12 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
                               {invoice.totals.discountAmount === 0 && (
                                 <div className="flex justify-between text-sm">
                                   <span className="text-muted-foreground">Subtotal</span>
-                                  <span className="tabular-nums">{formatCurrency(invoice.totals.subtotal)}</span>
+                                  <span className="tabular-nums">{formatCurrency(invoice.totals.subtotal, invoice.currency)}</span>
                                 </div>
                               )}
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Paid</span>
-                                <span className="tabular-nums text-green-600">-{formatCurrency(invoice.totals.amountPaid)}</span>
+                                <span className="tabular-nums text-green-600">-{formatCurrency(invoice.totals.amountPaid, invoice.currency)}</span>
                               </div>
                             </div>
                           )}
@@ -429,7 +429,7 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
                           >
                             <span className="font-semibold text-sm">Total Due</span>
                             <span className="text-lg font-bold tabular-nums" style={{ color: ACCENT }}>
-                              {formatCurrency(invoice.totals.amountDue)}
+                              {formatCurrency(invoice.totals.amountDue, invoice.currency)}
                             </span>
                           </div>
                         </div>
@@ -490,6 +490,7 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
             recipientName={sendTarget.client.name}
             businessName={businessName}
             total={sendTarget.total}
+            currency={sendTarget.currency}
             dueDate={sendTarget.dueDate}
             onSent={handleSendComplete}
           />
@@ -502,7 +503,7 @@ export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serv
           invoiceId={paymentTarget.id}
           amountDue={(data.find((i) => i.id === paymentTarget.id)?.amountDue) ?? paymentTarget.amountDue}
           // Low #173: Use invoice's actual currency instead of hardcoded USD
-          currency={data.find((i) => i.id === paymentTarget.id)?.currency || 'USD'}
+          currency={data.find((i) => i.id === paymentTarget.id)?.currency}
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
           onPaymentRecorded={handlePaymentRecorded}

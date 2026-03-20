@@ -21,10 +21,10 @@ const statusColors: Record<QuoteStatus, { variant: 'default' | 'secondary' | 'de
   converted: { variant: 'default', className: 'bg-purple-500 hover:bg-purple-600' },
 };
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
   }).format(amount);
 }
 
@@ -148,7 +148,7 @@ export function createQuoteColumns({
         const total = row.getValue('total') as number;
         return (
           <div className="text-right font-medium">
-            {formatCurrency(total)}
+            {formatCurrency(total, row.original.currency)}
           </div>
         );
       },

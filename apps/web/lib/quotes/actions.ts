@@ -535,6 +535,7 @@ export async function getQuote(quoteId: string) {
     quoteNumber: quote.quoteNumber,
     status: quote.status as QuoteDocument['status'],
     title: quote.title || 'Untitled Quote',
+    currency: quote.currency || parsedSettings.currency,
     issueDate: quote.issueDate.toISOString().split('T')[0] ?? '',
     expirationDate: quote.expirationDate?.toISOString().split('T')[0] ?? null,
     blocks,
@@ -636,7 +637,7 @@ export async function getQuotes(options?: {
       title: quote.title,
       status: quote.status,
       total: toNumber(quote.total),
-      currency: quote.currency || 'USD',
+      currency: quote.currency,
       issueDate: quote.issueDate.toISOString().split('T')[0],
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] || null,
       client: quote.client ? {

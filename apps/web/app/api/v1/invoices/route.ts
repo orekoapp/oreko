@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       projectId: projectId || null,
       invoiceNumber,
       title,
-      currency: currency || 'USD',
+      currency: currency || (await prisma.businessProfile.findUnique({ where: { workspaceId }, select: { currency: true } }))?.currency || 'USD',
       dueDate: new Date(dueDate),
       subtotal,
       taxTotal,
