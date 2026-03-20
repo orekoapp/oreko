@@ -275,7 +275,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const currency = quote.settings.currency || 'USD';
+  const currency = quote.currency || quote.settings.currency || 'USD';
 
   // Real clients from DB
   const [clients, setClients] = useState<Array<{ id: string; name: string; email: string; company: string | null }>>([]);
