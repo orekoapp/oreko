@@ -1,9 +1,12 @@
 import NewQuoteForm from './new-quote-form';
+import { getWorkspaceCurrency } from '@/lib/settings/actions';
 
 export const metadata = {
   title: 'New Quote',
 };
 
-export default function NewQuotePage() {
-  return <NewQuoteForm />;
+export default async function NewQuotePage() {
+  const defaultCurrency = await getWorkspaceCurrency();
+
+  return <NewQuoteForm defaultCurrency={defaultCurrency} />;
 }

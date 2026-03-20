@@ -208,11 +208,15 @@ const QUOTE_TEMPLATES: Record<string, QuoteTemplate> = {
 type TemplateName = keyof typeof QUOTE_TEMPLATES;
 
 // ─── Main Component ──────────────────────────────────────
-export default function NewQuoteForm() {
+interface NewQuoteFormProps {
+  defaultCurrency?: string;
+}
+
+export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormProps) {
   const router = useRouter();
   // toast from sonner (imported at top)
   const [loading, setLoading] = useState(false);
-  const currency = 'USD';
+  const currency = defaultCurrency;
 
   // Real clients from DB
   const [clients, setClients] = useState<Array<{ id: string; name: string; email: string; company: string | null }>>([]);

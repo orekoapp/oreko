@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { getSavedLineItems } from '@/lib/saved-items/actions';
+import { getWorkspaceCurrency } from '@/lib/settings/actions';
 import { InvoiceItemsClient } from './invoice-items-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -19,8 +20,11 @@ export default function InvoiceItemsPage() {
 }
 
 async function InvoiceItemsContent() {
-  const items = await getSavedLineItems();
-  return <InvoiceItemsClient initialItems={items} />;
+  const [items, currency] = await Promise.all([
+    getSavedLineItems(),
+    getWorkspaceCurrency(),
+  ]);
+  return <InvoiceItemsClient initialItems={items} currency={currency} />;
 }
 
 function TableSkeleton() {

@@ -1467,6 +1467,26 @@ export async function updateInvoiceDefaults(
 }
 
 // ============================================
+// WORKSPACE CURRENCY HELPER
+// ============================================
+
+/**
+ * Get the workspace's default currency from the business profile.
+ * Falls back to 'USD' if no business profile or currency is set.
+ * This should be used as the default currency for new quotes/invoices.
+ */
+export async function getWorkspaceCurrency(): Promise<string> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const profile = await prisma.businessProfile.findUnique({
+    where: { workspaceId },
+    select: { currency: true },
+  });
+
+  return profile?.currency || 'USD';
+}
+
+// ============================================
 // COMBINED SETTINGS
 // ============================================
 

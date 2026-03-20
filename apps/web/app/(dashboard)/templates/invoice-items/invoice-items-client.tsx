@@ -49,6 +49,7 @@ import {
 
 interface InvoiceItemsClientProps {
   initialItems: SavedLineItemData[];
+  currency?: string;
 }
 
 const durationOptions = [
@@ -62,8 +63,8 @@ const durationOptions = [
   { value: 'full-day', label: 'Full day' },
 ];
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+function formatCurrencyValue(amount: number, currency: string = 'USD') {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
 function formatRelativeDate(dateStr: string) {
@@ -81,7 +82,7 @@ function formatRelativeDate(dateStr: string) {
   return `${diffYears}y ago`;
 }
 
-export function InvoiceItemsClient({ initialItems }: InvoiceItemsClientProps) {
+export function InvoiceItemsClient({ initialItems, currency = 'USD' }: InvoiceItemsClientProps) {
   const router = useRouter();
   const [items, setItems] = useState<SavedLineItemData[]>(initialItems);
   const [selectedRows, setSelectedRows] = useState<SavedLineItemData[]>([]);
@@ -308,7 +309,7 @@ export function InvoiceItemsClient({ initialItems }: InvoiceItemsClientProps) {
       ),
       cell: ({ row }) => (
         <span className="text-muted-foreground">
-          {formatCurrency(row.original.price)}
+          {formatCurrencyValue(row.original.price, currency)}
         </span>
       ),
     },

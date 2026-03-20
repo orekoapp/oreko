@@ -4,6 +4,8 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getInvoices } from '@/lib/invoices/actions';
+import { getRecurringInvoiceIds } from '@/lib/invoices/recurring';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { InvoicesDataTable } from '@/components/invoices/invoices-data-table';
 
 export const dynamic = 'force-dynamic';
@@ -40,8 +42,12 @@ export default function InvoicesPage() {
 }
 
 async function InvoicesContent() {
-  const invoices = await getInvoices();
-  return <InvoicesDataTable data={invoices} />;
+  const [invoices, { workspaceId }] = await Promise.all([
+    getInvoices(),
+    getCurrentUserWorkspace(),
+  ]);
+  const recurringIds = await getRecurringInvoiceIds(workspaceId);
+  return <InvoicesDataTable data={invoices} recurringInvoiceIds={recurringIds} />;
 }
 
 function TableSkeleton() {

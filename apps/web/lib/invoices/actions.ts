@@ -732,6 +732,7 @@ export async function getInvoices(filters?: {
         company: invoice.client?.company ?? null,
       },
       isOverdue,
+      isRecurring: invoice.isRecurring,
     };
   });
 }

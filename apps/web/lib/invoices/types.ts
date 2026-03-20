@@ -73,6 +73,11 @@ export interface InvoiceDocument {
   terms: string;
   internalNotes: string;
   client?: InvoiceClient | null;
+  // Recurring fields
+  isRecurring?: boolean;
+  recurringInterval?: string | null;
+  nextRecurringDate?: string | null;
+  parentInvoiceId?: string | null;
 }
 
 export interface InvoiceListItem {
@@ -94,6 +99,7 @@ export interface InvoiceListItem {
     company: string | null;
   };
   isOverdue: boolean;
+  isRecurring?: boolean;
 }
 
 export interface CreateInvoiceData {

@@ -56,9 +56,11 @@ function formatDate(dateString: string): string {
 
 interface InvoicesDataTableProps {
   data: InvoiceListItem[];
+  /** IDs of invoices that have recurring enabled, passed from server */
+  recurringInvoiceIds?: string[];
 }
 
-export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps) {
+export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serverRecurringIds }: InvoicesDataTableProps) {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<any | null>(null);
@@ -84,8 +86,10 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
   // Payment history for viewing invoice
   const [viewPayments, setViewPayments] = useState<any[]>([]);
 
-  // Recurring invoice IDs (placeholder for future backend support)
-  const [recurringIds, setRecurringIds] = useState<Set<string>>(new Set());
+  // Recurring invoice IDs — populated from server data
+  const [recurringIds, setRecurringIds] = useState<Set<string>>(
+    new Set(serverRecurringIds || [])
+  );
 
   const handleView = async (invoice: InvoiceListItem) => {
     try {
@@ -195,8 +199,19 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
   }, []);
 
   const handleRecurringSaved = useCallback((settings: RecurringSettings) => {
+    if (recurringTarget) {
+      setRecurringIds((prev) => {
+        const next = new Set(prev);
+        if (settings.enabled) {
+          next.add(recurringTarget.id);
+        } else {
+          next.delete(recurringTarget.id);
+        }
+        return next;
+      });
+    }
     setRecurringTarget(null);
-  }, []);
+  }, [recurringTarget]);
 
   const columns = getInvoiceColumns({
     onView: handleView,

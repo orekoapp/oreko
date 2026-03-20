@@ -9,18 +9,22 @@ import {
   CheckCircle,
   Clock,
   Ban,
+  RefreshCw,
 } from 'lucide-react';
 import { getInvoice } from '@/lib/invoices/actions';
 import { getCreditNotesForInvoice } from '@/lib/credit-notes/actions';
+import { getRecurringSettings } from '@/lib/invoices/recurring';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { isInvoiceOverdue, getDaysUntilDue } from '@/lib/invoices/types';
 import { InvoiceActions } from '@/components/invoices/invoice-actions';
 import { RecordPaymentButton } from '@/components/invoices/record-payment-button';
 import { CreditNoteDialog } from '@/components/invoices/credit-note-dialog';
 import { CreditNotesList } from '@/components/invoices/credit-notes-list';
+import { RecurringSettingsButton } from '@/components/invoices/recurring-settings-button';
 
 interface InvoiceDetailPageProps {
   params: Promise<{ id: string }>;
@@ -89,6 +93,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   }
 
   const creditNotes = await getCreditNotesForInvoice(invoice.id);
+  const recurringSettings = await getRecurringSettings(invoice.id);
 
   const isOverdue = isInvoiceOverdue(invoice.dueDate, invoice.status);
   const daysUntilDue = getDaysUntilDue(invoice.dueDate);
@@ -113,6 +118,12 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               {statusStyle.icon}
               {displayStatus}
             </span>
+            {recurringSettings?.enabled && (
+              <Badge variant="outline" className="gap-1 border-violet-300 text-violet-600 bg-violet-50 dark:border-violet-600 dark:text-violet-400 dark:bg-violet-950">
+                <RefreshCw className="h-3 w-3" />
+                Recurring
+              </Badge>
+            )}
           </div>
           <p className="text-muted-foreground">
             {invoice.invoiceNumber} &bull; Issued on{' '}
@@ -331,6 +342,53 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   View Client
                 </Link>
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Recurring Settings */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Recurring</CardTitle>
+                <RecurringSettingsButton
+                  invoiceId={invoice.id}
+                  initialSettings={recurringSettings}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {recurringSettings?.enabled ? (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Frequency</span>
+                    <span className="font-medium capitalize">{recurringSettings.frequency}</span>
+                  </div>
+                  {recurringSettings.nextRecurringDate && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Next Invoice</span>
+                      <span className="font-medium">
+                        {new Date(recurringSettings.nextRecurringDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {recurringSettings.endDate && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Ends</span>
+                      <span className="font-medium">
+                        {new Date(recurringSettings.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Auto-send</span>
+                    <span className="font-medium">{recurringSettings.autoSend ? 'Yes' : 'No'}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Not configured. Click the settings button to enable recurring.
+                </p>
+              )}
             </CardContent>
           </Card>
 

@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getInvoice } from '@/lib/invoices/actions';
 import { getClientsForSelect } from '@/lib/clients/actions';
-import { getTaxRates, getBusinessProfile } from '@/lib/settings/actions';
+import { getTaxRates, getBusinessProfile, getWorkspaceCurrency } from '@/lib/settings/actions';
 import { EditInvoiceForm } from './edit-invoice-form';
 
 interface InvoiceEditPageProps {
@@ -21,11 +21,12 @@ export async function generateMetadata({ params }: InvoiceEditPageProps) {
 export default async function InvoiceEditPage({ params }: InvoiceEditPageProps) {
   const { id } = await params;
 
-  const [invoice, clients, taxRates, businessProfile] = await Promise.all([
+  const [invoice, clients, taxRates, businessProfile, workspaceCurrency] = await Promise.all([
     getInvoice(id),
     getClientsForSelect(),
     getTaxRates(),
     getBusinessProfile(),
+    getWorkspaceCurrency(),
   ]);
 
   if (!invoice) {
@@ -42,7 +43,7 @@ export default async function InvoiceEditPage({ params }: InvoiceEditPageProps) 
       invoice={invoice}
       clients={clients}
       taxRates={taxRates}
-      currency={businessProfile?.currency || invoice.settings.currency || 'USD'}
+      currency={invoice.currency || invoice.settings.currency || workspaceCurrency}
       businessName={businessProfile?.businessName || 'Your Business'}
     />
   );

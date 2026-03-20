@@ -514,6 +514,14 @@ model Invoice {
   paidAt         DateTime? @map("paid_at")
   voidedAt       DateTime? @map("voided_at")
   pdfUrl         String?   @map("pdf_url")
+  // Recurring invoice fields
+  isRecurring        Boolean   @default(false) @map("is_recurring")
+  recurringInterval  String?   @map("recurring_interval") @db.VarChar(20) // weekly, biweekly, monthly, quarterly, yearly
+  recurringStartDate DateTime? @map("recurring_start_date") @db.Date
+  recurringEndDate   DateTime? @map("recurring_end_date") @db.Date
+  recurringAutoSend  Boolean   @default(false) @map("recurring_auto_send")
+  nextRecurringDate  DateTime? @map("next_recurring_date") @db.Date
+  parentInvoiceId    String?   @map("parent_invoice_id")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
@@ -524,6 +532,8 @@ model Invoice {
   client           Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
   project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
   quote            Quote?            @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  parentInvoice    Invoice?          @relation("RecurringInvoices", fields: [parentInvoiceId], references: [id], onDelete: SetNull)
+  childInvoices    Invoice[]         @relation("RecurringInvoices")
   lineItems        InvoiceLineItem[]
   events           InvoiceEvent[]
   payments         Payment[]
@@ -540,6 +550,8 @@ model Invoice {
   @@index([workspaceId, status])
   @@index([dueDate])
   @@index([createdAt(sort: Desc)])
+  @@index([isRecurring, nextRecurringDate])
+  @@index([parentInvoiceId])
   @@map("invoices")
 }
 
