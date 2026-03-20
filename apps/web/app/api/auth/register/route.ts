@@ -162,9 +162,8 @@ export async function POST(request: Request) {
     }
 
     console.error('Registration error:', error);
-    const dbg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: 'Something went wrong', _dbg: dbg },
+      { error: 'Something went wrong' },
       { status: 500 }
     );
   }
