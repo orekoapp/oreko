@@ -374,6 +374,7 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
       const result = await createQuote({
         clientId: selectedClientId,
         title: lineItems[0]?.name || 'Untitled Quote',
+        currency,
         blocks,
         isDraft,
       });

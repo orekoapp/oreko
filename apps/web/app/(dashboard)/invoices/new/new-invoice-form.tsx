@@ -465,6 +465,7 @@ export function NewInvoiceForm({
       const result = await createInvoice({
         clientId: selectedClientId,
         title: 'Invoice',
+        currency,
         isDraft,
         dueDate: dueDate ? dueDate.toISOString().split('T')[0]! : new Date().toISOString().split('T')[0]!,
         lineItems: lineItems
