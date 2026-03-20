@@ -477,7 +477,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
         requireSignature: signatureRequired,
         depositRequired: showDeposit,
         depositValue: depositAmount,
-        currency: quote.settings.currency || 'USD',
+        currency,
       };
 
       if (showDiscount && discount > 0) {

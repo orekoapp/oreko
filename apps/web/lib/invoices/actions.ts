@@ -533,6 +533,7 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
       data: {
         projectId: data.projectId !== undefined ? data.projectId : undefined,
         title: data.title,
+        currency: data.currency,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         notes: data.notes,
         terms: data.terms,

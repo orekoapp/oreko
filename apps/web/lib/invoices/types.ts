@@ -127,6 +127,7 @@ export interface CreateInvoiceData {
 export interface UpdateInvoiceData {
   projectId?: string | null;
   title?: string;
+  currency?: string;
   dueDate?: string;
   lineItems?: Array<{
     name: string;

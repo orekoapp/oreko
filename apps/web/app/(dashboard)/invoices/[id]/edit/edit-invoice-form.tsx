@@ -432,6 +432,7 @@ export function EditInvoiceForm({
     try {
       const result = await updateInvoice(invoice.id, {
         title: 'Invoice',
+        currency,
         dueDate: dueDate ? dueDate.toISOString().split('T')[0]! : new Date().toISOString().split('T')[0]!,
         lineItems: lineItems
           .filter((item) => item.name.trim())

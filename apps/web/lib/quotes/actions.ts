@@ -418,6 +418,7 @@ export async function updateQuote(
         data: {
           title: data.title,
           ...(data.projectId !== undefined && { projectId: data.projectId }),
+          ...(data.settings?.currency && { currency: data.settings.currency as string }),
           notes: data.notes,
           terms: data.terms,
           internalNotes: data.internalNotes,
