@@ -361,17 +361,25 @@ export async function acceptQuote(data: {
     const requireSignature = (sigSettings.requireSignature as boolean) ?? true;
 
     if (requireSignature) {
-      // Validate signature - must be a valid base64 PNG data URL from SignaturePad
       if (!data.signatureData || !data.signerName) {
         return { success: false, error: 'Signature is required' };
       }
-      if (!data.signatureData.startsWith('data:image/png;base64,')) {
+      const isDrawn = data.signatureData.startsWith('data:image/png;base64,');
+      const isTyped = data.signatureData.startsWith('typed:');
+      if (!isDrawn && !isTyped) {
         return { success: false, error: 'Invalid signature format' };
       }
-      // Ensure signature has sufficient data (not just a blank canvas or single dot)
-      const signatureBase64 = data.signatureData.replace('data:image/png;base64,', '');
-      if (signatureBase64.length < 1000) {
-        return { success: false, error: 'Signature is too simple. Please provide a full signature.' };
+      if (isDrawn) {
+        const signatureBase64 = data.signatureData.replace('data:image/png;base64,', '');
+        if (signatureBase64.length < 1000) {
+          return { success: false, error: 'Signature is too simple. Please provide a full signature.' };
+        }
+      }
+      if (isTyped) {
+        const typedName = data.signatureData.replace('typed:', '').trim();
+        if (typedName.length < 2) {
+          return { success: false, error: 'Please type your full name as signature.' };
+        }
       }
     }
     if (data.signerName.trim().length < 2) {
