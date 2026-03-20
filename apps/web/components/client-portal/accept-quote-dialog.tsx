@@ -169,7 +169,15 @@ export function AcceptQuoteDialog({
                 </div>
               )}
 
-              {/* Terms Agreement */}
+              {/* Terms */}
+              {quote.terms && (
+                <div className="rounded-lg border bg-muted/30 p-3 max-h-40 overflow-y-auto">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Terms & Conditions</p>
+                  <p className="text-sm whitespace-pre-wrap">{quote.terms}</p>
+                </div>
+              )}
+
+              {/* Terms Agreement Checkbox */}
               <div className="flex items-start space-x-3">
                 <Checkbox
                   id="agree-terms"
@@ -182,8 +190,7 @@ export function AcceptQuoteDialog({
                     htmlFor="agree-terms"
                     className="text-sm font-normal leading-snug"
                   >
-                    I have read and agree to the terms and conditions outlined in
-                    this quote.
+                    I have read and agree to the terms and conditions{quote.terms ? ' above' : ' outlined in this quote'}.
                   </Label>
                 </div>
               </div>
