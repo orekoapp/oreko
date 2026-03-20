@@ -910,17 +910,17 @@ export async function sendQuote(quoteId: string, emailOptions?: SendEmailOptions
       to: emailRecipients,
       variables: {
         businessName: workspace.name,
+        businessEmail: (await prisma.businessProfile.findUnique({ where: { workspaceId: workspace.id }, select: { email: true } }))?.email || '',
         clientName: quote.client.name,
         clientEmail: quote.client.email,
         quoteName: quote.title || `Quote ${quote.quoteNumber}`,
         quoteNumber: quote.quoteNumber,
         quoteUrl,
-        quoteTotal: formatCurrency(toNumber(quote.total)),
-        quoteValidUntil: quote.expirationDate?.toISOString() ?? undefined,
+        quoteTotal: formatCurrency(toNumber(quote.total), quote.currency),
+        quoteValidUntil: quote.expirationDate ? quote.expirationDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined,
         message: emailOptions?.message || undefined,
       },
       customSubject: emailOptions?.subject || undefined,
-      customBody: emailOptions?.message || undefined,
     });
     emailSent = emailResult.success;
     if (!emailResult.success) {

@@ -892,16 +892,18 @@ export async function sendInvoice(invoiceId: string, emailOptions?: SendEmailOpt
       to: emailRecipients,
       variables: {
         businessName: workspace.name,
+        businessEmail: (await prisma.businessProfile.findUnique({ where: { workspaceId: workspace.id }, select: { email: true } }))?.email || '',
         clientName: invoice.client.name,
         clientEmail: invoice.client.email,
         invoiceNumber: invoice.invoiceNumber,
         invoiceUrl,
-        invoiceTotal: formatCurrency(toNumber(invoice.total)),
-        invoiceDueDate: invoice.dueDate?.toISOString() ?? undefined,
+        invoiceTotal: formatCurrency(toNumber(invoice.total), invoice.currency),
+        amountDue: formatCurrency(toNumber(invoice.amountDue), invoice.currency),
+        amountPaid: formatCurrency(toNumber(invoice.amountPaid), invoice.currency),
+        invoiceDueDate: invoice.dueDate ? invoice.dueDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined,
         message: emailOptions?.message || undefined,
       },
       customSubject: emailOptions?.subject || undefined,
-      customBody: emailOptions?.message || undefined,
     });
     emailSent = emailResult.success;
     if (!emailResult.success) {
