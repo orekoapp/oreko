@@ -168,7 +168,10 @@ export function AnalyticsDashboard({
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-lg border bg-card divide-x divide-border">
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-lg border bg-card divide-x divide-border relative">
+        <span className="absolute -top-5 right-0 text-[11px] text-muted-foreground/60">
+          All amounts in {currency}
+        </span>
         <StatItem
           title="Total Revenue"
           value={formatCurrency(stats.totalRevenue, currency)}
