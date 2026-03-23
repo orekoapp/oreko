@@ -31,25 +31,25 @@ describe('StatsCards', () => {
   it('displays total revenue formatted as currency', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$150,000.00')).toBeInTheDocument();
+    expect(screen.getByText('$ 150,000.00')).toBeInTheDocument();
   });
 
   it('displays this month revenue in description', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$25,000.00')).toBeInTheDocument();
+    expect(screen.getByText('$ 25,000.00')).toBeInTheDocument();
   });
 
   it('displays outstanding amount', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$5,000.00')).toBeInTheDocument();
+    expect(screen.getByText('$ 5,000.00')).toBeInTheDocument();
   });
 
   it('displays overdue amount when present', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$1,000.00 overdue')).toBeInTheDocument();
+    expect(screen.getByText('$ 1,000.00 overdue')).toBeInTheDocument();
   });
 
   it('shows "No overdue" when no overdue amount', () => {
@@ -116,6 +116,6 @@ describe('StatsCards', () => {
 
     render(<StatsCards stats={largeStats} />);
 
-    expect(screen.getByText('$9,999,999.00')).toBeInTheDocument();
+    expect(screen.getByText('$ 9,999,999.00')).toBeInTheDocument();
   });
 });
