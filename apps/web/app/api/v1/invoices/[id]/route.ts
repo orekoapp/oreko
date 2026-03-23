@@ -27,7 +27,6 @@ function formatInvoice(inv: any) {
     amountDue: toNumber(inv.amountDue),
     notes: inv.notes,
     terms: inv.terms,
-    accessToken: inv.accessToken,
     sentAt: inv.sentAt,
     paidAt: inv.paidAt,
     voidedAt: inv.voidedAt,
@@ -99,8 +98,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (terms !== undefined) updateData.terms = terms;
   if (dueDate !== undefined) updateData.dueDate = new Date(dueDate);
   if (status !== undefined) {
-    const validStatuses = ['draft', 'sent', 'viewed', 'partial', 'paid', 'overdue', 'voided'];
-    if (!validStatuses.includes(status)) return apiError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400);
+    const validTransitions: Record<string, string[]> = {
+      draft: ['sent'],
+      sent: ['viewed', 'partial', 'paid', 'overdue', 'voided'],
+      viewed: ['partial', 'paid', 'overdue', 'voided'],
+      partial: ['paid', 'voided'],
+      paid: ['voided'],
+      overdue: ['paid', 'partial', 'voided'],
+      voided: [],
+    };
+    const allowed = validTransitions[invoice.status];
+    if (!allowed || !allowed.includes(status)) {
+      return apiError(`Cannot transition from '${invoice.status}' to '${status}'`, 400);
+    }
     updateData.status = status;
     if (status === 'paid') updateData.paidAt = new Date();
     if (status === 'voided') updateData.voidedAt = new Date();
@@ -108,7 +118,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   if (lineItems) {
-    await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: id } });
+    for (const item of lineItems) {
+      if (!Number.isFinite(item.quantity) || !Number.isFinite(item.rate)) {
+        return apiError('Line item quantity and rate must be valid numbers', 400);
+      }
+      if (item.quantity < 0) return apiError('Line item quantity cannot be negative', 400);
+      if (item.taxRate !== undefined && item.taxRate !== null && !Number.isFinite(item.taxRate)) {
+        return apiError('Line item taxRate must be a valid number', 400);
+      }
+    }
 
     let subtotal = 0;
     let taxTotal = 0;
@@ -130,7 +148,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       };
     });
 
-    await prisma.invoiceLineItem.createMany({ data: processed });
+    await prisma.$transaction(async (tx) => {
+      await tx.invoiceLineItem.deleteMany({ where: { invoiceId: id } });
+      await tx.invoiceLineItem.createMany({ data: processed });
+    });
     const total = subtotal + taxTotal;
     updateData.subtotal = subtotal;
     updateData.taxTotal = taxTotal;

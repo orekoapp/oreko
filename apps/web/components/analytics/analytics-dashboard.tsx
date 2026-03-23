@@ -194,12 +194,12 @@ export function AnalyticsDashboard({
       </div>
 
       {/* Revenue Forecast - Full width hero chart */}
-      <RevenueForecastChart dateRange={dateRange} forecastData={revenueForecast} />
+      <RevenueForecastChart dateRange={dateRange} forecastData={revenueForecast} currency={currency} />
 
 {/* Client Insights */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <TopClientsChart data={topClients} />
-        <ClientLifetimeValueCard data={clientLTV} />
+        <TopClientsChart data={topClients} currency={currency} />
+        <ClientLifetimeValueCard data={clientLTV} currency={currency} />
       </div>
 
     </div>

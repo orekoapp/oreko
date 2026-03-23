@@ -28,7 +28,6 @@ function formatQuote(q: any) {
     sentAt: q.sentAt,
     acceptedAt: q.acceptedAt,
     declinedAt: q.declinedAt,
-    accessToken: q.accessToken,
     lineItems: q.lineItems?.map((li: any) => ({
       id: li.id,
       name: li.name,
@@ -95,17 +94,35 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (notes !== undefined) updateData.notes = notes;
   if (terms !== undefined) updateData.terms = terms;
   if (status !== undefined) {
-    const validStatuses = ['draft', 'sent', 'accepted', 'declined', 'expired'];
-    if (!validStatuses.includes(status)) return apiError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400);
+    const validTransitions: Record<string, string[]> = {
+      draft: ['sent'],
+      sent: ['viewed', 'accepted', 'declined', 'expired'],
+      viewed: ['accepted', 'declined', 'expired'],
+      accepted: [],
+      declined: ['draft'],
+      expired: ['draft'],
+    };
+    const allowed = validTransitions[quote.status];
+    if (!allowed || !allowed.includes(status)) {
+      return apiError(`Cannot transition from '${quote.status}' to '${status}'`, 400);
+    }
     updateData.status = status;
     if (status === 'accepted') updateData.acceptedAt = new Date();
     if (status === 'declined') updateData.declinedAt = new Date();
     if (status === 'sent') updateData.sentAt = new Date();
   }
 
-  // If line items provided, recalculate totals
+  // If line items provided, validate and recalculate totals
   if (lineItems) {
-    await prisma.quoteLineItem.deleteMany({ where: { quoteId: id } });
+    for (const item of lineItems) {
+      if (!Number.isFinite(item.quantity) || !Number.isFinite(item.rate)) {
+        return apiError('Line item quantity and rate must be valid numbers', 400);
+      }
+      if (item.quantity < 0) return apiError('Line item quantity cannot be negative', 400);
+      if (item.taxRate !== undefined && item.taxRate !== null && !Number.isFinite(item.taxRate)) {
+        return apiError('Line item taxRate must be a valid number', 400);
+      }
+    }
 
     let subtotal = 0;
     let taxTotal = 0;
@@ -127,7 +144,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       };
     });
 
-    await prisma.quoteLineItem.createMany({ data: processed });
+    await prisma.$transaction(async (tx) => {
+      await tx.quoteLineItem.deleteMany({ where: { quoteId: id } });
+      await tx.quoteLineItem.createMany({ data: processed });
+    });
     updateData.subtotal = subtotal;
     updateData.taxTotal = taxTotal;
     updateData.total = subtotal + taxTotal;

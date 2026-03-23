@@ -24,6 +24,7 @@ import type { ForecastDataPoint } from '@/lib/dashboard/types';
 interface RevenueForecastChartProps {
   dateRange?: DateRange;
   forecastData?: ForecastDataPoint[];
+  currency?: string;
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
@@ -46,7 +47,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function RevenueForecastChart({ forecastData }: RevenueForecastChartProps) {
+export function RevenueForecastChart({ forecastData, currency = 'USD' }: RevenueForecastChartProps) {
   const data = useMemo(() => {
     if (!forecastData || forecastData.length === 0) {
       return [];
@@ -89,7 +90,7 @@ export function RevenueForecastChart({ forecastData }: RevenueForecastChartProps
             <CardTitle className="text-sm font-medium">Revenue Forecast</CardTitle>
           </div>
           <p className="text-2xl font-semibold tracking-tight mt-1">
-            {formatCurrency(totalActual || totalProjected)}
+            {formatCurrency(totalActual || totalProjected, currency)}
           </p>
         </div>
         <div className="flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1">
@@ -143,7 +144,12 @@ export function RevenueForecastChart({ forecastData }: RevenueForecastChartProps
               tickLine={false}
               axisLine={false}
               className="text-[11px]"
-              tickFormatter={(value) => `$${value / 1000}k`}
+              tickFormatter={(value) => {
+                const symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
+                  .formatToParts(0)
+                  .find(p => p.type === 'currency')?.value ?? '$';
+                return `${symbol}${value / 1000}k`;
+              }}
               width={50}
             />
             <ChartTooltip

@@ -11,6 +11,7 @@ interface TopClient {
 
 interface TopClientsChartProps {
   data?: TopClient[];
+  currency?: string;
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
@@ -25,7 +26,7 @@ function formatCurrency(amount: number, currency: string = 'USD'): string {
 // Use opacity steps of primary color for a cohesive palette
 const BAR_OPACITIES = [1, 0.85, 0.7, 0.55, 0.4];
 
-export function TopClientsChart({ data: propData }: TopClientsChartProps) {
+export function TopClientsChart({ data: propData, currency = 'USD' }: TopClientsChartProps) {
   const chartData = useMemo(() => {
     if (!propData || propData.length === 0) return [];
     return propData;
@@ -55,7 +56,7 @@ export function TopClientsChart({ data: propData }: TopClientsChartProps) {
         <div className="flex items-baseline justify-between">
           <CardTitle className="text-sm font-medium">Top Clients</CardTitle>
           <span className="text-xs text-muted-foreground/60">
-            {formatCurrency(totalRevenue)} total
+            {formatCurrency(totalRevenue, currency)} total
           </span>
         </div>
       </CardHeader>
@@ -70,7 +71,7 @@ export function TopClientsChart({ data: propData }: TopClientsChartProps) {
                   <span className="font-medium truncate">{client.name}</span>
                   <div className="flex items-center gap-2 shrink-0 ml-3">
                     <span className="text-xs text-muted-foreground/60 tabular-nums">{sharePct}%</span>
-                    <span className="font-medium tabular-nums">{formatCurrency(client.revenue)}</span>
+                    <span className="font-medium tabular-nums">{formatCurrency(client.revenue, currency)}</span>
                   </div>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
