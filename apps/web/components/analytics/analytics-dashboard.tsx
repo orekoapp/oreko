@@ -58,12 +58,16 @@ function getDateRangeFromPreset(preset: string): DateRange {
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 interface StatItemProps {
@@ -186,7 +190,7 @@ export function AnalyticsDashboard({
         />
         <StatItem
           title="Conversion Rate"
-          value={`${stats.conversionRate}%`}
+          value={`${stats.conversionRate.toFixed(2)}%`}
           detail="Quotes to invoices"
         />
         <StatItem

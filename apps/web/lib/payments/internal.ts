@@ -400,7 +400,7 @@ export async function processPaymentWebhook(
           data: {
             amountDue: newAmountDue,
             status: newInvoiceStatus,
-            ...(newInvoiceStatus === 'paid' && { paidAt: new Date() }),
+            ...(!payment.invoice.paidAt && { paidAt: new Date() }),
           },
         });
 

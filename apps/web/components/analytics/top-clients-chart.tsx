@@ -15,12 +15,16 @@ interface TopClientsChartProps {
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 // Use opacity steps of primary color for a cohesive palette

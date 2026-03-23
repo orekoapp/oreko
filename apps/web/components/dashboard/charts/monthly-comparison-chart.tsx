@@ -13,7 +13,7 @@ import {
 import { ChartCard } from './chart-card';
 import {
   CHART_COLORS,
-  formatChartCurrency,
+  makeChartCurrencyFormatter,
   formatFullCurrency,
 } from '@/lib/dashboard/chart-utils';
 import type { MonthlyComparisonData } from '@/lib/dashboard/types';
@@ -24,6 +24,7 @@ interface MonthlyComparisonChartProps {
   isLoading?: boolean;
   className?: string;
   height?: number;
+  currency?: string;
 }
 
 type MetricType = 'revenue' | 'quotes' | 'invoices';
@@ -39,6 +40,7 @@ export function MonthlyComparisonChart({
   isLoading = false,
   className,
   height = 300,
+  currency = 'USD',
 }: MonthlyComparisonChartProps) {
   const [metric, setMetric] = useState<MetricType>('revenue');
 
@@ -105,7 +107,7 @@ export function MonthlyComparisonChart({
   };
 
   const formatAxisValue = (value: number) => {
-    if (metric === 'revenue') return formatChartCurrency(value);
+    if (metric === 'revenue') return makeChartCurrencyFormatter(currency)(value);
     return value.toString();
   };
 

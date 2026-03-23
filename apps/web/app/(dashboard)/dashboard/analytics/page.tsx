@@ -8,6 +8,7 @@ import {
   getClientDistributionData,
   getMonthlyComparisonData,
 } from '@/lib/dashboard/actions';
+import { getWorkspaceCurrency } from '@/lib/settings/actions';
 
 export const metadata = {
   title: 'Analytics',
@@ -21,12 +22,14 @@ async function AnalyticsData() {
     paymentAgingData,
     clientDistributionData,
     monthlyComparisonData,
+    currency,
   ] = await Promise.all([
     getDashboardData(),
     getConversionFunnelData(),
     getPaymentAgingData(),
     getClientDistributionData(),
     getMonthlyComparisonData(),
+    getWorkspaceCurrency(),
   ]);
 
   return (
@@ -36,6 +39,7 @@ async function AnalyticsData() {
       paymentAgingData={paymentAgingData}
       clientDistributionData={clientDistributionData}
       monthlyComparisonData={monthlyComparisonData}
+      currency={currency}
     />
   );
 }

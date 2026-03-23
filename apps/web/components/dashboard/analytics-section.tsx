@@ -11,10 +11,12 @@ import type {
 
 interface AnalyticsSectionProps {
   revenueData: RevenueDataPoint[];
+  currency?: string;
 }
 
 export function AnalyticsSection({
   revenueData,
+  currency = 'USD',
 }: AnalyticsSectionProps) {
   const [revenuePeriod, setRevenuePeriod] = useState<DashboardPeriod>('30d');
 
@@ -24,6 +26,7 @@ export function AnalyticsSection({
         data={revenueData}
         period={revenuePeriod}
         onPeriodChange={setRevenuePeriod}
+        currency={currency}
       />
     </div>
   );

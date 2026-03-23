@@ -22,10 +22,14 @@ const statusColors: Record<QuoteStatus, { variant: 'default' | 'secondary' | 'de
 };
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 interface CreateQuoteColumnsProps {

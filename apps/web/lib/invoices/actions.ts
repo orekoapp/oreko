@@ -807,14 +807,16 @@ export async function updateInvoiceStatus(
   // Set timestamps based on status
   if (status === 'sent' && !invoice.sentAt) {
     updateData.sentAt = new Date();
-  } else if (status === 'paid') {
-    updateData.paidAt = new Date();
-    // Bug #16: Only override amountPaid if it doesn't already match total
-    // This preserves the payment ledger when payments were recorded incrementally
-    if (Math.abs(amountPaid - total) > 0.01) {
-      updateData.amountPaid = invoice.total;
+  } else if (status === 'paid' || status === 'partial') {
+    if (!invoice.paidAt) updateData.paidAt = new Date();
+    if (status === 'paid') {
+      // Bug #16: Only override amountPaid if it doesn't already match total
+      // This preserves the payment ledger when payments were recorded incrementally
+      if (Math.abs(amountPaid - total) > 0.01) {
+        updateData.amountPaid = invoice.total;
+      }
+      updateData.amountDue = 0;
     }
-    updateData.amountDue = 0;
   } else if (status === 'voided') {
     updateData.voidedAt = new Date();
     updateData.amountDue = 0;
@@ -1079,7 +1081,7 @@ export async function recordPayment(
       data: {
         amountDue: Math.max(0, newAmountDue),
         status: newStatus,
-        ...(newStatus === 'paid' && { paidAt: new Date() }),
+        ...(!invoice.paidAt && { paidAt: new Date() }),
       },
     });
 

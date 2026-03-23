@@ -22,10 +22,14 @@ interface QuoteBlockRendererProps {
 export function QuoteBlockRenderer({ block: rawBlock, quote }: QuoteBlockRendererProps) {
   const block = { ...rawBlock, content: rawBlock.content as any };
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    const parts = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: quote.currency,
-    }).format(amount);
+    }).formatToParts(amount);
+    return parts.map((p, i) => {
+      if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+      return p.value;
+    }).join('');
   };
 
   switch (block.type) {

@@ -41,7 +41,7 @@ async function DashboardContent() {
       <StatsCards stats={data.stats} revenueData={data.revenueData} currency={currency} />
 
       {/* Revenue Chart (full width) */}
-      <AnalyticsSection revenueData={data.revenueData} />
+      <AnalyticsSection revenueData={data.revenueData} currency={currency} />
 
       {/* Activity + Recent Items (2-column layout) */}
       <div className="grid gap-6 lg:grid-cols-5">

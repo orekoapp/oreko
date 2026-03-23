@@ -35,6 +35,7 @@ interface AnalyticsPageContentProps {
   paymentAgingData: PaymentAgingData;
   clientDistributionData: ClientDistributionData[];
   monthlyComparisonData: MonthlyComparisonData[];
+  currency?: string;
 }
 
 const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
@@ -50,6 +51,7 @@ export function AnalyticsPageContent({
   paymentAgingData,
   clientDistributionData,
   monthlyComparisonData,
+  currency = 'USD',
 }: AnalyticsPageContentProps) {
   const [period, setPeriod] = useState<DashboardPeriod>('30d');
   const [activeTab, setActiveTab] = useState('overview');
@@ -115,6 +117,7 @@ export function AnalyticsPageContent({
             period={period}
             onPeriodChange={setPeriod}
             showPeriodSelector={false}
+            currency={currency}
           />
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -135,8 +138,9 @@ export function AnalyticsPageContent({
             data={dashboardData.revenueData}
             period={period}
             onPeriodChange={setPeriod}
+            currency={currency}
           />
-          <MonthlyComparisonChart data={monthlyComparisonData} height={350} />
+          <MonthlyComparisonChart data={monthlyComparisonData} height={350} currency={currency} />
         </TabsContent>
 
         {/* Quotes Tab */}

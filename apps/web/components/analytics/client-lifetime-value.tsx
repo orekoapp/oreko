@@ -19,12 +19,16 @@ interface ClientLifetimeValueCardProps {
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 export function ClientLifetimeValueCard({ data: propData, currency = 'USD' }: ClientLifetimeValueCardProps) {

@@ -20,6 +20,7 @@ import type { MonthlyComparisonData } from '@/lib/dashboard/types';
 
 interface RevenueComparisonChartProps {
   data?: MonthlyComparisonData[];
+  currency?: string;
 }
 
 const chartConfig = {
@@ -33,7 +34,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function RevenueComparisonChart({ data: propData }: RevenueComparisonChartProps) {
+export function RevenueComparisonChart({ data: propData, currency = 'USD' }: RevenueComparisonChartProps) {
   const chartData = useMemo(() => {
     if (!propData || propData.length === 0) {
       return [];
@@ -91,7 +92,12 @@ export function RevenueComparisonChart({ data: propData }: RevenueComparisonChar
               tickLine={false}
               axisLine={false}
               className="text-[11px]"
-              tickFormatter={(value) => `$${value / 1000}k`}
+              tickFormatter={(value) => {
+                const symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
+                  .formatToParts(0)
+                  .find(p => p.type === 'currency')?.value ?? '$';
+                return `${symbol}${value / 1000}k`;
+              }}
               width={40}
             />
             <ChartTooltip

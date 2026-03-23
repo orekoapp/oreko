@@ -83,7 +83,7 @@ export function StatsCards({ stats, currency = 'USD' }: StatsCardsProps) {
     },
     {
       title: 'Conversion Rate',
-      value: `${stats.conversionRate.toFixed(1)}%`,
+      value: `${stats.conversionRate.toFixed(2)}%`,
       // Bug #162: Calculate actual conversion rate change instead of hardcoded 5.3%
       change: stats.totalQuotes > 0 ? stats.conversionRate : 0,
       changeLabel: `${stats.totalQuotes} quotes · ${stats.totalInvoices} invoices`,

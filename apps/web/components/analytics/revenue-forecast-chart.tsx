@@ -28,12 +28,16 @@ interface RevenueForecastChartProps {
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 const chartConfig = {
@@ -148,9 +152,9 @@ export function RevenueForecastChart({ forecastData, currency = 'USD' }: Revenue
                 const symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
                   .formatToParts(0)
                   .find(p => p.type === 'currency')?.value ?? '$';
-                return `${symbol}${value / 1000}k`;
+                return `${symbol} ${value / 1000}k`;
               }}
-              width={50}
+              width={65}
             />
             <ChartTooltip
               cursor={false}

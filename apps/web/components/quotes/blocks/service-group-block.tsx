@@ -31,10 +31,14 @@ export function ServiceGroupBlockContent({ block }: ServiceGroupBlockContentProp
   // Bug #81: Use document locale instead of hardcoded en-US
   const locale = (document?.settings as any)?.locale ?? 'en-US';
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale, {
+    const parts = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
-    }).format(amount);
+    }).formatToParts(amount);
+    return parts.map((p, i) => {
+      if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+      return p.value;
+    }).join('');
   };
 
   // Bug #80: Widened type to accept arrays (for items) and other content field types

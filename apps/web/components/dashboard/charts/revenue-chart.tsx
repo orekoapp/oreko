@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  formatChartCurrency,
+  makeChartCurrencyFormatter,
   formatChartDate,
   formatFullCurrency,
 } from '@/lib/dashboard/chart-utils';
@@ -35,6 +35,7 @@ interface RevenueChartProps {
   isLoading?: boolean;
   showPeriodSelector?: boolean;
   className?: string;
+  currency?: string;
 }
 
 const chartConfig = {
@@ -58,6 +59,7 @@ export function RevenueChart({
   isLoading = false,
   showPeriodSelector = true,
   className,
+  currency = 'USD',
 }: RevenueChartProps) {
   // Filter data based on selected period
   const filteredData = useMemo(() => {
@@ -140,7 +142,7 @@ export function RevenueChart({
           <CardTitle className="text-sm font-medium">Revenue</CardTitle>
           {!isEmpty && (
             <p className="text-2xl font-semibold tracking-tight mt-1">
-              {formatFullCurrency(totalRevenue)}
+              {formatFullCurrency(totalRevenue, currency)}
             </p>
           )}
         </div>
@@ -187,10 +189,10 @@ export function RevenueChart({
                 className="text-[11px]"
               />
               <YAxis
-                tickFormatter={formatChartCurrency}
+                tickFormatter={makeChartCurrencyFormatter(currency)}
                 tickLine={false}
                 axisLine={false}
-                width={50}
+                width={65}
                 className="text-[11px]"
               />
               <ChartTooltip

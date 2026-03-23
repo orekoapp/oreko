@@ -112,7 +112,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return apiError(`Cannot transition from '${invoice.status}' to '${status}'`, 400);
     }
     updateData.status = status;
-    if (status === 'paid') updateData.paidAt = new Date();
+    if ((status === 'paid' || status === 'partial') && !invoice.paidAt) updateData.paidAt = new Date();
     if (status === 'voided') updateData.voidedAt = new Date();
     if (status === 'sent') updateData.sentAt = new Date();
   }

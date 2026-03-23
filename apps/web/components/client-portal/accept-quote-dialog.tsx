@@ -45,10 +45,14 @@ export function AcceptQuoteDialog({
   const hasTerms = !!quote.terms;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    const parts = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: quote.currency,
-    }).format(amount);
+    }).formatToParts(amount);
+    return parts.map((p, i) => {
+      if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+      return p.value;
+    }).join('');
   };
 
   const depositAmount = quote.settings.depositRequired
