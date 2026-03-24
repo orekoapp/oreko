@@ -84,24 +84,30 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       console.error('Failed to send quote email:', err);
     }
 
-    // Update status to sent
-    await prisma.quote.update({
-      where: { id: id },
-      data: {
-        status: 'sent',
-        sentAt: new Date(),
-      },
-    });
+    // Only update status to sent if email was actually delivered
+    if (emailSent) {
+      await prisma.quote.update({
+        where: { id: id },
+        data: {
+          status: 'sent',
+          sentAt: new Date(),
+        },
+      });
+    }
 
     // Create event
     await prisma.quoteEvent.create({
       data: {
         quoteId: id,
-        eventType: 'sent',
+        eventType: emailSent ? 'sent' : 'send_failed',
         actorType: 'system',
         metadata: { via: 'api', emailSent },
       },
     }).catch(() => {});
+
+    if (!emailSent) {
+      return apiError('Quote email could not be sent. Status unchanged.', 502);
+    }
 
     return apiSuccess({
       message: 'Quote sent successfully',

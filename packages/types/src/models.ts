@@ -90,6 +90,7 @@ export interface BusinessProfile {
   workspaceId: string;
   businessName: string;
   logoUrl: string | null;
+  darkLogoUrl: string | null;
   email: string | null;
   phone: string | null;
   website: string | null;
@@ -98,6 +99,11 @@ export interface BusinessProfile {
   locale: string;
   currency: string;
   timezone: string;
+  socialLinks: Record<string, string> | null;
+  emailSignature: string | null;
+  emailFooter: string | null;
+  clientEmail: string | null;
+  autoCountersign: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -126,7 +132,7 @@ export interface RateCard extends BaseModel, SoftDeletable {
   categoryId: string | null;
   name: string;
   description: string | null;
-  pricingType: 'hourly' | 'daily' | 'fixed' | 'package';
+  pricingType: 'hourly' | 'daily' | 'fixed' | 'package' | 'service' | 'product' | 'recurring';
   rate: number;
   unit: string | null;
   taxRateId: string | null;

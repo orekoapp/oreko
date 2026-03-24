@@ -5,7 +5,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Low #80: Route-level error boundary — sidebar and header stay visible
-export default function QuotesError({
+export default function SettingsError({
   error,
   reset,
 }: {

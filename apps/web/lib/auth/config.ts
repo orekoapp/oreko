@@ -16,45 +16,33 @@ export const authConfig: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const pathname = nextUrl.pathname;
 
-      // Protected routes - all dashboard-related paths
-      const protectedRoutes = [
-        '/dashboard',
-        '/quotes',
-        '/invoices',
-        '/clients',
-        '/settings',
-
-        '/templates',
-        '/contracts',
-        '/onboarding',
-        '/projects',
-        '/analytics',
-        '/help',
+      // Public routes — explicitly listed, everything else requires auth
+      const publicRoutes = [
+        '/login',
+        '/register',
+        '/forgot-password',
+        '/reset-password',
+        '/p/',  // Client portal (public quote view)
+        '/q/',  // Quote portal
+        '/i/',  // Invoice portal
+        '/c/',  // Contract portal
+        '/invite/',
       ];
-      const isOnProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+      const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
-      const isOnAuth = pathname.startsWith('/login') || pathname.startsWith('/register');
-      const isOnPortal = pathname.startsWith('/p/') || pathname.startsWith('/q/') || pathname.startsWith('/i/') || pathname.startsWith('/c/'); // Client portals
-
-      // Allow public access to client portal
-      if (isOnPortal) {
+      // Also allow root path and static marketing pages
+      if (pathname === '/' || pathname === '/pricing' || pathname === '/features') {
         return true;
       }
 
-      // Allow auth pages (login/register) even for logged-in users.
-      // This is necessary so that signOut (which redirects to /login) works properly.
-      // The login page itself can redirect logged-in users if needed.
-      if (isOnAuth) {
+      // Allow public routes without auth
+      if (isPublicRoute) {
         return true;
       }
 
-      // Protect dashboard routes
-      if (isOnProtectedRoute) {
-        if (isLoggedIn) return true;
-        return false; // Redirect to login
-      }
-
-      return true;
+      // Everything else requires authentication (protect by default)
+      if (isLoggedIn) return true;
+      return false; // Redirect to login
     },
     async jwt({ token, user, trigger, session }) {
       if (user) {
@@ -84,15 +72,28 @@ export const authConfig: NextAuthConfig = {
             const { prisma } = await import('@quotecraft/database');
             const dbUser = await prisma.user.findUnique({
               where: { id: token.id },
-              select: { deletedAt: true },
+              select: { deletedAt: true, passwordChangedAt: true },
             });
             if (!dbUser || dbUser.deletedAt) {
               // User deleted — invalidate token
               return { ...token, id: '', email: '', name: '' };
             }
+            // Invalidate JWT if password was changed after token was issued
+            if (dbUser.passwordChangedAt && token.iat) {
+              const changedAtSeconds = Math.floor(dbUser.passwordChangedAt.getTime() / 1000);
+              if (token.iat < changedAtSeconds) {
+                return { ...token, id: '', email: '', name: '' };
+              }
+            }
             token.lastChecked = now;
+            token.dbCheckFailures = 0;
           } catch {
-            // Don't block auth if DB check fails — just skip
+            // Track consecutive failures — invalidate after 3 to prevent indefinite access during outages
+            const failures = (typeof token.dbCheckFailures === 'number' ? token.dbCheckFailures : 0) + 1;
+            token.dbCheckFailures = failures;
+            if (failures >= 3) {
+              return { ...token, id: '', email: '', name: '' };
+            }
           }
         }
       }

@@ -29,6 +29,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       recipients?: string[];
     };
 
+    // Validate recipients
+    if (recipients) {
+      if (recipients.length > 10) return apiError('Maximum 10 recipients allowed', 400);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalid = recipients.filter(e => !emailRegex.test(e));
+      if (invalid.length > 0) return apiError(`Invalid email addresses: ${invalid.join(', ')}`, 400);
+    }
+
     // Fetch invoice with client
     const invoice = await prisma.invoice.findFirst({
       where: { id, workspaceId, deletedAt: null },
@@ -83,24 +91,30 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       console.error('Failed to send invoice email:', err);
     }
 
-    // Update status to sent
-    await prisma.invoice.update({
-      where: { id },
-      data: {
-        status: 'sent',
-        sentAt: new Date(),
-      },
-    });
+    // Only update status to sent if email was actually delivered
+    if (emailSent) {
+      await prisma.invoice.update({
+        where: { id },
+        data: {
+          status: 'sent',
+          sentAt: new Date(),
+        },
+      });
+    }
 
     // Create event
     await prisma.invoiceEvent.create({
       data: {
         invoiceId: id,
-        eventType: 'sent',
+        eventType: emailSent ? 'sent' : 'send_failed',
         actorType: 'system',
         metadata: { via: 'api', emailSent },
       },
     }).catch(() => {});
+
+    if (!emailSent) {
+      return apiError('Invoice email could not be sent. Status unchanged.', 502);
+    }
 
     return apiSuccess({
       message: 'Invoice sent successfully',

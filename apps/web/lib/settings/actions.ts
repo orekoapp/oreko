@@ -106,7 +106,11 @@ export async function getBusinessProfile(): Promise<BusinessProfileData | null> 
 export async function updateBusinessProfile(
   input: UpdateBusinessProfileInput
 ): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  if (role === 'viewer' || role === 'editor') {
+    throw new Error('Only admins and owners can update business profile');
+  }
 
   const existing = await prisma.businessProfile.findUnique({
     where: { workspaceId },
@@ -154,7 +158,10 @@ export async function updateBusinessProfile(
 
 // Update business logo
 export async function updateBusinessLogo(logoUrl: string | null): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer' || role === 'editor') {
+    throw new Error('Only admins and owners can update business logo');
+  }
 
   const existing = await prisma.businessProfile.findUnique({
     where: { workspaceId },
@@ -206,7 +213,10 @@ export async function getEmailSettings(): Promise<EmailSettingsData | null> {
 export async function updateEmailSettings(
   input: UpdateEmailSettingsInput
 ): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer' || role === 'editor') {
+    throw new Error('Only admins and owners can update email settings');
+  }
 
   const existing = await prisma.businessProfile.findUnique({
     where: { workspaceId },
@@ -268,7 +278,10 @@ export async function getBrandingSettings(): Promise<BrandingSettingsData | null
 export async function updateBrandingSettings(
   input: UpdateBrandingSettingsInput
 ): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer' || role === 'editor') {
+    throw new Error('Only admins and owners can update branding settings');
+  }
 
   const existing = await prisma.brandingSettings.findUnique({
     where: { workspaceId },

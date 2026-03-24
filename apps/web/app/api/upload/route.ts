@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const purpose = formData.get('purpose') as string | null;
+    const rawPurpose = formData.get('purpose') as string | null;
+    const VALID_PURPOSES = ['logo', 'signature', 'attachment', 'profile'];
+    const purpose = rawPurpose && VALID_PURPOSES.includes(rawPurpose) ? rawPurpose : 'attachment';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });

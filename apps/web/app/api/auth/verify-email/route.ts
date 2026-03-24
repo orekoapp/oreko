@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
+import { validateRequestOrigin } from '@/lib/csrf';
 
 export async function POST(request: NextRequest) {
   try {
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const rateLimitResult = checkRateLimit(`verify-email:${clientIp}`, strictRateLimitOptions);
     if (rateLimitResult.limited) {

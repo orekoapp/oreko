@@ -77,6 +77,15 @@ export async function POST(request: NextRequest) {
   if (!name) return apiError('name is required', 400);
   if (!email) return apiError('email is required', 400);
 
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) return apiError('Invalid email format', 400);
+
+  // Validate metadata size
+  if (metadata && JSON.stringify(metadata).length > 10000) {
+    return apiError('Metadata too large (max 10KB)', 400);
+  }
+
   // Check for duplicate email in workspace
   const existing = await prisma.client.findFirst({
     where: { workspaceId, email, deletedAt: null },

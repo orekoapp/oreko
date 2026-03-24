@@ -30,10 +30,23 @@ export async function GET(
       }
       data = await getQuotePdfDataByToken(accessToken);
     } else {
-      // Authenticated access
+      // Authenticated access — verify user has access to this quote's workspace
       const session = await auth();
       if (!session?.user?.id) {
         return new NextResponse('Unauthorized', { status: 401 });
+      }
+      // Verify quote belongs to user's workspace
+      const quote = await prisma.quote.findFirst({
+        where: { id: quoteId, deletedAt: null },
+        select: { workspaceId: true },
+      });
+      if (quote) {
+        const membership = await prisma.workspaceMember.findFirst({
+          where: { userId: session.user.id, workspaceId: quote.workspaceId },
+        });
+        if (!membership) {
+          return new NextResponse('Forbidden', { status: 403 });
+        }
       }
       data = await getQuotePdfData(quoteId);
     }
@@ -47,6 +60,9 @@ export async function GET(
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
       },
     });
   } catch (error) {

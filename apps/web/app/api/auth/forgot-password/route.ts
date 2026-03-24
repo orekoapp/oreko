@@ -4,6 +4,7 @@ import { randomBytes, createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { sendEmail } from '@/lib/services/email';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { validateRequestOrigin } from '@/lib/csrf';
 
 function escapeHtml(str: string): string {
   return str
@@ -16,6 +17,10 @@ function escapeHtml(str: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
     // Bug #16: Record start time to normalize response timing and prevent email enumeration via timing
     const startTime = Date.now();
     const MIN_RESPONSE_TIME = 500; // ms — ensures consistent timing regardless of user existence

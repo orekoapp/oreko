@@ -186,16 +186,52 @@ export async function generatePdfFromHtml(
   }
 }
 
+// Validate URL is safe for PDF generation (prevent SSRF)
+function validatePdfUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Only allow http/https protocols
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+    // Block private/internal IPs
+    const hostname = parsed.hostname;
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.') ||
+      hostname.startsWith('192.168.') ||
+      hostname === '169.254.169.254' ||
+      hostname.endsWith('.internal') ||
+      hostname === '[::1]'
+    ) {
+      // Allow localhost only if it matches our own app URL
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || '';
+      if (!baseUrl.includes(hostname)) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Generate PDF from URL
 export async function generatePdfFromUrl(
   url: string,
   options: PdfOptions = {}
 ): Promise<Buffer> {
+  if (!validatePdfUrl(url)) {
+    throw new Error('Invalid URL for PDF generation');
+  }
+
   const browser = await getBrowser();
   let page: Page | null = null;
 
   try {
     page = await browser.newPage();
+
+    // Disable JavaScript to prevent script injection
+    await page.setJavaScriptEnabled(false);
 
     // Navigate to URL
     await page.goto(url, {
@@ -283,7 +319,7 @@ export function createPdfTemplate(params: {
         <meta charset="utf-8">
         <title>${title}</title>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          /* Font loaded from system stack — removed external Google Fonts import to prevent IP leakage */
 
           * {
             margin: 0;

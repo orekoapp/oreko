@@ -11,6 +11,11 @@ export function formatCurrency(
   // MEDIUM #39: Handle Prisma Decimal objects by converting to number first
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
 
+  // Guard against NaN/Infinity — display as 0 instead of '$NaN'
+  if (!Number.isFinite(numericAmount)) {
+    return formatCurrency(0, currency, locale);
+  }
+
   // Bug #146: Zero-decimal currencies (JPY, KRW, etc.) should not show decimal places
   const ZERO_DECIMAL_CURRENCIES = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'];
   const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currency.toUpperCase());
@@ -62,6 +67,7 @@ export function formatPercentage(
   decimals: number = 0
 ): string {
   const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+  if (!Number.isFinite(numericValue)) return '0%';
   return `${numericValue.toFixed(decimals)}%`;
 }
 

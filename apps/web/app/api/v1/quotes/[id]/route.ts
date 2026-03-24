@@ -124,11 +124,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Block financial changes on accepted quotes
+    if (quote.status === 'accepted') {
+      return apiError('Cannot modify line items on an accepted quote', 400);
+    }
+
     let subtotal = 0;
     let taxTotal = 0;
     const processed = lineItems.map((item, i) => {
-      const amount = item.quantity * item.rate;
-      const taxAmount = item.taxRate ? amount * (item.taxRate / 100) : 0;
+      const amount = Math.round(item.quantity * item.rate * 100) / 100;
+      const taxAmount = item.taxRate ? Math.round(amount * (item.taxRate / 100) * 100) / 100 : 0;
       subtotal += amount;
       taxTotal += taxAmount;
       return {
@@ -138,19 +143,42 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         quantity: item.quantity,
         rate: item.rate,
         amount,
-        taxRate: item.taxRate || null,
+        taxRate: item.taxRate != null ? item.taxRate : null,
         taxAmount,
         sortOrder: i,
       };
     });
 
-    await prisma.$transaction(async (tx) => {
-      await tx.quoteLineItem.deleteMany({ where: { quoteId: id } });
-      await tx.quoteLineItem.createMany({ data: processed });
-    });
+    // Recalculate with existing discount fields
+    let discountAmount = 0;
+    const discountType = quote.discountType as string | null;
+    const discountValue = quote.discountValue ? toNumber(quote.discountValue) : 0;
+    if (discountType === 'percentage' && discountValue > 0) {
+      discountAmount = Math.round(subtotal * (discountValue / 100) * 100) / 100;
+    } else if (discountType === 'fixed' && discountValue > 0) {
+      discountAmount = Math.min(discountValue, subtotal);
+    }
+
     updateData.subtotal = subtotal;
     updateData.taxTotal = taxTotal;
-    updateData.total = subtotal + taxTotal;
+    updateData.discountAmount = discountAmount;
+    updateData.total = subtotal - discountAmount + taxTotal;
+
+    // Include line item replacement inside the same transaction as totals update
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.quoteLineItem.deleteMany({ where: { quoteId: id } });
+      await tx.quoteLineItem.createMany({ data: processed });
+      return tx.quote.update({
+        where: { id },
+        data: updateData,
+        include: {
+          client: { select: { id: true, name: true, email: true, company: true } },
+          lineItems: { orderBy: { sortOrder: 'asc' } },
+        },
+      });
+    });
+
+    return apiSuccess(formatQuote(updated));
   }
 
   const updated = await prisma.quote.update({

@@ -13,12 +13,15 @@ export const invoiceStatusSchema = z.enum([
   'voided',
 ]);
 
-// Payment method enum (aligned with record-payment-dialog.tsx UI)
+// Payment method enum — aligned with Payment type in packages/types
 export const paymentMethodSchema = z.enum([
   'card',
   'bank_transfer',
+  'credit_card',
   'check',
   'cash',
+  'paypal',
+  'manual',
   'other',
 ]);
 

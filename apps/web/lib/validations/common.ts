@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-// Common ID schema
-export const idSchema = z.string().cuid();
+// Common ID schema — Prisma uses @default(uuid()) for all IDs
+export const idSchema = z.string().uuid();
 
 // Pagination schema
 export const paginationSchema = z.object({
@@ -67,7 +67,9 @@ export const urlSchema = z
   .optional()
   .or(z.literal(''));
 
-// Money/currency amount schema (stored in dollars)
+// Money/currency amount schema — single source of truth for all monetary validation
+// Note: packages/utils/src/validation.ts has a stricter version with decimal precision check.
+// This version is used in forms where intermediate values may not have exact 2dp precision.
 export const moneySchema = z
   .number()
   .min(0, 'Amount cannot be negative')
@@ -115,8 +117,8 @@ export const fileUploadSchema = z.object({
   url: z.string().url(),
 });
 
-// Token schema (for public access tokens)
-export const tokenSchema = z.string().min(32).max(64);
+// Token schema (for public access tokens) — DB column allows up to 100 chars
+export const tokenSchema = z.string().min(32).max(100);
 
 // Status enum helpers
 export function createStatusSchema<T extends string>(statuses: readonly T[]) {

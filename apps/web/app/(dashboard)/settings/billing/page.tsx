@@ -75,7 +75,7 @@ export default async function BillingSettingsPage() {
                     </>
                   )}
                 </div>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="More actions">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </div>
@@ -163,7 +163,7 @@ export default async function BillingSettingsPage() {
                   <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 dark:text-green-400">
                     {invoice.status}
                   </Badge>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More actions">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </div>

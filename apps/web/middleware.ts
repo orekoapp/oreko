@@ -6,7 +6,7 @@ import { authConfig } from '@/lib/auth/config';
 // The full auth config (with adapter) is used in server components and API routes.
 const { auth } = NextAuth({
   session: { strategy: 'jwt' },
-  trustHost: true,
+  trustHost: process.env.NODE_ENV === 'development' || !!process.env.VERCEL,
   ...authConfig,
 });
 

@@ -39,6 +39,18 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
   // Sanitize HTML content using DOMPurify to prevent XSS
   const safeHtml = sanitizeHtml(block.content.html || '');
 
+  // Set initial content via ref to avoid controlled/uncontrolled conflict with contentEditable
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (isEditing && editorRef.current && !initializedRef.current) {
+      editorRef.current.innerHTML = safeHtml;
+      initializedRef.current = true;
+    }
+    if (!isEditing) {
+      initializedRef.current = false;
+    }
+  }, [isEditing, safeHtml]);
+
   if (isEditing) {
     return (
       <div
@@ -50,7 +62,6 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
           alignmentClass
         )}
         onBlur={handleBlur}
-        dangerouslySetInnerHTML={{ __html: safeHtml }}
       />
     );
   }

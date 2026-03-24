@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import { idSchema, moneySchema, listQuerySchema } from './common';
 
-// Rate card item type enum
+// Rate card item type enum — aligned with types and Prisma schema
 export const rateCardItemTypeSchema = z.enum([
+  'hourly',
+  'daily',
+  'fixed',
+  'package',
   'service',
   'product',
-  'hourly',
-  'fixed',
   'recurring',
 ]);
 

@@ -16,7 +16,11 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') || undefined;
 
   const where: Record<string, unknown> = { workspaceId, deletedAt: null };
-  if (status) where.status = status;
+  const validQuoteStatuses = ['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'converted'];
+  if (status) {
+    if (!validQuoteStatuses.includes(status)) return apiError(`Invalid status: ${status}`, 400);
+    where.status = status;
+  }
   if (search) where.title = { contains: search, mode: 'insensitive' };
 
   const [quotes, total] = await Promise.all([
@@ -96,6 +100,11 @@ export async function POST(request: NextRequest) {
 
   if (!clientId) return apiError('clientId is required', 400);
   if (!title) return apiError('title is required', 400);
+
+  // Validate currency code if provided
+  if (currency && (currency.length !== 3 || !/^[A-Z]{3}$/.test(currency.toUpperCase()))) {
+    return apiError('Currency must be a valid 3-letter ISO code (e.g., USD, EUR)', 400);
+  }
 
   // Verify client belongs to workspace
   const client = await prisma.client.findFirst({

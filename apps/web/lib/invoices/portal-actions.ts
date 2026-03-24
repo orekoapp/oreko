@@ -268,15 +268,20 @@ export async function trackInvoiceView(accessToken: string): Promise<void> {
 
     if (!invoice) return;
 
-    const isFirstView = invoice.viewedAt === null;
+    // Use atomic updateMany to prevent TOCTOU race on first view detection
+    // Only set viewedAt if it's currently null (atomic check-and-set)
+    const firstViewResult = await prisma.invoice.updateMany({
+      where: { accessToken, viewedAt: null },
+      data: { viewedAt: new Date() },
+    });
+    const isFirstView = firstViewResult.count > 0;
 
-    // Update view count and first view timestamp
+    // Update view count and status
     await prisma.$transaction([
       prisma.invoice.update({
         where: { accessToken },
         data: {
           viewCount: { increment: 1 },
-          ...(isFirstView && { viewedAt: new Date() }),
           ...(invoice.status === 'sent' && { status: 'viewed' }),
         },
       }),

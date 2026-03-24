@@ -155,8 +155,10 @@ export async function POST(request: Request) {
     }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // Return user-friendly messages without exposing internal schema details
+      const messages = error.errors.map(e => e.message);
       return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
+        { error: 'Invalid request data', messages },
         { status: 400 }
       );
     }

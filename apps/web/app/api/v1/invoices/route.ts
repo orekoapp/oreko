@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') || undefined;
 
   const where: Record<string, unknown> = { workspaceId, deletedAt: null };
-  if (status) where.status = status;
+  const validInvoiceStatuses = ['draft', 'sent', 'viewed', 'partial', 'paid', 'overdue', 'voided'];
+  if (status) {
+    if (!validInvoiceStatuses.includes(status)) return apiError(`Invalid status: ${status}`, 400);
+    where.status = status;
+  }
   if (clientId) where.clientId = clientId;
   if (search) where.title = { contains: search, mode: 'insensitive' };
 
@@ -104,25 +108,51 @@ export async function POST(request: NextRequest) {
   if (!title) return apiError('title is required', 400);
   if (!dueDate) return apiError('dueDate is required', 400);
 
+  // Validate currency code if provided
+  if (currency && (currency.length !== 3 || !/^[A-Z]{3}$/.test(currency.toUpperCase()))) {
+    return apiError('Currency must be a valid 3-letter ISO code (e.g., USD, EUR)', 400);
+  }
+
+  // Validate dueDate is a valid date
+  const parsedDueDate = new Date(dueDate);
+  if (isNaN(parsedDueDate.getTime())) {
+    return apiError('dueDate must be a valid date', 400);
+  }
+
   const client = await prisma.client.findFirst({
     where: { id: clientId, workspaceId, deletedAt: null },
   });
   if (!client) return apiError('Client not found', 404);
 
-  // Generate invoice number
-  const seq = await prisma.numberSequence.upsert({
-    where: { workspaceId_type: { workspaceId, type: 'invoice' } },
-    update: { currentValue: { increment: 1 } },
-    create: { workspaceId, type: 'invoice', prefix: 'INV-', currentValue: 1, padding: 4 },
-  });
+  // Generate invoice number in a serializable transaction to prevent duplicates
+  const seq = await prisma.$transaction(async (tx) => {
+    return tx.numberSequence.upsert({
+      where: { workspaceId_type: { workspaceId, type: 'invoice' } },
+      update: { currentValue: { increment: 1 } },
+      create: { workspaceId, type: 'invoice', prefix: 'INV-', currentValue: 1, padding: 4 },
+    });
+  }, { isolationLevel: 'Serializable' });
   const invoiceNumber = `${seq.prefix || 'INV-'}${String(seq.currentValue).padStart(seq.padding, '0')}`;
 
   const items = lineItems || [];
+
+  // Validate line item values
+  for (const item of items) {
+    if (!Number.isFinite(item.quantity) || !Number.isFinite(item.rate)) {
+      return apiError('Line item quantity and rate must be valid numbers', 400);
+    }
+    if (item.quantity < 0) return apiError('Line item quantity cannot be negative', 400);
+    if (item.rate < 0) return apiError('Line item rate cannot be negative', 400);
+    if (item.taxRate !== undefined && item.taxRate !== null && !Number.isFinite(item.taxRate)) {
+      return apiError('Line item taxRate must be a valid number', 400);
+    }
+  }
+
   let subtotal = 0;
   let taxTotal = 0;
   const processedItems = items.map((item, i) => {
-    const amount = item.quantity * item.rate;
-    const taxAmount = item.taxRate ? amount * (item.taxRate / 100) : 0;
+    const amount = Math.round(item.quantity * item.rate * 100) / 100;
+    const taxAmount = item.taxRate ? Math.round(amount * (item.taxRate / 100) * 100) / 100 : 0;
     subtotal += amount;
     taxTotal += taxAmount;
     return {
@@ -131,7 +161,7 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity,
       rate: item.rate,
       amount,
-      taxRate: item.taxRate || null,
+      taxRate: item.taxRate != null ? item.taxRate : null,
       taxAmount,
       sortOrder: i,
     };
@@ -147,7 +177,7 @@ export async function POST(request: NextRequest) {
       invoiceNumber,
       title,
       currency: currency || (await prisma.businessProfile.findUnique({ where: { workspaceId }, select: { currency: true } }))?.currency || 'USD',
-      dueDate: new Date(dueDate),
+      dueDate: parsedDueDate,
       subtotal,
       taxTotal,
       total,

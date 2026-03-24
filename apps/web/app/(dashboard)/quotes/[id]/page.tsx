@@ -267,12 +267,14 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               ) : (
                 <p className="text-muted-foreground text-sm">No client assigned</p>
               )}
-              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                <Link href={`/clients/${quote.clientId}`}>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View Client
-                </Link>
-              </Button>
+              {quote.clientId && (
+                <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+                  <Link href={`/clients/${quote.clientId}`}>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View Client
+                  </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -319,11 +321,15 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <CardContent className="space-y-3">
                 <div className="rounded-lg border bg-green-50 dark:bg-green-950 p-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={quote.signatureData.data}
-                    alt="Client signature"
-                    className="max-h-20 mx-auto"
-                  />
+                  {(quote.signatureData.data.startsWith('data:image/') || quote.signatureData.data.startsWith('https://')) ? (
+                    <img
+                      src={quote.signatureData.data}
+                      alt="Client signature"
+                      className="max-h-20 mx-auto"
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center">Invalid signature data</p>
+                  )}
                 </div>
                 <div className="space-y-1 text-sm">
                   <p><span className="text-muted-foreground">Signed by:</span> {quote.signatureData.signerName}</p>

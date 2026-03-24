@@ -118,6 +118,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   if (lineItems) {
+    // Block financial changes on paid/voided invoices
+    if (['paid', 'voided'].includes(invoice.status)) {
+      return apiError(`Cannot modify line items on a ${invoice.status} invoice`, 400);
+    }
+
     for (const item of lineItems) {
       if (!Number.isFinite(item.quantity) || !Number.isFinite(item.rate)) {
         return apiError('Line item quantity and rate must be valid numbers', 400);
@@ -131,8 +136,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     let subtotal = 0;
     let taxTotal = 0;
     const processed = lineItems.map((item, i) => {
-      const amount = item.quantity * item.rate;
-      const taxAmount = item.taxRate ? amount * (item.taxRate / 100) : 0;
+      const amount = Math.round(item.quantity * item.rate * 100) / 100;
+      const taxAmount = item.taxRate ? Math.round(amount * (item.taxRate / 100) * 100) / 100 : 0;
       subtotal += amount;
       taxTotal += taxAmount;
       return {
@@ -142,21 +147,46 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         quantity: item.quantity,
         rate: item.rate,
         amount,
-        taxRate: item.taxRate || null,
+        taxRate: item.taxRate != null ? item.taxRate : null,
         taxAmount,
         sortOrder: i,
       };
     });
 
-    await prisma.$transaction(async (tx) => {
-      await tx.invoiceLineItem.deleteMany({ where: { invoiceId: id } });
-      await tx.invoiceLineItem.createMany({ data: processed });
-    });
-    const total = subtotal + taxTotal;
+    // Recalculate with existing discount fields
+    let discountAmount = 0;
+    const discountType = invoice.discountType as string | null;
+    const discountValue = invoice.discountValue ? toNumber(invoice.discountValue) : 0;
+    if (discountType === 'percentage' && discountValue > 0) {
+      discountAmount = Math.round(subtotal * (discountValue / 100) * 100) / 100;
+    } else if (discountType === 'fixed' && discountValue > 0) {
+      discountAmount = Math.min(discountValue, subtotal);
+    }
+
+    const total = subtotal - discountAmount + taxTotal;
     updateData.subtotal = subtotal;
     updateData.taxTotal = taxTotal;
+    updateData.discountAmount = discountAmount;
     updateData.total = total;
-    updateData.amountDue = Math.max(0, total - toNumber(invoice.amountPaid));
+    // Use fresh amountPaid from DB to avoid stale data
+    const freshInvoice = await prisma.invoice.findUnique({ where: { id }, select: { amountPaid: true } });
+    updateData.amountDue = Math.max(0, total - toNumber(freshInvoice?.amountPaid));
+
+    // Include line item replacement and totals update in same transaction
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.invoiceLineItem.deleteMany({ where: { invoiceId: id } });
+      await tx.invoiceLineItem.createMany({ data: processed });
+      return tx.invoice.update({
+        where: { id },
+        data: updateData,
+        include: {
+          client: { select: { id: true, name: true, email: true, company: true } },
+          lineItems: { orderBy: { sortOrder: 'asc' } },
+        },
+      });
+    });
+
+    return apiSuccess(formatInvoice(updated));
   }
 
   const updated = await prisma.invoice.update({
@@ -182,6 +212,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     where: { id, workspaceId, deletedAt: null },
   });
   if (!invoice) return apiError('Invoice not found', 404);
+
+  // Prevent deletion of paid or partially paid invoices
+  if (['paid', 'partial'].includes(invoice.status)) {
+    return apiError(`Cannot delete a ${invoice.status} invoice. Void it instead.`, 400);
+  }
 
   await prisma.invoice.update({
     where: { id },

@@ -32,10 +32,14 @@ export const getCurrentUserWorkspace = cache(async (): Promise<WorkspaceContext>
   const cookieStore = await cookies();
   const storedWorkspaceId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
 
-  // If we have a stored workspace ID, verify the user has access
+  // If we have a stored workspace ID, verify the user has access and workspace is not deleted
   if (storedWorkspaceId) {
     const membership = await prisma.workspaceMember.findFirst({
-      where: { userId, workspaceId: storedWorkspaceId },
+      where: {
+        userId,
+        workspaceId: storedWorkspaceId,
+        workspace: { deletedAt: null },
+      },
       select: { workspaceId: true, role: true },
     });
     if (membership) {
@@ -43,10 +47,10 @@ export const getCurrentUserWorkspace = cache(async (): Promise<WorkspaceContext>
     }
   }
 
-  // CR #12: Fall back to first workspace — log warning since stored workspace was invalid
+  // CR #12: Fall back to first non-deleted workspace
   console.warn(`[workspace] Stored workspace ID not found for user ${userId}, falling back to first workspace`);
   const firstMembership = await prisma.workspaceMember.findFirst({
-    where: { userId },
+    where: { userId, workspace: { deletedAt: null } },
     select: { workspaceId: true, role: true },
   });
 

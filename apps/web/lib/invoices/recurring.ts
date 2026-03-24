@@ -179,11 +179,26 @@ export async function getRecurringSettings(
  * Sets issue date to today, calculates due date from parent's payment terms.
  */
 export async function generateRecurringInvoice(
-  parentInvoiceId: string
+  parentInvoiceId: string,
+  /** Pass workspaceId when called from cron (no session). Omit for client calls (uses session). */
+  callerWorkspaceId?: string
 ): Promise<{ success: boolean; invoiceId?: string; error?: string }> {
+  // When called from client-side (no workspaceId provided), verify via session
+  let workspaceId = callerWorkspaceId;
+  if (!workspaceId) {
+    try {
+      const { getCurrentUserWorkspace } = await import('@/lib/workspace/get-current-workspace');
+      const ctx = await getCurrentUserWorkspace();
+      workspaceId = ctx.workspaceId;
+    } catch {
+      return { success: false, error: 'Unauthorized' };
+    }
+  }
+
   const parent = await prisma.invoice.findFirst({
     where: {
       id: parentInvoiceId,
+      workspaceId,
       isRecurring: true,
       deletedAt: null,
     },
@@ -347,7 +362,18 @@ export async function getUpcomingRecurringInvoices(): Promise<
  * Get IDs of all recurring invoices in a workspace.
  * Used by the invoice list to show recurring badges.
  */
-export async function getRecurringInvoiceIds(workspaceId: string): Promise<string[]> {
+export async function getRecurringInvoiceIds(overrideWorkspaceId?: string): Promise<string[]> {
+  // Use session workspace by default, allow override for internal/cron calls
+  let workspaceId = overrideWorkspaceId;
+  if (!workspaceId) {
+    try {
+      const { getCurrentUserWorkspace } = await import('@/lib/workspace/get-current-workspace');
+      const ctx = await getCurrentUserWorkspace();
+      workspaceId = ctx.workspaceId;
+    } catch {
+      return [];
+    }
+  }
   const invoices = await prisma.invoice.findMany({
     where: {
       workspaceId,

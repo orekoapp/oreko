@@ -20,11 +20,17 @@ export async function GET(request: Request) {
     if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-  } else if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json(
-      { error: 'CRON_SECRET not configured' },
-      { status: 500 }
-    );
+  } else {
+    // Require CRON_SECRET in all non-local environments (production, preview, staging)
+    // Only allow unauthenticated access on localhost for development
+    const host = request.headers.get('host') || '';
+    const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1');
+    if (!isLocalhost) {
+      return NextResponse.json(
+        { error: 'CRON_SECRET not configured' },
+        { status: 500 }
+      );
+    }
   }
 
   try {

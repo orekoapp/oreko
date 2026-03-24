@@ -88,7 +88,7 @@ export async function getContractTemplates(
       include: {
         _count: { select: { instances: true } },
       },
-      orderBy: { [sortBy]: sortOrder },
+      orderBy: { [(['name', 'createdAt', 'updatedAt', 'status'].includes(sortBy) ? sortBy : 'createdAt')]: sortOrder },
       skip: (page - 1) * limit,
       take: limit,
     }),
@@ -532,6 +532,9 @@ export async function createContractInstance(
     .replace(/{{date}}/g, escapeHtml(new Date().toLocaleDateString()));
 
   // Bug #186: Support creating and immediately sending via sendImmediately flag
+  const { randomBytes } = await import('crypto');
+  const accessToken = randomBytes(32).toString('hex');
+
   const instance = await prisma.contractInstance.create({
     data: {
       contractId: input.contractId,
@@ -539,6 +542,7 @@ export async function createContractInstance(
       quoteId: input.quoteId,
       workspaceId,
       content,
+      accessToken,
       status: input.sendImmediately ? 'sent' : 'draft',
       ...(input.sendImmediately ? { sentAt: new Date() } : {}),
     },
@@ -659,14 +663,16 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
     }
   }
 
-  // Update status to sent (regardless of email outcome, since contract needs to be accessible)
-  await prisma.contractInstance.update({
-    where: { id },
-    data: {
-      status: 'sent',
-      sentAt: new Date(),
-    },
-  });
+  // Only update status to sent if email was delivered (or no email was needed)
+  if (emailSent || !instance.client?.email) {
+    await prisma.contractInstance.update({
+      where: { id },
+      data: {
+        status: 'sent',
+        sentAt: new Date(),
+      },
+    });
+  }
 
   // Create notification for sender
   createNotification({
@@ -699,8 +705,8 @@ export async function signContract(input: SignContractInput, ipAddress?: string,
     throw new Error('Too many signing attempts. Please try again later.');
   }
 
-  const instance = await prisma.contractInstance.findUnique({
-    where: { accessToken: input.token },
+  const instance = await prisma.contractInstance.findFirst({
+    where: { accessToken: input.token, deletedAt: null },
   });
 
   if (!instance) {

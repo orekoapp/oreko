@@ -218,8 +218,12 @@ export function SendEmailDialog({
   const effectiveMessage = message || `Your message preview will appear here...`;
 
   const handleAddRecipient = () => {
-    if (!newRecipientEmail.trim()) return;
-    const name = newRecipientEmail.split('@')[0] || 'Recipient';
+    const email = newRecipientEmail.trim();
+    if (!email) return;
+    // Validate email format before adding
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return;
+    const name = email.split('@')[0] || 'Recipient';
     setRecipients((prev) => [
       ...prev,
       { id: Date.now().toString(), name, email: newRecipientEmail.trim() },

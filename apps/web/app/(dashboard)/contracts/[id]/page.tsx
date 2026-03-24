@@ -28,13 +28,22 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
-  const instance = await getContractInstanceById(id);
-  return {
-    title: instance?.contractName || 'Contract',
-    description: 'View contract details',
-  };
+  if (!UUID_REGEX.test(id)) {
+    return { title: 'Contract Not Found' };
+  }
+  try {
+    const instance = await getContractInstanceById(id);
+    return {
+      title: instance?.contractName || 'Contract',
+      description: 'View contract details',
+    };
+  } catch {
+    return { title: 'Contract Not Found' };
+  }
 }
 
 const statusConfig: Record<
@@ -173,12 +182,14 @@ export default async function ContractDetailPage({ params }: PageProps) {
                   <p className="text-sm font-medium mb-2">Client Signature</p>
                   {instance.signatureData ? (
                     <div className="border rounded-lg p-4 bg-card">
-                      {instance.signatureData.type === 'drawn' ? (
+                      {instance.signatureData.type === 'drawn' && (instance.signatureData.value.startsWith('data:image/') || instance.signatureData.value.startsWith('https://')) ? (
                         <img
                           src={instance.signatureData.value}
                           alt="Client Signature"
                           className="max-h-24"
                         />
+                      ) : instance.signatureData.type === 'drawn' ? (
+                        <p className="text-sm text-muted-foreground">Invalid signature data</p>
                       ) : (
                         <p
                           className="text-3xl"
@@ -204,12 +215,14 @@ export default async function ContractDetailPage({ params }: PageProps) {
                   <p className="text-sm font-medium mb-2">Business Signature</p>
                   {instance.countersignatureData ? (
                     <div className="border rounded-lg p-4 bg-card">
-                      {instance.countersignatureData.type === 'drawn' ? (
+                      {instance.countersignatureData.type === 'drawn' && (instance.countersignatureData.value.startsWith('data:image/') || instance.countersignatureData.value.startsWith('https://')) ? (
                         <img
                           src={instance.countersignatureData.value}
                           alt="Business Signature"
                           className="max-h-24"
                         />
+                      ) : instance.countersignatureData.type === 'drawn' ? (
+                        <p className="text-sm text-muted-foreground">Invalid signature data</p>
                       ) : (
                         <p
                           className="text-3xl"

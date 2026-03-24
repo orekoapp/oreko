@@ -72,6 +72,21 @@ export async function POST(
       updateData.internalNotes = body.internalNotes.slice(0, 10000);
     }
     if (Array.isArray(body.blocks)) {
+      // Limit blocks array size to prevent abuse
+      if (body.blocks.length > 200) {
+        return NextResponse.json(
+          { error: 'Too many blocks (max 200)' },
+          { status: 400 }
+        );
+      }
+      // Limit total JSON size
+      const blocksSize = JSON.stringify(body.blocks).length;
+      if (blocksSize > 500000) { // 500KB
+        return NextResponse.json(
+          { error: 'Blocks data too large (max 500KB)' },
+          { status: 400 }
+        );
+      }
       // MEDIUM #4: Basic shape validation for blocks array
       const validBlocks = body.blocks.every(
         (block: unknown) =>

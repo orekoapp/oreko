@@ -161,6 +161,19 @@ export async function sendEmail(
   }
 }
 
+// Validate URL is safe for embedding in email href attributes
+function validateEmailUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error('Invalid URL protocol');
+    }
+    return url;
+  } catch {
+    return '#';
+  }
+}
+
 // Pre-built email templates
 export async function sendQuoteSentEmail(params: {
   to: string | string[];
@@ -178,6 +191,7 @@ export async function sendQuoteSentEmail(params: {
   const safeClientName = escapeHtml(clientName);
   const safeQuoteName = escapeHtml(quoteName);
   const safeMessage = message ? escapeHtml(message) : '';
+  const safeQuoteUrl = validateEmailUrl(quoteUrl);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -187,11 +201,11 @@ export async function sendQuoteSentEmail(params: {
       ${safeMessage ? `<p>${safeMessage}</p>` : ''}
       ${validUntil ? `<p>This quote is valid until ${validUntil.toLocaleDateString()}.</p>` : ''}
       <p style="margin: 24px 0;">
-        <a href="${quoteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        <a href="${safeQuoteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           View Quote
         </a>
       </p>
-      <p>Or copy this link: ${quoteUrl}</p>
+      <p>Or copy this link: ${safeQuoteUrl}</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
         Sent via QuoteCraft on behalf of ${safeBusinessName}

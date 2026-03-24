@@ -50,7 +50,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { cn, formatCurrency } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import {
@@ -274,7 +274,7 @@ interface EditQuoteFormProps {
 
 export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
   const router = useRouter();
-  const { toast } = useToast();
+  // toast imported from sonner at top level
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState(quote.currency);
 
@@ -447,15 +447,15 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
 
   const handleSubmit = async (isDraft: boolean) => {
     if (!selectedClientId) {
-      toast({ title: 'Error', description: 'Please select a client', variant: 'destructive' });
+      toast.error('Please select a client');
       return;
     }
     if (lineItems.length === 0 || !lineItems.some(i => i.name.trim())) {
-      toast({ title: 'Error', description: 'Please add at least one line item', variant: 'destructive' });
+      toast.error('Please add at least one line item');
       return;
     }
     if (!terms.trim()) {
-      toast({ title: 'Error', description: 'Please add terms and conditions', variant: 'destructive' });
+      toast.error('Please add terms and conditions');
       return;
     }
 
@@ -506,31 +506,21 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
           // Save & Send: also send the quote email
           const sendResult = await sendQuote(quote.id);
           if (!sendResult.success) {
-            toast({
-              title: 'Quote Updated',
-              description: sendResult.error || 'Quote saved but email could not be sent. You can resend from the quotes list.',
-              variant: 'destructive',
-            });
+            toast.error(sendResult.error || 'Quote saved but email could not be sent. You can resend from the quotes list.');
             router.push('/quotes');
             return;
           }
-          toast({
-            title: 'Quote Sent',
-            description: `Quote ${quoteNumber} updated and sent successfully`,
-          });
+          toast.success(`Quote ${quoteNumber} updated and sent successfully`);
         } else {
-          toast({
-            title: 'Draft Updated',
-            description: `Quote ${quoteNumber} updated successfully`,
-          });
+          toast.success(`Quote ${quoteNumber} updated successfully`);
         }
         router.push('/quotes');
       } else {
-        toast({ title: 'Error', description: result.error || 'Failed to update quote', variant: 'destructive' });
+        toast.error(result.error || 'Failed to update quote');
       }
     } catch (err) {
       console.error('Update quote error:', err);
-      toast({ title: 'Error', description: 'Failed to update quote. Check console for details.', variant: 'destructive' });
+      toast.error('Failed to update quote. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -568,11 +558,11 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
       pdf.save(`Quote-${quoteNumber}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      toast({ title: 'Error', description: 'Failed to generate PDF. Please try again.' });
+      toast.error('Failed to generate PDF. Please try again.');
     } finally {
       setPdfGenerating(false);
     }
-  }, [quoteNumber, toast]);
+  }, [quoteNumber]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">

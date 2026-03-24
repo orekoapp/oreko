@@ -28,7 +28,6 @@ function formatInvoice(inv: any) {
     amountDue: toNumber(inv.amountDue),
     notes: inv.notes,
     terms: inv.terms,
-    accessToken: inv.accessToken,
     sentAt: inv.sentAt,
     paidAt: inv.paidAt,
     lineItems: inv.lineItems?.map((li: any) => ({

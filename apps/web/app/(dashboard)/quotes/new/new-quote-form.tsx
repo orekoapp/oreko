@@ -224,14 +224,15 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
   const [businessName, setBusinessName] = useState('Your Business');
 
   useEffect(() => {
-    searchClients('', 50).then(setClients).catch(() => {});
-    getNextQuoteNumber().then(setQuoteNumber).catch((err) => console.error('Failed to fetch quote number:', err));
-    // Try business profile first, fall back to workspace name
+    let isMounted = true;
+    searchClients('', 50).then(data => { if (isMounted) setClients(data); }).catch(() => {});
+    getNextQuoteNumber().then(num => { if (isMounted) setQuoteNumber(num); }).catch((err) => console.error('Failed to fetch quote number:', err));
     Promise.all([getBusinessProfile(), getWorkspace()])
       .then(([bp, ws]) => {
-        setBusinessName(bp?.businessName || ws.name || 'Your Business');
+        if (isMounted) setBusinessName(bp?.businessName || ws.name || 'Your Business');
       })
       .catch(() => {});
+    return () => { isMounted = false; };
   }, []);
 
   // Form State
@@ -293,7 +294,7 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
   // Derived State
   const selectedClient = useMemo(
     () => clients.find((c) => c.id === selectedClientId),
-    [selectedClientId]
+    [selectedClientId, clients]
   );
 
   const tpl = (QUOTE_TEMPLATES[templateName] ?? QUOTE_TEMPLATES.clean) as QuoteTemplate;

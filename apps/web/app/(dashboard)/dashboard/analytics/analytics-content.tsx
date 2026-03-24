@@ -177,6 +177,20 @@ export function AnalyticsPageContent({
   );
 }
 
+// Escape CSV value to prevent formula injection and handle special chars
+function escapeCSV(value: unknown): string {
+  const str = String(value ?? '');
+  // Prefix formula-triggering characters to prevent CSV injection
+  if (/^[=+\-@\t\r]/.test(str)) {
+    return `"'${str.replace(/"/g, '""')}"`;
+  }
+  // Wrap in quotes if contains comma, quote, or newline
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
 // Helper functions for CSV export
 function generateCSV(data: Record<string, unknown>): string {
   const lines: string[] = [];
@@ -192,7 +206,7 @@ function generateCSV(data: Record<string, unknown>): string {
       const formattedValue = typeof value === 'number' && key.toLowerCase().includes('revenue')
         ? `$${value.toFixed(2)}`
         : value;
-      lines.push(`${formattedKey},${formattedValue}`);
+      lines.push(`${escapeCSV(formattedKey)},${escapeCSV(formattedValue)}`);
     });
   }
 
@@ -202,7 +216,7 @@ function generateCSV(data: Record<string, unknown>): string {
   const quoteStatus = data.quoteStatus as Record<string, number>;
   if (quoteStatus) {
     Object.entries(quoteStatus).forEach(([status, count]) => {
-      lines.push(`${status},${count}`);
+      lines.push(`${escapeCSV(status)},${escapeCSV(count)}`);
     });
   }
 
@@ -212,7 +226,7 @@ function generateCSV(data: Record<string, unknown>): string {
   const invoiceStatus = data.invoiceStatus as Record<string, number>;
   if (invoiceStatus) {
     Object.entries(invoiceStatus).forEach(([status, count]) => {
-      lines.push(`${status},${count}`);
+      lines.push(`${escapeCSV(status)},${escapeCSV(count)}`);
     });
   }
 

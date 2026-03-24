@@ -70,6 +70,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (existing) return apiError('A client with this email already exists', 409);
   }
 
+  // Validate name is non-empty if provided
+  if (name !== undefined && !name.trim()) {
+    return apiError('Client name cannot be empty', 400);
+  }
+
   const updateData: Record<string, unknown> = {};
   if (name !== undefined) updateData.name = name;
   if (email !== undefined) updateData.email = email;

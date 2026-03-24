@@ -51,14 +51,14 @@ describe('paymentMethodSchema', () => {
 
 describe('createInvoiceSchema', () => {
   const validInvoice = {
-    clientId: 'clrqm9k3k0000q3wz8k7v4z1w',
+    clientId: '550e8400-e29b-41d4-a716-446655440000',
     title: 'Invoice for Web Development',
     dueDate: '2026-02-15',
     currency: 'USD',
     lineItems: [
       {
         id: 'item-1',
-        description: 'Web Development Services',
+        name: 'Web Development Services',
         quantity: 20,
         rate: 15000,
       },
@@ -99,7 +99,7 @@ describe('createInvoiceSchema', () => {
   it('accepts optional quoteId (for conversion)', () => {
     const result = createInvoiceSchema.safeParse({
       ...validInvoice,
-      quoteId: 'clrqm9k3k0001q3wz8k7v4z1x',
+      quoteId: '550e8400-e29b-41d4-a716-446655440001',
     });
     expect(result.success).toBe(true);
   });
@@ -155,7 +155,7 @@ describe('updateInvoiceSchema', () => {
 
   it('accepts partial update', () => {
     const result = updateInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       title: 'Updated Title',
     });
     expect(result.success).toBe(true);
@@ -163,9 +163,9 @@ describe('updateInvoiceSchema', () => {
 
   it('allows updating line items', () => {
     const result = updateInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       lineItems: [
-        { id: '1', description: 'New item', quantity: 1, rate: 1000 },
+        { id: '1', name: 'New item', quantity: 1, rate: 1000 },
       ],
     });
     expect(result.success).toBe(true);
@@ -178,8 +178,8 @@ describe('invoiceFilterSchema', () => {
       page: 1,
       limit: 20,
       status: 'sent',
-      clientId: 'clrqm9k3k0000q3wz8k7v4z1w',
-      quoteId: 'clrqm9k3k0001q3wz8k7v4z1x',
+      clientId: '550e8400-e29b-41d4-a716-446655440000',
+      quoteId: '550e8400-e29b-41d4-a716-446655440001',
       minAmount: 10000,
       maxAmount: 50000,
       overdue: true,
@@ -213,7 +213,7 @@ describe('invoiceFilterSchema', () => {
 describe('sendInvoiceSchema', () => {
   it('accepts valid send data', () => {
     const result = sendInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       recipientEmail: 'client@example.com',
       message: 'Please find your invoice attached',
       ccEmails: ['cc@example.com'],
@@ -223,14 +223,14 @@ describe('sendInvoiceSchema', () => {
 
   it('accepts minimal send data', () => {
     const result = sendInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
     });
     expect(result.success).toBe(true);
   });
 
   it('rejects more than 5 CC emails', () => {
     const result = sendInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       ccEmails: Array(6).fill('cc@example.com'),
     });
     expect(result.success).toBe(false);
@@ -240,7 +240,7 @@ describe('sendInvoiceSchema', () => {
 describe('recordPaymentSchema', () => {
   it('accepts valid payment', () => {
     const result = recordPaymentSchema.safeParse({
-      invoiceId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      invoiceId: '550e8400-e29b-41d4-a716-446655440000',
       amount: 50000,
       method: 'bank_transfer',
       transactionId: 'TXN-123456',
@@ -259,7 +259,7 @@ describe('recordPaymentSchema', () => {
 
   it('requires amount greater than 0', () => {
     const result = recordPaymentSchema.safeParse({
-      invoiceId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      invoiceId: '550e8400-e29b-41d4-a716-446655440000',
       amount: 0,
       method: 'cash',
     });
@@ -268,7 +268,7 @@ describe('recordPaymentSchema', () => {
 
   it('rejects negative amount', () => {
     const result = recordPaymentSchema.safeParse({
-      invoiceId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      invoiceId: '550e8400-e29b-41d4-a716-446655440000',
       amount: -100,
       method: 'cash',
     });
@@ -277,7 +277,7 @@ describe('recordPaymentSchema', () => {
 
   it('sets default paidAt to now', () => {
     const result = recordPaymentSchema.safeParse({
-      invoiceId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      invoiceId: '550e8400-e29b-41d4-a716-446655440000',
       amount: 1000,
       method: 'cash',
     });
@@ -289,7 +289,7 @@ describe('recordPaymentSchema', () => {
 describe('refundPaymentSchema', () => {
   it('accepts full refund (no amount)', () => {
     const result = refundPaymentSchema.safeParse({
-      paymentId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      paymentId: '550e8400-e29b-41d4-a716-446655440000',
       reason: 'Customer request',
     });
     expect(result.success).toBe(true);
@@ -297,7 +297,7 @@ describe('refundPaymentSchema', () => {
 
   it('accepts partial refund', () => {
     const result = refundPaymentSchema.safeParse({
-      paymentId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      paymentId: '550e8400-e29b-41d4-a716-446655440000',
       amount: 5000,
     });
     expect(result.success).toBe(true);
@@ -312,7 +312,7 @@ describe('refundPaymentSchema', () => {
 
   it('rejects reason over 500 chars', () => {
     const result = refundPaymentSchema.safeParse({
-      paymentId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      paymentId: '550e8400-e29b-41d4-a716-446655440000',
       reason: 'x'.repeat(501),
     });
     expect(result.success).toBe(false);
@@ -322,7 +322,7 @@ describe('refundPaymentSchema', () => {
 describe('markAsPaidSchema', () => {
   it('accepts valid mark as paid', () => {
     const result = markAsPaidSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       method: 'cash',
       notes: 'Cash payment received in office',
     });
@@ -331,7 +331,7 @@ describe('markAsPaidSchema', () => {
 
   it('defaults method to other', () => {
     const result = markAsPaidSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
     });
     expect(result.success).toBe(true);
     expect(result.data?.method).toBe('other');
@@ -339,7 +339,7 @@ describe('markAsPaidSchema', () => {
 
   it('rejects notes over 500 chars', () => {
     const result = markAsPaidSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       notes: 'x'.repeat(501),
     });
     expect(result.success).toBe(false);
@@ -349,7 +349,7 @@ describe('markAsPaidSchema', () => {
 describe('cancelInvoiceSchema', () => {
   it('accepts valid cancellation', () => {
     const result = cancelInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       reason: 'Client requested cancellation',
     });
     expect(result.success).toBe(true);
@@ -357,7 +357,7 @@ describe('cancelInvoiceSchema', () => {
 
   it('accepts cancellation without reason', () => {
     const result = cancelInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
     });
     expect(result.success).toBe(true);
   });
@@ -373,9 +373,9 @@ describe('cancelInvoiceSchema', () => {
 describe('duplicateInvoiceSchema', () => {
   it('accepts valid duplication', () => {
     const result = duplicateInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       title: 'Copy of Invoice',
-      clientId: 'clrqm9k3k0001q3wz8k7v4z1x',
+      clientId: '550e8400-e29b-41d4-a716-446655440001',
       dueDate: '2026-03-15',
     });
     expect(result.success).toBe(true);
@@ -383,7 +383,7 @@ describe('duplicateInvoiceSchema', () => {
 
   it('accepts minimal duplication', () => {
     const result = duplicateInvoiceSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
     });
     expect(result.success).toBe(true);
   });

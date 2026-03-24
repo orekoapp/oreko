@@ -104,6 +104,18 @@ export async function createCreditNote(
 
   totalAmount = Math.round(totalAmount * 100) / 100;
 
+  // Validate credit note amount doesn't exceed invoice total
+  const invoiceTotal = Number(invoice.total);
+  if (totalAmount > invoiceTotal) {
+    return { success: false, error: `Credit note amount ($${totalAmount.toFixed(2)}) cannot exceed invoice total ($${invoiceTotal.toFixed(2)})` };
+  }
+
+  // Validate credit note amount doesn't exceed remaining amountDue
+  const invoiceAmountDue = Number(invoice.amountDue);
+  if (totalAmount > invoiceAmountDue) {
+    return { success: false, error: `Credit note amount ($${totalAmount.toFixed(2)}) cannot exceed remaining amount due ($${invoiceAmountDue.toFixed(2)})` };
+  }
+
   const creditNoteNumber = await generateCreditNoteNumber(workspace.id);
 
   const creditNote = await prisma.$transaction(async (tx) => {

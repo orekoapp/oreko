@@ -321,6 +321,11 @@ export async function updateQuote(
     return { success: false as const, error: 'Insufficient permissions: viewers cannot edit quotes' };
   }
 
+  // Validate title length if provided
+  if (data.title !== undefined && data.title.length > 500) {
+    return { success: false as const, error: 'Title must be less than 500 characters' };
+  }
+
   // CR #10: Verify quote belongs to workspace (include deletedAt filter)
   const existingQuote = await prisma.quote.findFirst({
     where: {
@@ -361,11 +366,11 @@ export async function updateQuote(
   // Validate line item values
   if (serviceBlocks) {
     for (const block of serviceBlocks) {
-      if (block.content.rate < 0) {
-        return { success: false as const, error: 'Line item rate cannot be negative' };
+      if (!Number.isFinite(block.content.rate) || block.content.rate < 0 || block.content.rate > 999999999) {
+        return { success: false as const, error: 'Line item rate must be a valid number between 0 and 999,999,999' };
       }
-      if (block.content.quantity < 0) {
-        return { success: false as const, error: 'Line item quantity cannot be negative' };
+      if (!Number.isFinite(block.content.quantity) || block.content.quantity < 0 || block.content.quantity > 999999) {
+        return { success: false as const, error: 'Line item quantity must be a valid number between 0 and 999,999' };
       }
     }
   }
@@ -430,6 +435,10 @@ export async function updateQuote(
           notes: data.notes,
           terms: data.terms,
           internalNotes: data.internalNotes,
+          // Always include discount fields when calculated
+          ...(discountType && { discountType }),
+          ...(discountValue !== undefined && { discountValue }),
+          ...(discountAmount !== undefined && { discountAmount }),
           ...(data.blocks && {
             subtotal,
             taxTotal,
@@ -905,9 +914,21 @@ export async function sendQuote(quoteId: string, emailOptions?: SendEmailOptions
   const baseUrl = getBaseUrl();
   const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
 
-  const emailRecipients = emailOptions?.recipients?.length
-    ? emailOptions.recipients
-    : [quote.client.email];
+  // Validate and limit email recipients
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let emailRecipients: string[];
+  if (emailOptions?.recipients?.length) {
+    if (emailOptions.recipients.length > 10) {
+      return { success: false, error: 'Maximum 10 recipients allowed' };
+    }
+    const invalidEmails = emailOptions.recipients.filter(e => !emailRegex.test(e));
+    if (invalidEmails.length > 0) {
+      return { success: false, error: `Invalid email addresses: ${invalidEmails.join(', ')}` };
+    }
+    emailRecipients = emailOptions.recipients;
+  } else {
+    emailRecipients = [quote.client.email];
+  }
 
   let emailSent = false;
   try {

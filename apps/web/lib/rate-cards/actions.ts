@@ -54,7 +54,8 @@ export async function getRateCards(filter?: RateCardFilter): Promise<PaginatedRa
     }),
   };
 
-  const orderBy: Prisma.RateCardOrderByWithRelationInput = filter?.sortBy
+  const SORTABLE_COLUMNS = ['name', 'rate', 'pricingType', 'createdAt', 'updatedAt'];
+  const orderBy: Prisma.RateCardOrderByWithRelationInput = filter?.sortBy && SORTABLE_COLUMNS.includes(filter.sortBy)
     ? { [filter.sortBy]: filter.sortOrder || 'asc' }
     : { name: 'asc' };
 
@@ -301,7 +302,10 @@ export async function bulkDeleteRateCards(ids: string[]): Promise<{ deleted: num
 
 // Toggle rate card active status
 export async function toggleRateCardActive(id: string): Promise<{ isActive: boolean }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot modify rate cards');
+  }
 
   const existing = await prisma.rateCard.findFirst({
     where: {
@@ -330,7 +334,10 @@ export async function duplicateRateCard(
   id: string,
   newName?: string
 ): Promise<{ id: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot duplicate rate cards');
+  }
 
   const existing = await prisma.rateCard.findFirst({
     where: {
@@ -623,25 +630,25 @@ export async function importRateCards(
     categoryMap.set(name, category.id);
   }
 
+  // Pre-fetch all existing rate card names for batch duplicate checking (avoids N+1)
+  const existingNames = new Set<string>();
+  if (skipDuplicates) {
+    const existing = await prisma.rateCard.findMany({
+      where: { workspaceId, deletedAt: null },
+      select: { name: true },
+    });
+    existing.forEach(r => existingNames.add(r.name));
+  }
+
   // Process each row
   for (let i = 0; i < data.length; i++) {
     const row = data[i]!;
 
     try {
-      // Check for duplicate
-      if (skipDuplicates) {
-        const existing = await prisma.rateCard.findFirst({
-          where: {
-            workspaceId,
-            name: row.name,
-            deletedAt: null,
-          },
-        });
-
-        if (existing) {
-          result.skipped++;
-          continue;
-        }
+      // Check for duplicate using pre-fetched set
+      if (skipDuplicates && existingNames.has(row.name)) {
+        result.skipped++;
+        continue;
       }
 
       await prisma.rateCard.create({
