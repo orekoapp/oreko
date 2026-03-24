@@ -374,8 +374,6 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
         updatedAt: new Date().toISOString(),
       }));
 
-      console.log('Creating quote with:', { clientId: selectedClientId, title: lineItems[0]?.name, blocks: blocks.length });
-
       const result = await createQuote({
         clientId: selectedClientId,
         title: lineItems[0]?.name || 'Untitled Quote',
@@ -386,8 +384,6 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
         terms: terms || undefined,
         isDraft,
       });
-
-      console.log('Create quote result:', result);
 
       if (result.success && result.quote?.id) {
         if (!isDraft) {

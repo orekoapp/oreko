@@ -625,15 +625,25 @@ export async function declineQuote(data: {
       return { success: false, error: 'This quote cannot be declined' };
     }
 
-    // Update quote
+    // Atomic conditional update — prevents race condition with concurrent accept
+    const declineResult = await prisma.quote.updateMany({
+      where: {
+        accessToken: data.accessToken,
+        status: { in: ['sent', 'viewed'] },
+        deletedAt: null,
+      },
+      data: {
+        status: 'declined',
+        declinedAt: new Date(),
+      },
+    });
+
+    if (declineResult.count === 0) {
+      return { success: false, error: 'This quote has already been accepted or declined' };
+    }
+
+    // Create event (side effect — safe after atomic update)
     await prisma.$transaction([
-      prisma.quote.update({
-        where: { accessToken: data.accessToken },
-        data: {
-          status: 'declined',
-          declinedAt: new Date(),
-        },
-      }),
       prisma.quoteEvent.create({
         data: {
           quoteId: quote.id,
