@@ -1,3 +1,4 @@
+import '@/lib/env'; // Must be first — trims \n from all env vars
 import { getBaseUrl } from '@/lib/utils';
 import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';

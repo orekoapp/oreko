@@ -95,13 +95,13 @@ export async function checkRateLimit(
   key: string,
   options: RateLimitOptions
 ): Promise<RateLimitResult> {
-  const upstash = getUpstashRateLimiter(options);
-
-  if (!upstash) {
-    return checkInMemory(key, options);
-  }
-
   try {
+    const upstash = getUpstashRateLimiter(options);
+
+    if (!upstash) {
+      return checkInMemory(key, options);
+    }
+
     const result = await upstash.limit(key);
     return {
       limited: !result.success,
