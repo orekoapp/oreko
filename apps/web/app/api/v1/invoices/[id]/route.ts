@@ -7,41 +7,43 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-function formatInvoice(inv: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function formatInvoice(inv: Record<string, any>) {
   return {
-    id: inv.id,
-    invoiceNumber: inv.invoiceNumber,
-    title: inv.title,
-    status: inv.status,
-    client: inv.client,
-    currency: inv.currency,
-    issueDate: inv.issueDate,
-    dueDate: inv.dueDate,
+    id: inv.id as string,
+    invoiceNumber: inv.invoiceNumber as string,
+    title: inv.title as string,
+    status: inv.status as string,
+    client: inv.client as { id: string; name: string; email: string; company: string | null } | null,
+    currency: inv.currency as string,
+    issueDate: inv.issueDate as Date,
+    dueDate: inv.dueDate as Date,
     subtotal: toNumber(inv.subtotal),
-    discountType: inv.discountType,
+    discountType: inv.discountType as string | null,
     discountValue: inv.discountValue ? toNumber(inv.discountValue) : null,
     discountAmount: toNumber(inv.discountAmount),
     taxTotal: toNumber(inv.taxTotal),
     total: toNumber(inv.total),
     amountPaid: toNumber(inv.amountPaid),
     amountDue: toNumber(inv.amountDue),
-    notes: inv.notes,
-    terms: inv.terms,
-    sentAt: inv.sentAt,
-    paidAt: inv.paidAt,
-    voidedAt: inv.voidedAt,
+    notes: inv.notes as string | null,
+    terms: inv.terms as string | null,
+    sentAt: inv.sentAt as Date | null,
+    paidAt: inv.paidAt as Date | null,
+    voidedAt: inv.voidedAt as Date | null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     lineItems: inv.lineItems?.map((li: any) => ({
-      id: li.id,
-      name: li.name,
-      description: li.description,
+      id: li.id as string,
+      name: li.name as string,
+      description: li.description as string | null,
       quantity: toNumber(li.quantity),
       rate: toNumber(li.rate),
       amount: toNumber(li.amount),
       taxRate: li.taxRate ? toNumber(li.taxRate) : null,
       taxAmount: toNumber(li.taxAmount),
     })),
-    createdAt: inv.createdAt,
-    updatedAt: inv.updatedAt,
+    createdAt: inv.createdAt as Date,
+    updatedAt: inv.updatedAt as Date,
   };
 }
 

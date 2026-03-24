@@ -4,6 +4,7 @@ import { prisma } from '@quotecraft/database';
 import { getQuotePdfData, getQuotePdfDataByToken } from '@/lib/pdf/actions';
 import { generateQuotePdfHtml } from '@/lib/pdf/templates';
 import { generatePdfFromHtml } from '@/lib/services/pdf';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/download/quote/[quoteId]
@@ -86,7 +87,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error generating quote PDF:', error);
+    logger.error({ err: error }, 'Error generating quote PDF');
     return new NextResponse('Failed to generate PDF', { status: 500 });
   }
 }

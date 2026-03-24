@@ -3,6 +3,7 @@ import { prisma } from '@quotecraft/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 import { toNumber, formatCurrency, getBaseUrl } from '@/lib/utils';
 import { sendInvoiceSentEmail } from '@/lib/services/email';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
       emailSent = emailResult.success;
     } catch (err) {
-      console.error('Failed to send invoice email:', err);
+      logger.error({ err }, 'Failed to send invoice email');
     }
 
     // Only update status to sent if email was actually delivered
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       invoiceUrl,
     });
   } catch (err) {
-    console.error('Send invoice API error:', err);
+    logger.error({ err }, 'Send invoice API error');
     return apiError('Internal server error', 500);
   }
 }

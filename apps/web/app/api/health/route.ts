@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 // Low #13: Rate limit health endpoint to prevent abuse
 export async function GET() {
@@ -23,7 +24,7 @@ export async function GET() {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Health check failed:', error);
+    logger.error({ err: error }, 'Health check failed');
 
     return NextResponse.json(
       {

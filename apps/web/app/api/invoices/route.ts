@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/invoices
@@ -116,7 +117,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching invoices:', error);
+    logger.error({ err: error }, 'Error fetching invoices');
     return NextResponse.json(
       { error: 'Failed to fetch invoices' },
       { status: 500 }

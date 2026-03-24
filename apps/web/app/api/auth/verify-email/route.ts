@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Email verified successfully' });
   } catch (error) {
-    console.error('Email verification error:', error);
+    logger.error({ err: error }, 'Email verification error');
     return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
   }
 }

@@ -15,6 +15,7 @@ import type {
   PaymentSettingsData,
   StripeOnboardingResult,
 } from './types';
+import { logger } from '@/lib/logger';
 
 /**
  * Bug #85: Sanitize Stripe errors — never expose raw Stripe messages to end users.
@@ -101,7 +102,7 @@ export async function updatePaymentSettings(data: {
     revalidatePath('/settings/payments');
     return { success: true };
   } catch (error) {
-    console.error('Failed to update payment settings:', error);
+    logger.error({ err: error }, 'Failed to update payment settings');
     return { success: false, error: sanitizeStripeError(error) };
   }
 }
@@ -176,7 +177,7 @@ export async function createStripeOnboardingLink(options?: {
 
     return { success: true, url: accountLink.url };
   } catch (error) {
-    console.error('Failed to create Stripe onboarding link:', error);
+    logger.error({ err: error }, 'Failed to create Stripe onboarding link');
     return { success: false, error: sanitizeStripeError(error) };
   }
 }
@@ -228,7 +229,7 @@ export async function checkStripeAccountStatus(): Promise<{
       payoutsEnabled: account.payouts_enabled ?? false,
     };
   } catch (error) {
-    console.error('Failed to check Stripe account status:', error);
+    logger.error({ err: error }, 'Failed to check Stripe account status');
     return { connected: false, status: 'error', chargesEnabled: false, payoutsEnabled: false };
   }
 }
@@ -427,7 +428,7 @@ export async function refundPayment(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to refund payment:', error);
+    logger.error({ err: error }, 'Failed to refund payment');
     return { success: false, error: sanitizeStripeError(error) };
   }
 }

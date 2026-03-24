@@ -3,6 +3,7 @@ import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
 import { safeParseAddress } from '@/lib/clients/types';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/clients
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
       { headers: rateLimitHeaders }
     );
   } catch (error) {
-    console.error('Error fetching clients:', error);
+    logger.error({ err: error }, 'Error fetching clients');
     return NextResponse.json(
       { error: 'Failed to fetch clients' },
       { status: 500, headers: rateLimitHeaders }

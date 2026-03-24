@@ -3,6 +3,7 @@ import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import GitHub from 'next-auth/providers/github';
 import { loginSchema } from '@/lib/validations/auth';
+import { logger } from '@/lib/logger';
 
 export const authConfig: NextAuthConfig = {
   pages: {
@@ -48,7 +49,7 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         if (!user.id) {
-          console.warn('[AUTH] JWT callback received user without id — this may indicate an OAuth provider issue');
+          logger.warn('[AUTH] JWT callback received user without id — this may indicate an OAuth provider issue');
         }
         token.id = user.id ?? '';
         token.email = user.email ?? '';

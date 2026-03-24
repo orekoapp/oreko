@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { randomBytes } from 'crypto';
+import { logger } from '@/lib/logger';
 
 /**
  * Vercel Cron Job — Generates recurring invoices.
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    console.log('[Recurring Invoices] Starting recurring invoice generation...');
+    logger.info('[Recurring Invoices] Starting recurring invoice generation...');
 
     const today = new Date();
     today.setHours(23, 59, 59, 999);
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
       },
     });
 
-    console.log(`[Recurring Invoices] Found ${dueInvoices.length} invoice(s) due for generation`);
+    logger.info({ count: dueInvoices.length }, '[Recurring Invoices] Found invoice(s) due for generation');
 
     let generated = 0;
     let failed = 0;
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
             where: { id: parent.id },
             data: { isRecurring: false, nextRecurringDate: null },
           });
-          console.log(`[Recurring Invoices] ${parent.invoiceNumber}: end date passed, disabled recurring`);
+          logger.info({ invoiceNumber: parent.invoiceNumber }, '[Recurring Invoices] End date passed, disabled recurring');
           continue;
         }
 
@@ -182,16 +183,16 @@ export async function GET(request: Request) {
         });
 
         generated++;
-        console.log(`[Recurring Invoices] Generated ${invoiceNumber} from ${parent.invoiceNumber}`);
+        logger.info({ invoiceNumber, parentInvoiceNumber: parent.invoiceNumber }, '[Recurring Invoices] Generated invoice');
       } catch (err) {
         failed++;
         const message = err instanceof Error ? err.message : 'Unknown error';
         errors.push(`${parent.invoiceNumber}: ${message}`);
-        console.error(`[Recurring Invoices] Failed to generate from ${parent.invoiceNumber}:`, err);
+        logger.error({ err, parentInvoiceNumber: parent.invoiceNumber }, '[Recurring Invoices] Failed to generate');
       }
     }
 
-    console.log(`[Recurring Invoices] Complete. Generated: ${generated}, Failed: ${failed}`);
+    logger.info({ generated, failed }, '[Recurring Invoices] Complete');
 
     return NextResponse.json({
       success: true,
@@ -202,7 +203,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('[Recurring Invoices] Error:', error);
+    logger.error({ err: error }, '[Recurring Invoices] Error');
     return NextResponse.json(
       { success: false, error: 'Failed to process recurring invoices' },
       { status: 500 }

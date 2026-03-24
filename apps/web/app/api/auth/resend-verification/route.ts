@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -66,13 +67,13 @@ export async function POST() {
         verifyUrl,
       });
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      logger.error({ err: emailError }, 'Failed to send verification email');
       return NextResponse.json({ error: 'Failed to send verification email' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: 'Verification email sent' });
   } catch (error) {
-    console.error('Resend verification error:', error);
+    logger.error({ err: error }, 'Resend verification error');
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 }

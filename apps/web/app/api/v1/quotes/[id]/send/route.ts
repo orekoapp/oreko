@@ -4,6 +4,7 @@ import { prisma } from '@quotecraft/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 import { toNumber, getBaseUrl } from '@/lib/utils';
 import { sendQuoteSentEmail } from '@/lib/services/email';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
       emailSent = emailResult.success;
     } catch (err) {
-      console.error('Failed to send quote email:', err);
+      logger.error({ err }, 'Failed to send quote email');
     }
 
     // Only update status to sent if email was actually delivered
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       quoteUrl,
     });
   } catch (err) {
-    console.error('Send quote API error:', err);
+    logger.error({ err }, 'Send quote API error');
     return apiError('Internal server error', 500);
   }
 }

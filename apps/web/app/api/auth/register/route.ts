@@ -7,6 +7,7 @@ import { hashPassword } from '@/lib/auth/credentials';
 import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
 import { passwordSchema } from '@/lib/validations/auth';
 import { validateRequestOrigin } from '@/lib/csrf';
+import { logger, maskEmail, maskIp } from '@/lib/logger';
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -138,16 +139,11 @@ export async function POST(request: Request) {
       await sendVerificationEmail({ to: email, name, verifyUrl });
     } catch (emailError) {
       // Don't fail registration if verification email fails
-      console.error('Failed to send verification email:', emailError);
+      logger.error({ err: emailError }, 'Failed to send verification email');
     }
 
     // Bug #72: Audit log for new account creation
-    console.info('[AUDIT] New account registered:', {
-      userId: result.id,
-      email: result.email,
-      ip: clientIp,
-      timestamp: new Date().toISOString(),
-    });
+    logger.info({ userId: result.id, email: maskEmail(result.email), ip: maskIp(clientIp) }, '[AUDIT] New account registered');
 
     return NextResponse.json({
       user: result,
@@ -163,7 +159,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error('Registration error:', error);
+    logger.error({ err: error }, 'Registration error');
     return NextResponse.json(
       { error: 'Something went wrong' },
       { status: 500 }

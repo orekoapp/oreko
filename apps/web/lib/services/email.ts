@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 // Email rate limit: 20 emails per hour per key (workspace or IP)
 const EMAIL_RATE_LIMIT = { limit: 20, windowMs: 60 * 60 * 1000 };
@@ -54,7 +55,7 @@ function getEmailClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
-    console.warn('RESEND_API_KEY is not set. Email functionality will be disabled.');
+    logger.warn('RESEND_API_KEY is not set. Email functionality will be disabled.');
     return null;
   }
 
@@ -84,7 +85,7 @@ export async function sendEmail(
   if (rateLimitKey) {
     const rl = await checkRateLimit(`email:${rateLimitKey}`, EMAIL_RATE_LIMIT);
     if (rl.limited) {
-      console.warn(`Email rate limited for key ${rateLimitKey}`);
+      logger.warn({ rateLimitKey }, 'Email rate limited');
       return {
         success: false,
         error: 'Email rate limit exceeded. Please try again later.',
@@ -95,7 +96,7 @@ export async function sendEmail(
   const client = getEmailClient();
 
   if (!client) {
-    console.warn('Email client not configured. Email not sent:', options.subject);
+    logger.warn({ subject: options.subject }, 'Email client not configured. Email not sent');
     return {
       success: false,
       error: 'Email service not configured',
@@ -140,7 +141,7 @@ export async function sendEmail(
     });
 
     if (error) {
-      console.error('Email send error:', error);
+      logger.error({ err: error }, 'Email send error');
       return {
         success: false,
         error: error.message,
@@ -153,7 +154,7 @@ export async function sendEmail(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Email send exception:', message);
+    logger.error({ err: message }, 'Email send exception');
     return {
       success: false,
       error: message,

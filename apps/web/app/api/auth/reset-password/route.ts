@@ -5,6 +5,7 @@ import { prisma } from '@quotecraft/database';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';
 import { passwordSchema } from '@/lib/validations/auth';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   // Low #14: CSRF protection
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
       message: 'Password reset successfully',
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error({ err: error }, 'Reset password error');
     return NextResponse.json(
       { error: 'Something went wrong' },
       { status: 500 }

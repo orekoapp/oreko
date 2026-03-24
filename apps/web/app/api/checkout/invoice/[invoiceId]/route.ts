@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createInvoicePaymentIntent } from '@/lib/payments/internal';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/checkout/invoice/[invoiceId]
@@ -52,7 +53,7 @@ export async function POST(
       paymentIntentId: result.paymentIntentId,
     });
   } catch (error) {
-    console.error('Error creating checkout session:', error);
+    logger.error({ err: error }, 'Error creating checkout session');
     return NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }

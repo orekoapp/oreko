@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { prisma, Prisma } from '@quotecraft/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 import { toNumber } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       createdAt: duplicate.createdAt,
     }, 201);
   } catch (err) {
-    console.error('Duplicate quote API error:', err);
+    logger.error({ err }, 'Duplicate quote API error');
     return apiError('Internal server error', 500);
   }
 }

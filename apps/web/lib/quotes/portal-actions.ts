@@ -7,6 +7,7 @@ import { toNumber } from '@/lib/utils';
 import { notifyWorkspaceMembers } from '@/lib/notifications/internal';
 import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
 import { computeQuoteDocumentHash, verifyDocumentHash } from '@/lib/signing/document-hash';
+import { logger } from '@/lib/logger';
 
 /**
  * Public quote data for client portal (subset of full quote)
@@ -188,7 +189,7 @@ export async function getQuoteByAccessToken(
           documentIntegrity = verifyDocumentHash(recomputedHash, storedHash) ? 'verified' : 'tampered';
         }
       } catch (err) {
-        console.error('Document hash verification failed:', err);
+        logger.error({ err }, 'Document hash verification failed');
       }
     }
 
@@ -258,7 +259,7 @@ export async function getQuoteByAccessToken(
 
     return { success: true, quote: publicQuote };
   } catch (error) {
-    console.error('Error fetching quote by access token:', error);
+    logger.error({ err: error }, 'Error fetching quote by access token');
     return { success: false, error: 'Failed to load quote' };
   }
 }
@@ -318,7 +319,7 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
       }).catch(() => {}); // Don't fail if notification fails
     }
   } catch (error) {
-    console.error('Error tracking quote view:', error);
+    logger.error({ err: error }, 'Error tracking quote view');
     // Don't throw - view tracking should not break the page
   }
 }
@@ -534,7 +535,7 @@ export async function acceptQuote(data: {
         }
       } catch (error) {
         // Log but don't fail acceptance - invoice can be created manually
-        console.error('Auto-invoice creation failed:', error);
+        logger.error({ err: error }, 'Auto-invoice creation failed');
       }
     }
 
@@ -561,7 +562,7 @@ export async function acceptQuote(data: {
           },
         });
       } catch (error) {
-        console.error('Deposit schedule creation failed:', error);
+        logger.error({ err: error }, 'Deposit schedule creation failed');
       }
 
       return {
@@ -574,7 +575,7 @@ export async function acceptQuote(data: {
 
     return { success: true };
   } catch (error) {
-    console.error('Error accepting quote:', error);
+    logger.error({ err: error }, 'Error accepting quote');
     return { success: false, error: 'Failed to accept quote' };
   }
 }
@@ -661,7 +662,7 @@ export async function declineQuote(data: {
 
     return { success: true };
   } catch (error) {
-    console.error('Error declining quote:', error);
+    logger.error({ err: error }, 'Error declining quote');
     return { success: false, error: 'Failed to decline quote' };
   }
 }

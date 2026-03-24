@@ -3,6 +3,7 @@ import { prisma } from '@quotecraft/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 import { toNumber } from '@/lib/utils';
 import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ quoteId: string }>;
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return apiSuccess(formatInvoice(invoice), 201);
   } catch (err) {
-    console.error('Create invoice from quote API error:', err);
+    logger.error({ err }, 'Create invoice from quote API error');
     return apiError('Internal server error', 500);
   }
 }

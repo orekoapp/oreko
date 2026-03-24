@@ -26,6 +26,7 @@ import { sendTemplatedEmail } from '@/lib/email/actions';
 import { createNotification, notifyWorkspaceMembers } from '@/lib/notifications/internal';
 import { checkRateLimit, strictRateLimitOptions } from '@/lib/rate-limit';
 import { computeContractDocumentHash, verifyDocumentHash } from '@/lib/signing/document-hash';
+import { logger } from '@/lib/logger';
 
 // HTML escape for safe email template interpolation
 function escapeHtml(str: string): string {
@@ -44,7 +45,7 @@ function safeParseVariables(variables: unknown): ContractVariable[] {
     if (typeof variables === 'string') return JSON.parse(variables);
     return [];
   } catch (error) {
-    console.warn('[contracts] Failed to parse contract variables:', error);
+    logger.warn({ err: error }, '[contracts] Failed to parse contract variables');
     return [];
   }
 }
@@ -437,7 +438,7 @@ export async function getContractInstanceByToken(token: string): Promise<Contrac
         documentIntegrity = verifyDocumentHash(recomputedHash, storedHash) ? 'verified' : 'tampered';
       }
     } catch (err) {
-      console.error('Document hash verification failed:', err);
+      logger.error({ err }, 'Document hash verification failed');
     }
   }
 
@@ -656,10 +657,10 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
       });
       emailSent = emailResult.success;
       if (!emailResult.success) {
-        console.error('Failed to send contract email:', emailResult.error);
+        logger.error({ err: emailResult.error }, 'Failed to send contract email');
       }
     } catch (err) {
-      console.error('Failed to send contract email:', err);
+      logger.error({ err }, 'Failed to send contract email');
     }
   }
 

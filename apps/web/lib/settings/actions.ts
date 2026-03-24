@@ -5,6 +5,7 @@ import { randomBytes, createHash } from 'crypto';
 import { z } from 'zod';
 import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
+import { logger } from '@/lib/logger';
 import type {
   BusinessProfileData,
   BrandingSettingsData,
@@ -777,15 +778,7 @@ export async function updateMemberRole(
   });
 
   // Bug #74: Audit log for role changes
-  console.info('[AUDIT] Member role changed:', {
-    workspaceId,
-    changedBy: userId,
-    targetMemberId: memberId,
-    targetUserId: targetMember.userId,
-    oldRole,
-    newRole,
-    timestamp: new Date().toISOString(),
-  });
+  logger.info({ workspaceId, changedBy: userId, targetMemberId: memberId, targetUserId: targetMember.userId, oldRole, newRole }, '[AUDIT] Member role changed');
 
   revalidatePath(ROUTES.settingsTeam);
 
@@ -885,7 +878,7 @@ export async function inviteMember(
         rateLimitKey: workspaceId,
       });
     } catch (emailError) {
-      console.error('Failed to send invitation email:', emailError);
+      logger.error({ err: emailError }, 'Failed to send invitation email');
     }
 
     revalidatePath(ROUTES.settingsTeam);
@@ -1085,7 +1078,7 @@ export async function resendInvitation(
       rateLimitKey: workspaceId,
     });
   } catch (emailError) {
-    console.error('Failed to resend invitation email:', emailError);
+    logger.error({ err: emailError }, 'Failed to resend invitation email');
   }
 
   revalidatePath(ROUTES.settingsTeam);
@@ -1400,7 +1393,7 @@ export async function deleteWorkspace(): Promise<{ success: boolean; error?: str
       )
     );
   } catch (error) {
-    console.error('Failed to send workspace deletion notifications:', error);
+    logger.error({ err: error }, 'Failed to send workspace deletion notifications');
   }
 
   revalidatePath('/');

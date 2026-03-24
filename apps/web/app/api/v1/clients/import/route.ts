@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
+import { logger } from '@/lib/logger';
 
 // POST /api/v1/clients/import — Bulk import clients from a JSON array
 export async function POST(request: NextRequest) {
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
       ...result,
     }, 201);
   } catch (err) {
-    console.error('Client import API error:', err);
+    logger.error({ err }, 'Client import API error');
     return apiError('Internal server error', 500);
   }
 }

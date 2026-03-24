@@ -2,6 +2,7 @@
  * Distributed rate limiter using Upstash Redis.
  * Falls back to in-memory when Redis is not configured (local dev).
  */
+import { logger } from '@/lib/logger';
 
 import { Ratelimit } from '@upstash/ratelimit';
 import { getRedis } from './redis';
@@ -109,7 +110,7 @@ export async function checkRateLimit(
       reset: result.reset,
     };
   } catch (err) {
-    console.error('[rate-limit] Redis error, falling back to in-memory:', err);
+    logger.error({ err }, '[rate-limit] Redis error, falling back to in-memory');
     return checkInMemory(key, options);
   }
 }

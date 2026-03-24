@@ -5,6 +5,7 @@ import { prisma } from '@quotecraft/database';
 import { sendEmail } from '@/lib/services/email';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { generateSigningOtp, verifySigningOtp, isSigningVerified } from './otp';
+import { logger } from '@/lib/logger';
 
 async function getClientIp(): Promise<string> {
   const headersList = await headers();
@@ -122,7 +123,7 @@ export async function sendSigningOtp(input: {
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending signing OTP:', error);
+    logger.error({ err: error }, 'Error sending signing OTP');
     return { success: false, error: 'Failed to send verification code' };
   }
 }
@@ -174,7 +175,7 @@ export async function verifySigningOtpAction(input: {
 
     return { success: true };
   } catch (error) {
-    console.error('Error verifying signing OTP:', error);
+    logger.error({ err: error }, 'Error verifying signing OTP');
     return { success: false, error: 'Verification failed' };
   }
 }

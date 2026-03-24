@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import type { InvoiceLineItem } from './types';
 import { toNumber } from '@/lib/utils';
 import { notifyWorkspaceMembers } from '@/lib/notifications/internal';
+import { logger } from '@/lib/logger';
 
 /**
  * Public invoice data for client portal (subset of full invoice)
@@ -248,7 +249,7 @@ export async function getInvoiceByAccessToken(
 
     return { success: true, invoice: publicInvoice };
   } catch (error) {
-    console.error('Error fetching invoice by access token:', error);
+    logger.error({ err: error }, 'Error fetching invoice by access token');
     return { success: false, error: 'Failed to load invoice' };
   }
 }
@@ -310,7 +311,7 @@ export async function trackInvoiceView(accessToken: string): Promise<void> {
       }).catch(() => {});
     }
   } catch (error) {
-    console.error('Error tracking invoice view:', error);
+    logger.error({ err: error }, 'Error tracking invoice view');
     // Don't throw - view tracking should not break the page
   }
 }

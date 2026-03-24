@@ -7,31 +7,33 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-function formatQuote(q: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function formatQuote(q: Record<string, any>) {
   return {
-    id: q.id,
-    quoteNumber: q.quoteNumber,
-    title: q.title,
-    status: q.status,
-    client: q.client,
-    currency: q.currency,
+    id: q.id as string,
+    quoteNumber: q.quoteNumber as string,
+    title: q.title as string,
+    status: q.status as string,
+    client: q.client as { id: string; name: string; email: string; company: string | null } | null,
+    currency: q.currency as string,
     subtotal: toNumber(q.subtotal),
-    discountType: q.discountType,
+    discountType: q.discountType as string | null,
     discountValue: q.discountValue ? toNumber(q.discountValue) : null,
     discountAmount: toNumber(q.discountAmount),
     taxTotal: toNumber(q.taxTotal),
     total: toNumber(q.total),
-    notes: q.notes,
-    terms: q.terms,
-    issueDate: q.issueDate,
-    expirationDate: q.expirationDate,
-    sentAt: q.sentAt,
-    acceptedAt: q.acceptedAt,
-    declinedAt: q.declinedAt,
+    notes: q.notes as string | null,
+    terms: q.terms as string | null,
+    issueDate: q.issueDate as Date,
+    expirationDate: q.expirationDate as Date | null,
+    sentAt: q.sentAt as Date | null,
+    acceptedAt: q.acceptedAt as Date | null,
+    declinedAt: q.declinedAt as Date | null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     lineItems: q.lineItems?.map((li: any) => ({
-      id: li.id,
-      name: li.name,
-      description: li.description,
+      id: li.id as string,
+      name: li.name as string,
+      description: li.description as string | null,
       quantity: toNumber(li.quantity),
       rate: toNumber(li.rate),
       amount: toNumber(li.amount),

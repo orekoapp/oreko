@@ -13,6 +13,7 @@ import type {
 } from './types';
 import { sendTemplatedEmail } from '@/lib/email/actions';
 import { createNotification } from '@/lib/notifications/internal';
+import { logger } from '@/lib/logger';
 import { formatCurrency, toNumber, getBaseUrl } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { generateInvoiceNumber } from './internal';
@@ -909,11 +910,11 @@ export async function sendInvoice(invoiceId: string, emailOptions?: SendEmailOpt
     });
     emailSent = emailResult.success;
     if (!emailResult.success) {
-      console.error('Failed to send invoice email:', emailResult.error);
+      logger.error({ err: emailResult.error }, 'Failed to send invoice email');
       return { success: false, error: 'Email could not be sent. Please check your email settings.', emailSent: false };
     }
   } catch (err) {
-    console.error('Failed to send invoice email:', err);
+    logger.error({ err }, 'Failed to send invoice email');
     return { success: false, error: 'Email could not be sent. Please check your email settings.', emailSent: false };
   }
 

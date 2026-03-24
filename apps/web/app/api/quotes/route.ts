@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/quotes
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
       { headers: rateLimitHeaders }
     );
   } catch (error) {
-    console.error('Error fetching quotes:', error);
+    logger.error({ err: error }, 'Error fetching quotes');
     return NextResponse.json(
       { error: 'Failed to fetch quotes' },
       { status: 500, headers: rateLimitHeaders }

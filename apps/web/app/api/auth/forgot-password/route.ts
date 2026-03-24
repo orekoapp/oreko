@@ -5,6 +5,7 @@ import { prisma } from '@quotecraft/database';
 import { sendEmail } from '@/lib/services/email';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';
+import { logger } from '@/lib/logger';
 
 function escapeHtml(str: string): string {
   return str
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
     // Bug #16: Use same timing-normalized response as non-existent user path
     return delayedResponse();
   } catch (error) {
-    console.error('Forgot password error:', error);
+    logger.error({ err: error }, 'Forgot password error');
     return NextResponse.json(
       { error: 'Something went wrong' },
       { status: 500 }

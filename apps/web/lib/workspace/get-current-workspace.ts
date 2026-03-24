@@ -4,6 +4,7 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 const ACTIVE_WORKSPACE_COOKIE = 'active-workspace-id';
 
@@ -48,7 +49,7 @@ export const getCurrentUserWorkspace = cache(async (): Promise<WorkspaceContext>
   }
 
   // CR #12: Fall back to first non-deleted workspace
-  console.warn(`[workspace] Stored workspace ID not found for user ${userId}, falling back to first workspace`);
+  logger.warn({ userId }, '[workspace] Stored workspace ID not found, falling back to first workspace');
   const firstMembership = await prisma.workspaceMember.findFirst({
     where: { userId, workspace: { deletedAt: null } },
     select: { workspaceId: true, role: true },

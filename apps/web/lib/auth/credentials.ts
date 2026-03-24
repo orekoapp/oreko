@@ -1,6 +1,7 @@
 import { prisma } from '@quotecraft/database';
 import bcrypt from 'bcryptjs';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logger, maskEmail } from '@/lib/logger';
 
 /** Rate limit: 5 login attempts per email per 15 minutes */
 const LOGIN_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
@@ -29,20 +30,20 @@ export async function verifyCredentials(email: string, password: string) {
   // Bug #84: Reject soft-deleted users — also checked in JWT callback for existing tokens
   if (!user || user.deletedAt) {
     const reason = !user ? 'user not found' : 'soft-deleted account';
-    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail.replace(/(.{2}).*(@.*)/, '$1***$2')} at ${new Date().toISOString()} — reason: ${reason}`);
+    logger.warn({ email: maskEmail(normalizedEmail), reason }, '[auth] Failed login attempt');
     return null;
   }
 
   if (!user.passwordHash) {
     // User signed up with OAuth, doesn't have a password
-    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail.replace(/(.{2}).*(@.*)/, '$1***$2')} at ${new Date().toISOString()} — reason: OAuth-only account (no password)`);
+    logger.warn({ email: maskEmail(normalizedEmail), reason: 'OAuth-only account (no password)' }, '[auth] Failed login attempt');
     return null;
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash);
 
   if (!isValid) {
-    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail.replace(/(.{2}).*(@.*)/, '$1***$2')} at ${new Date().toISOString()} — reason: wrong password`);
+    logger.warn({ email: maskEmail(normalizedEmail), reason: 'wrong password' }, '[auth] Failed login attempt');
     return null;
   }
 

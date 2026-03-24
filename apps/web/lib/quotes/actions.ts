@@ -10,6 +10,7 @@ import { createNotification } from '@/lib/notifications/internal';
 import { ROUTES } from '@/lib/routes';
 import { domainEvents } from '@/lib/events/emitter';
 import { toNumber, getBaseUrl, formatCurrency } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 /**
  * Bug #134: Safely parse quote settings from JSON with runtime validation.
@@ -482,7 +483,7 @@ export async function updateQuote(
       },
     };
   } catch (error) {
-    console.error('Failed to update quote:', error);
+    logger.error({ err: error }, 'Failed to update quote');
     return { success: false as const, error: 'Failed to save quote. Please try again.' };
   }
 }
@@ -951,11 +952,11 @@ export async function sendQuote(quoteId: string, emailOptions?: SendEmailOptions
     });
     emailSent = emailResult.success;
     if (!emailResult.success) {
-      console.error('Failed to send quote email:', emailResult.error);
+      logger.error({ err: emailResult.error }, 'Failed to send quote email');
       return { success: false, error: 'Email could not be sent. Please check your email settings.' };
     }
   } catch (err) {
-    console.error('Failed to send quote email:', err);
+    logger.error({ err }, 'Failed to send quote email');
     return { success: false, error: 'Email could not be sent. Please check your email settings.' };
   }
 

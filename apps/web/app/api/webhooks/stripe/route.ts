@@ -3,6 +3,7 @@ import { constructWebhookEvent, isStripeEnabled } from '@/lib/services/stripe';
 import { processPaymentWebhook, processAccountUpdate, processRefundWebhook } from '@/lib/payments/internal';
 import { prisma } from '@quotecraft/database';
 import type Stripe from 'stripe';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/webhooks/stripe
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     event = constructWebhookEvent(body, signature);
   } catch (error) {
-    console.error('Webhook signature verification failed:', error);
+    logger.error({ err: error }, 'Webhook signature verification failed');
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
         if (paymentIntentId) {
           await processRefundWebhook(paymentIntentId, charge.amount_refunded);
         } else {
-          console.warn(`[stripe-webhook] Orphaned refund event ${event.id}: charge.payment_intent is null. Refund processed by Stripe but no matching payment in QuoteCraft.`);
+          logger.warn({ eventId: event.id }, '[stripe-webhook] Orphaned refund event: charge.payment_intent is null. Refund processed by Stripe but no matching payment in QuoteCraft.');
         }
         break;
       }
@@ -88,12 +89,12 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.debug({ eventType: event.type }, 'Unhandled Stripe event type');
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    logger.error({ err: error }, 'Error processing webhook');
     // Permanent business logic errors (not found, invalid data) → 200 so Stripe stops retrying
     const message = error instanceof Error ? error.message : '';
     const isPermanent = message.includes('not found') || message.includes('invalid') || message.includes('already');

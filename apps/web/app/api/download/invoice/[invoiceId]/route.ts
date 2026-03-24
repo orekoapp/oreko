@@ -4,6 +4,7 @@ import { prisma } from '@quotecraft/database';
 import { getInvoicePdfData, getInvoicePdfDataByToken } from '@/lib/pdf/actions';
 import { generateInvoicePdfHtml } from '@/lib/pdf/templates';
 import { generatePdfFromHtml } from '@/lib/services/pdf';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/download/invoice/[invoiceId]
@@ -86,7 +87,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error generating invoice PDF:', error);
+    logger.error({ err: error }, 'Error generating invoice PDF');
     return new NextResponse('Failed to generate PDF', { status: 500 });
   }
 }

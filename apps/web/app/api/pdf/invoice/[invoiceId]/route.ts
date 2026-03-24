@@ -3,6 +3,7 @@ import { getInvoicePdfData, getInvoicePdfDataByToken } from '@/lib/pdf/actions';
 import { generateInvoicePdfHtml } from '@/lib/pdf/templates';
 import { auth } from '@/lib/auth';
 import { prisma } from '@quotecraft/database';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/pdf/invoice/[invoiceId]
@@ -61,7 +62,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error generating invoice PDF HTML:', error);
+    logger.error({ err: error }, 'Error generating invoice PDF HTML');
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

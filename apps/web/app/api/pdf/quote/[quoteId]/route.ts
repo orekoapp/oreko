@@ -3,6 +3,7 @@ import { getQuotePdfData, getQuotePdfDataByToken } from '@/lib/pdf/actions';
 import { generateQuotePdfHtml } from '@/lib/pdf/templates';
 import { auth } from '@/lib/auth';
 import { prisma } from '@quotecraft/database';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/pdf/quote/[quoteId]
@@ -74,7 +75,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error generating quote PDF HTML:', error);
+    logger.error({ err: error }, 'Error generating quote PDF HTML');
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

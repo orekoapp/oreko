@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { AppError, ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from './errors';
+import { logger } from '@/lib/logger';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -77,7 +78,7 @@ export function errorResponse(
   }
 
   // Handle unknown errors
-  console.error('Unhandled error:', error);
+  logger.error({ err: error }, 'Unhandled error');
   return NextResponse.json(
     {
       success: false,

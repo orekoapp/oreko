@@ -23,6 +23,23 @@ interface QuoteHashInput {
   signedAt: string;
 }
 
+interface InvoiceHashInput {
+  invoiceId: string;
+  lineItems: Array<{
+    name: string;
+    description: string | null;
+    quantity: number;
+    rate: number;
+    amount: number;
+  }>;
+  terms: string;
+  notes: string;
+  subtotal: number;
+  total: number;
+  amountPaid: number;
+  paidAt: string;
+}
+
 interface ContractHashInput {
   contractInstanceId: string;
   content: string;
@@ -51,6 +68,31 @@ export function computeQuoteDocumentHash(input: QuoteHashInput): string {
     total: Number(input.total),
     signerName: input.signerName,
     signedAt: input.signedAt,
+  });
+
+  return createHash('sha256').update(payload).digest('hex');
+}
+
+/**
+ * Compute SHA-256 hash for an invoice at payment time.
+ * Includes all financially significant fields for audit trail.
+ */
+export function computeInvoiceDocumentHash(input: InvoiceHashInput): string {
+  const payload = JSON.stringify({
+    invoiceId: input.invoiceId,
+    lineItems: input.lineItems.map((item) => ({
+      name: item.name,
+      description: item.description || '',
+      quantity: Number(item.quantity),
+      rate: Number(item.rate),
+      amount: Number(item.amount),
+    })),
+    terms: input.terms,
+    notes: input.notes,
+    subtotal: Number(input.subtotal),
+    total: Number(input.total),
+    amountPaid: Number(input.amountPaid),
+    paidAt: input.paidAt,
   });
 
   return createHash('sha256').update(payload).digest('hex');

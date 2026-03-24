@@ -2,6 +2,7 @@ import { createHmac } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { domainEvents } from '@/lib/events/emitter';
 import type { DomainEvent, DomainEventType } from '@/lib/events/types';
+import { logger } from '@/lib/logger';
 
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAYS = [1000, 4000, 16000]; // Exponential backoff in ms
@@ -184,7 +185,7 @@ export function initOutboundWebhooks(): void {
     domainEvents.on(eventType, (payload) => {
       // Fire and forget — don't block the main flow
       handleDomainEvent({ type: eventType, payload } as DomainEvent).catch((err) => {
-        console.error(`[Webhooks] Failed to handle event "${eventType}":`, err);
+        logger.error({ err, eventType }, '[Webhooks] Failed to handle event');
       });
     });
   }

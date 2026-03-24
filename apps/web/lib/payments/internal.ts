@@ -17,6 +17,7 @@ import { sendPaymentReceivedEmail } from '@/lib/services/email';
 import { formatCurrency } from '@/lib/utils';
 import type { PaymentIntentResult } from './types';
 import { domainEvents } from '@/lib/events/emitter';
+import { logger } from '@/lib/logger';
 
 /**
  * Create payment intent for invoice (called from checkout API route).
@@ -184,7 +185,7 @@ export async function createInvoicePaymentIntent(
       paymentIntentId: paymentIntent.id,
     };
   } catch (error) {
-    console.error('Failed to create payment intent:', error);
+    logger.error({ err: error }, 'Failed to create payment intent');
     return { success: false, error: 'Failed to create payment' };
   }
 }
@@ -210,7 +211,7 @@ export async function processAccountUpdate(account: {
   });
 
   if (!paymentSettings) {
-    console.warn('No workspace found for Stripe account:', account.id);
+    logger.warn({ stripeAccountId: account.id }, 'No workspace found for Stripe account');
     return;
   }
 
@@ -253,7 +254,7 @@ export async function processRefundWebhook(
     });
 
     if (!payment) {
-      console.warn('Completed payment not found for refund:', paymentIntentId);
+      logger.warn({ paymentIntentId }, 'Completed payment not found for refund');
       return { success: false };
     }
 
@@ -325,7 +326,7 @@ export async function processRefundWebhook(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to process refund webhook:', error);
+    logger.error({ err: error }, 'Failed to process refund webhook');
     return { success: false };
   }
 }
@@ -355,13 +356,13 @@ export async function processPaymentWebhook(
     });
 
     if (!payment) {
-      console.warn('Payment not found for payment intent:', paymentIntentId);
+      logger.warn({ paymentIntentId }, 'Payment not found for payment intent');
       return { success: false };
     }
 
     // Prevent duplicate webhook processing - skip if already completed or failed
     if (payment.status === 'completed' || payment.status === 'failed') {
-      console.info('Payment already processed, skipping duplicate webhook:', paymentIntentId);
+      logger.info({ paymentIntentId }, 'Payment already processed, skipping duplicate webhook');
       return { success: true };
     }
 
@@ -434,7 +435,7 @@ export async function processPaymentWebhook(
         amount: formatCurrency(paymentAmount),
         receiptUrl: receiptUrl || undefined,
         rateLimitKey: `workspace:${payment.invoice.workspaceId}`,
-      }).catch((err) => console.error('Failed to send payment confirmation email:', err));
+      }).catch((err) => logger.error({ err }, 'Failed to send payment confirmation email'));
     } else {
       // Payment failed
       await prisma.payment.update({
@@ -445,7 +446,7 @@ export async function processPaymentWebhook(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to process payment webhook:', error);
+    logger.error({ err: error }, 'Failed to process payment webhook');
     return { success: false };
   }
 }
