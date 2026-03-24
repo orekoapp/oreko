@@ -918,11 +918,12 @@ export async function sendInvoice(invoiceId: string, emailOptions?: SendEmailOpt
     return { success: false, error: 'Email could not be sent. Please check your email settings.', emailSent: false };
   }
 
-  // Email sent successfully — now update status to 'sent'
-  const result = await updateInvoiceStatus(invoiceId, 'sent');
-
-  if (!result.success) {
-    return { ...result, emailSent: true };
+  // Email sent successfully — update status to 'sent' (skip if already sent)
+  if (invoice.status !== 'sent' && invoice.status !== 'viewed') {
+    const result = await updateInvoiceStatus(invoiceId, 'sent');
+    if (!result.success) {
+      return { ...result, emailSent: true };
+    }
   }
 
   // Create notification for sender
