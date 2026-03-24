@@ -1,10 +1,15 @@
 import NextAuth from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
 
+// Clean secret — Vercel env vars may have literal \n suffix
+const secret = (process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || '')
+  .replace(/\\n$/g, '').replace(/\n$/g, '').trim();
+
 // Use a lightweight NextAuth instance for middleware (Edge Runtime compatible).
 // This does NOT import the Prisma adapter, which requires Node.js runtime.
 // The full auth config (with adapter) is used in server components and API routes.
 const { auth } = NextAuth({
+  secret,
   session: { strategy: 'jwt' },
   trustHost: process.env.NODE_ENV === 'development' || !!process.env.VERCEL,
   ...authConfig,

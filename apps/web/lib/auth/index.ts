@@ -16,14 +16,19 @@ if (
   throw new Error('NEXTAUTH_SECRET is required in production');
 }
 
+// Clean secret — Vercel env vars may have literal \n suffix
+function cleanEnvVal(val: string | undefined): string | undefined {
+  return val?.replace(/\\n$/g, '').replace(/\n$/g, '').trim() || undefined;
+}
+
 const nextAuth = NextAuth({
   adapter: PrismaAdapter(prisma) as Adapter,
+  secret: cleanEnvVal(process.env.AUTH_SECRET) || cleanEnvVal(process.env.NEXTAUTH_SECRET),
   session: {
     strategy: 'jwt',
     maxAge: 7 * 24 * 60 * 60, // 7 days — Bug #15: sessions expire instead of lasting forever
   },
   // Bug #87: Only trust host header in environments with known-good reverse proxies
-  // (Vercel, Docker with Traefik). In local dev this is safe since there's no proxy.
   trustHost: process.env.VERCEL === '1' || process.env.NODE_ENV === 'development' || process.env.TRUST_HOST === 'true',
   ...authConfig,
 });
