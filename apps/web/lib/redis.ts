@@ -9,8 +9,8 @@ let redis: Redis | null = null;
 export function getRedis(): Redis | null {
   if (redis) return redis;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  const url = process.env.UPSTASH_REDIS_REST_URL?.replace(/\\n$/g, '').trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.replace(/\\n$/g, '').trim();
 
   if (!url || !token) {
     return null;
