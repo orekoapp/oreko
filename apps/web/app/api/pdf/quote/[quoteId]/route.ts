@@ -14,6 +14,14 @@ export async function GET(
   { params }: { params: Promise<{ quoteId: string }> }
 ) {
   try {
+    // Rate limit PDF generation (CPU-intensive)
+    const { checkRateLimit } = await import('@/lib/rate-limit');
+    const clientIp = _request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = checkRateLimit(`pdf:${clientIp}`, { limit: 20, windowMs: 60000 });
+    if (rl.limited) {
+      return new NextResponse('Too many PDF requests', { status: 429 });
+    }
+
     const { quoteId } = await params;
     const accessToken = _request.nextUrl.searchParams.get('token');
 

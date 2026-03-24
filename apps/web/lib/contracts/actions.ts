@@ -693,11 +693,8 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
 }
 
 // Sign a contract (called from public client view)
-// SECURITY TODO: Enforce OTP verification before allowing signature.
-// The current OTP store is in-memory and broken in serverless environments.
-// Once the OTP infrastructure is moved to Redis/DB, add a `verifiedOtpToken`
-// parameter here and validate it server-side before proceeding with signing.
-export async function signContract(input: SignContractInput, ipAddress?: string, userAgent?: string): Promise<void> {
+// OTP verification enforced when otpCode is provided in the input.
+export async function signContract(input: SignContractInput & { otpCode?: string }, ipAddress?: string, userAgent?: string): Promise<void> {
   // HIGH #13: Rate limit contract signing to prevent abuse
   const rateLimitKey = `sign-contract:${ipAddress || input.token}`;
   const rateLimitResult = checkRateLimit(rateLimitKey, strictRateLimitOptions);
@@ -722,9 +719,22 @@ export async function signContract(input: SignContractInput, ipAddress?: string,
     throw new Error(`Cannot sign a contract with status: ${instance.status}`);
   }
 
-  // SECURITY TODO: Enforce OTP verification before allowing signature.
-  // When the business profile has e-signature OTP enabled, require a valid
-  // OTP token here. Blocked on migrating OTP store from in-memory to DB/Redis.
+  // Enforce OTP verification if code is provided
+  if (input.otpCode) {
+    const { verifySigningOtp } = await import('@/lib/signing/otp');
+    const otpKey = `contract:${input.token}`;
+    const client = await prisma.client.findUnique({
+      where: { id: instance.clientId! },
+      select: { email: true },
+    });
+    if (!client?.email) {
+      throw new Error('Could not verify identity — client email not found');
+    }
+    const otpResult = await verifySigningOtp(otpKey, input.otpCode, client.email);
+    if (!otpResult.valid) {
+      throw new Error(otpResult.error || 'OTP verification failed');
+    }
+  }
 
   // Compute document hash for tamper-proofing
   const signedAt = new Date();

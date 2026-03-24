@@ -90,7 +90,7 @@ export async function sendSigningOtp(input: {
 
     // Generate OTP
     const otpKey = `${input.type}:${documentId}`;
-    const code = generateSigningOtp(otpKey, clientEmail);
+    const code = await generateSigningOtp(otpKey, clientEmail);
 
     // Send email with OTP
     const emailResult = await sendEmail({
@@ -166,7 +166,7 @@ export async function verifySigningOtpAction(input: {
     }
 
     const otpKey = `${input.type}:${documentId}`;
-    const result = verifySigningOtp(otpKey, input.code, input.email);
+    const result = await verifySigningOtp(otpKey, input.code, input.email);
 
     if (!result.valid) {
       return { success: false, error: result.error || 'Invalid code' };
@@ -206,7 +206,7 @@ export async function checkSigningVerification(input: {
       documentId = contract.id;
     }
 
-    return isSigningVerified(`${input.type}:${documentId}`);
+    return await isSigningVerified(`${input.type}:${documentId}`);
   } catch {
     return false;
   }

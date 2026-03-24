@@ -1,9 +1,10 @@
 import { randomInt, timingSafeEqual } from 'crypto';
+import { getRedis } from '../redis';
 
 /**
  * OTP verification for signer identity.
- * Uses in-memory storage (same pattern as rate-limit.ts).
- * For multi-instance deployments, replace with Redis.
+ * Uses Upstash Redis for cross-instance persistence on serverless.
+ * Falls back to in-memory when Redis is not configured (local dev).
  */
 
 interface OtpRecord {
@@ -14,26 +15,70 @@ interface OtpRecord {
   verified: boolean;
 }
 
-// In-memory OTP store keyed by `${type}:${documentId}`
-const otpStore = new Map<string, OtpRecord>();
+// In-memory fallback for local dev
+const inMemoryStore = new Map<string, OtpRecord>();
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const OTP_EXPIRY_SEC = 600; // 10 minutes in seconds for Redis TTL
 const MAX_ATTEMPTS = 5;
+const REDIS_PREFIX = 'otp:';
+
+// ─── Redis helpers ──────────────────────────────────────────────────
+
+async function redisGet(key: string): Promise<OtpRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  try {
+    const data = await redis.get<OtpRecord>(`${REDIS_PREFIX}${key}`);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function redisSet(key: string, record: OtpRecord): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  try {
+    await redis.set(`${REDIS_PREFIX}${key}`, record, { ex: OTP_EXPIRY_SEC });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function redisDel(key: string): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  try {
+    await redis.del(`${REDIS_PREFIX}${key}`);
+  } catch {
+    // ignore
+  }
+}
+
+// ─── Main OTP functions ─────────────────────────────────────────────
 
 /**
  * Generate a 6-digit OTP for a signing session.
  * Returns the code to be emailed to the signer.
  */
-export function generateSigningOtp(key: string, email: string): string {
+export async function generateSigningOtp(key: string, email: string): Promise<string> {
   const code = String(randomInt(100000, 999999));
 
-  otpStore.set(key, {
+  const record: OtpRecord = {
     code,
     email: email.toLowerCase(),
     expiresAt: Date.now() + OTP_EXPIRY_MS,
     attempts: 0,
     verified: false,
-  });
+  };
+
+  // Try Redis first, fall back to in-memory
+  const stored = await redisSet(key, record);
+  if (!stored) {
+    inMemoryStore.set(key, record);
+  }
 
   return code;
 }
@@ -42,24 +87,31 @@ export function generateSigningOtp(key: string, email: string): string {
  * Verify a signing OTP.
  * Returns { valid, error } — valid=true means identity is verified.
  */
-export function verifySigningOtp(
+export async function verifySigningOtp(
   key: string,
   code: string,
   email: string
-): { valid: boolean; error?: string } {
-  const record = otpStore.get(key);
+): Promise<{ valid: boolean; error?: string }> {
+  // Try Redis first, then in-memory
+  let record = await redisGet(key);
+  const fromRedis = !!record;
+  if (!record) {
+    record = inMemoryStore.get(key) || null;
+  }
 
   if (!record) {
     return { valid: false, error: 'No verification code found. Please request a new one.' };
   }
 
   if (Date.now() > record.expiresAt) {
-    otpStore.delete(key);
+    if (fromRedis) await redisDel(key);
+    else inMemoryStore.delete(key);
     return { valid: false, error: 'Verification code has expired. Please request a new one.' };
   }
 
   if (record.attempts >= MAX_ATTEMPTS) {
-    otpStore.delete(key);
+    if (fromRedis) await redisDel(key);
+    else inMemoryStore.delete(key);
     return { valid: false, error: 'Too many failed attempts. Please request a new code.' };
   }
 
@@ -69,17 +121,19 @@ export function verifySigningOtp(
 
   record.attempts++;
 
-  // Bug #154: Use constant-time comparison to prevent timing side-channel attacks
+  // Constant-time comparison to prevent timing side-channel attacks
   const codeMatch = record.code.length === code.length &&
     timingSafeEqual(Buffer.from(record.code), Buffer.from(code));
   if (!codeMatch) {
-    otpStore.set(key, record);
+    if (fromRedis) await redisSet(key, record);
+    else inMemoryStore.set(key, record);
     return { valid: false, error: `Invalid code. ${MAX_ATTEMPTS - record.attempts} attempts remaining.` };
   }
 
   // Mark as verified
   record.verified = true;
-  otpStore.set(key, record);
+  if (fromRedis) await redisSet(key, record);
+  else inMemoryStore.set(key, record);
 
   return { valid: true };
 }
@@ -87,24 +141,14 @@ export function verifySigningOtp(
 /**
  * Check if a signing session has been verified via OTP.
  */
-export function isSigningVerified(key: string): boolean {
-  const record = otpStore.get(key);
+export async function isSigningVerified(key: string): Promise<boolean> {
+  let record = await redisGet(key);
+  if (!record) {
+    record = inMemoryStore.get(key) || null;
+  }
   if (!record) return false;
   if (Date.now() > record.expiresAt) {
-    otpStore.delete(key);
     return false;
   }
   return record.verified;
-}
-
-/**
- * Clean up expired OTPs (called lazily).
- */
-export function cleanupExpiredOtps(): void {
-  const now = Date.now();
-  for (const [key, record] of otpStore) {
-    if (now > record.expiresAt) {
-      otpStore.delete(key);
-    }
-  }
 }

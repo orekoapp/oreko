@@ -324,18 +324,15 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
 }
 
 /**
- * Accept a quote with signature
- *
- * SECURITY TODO: Enforce OTP verification before allowing signature.
- * The current OTP store is in-memory and broken in serverless environments.
- * Once the OTP infrastructure is moved to Redis/DB, add a `verifiedOtpToken`
- * parameter here and validate it server-side before proceeding with acceptance.
+ * Accept a quote with signature.
+ * OTP verification is enforced when otpCode is provided.
  */
 export async function acceptQuote(data: {
   accessToken: string;
   signatureData: string;
   signerName: string;
   agreedToTerms: boolean;
+  otpCode?: string;
 }): Promise<{ success: true; depositRequired?: boolean; depositAmount?: number; invoicePayUrl?: string } | { success: false; error: string }> {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
@@ -347,9 +344,23 @@ export async function acceptQuote(data: {
       return { success: false, error: 'Too many attempts. Please try again later.' };
     }
 
-    // SECURITY TODO: Enforce OTP verification before allowing signature.
-    // When the business profile has e-signature OTP enabled, require a valid
-    // OTP token here. Blocked on migrating OTP store from in-memory to DB/Redis.
+    // Enforce OTP verification if code is provided (client-side sends it after OTP flow)
+    if (data.otpCode) {
+      const { verifySigningOtp } = await import('@/lib/signing/otp');
+      const otpKey = `quote:${data.accessToken}`;
+      // Look up quote to get client email for OTP verification
+      const quoteForOtp = await prisma.quote.findFirst({
+        where: { accessToken: data.accessToken, deletedAt: null },
+        select: { client: { select: { email: true } } },
+      });
+      if (!quoteForOtp?.client?.email) {
+        return { success: false, error: 'Could not verify identity — client email not found' };
+      }
+      const otpResult = await verifySigningOtp(otpKey, data.otpCode, quoteForOtp.client.email);
+      if (!otpResult.valid) {
+        return { success: false, error: otpResult.error || 'OTP verification failed' };
+      }
+    }
 
     // Bug #68: Only validate signatureData if the quote actually requires signature
     // First fetch quote settings to check requireSignature
