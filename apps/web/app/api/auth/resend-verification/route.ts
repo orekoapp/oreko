@@ -1,8 +1,10 @@
+import { getBaseUrl } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -12,7 +14,7 @@ export async function POST() {
     }
 
     // Strict rate limit: 3 per 15 minutes
-    const rateLimitResult = checkRateLimit(`resend-verification:${session.user.id}`, {
+    const rateLimitResult = await checkRateLimit(`resend-verification:${session.user.id}`, {
       limit: 3,
       windowMs: 15 * 60 * 1000,
     });
@@ -57,7 +59,7 @@ export async function POST() {
     // Send verification email
     try {
       const { sendVerificationEmail } = await import('@/lib/services/email');
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = getBaseUrl();
       const verifyUrl = `${baseUrl}/verify-email/confirm?token=${rawToken}`;
       await sendVerificationEmail({
         to: user.email,
@@ -65,13 +67,13 @@ export async function POST() {
         verifyUrl,
       });
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      logger.error({ err: emailError }, 'Failed to send verification email');
       return NextResponse.json({ error: 'Failed to send verification email' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: 'Verification email sent' });
   } catch (error) {
-    console.error('Resend verification error:', error);
+    logger.error({ err: error }, 'Resend verification error');
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 }

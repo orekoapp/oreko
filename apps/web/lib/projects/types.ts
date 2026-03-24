@@ -14,21 +14,24 @@ export type ProjectWithCounts = ProjectWithClient & {
 
 export type ProjectDetail = Project & {
   client: Pick<Client, 'id' | 'name' | 'company' | 'email' | 'phone'>;
-  quotes: Pick<
-    Quote,
-    'id' | 'quoteNumber' | 'title' | 'status' | 'total' | 'createdAt'
-  >[];
-  invoices: Pick<
-    Invoice,
-    | 'id'
-    | 'invoiceNumber'
-    | 'title'
-    | 'status'
-    | 'total'
-    | 'amountDue'
-    | 'dueDate'
-    | 'createdAt'
-  >[];
+  quotes: {
+    id: string;
+    quoteNumber: string;
+    title: string | null;
+    status: string;
+    total: number;
+    createdAt: Date;
+  }[];
+  invoices: {
+    id: string;
+    invoiceNumber: string;
+    title: string | null;
+    status: string;
+    total: number;
+    amountDue: number;
+    dueDate: Date;
+    createdAt: Date;
+  }[];
   _count: {
     quotes: number;
     invoices: number;

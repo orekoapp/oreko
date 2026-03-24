@@ -2,27 +2,18 @@
 
 import { useState, useMemo } from 'react';
 import { subDays, startOfMonth, endOfMonth, startOfYear } from 'date-fns';
-import { ArrowUpRight, ArrowDownRight, DollarSign, FileText, Receipt, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Banknote, FileText, Receipt, TrendingUp } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
 
-import { SalesPipelineSection } from './sales-pipeline-section';
-import { FinancialHealthSection } from './financial-health-section';
-import { ConversionRateCard } from './conversion-rate-card';
-import { QuotesByStatusChart } from './quotes-by-status-chart';
-import { RevenueComparisonChart } from './revenue-comparison-chart';
 import { RevenueForecastChart } from './revenue-forecast-chart';
 import { TopClientsChart } from './top-clients-chart';
 import { ClientLifetimeValueCard } from './client-lifetime-value';
 
 import type {
   AnalyticsStats,
-  QuoteStatusCounts,
-  ConversionFunnelData,
-  PaymentAgingData,
   ForecastDataPoint,
-  MonthlyComparisonData,
 } from '@/lib/dashboard/types';
 
 interface TopClient {
@@ -66,19 +57,22 @@ function getDateRangeFromPreset(preset: string): DateRange {
   }
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 interface StatItemProps {
   title: string;
   value: string | number;
-  icon: React.ComponentType<{ className?: string }>;
   trend?: {
     value: number;
     isPositive: boolean;
@@ -86,16 +80,13 @@ interface StatItemProps {
   detail?: string;
 }
 
-function StatItem({ title, value, icon: Icon, trend, detail }: StatItemProps) {
+function StatItem({ title, value, trend, detail }: StatItemProps) {
   return (
     <div className="relative flex flex-col gap-1 p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
-          {title}
-        </span>
-        <Icon className="h-4 w-4 text-muted-foreground/40" />
-      </div>
-      <span className="text-2xl font-semibold tracking-tight">{value}</span>
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+        {title}
+      </span>
+      <span className="text-2xl font-semibold tracking-tight text-foreground">{value}</span>
       <div className="flex items-center gap-1.5 mt-0.5">
         {trend && (
           <span
@@ -123,24 +114,18 @@ function StatItem({ title, value, icon: Icon, trend, detail }: StatItemProps) {
 
 interface AnalyticsDashboardProps {
   stats: AnalyticsStats;
-  quoteStatusCounts: QuoteStatusCounts;
-  conversionFunnel: ConversionFunnelData;
-  paymentAging: PaymentAgingData;
   topClients?: TopClient[];
   clientLTV?: ClientLTV[];
   revenueForecast?: ForecastDataPoint[];
-  monthlyComparison?: MonthlyComparisonData[];
+  currency?: string;
 }
 
 export function AnalyticsDashboard({
   stats,
-  quoteStatusCounts,
-  conversionFunnel,
-  paymentAging,
   topClients,
   clientLTV,
   revenueForecast,
-  monthlyComparison,
+  currency = 'USD',
 }: AnalyticsDashboardProps) {
   const [selectedPreset, setSelectedPreset] = useState('30d');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(
@@ -167,8 +152,8 @@ export function AnalyticsDashboard({
   }, [stats]);
 
   return (
-    <div className="space-y-8">
-      {/* Period Selector - Inline pills */}
+    <div className="space-y-6">
+      {/* Period Selector */}
       <div className="flex items-center gap-1 rounded-lg border bg-card p-1 w-fit">
         {PERIOD_OPTIONS.map((option) => (
           <button
@@ -187,79 +172,43 @@ export function AnalyticsDashboard({
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-lg border bg-card divide-x divide-border">
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-lg border bg-card divide-x divide-border relative">
+        <span className="absolute -top-5 right-0 text-[11px] text-muted-foreground/60">
+          All amounts in {currency}
+        </span>
         <StatItem
           title="Total Revenue"
-          value={formatCurrency(stats.totalRevenue)}
-          icon={DollarSign}
+          value={formatCurrency(stats.totalRevenue, currency)}
           trend={revenueTrend}
           detail="vs last month"
         />
         <StatItem
           title="Total Quotes"
           value={stats.totalQuotes}
-          icon={FileText}
           trend={quotesTrend}
           detail="vs last month"
         />
         <StatItem
           title="Conversion Rate"
-          value={`${stats.conversionRate}%`}
-          icon={TrendingUp}
+          value={`${stats.conversionRate.toFixed(2)}%`}
           detail="Quotes to invoices"
         />
         <StatItem
           title="Outstanding"
-          value={formatCurrency(stats.outstandingAmount)}
-          icon={Receipt}
-          detail={`${formatCurrency(stats.overdueAmount)} overdue`}
+          value={formatCurrency(stats.outstandingAmount, currency)}
+          detail={`${formatCurrency(stats.overdueAmount, currency)} overdue`}
         />
       </div>
 
-      {/* Sales Pipeline & Financial Health */}
+      {/* Revenue Forecast - Full width hero chart */}
+      <RevenueForecastChart dateRange={dateRange} forecastData={revenueForecast} currency={currency} />
+
+{/* Client Insights */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <SalesPipelineSection
-          dateRange={dateRange}
-          conversionRate={stats.conversionRate}
-          avgDealValue={stats.avgDealValue}
-          quoteStatusCounts={quoteStatusCounts}
-          conversionFunnel={conversionFunnel}
-        />
-        <FinancialHealthSection
-          dateRange={dateRange}
-          outstandingAmount={stats.outstandingAmount}
-          overdueAmount={stats.overdueAmount}
-          revenueThisMonth={stats.revenueThisMonth}
-          paymentAging={paymentAging}
-        />
+        <TopClientsChart data={topClients} currency={currency} />
+        <ClientLifetimeValueCard data={clientLTV} currency={currency} />
       </div>
 
-      {/* Revenue Forecast */}
-      <RevenueForecastChart dateRange={dateRange} forecastData={revenueForecast} />
-
-      {/* Client Insights */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <TopClientsChart data={topClients} />
-        <ClientLifetimeValueCard data={clientLTV} />
-      </div>
-
-      {/* Secondary Charts - Conversion rate is compact, pair with status; comparison gets full width below */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-2 space-y-6">
-          <ConversionRateCard
-            data={{
-              conversionRate: stats.conversionRate,
-              acceptedCount: quoteStatusCounts.accepted,
-              totalSentCount: quoteStatusCounts.sent + quoteStatusCounts.viewed + quoteStatusCounts.accepted + quoteStatusCounts.declined,
-            }}
-            conversionFunnel={conversionFunnel}
-          />
-          <QuotesByStatusChart data={quoteStatusCounts} />
-        </div>
-        <div className="lg:col-span-3">
-          <RevenueComparisonChart data={monthlyComparison} />
-        </div>
-      </div>
     </div>
   );
 }

@@ -18,8 +18,14 @@ export async function generateMetadata({ params }: InvoiceEditPageProps) {
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function InvoiceEditPage({ params }: InvoiceEditPageProps) {
   const { id } = await params;
+
+  if (!UUID_REGEX.test(id)) {
+    notFound();
+  }
 
   const [invoice, clients, taxRates, businessProfile] = await Promise.all([
     getInvoice(id),
@@ -42,7 +48,8 @@ export default async function InvoiceEditPage({ params }: InvoiceEditPageProps) 
       invoice={invoice}
       clients={clients}
       taxRates={taxRates}
-      currency={businessProfile?.currency || invoice.settings.currency || 'USD'}
+      currency={invoice.currency}
+      businessName={businessProfile?.businessName || 'Your Business'}
     />
   );
 }

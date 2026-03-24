@@ -15,8 +15,8 @@ import {
 } from '@/lib/validations/common';
 
 describe('idSchema', () => {
-  it('accepts valid CUID', () => {
-    const result = idSchema.safeParse('clrqm9k3k0000q3wz8k7v4z1w');
+  it('accepts valid UUID', () => {
+    const result = idSchema.safeParse('550e8400-e29b-41d4-a716-446655440000');
     expect(result.success).toBe(true);
   });
 
@@ -27,6 +27,11 @@ describe('idSchema', () => {
 
   it('rejects invalid format', () => {
     const result = idSchema.safeParse('invalid-id');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects CUID format (DB uses UUID)', () => {
+    const result = idSchema.safeParse('clrqm9k3k0000q3wz8k7v4z1w');
     expect(result.success).toBe(false);
   });
 });

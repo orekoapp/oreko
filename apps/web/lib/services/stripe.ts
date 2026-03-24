@@ -1,11 +1,12 @@
 import Stripe from 'stripe';
+import { logger } from '@/lib/logger';
 
 // Initialize Stripe client
 function getStripeClient(): Stripe | null {
   const secretKey = process.env.STRIPE_SECRET_KEY;
 
   if (!secretKey) {
-    console.warn('STRIPE_SECRET_KEY is not set. Stripe functionality will be disabled.');
+    logger.warn('STRIPE_SECRET_KEY is not set. Stripe functionality will be disabled.');
     return null;
   }
 

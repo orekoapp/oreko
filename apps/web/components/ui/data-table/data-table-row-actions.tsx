@@ -99,34 +99,6 @@ export function DataTableRowActions<TData>({
 
   return (
     <div className="flex items-center justify-end gap-1">
-      {/* Quick action icons (visible) */}
-      {showQuickActions && (
-        <>
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              onClick={() => onDelete(row)}
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Delete</span>
-            </Button>
-          )}
-          {onView && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              onClick={() => onView(row)}
-            >
-              <Eye className="h-4 w-4" />
-              <span className="sr-only">View</span>
-            </Button>
-          )}
-        </>
-      )}
-
       {/* Dropdown menu for all actions */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

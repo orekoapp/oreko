@@ -35,6 +35,7 @@ interface AnalyticsPageContentProps {
   paymentAgingData: PaymentAgingData;
   clientDistributionData: ClientDistributionData[];
   monthlyComparisonData: MonthlyComparisonData[];
+  currency?: string;
 }
 
 const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
@@ -50,6 +51,7 @@ export function AnalyticsPageContent({
   paymentAgingData,
   clientDistributionData,
   monthlyComparisonData,
+  currency = 'USD',
 }: AnalyticsPageContentProps) {
   const [period, setPeriod] = useState<DashboardPeriod>('30d');
   const [activeTab, setActiveTab] = useState('overview');
@@ -115,6 +117,7 @@ export function AnalyticsPageContent({
             period={period}
             onPeriodChange={setPeriod}
             showPeriodSelector={false}
+            currency={currency}
           />
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -135,8 +138,9 @@ export function AnalyticsPageContent({
             data={dashboardData.revenueData}
             period={period}
             onPeriodChange={setPeriod}
+            currency={currency}
           />
-          <MonthlyComparisonChart data={monthlyComparisonData} height={350} />
+          <MonthlyComparisonChart data={monthlyComparisonData} height={350} currency={currency} />
         </TabsContent>
 
         {/* Quotes Tab */}
@@ -173,6 +177,20 @@ export function AnalyticsPageContent({
   );
 }
 
+// Escape CSV value to prevent formula injection and handle special chars
+function escapeCSV(value: unknown): string {
+  const str = String(value ?? '');
+  // Prefix formula-triggering characters to prevent CSV injection
+  if (/^[=+\-@\t\r]/.test(str)) {
+    return `"'${str.replace(/"/g, '""')}"`;
+  }
+  // Wrap in quotes if contains comma, quote, or newline
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
 // Helper functions for CSV export
 function generateCSV(data: Record<string, unknown>): string {
   const lines: string[] = [];
@@ -188,7 +206,7 @@ function generateCSV(data: Record<string, unknown>): string {
       const formattedValue = typeof value === 'number' && key.toLowerCase().includes('revenue')
         ? `$${value.toFixed(2)}`
         : value;
-      lines.push(`${formattedKey},${formattedValue}`);
+      lines.push(`${escapeCSV(formattedKey)},${escapeCSV(formattedValue)}`);
     });
   }
 
@@ -198,7 +216,7 @@ function generateCSV(data: Record<string, unknown>): string {
   const quoteStatus = data.quoteStatus as Record<string, number>;
   if (quoteStatus) {
     Object.entries(quoteStatus).forEach(([status, count]) => {
-      lines.push(`${status},${count}`);
+      lines.push(`${escapeCSV(status)},${escapeCSV(count)}`);
     });
   }
 
@@ -208,7 +226,7 @@ function generateCSV(data: Record<string, unknown>): string {
   const invoiceStatus = data.invoiceStatus as Record<string, number>;
   if (invoiceStatus) {
     Object.entries(invoiceStatus).forEach(([status, count]) => {
-      lines.push(`${status},${count}`);
+      lines.push(`${escapeCSV(status)},${escapeCSV(count)}`);
     });
   }
 

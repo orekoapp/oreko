@@ -40,9 +40,10 @@ import { toast } from 'sonner';
 interface ClientDetailProps {
   client: ClientDetailType;
   activities: ClientActivity[];
+  currency?: string;
 }
 
-export function ClientDetail({ client, activities }: ClientDetailProps) {
+export function ClientDetail({ client, activities, currency = 'USD' }: ClientDetailProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -124,7 +125,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More actions">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -165,9 +166,10 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
             {client.phone}
           </a>
         )}
+        {/* Bug #204: Ensure website link has protocol to prevent relative URL navigation */}
         {client.website && (
           <a
-            href={client.website}
+            href={client.website.startsWith('http') ? client.website : `https://${client.website}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 hover:text-foreground transition-colors"
@@ -190,13 +192,13 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
           <div>
             <p className="text-sm text-muted-foreground">Total Revenue</p>
             <p className="text-2xl font-semibold tracking-tight mt-1">
-              {formatCurrency(totalRevenue)}
+              {formatCurrency(totalRevenue, currency)}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Outstanding</p>
             <p className="text-2xl font-semibold tracking-tight mt-1 text-amber-600">
-              {formatCurrency(outstanding)}
+              {formatCurrency(outstanding, currency)}
             </p>
           </div>
           <div>
@@ -255,7 +257,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium tabular-nums">
-                        {formatCurrency(Number(invoice.total))}
+                        {formatCurrency(Number(invoice.total), (invoice as any).currency || currency)}
                       </span>
                       <StatusBadge status={invoice.status} />
                     </div>
@@ -290,7 +292,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium tabular-nums">
-                        {formatCurrency(Number(quote.total))}
+                        {formatCurrency(Number(quote.total), (quote as any).currency || currency)}
                       </span>
                       <StatusBadge status={quote.status} />
                     </div>
@@ -384,7 +386,7 @@ export function ClientDetail({ client, activities }: ClientDetailProps) {
                       <p className="text-sm">{item.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {formatRelativeDate(item.date)}
-                        {item.amount != null && ` \u00b7 ${formatCurrency(item.amount)}`}
+                        {item.amount != null && ` \u00b7 ${formatCurrency(item.amount, currency)}`}
                       </p>
                     </div>
                   </div>
@@ -482,10 +484,20 @@ function EmptyState({ label }: { label: string }) {
   return <p className="text-sm text-muted-foreground py-2">{label}</p>;
 }
 
+// Low #88: Handle future dates (e.g. upcoming due dates)
 function formatRelativeDate(date: Date) {
   const now = new Date();
   const diff = now.getTime() - new Date(date).getTime();
   const days = Math.floor(diff / 86400000);
+
+  // Future dates
+  if (days < 0) {
+    const futureDays = Math.abs(days);
+    if (futureDays === 1) return 'Tomorrow';
+    if (futureDays < 7) return `In ${futureDays} days`;
+    if (futureDays < 30) return `In ${Math.floor(futureDays / 7)} weeks`;
+    return formatDate(date);
+  }
 
   if (days === 0) return 'Today';
   if (days === 1) return 'Yesterday';

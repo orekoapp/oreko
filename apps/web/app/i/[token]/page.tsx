@@ -1,62 +1,80 @@
-import { Metadata } from 'next';
-import { getInvoiceByAccessToken, trackInvoiceView } from '@/lib/invoices/portal-actions';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { getInvoiceByAccessToken, trackInvoiceView, type PublicInvoiceData } from '@/lib/invoices/portal-actions';
 import { InvoicePortalView } from '@/components/client-portal/invoice-portal-view';
-import { InvoicePortalHeader } from '@/components/client-portal/invoice-portal-header';
+import { InvoiceStatusBadge } from '@/components/client-portal/invoice-portal-header';
+import { InvoicePortalSkeleton } from '@/components/client-portal/invoice-portal-skeleton';
+import { PortalDocumentShell } from '@/components/client-portal/portal-document-shell';
 
 interface InvoicePortalPageProps {
   params: Promise<{ token: string }>;
 }
 
-// Bug #250: Server-side data fetching for invoice portal (SEO + faster initial paint)
-export async function generateMetadata({ params }: InvoicePortalPageProps): Promise<Metadata> {
-  const { token } = await params;
-  const result = await getInvoiceByAccessToken(token);
+export default function InvoicePortalPage({ params }: InvoicePortalPageProps) {
+  const [invoice, setInvoice] = useState<PublicInvoiceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
-  if (!result.success) {
-    return { title: 'Invoice Not Found — QuoteCraft' };
+  useEffect(() => {
+    async function loadInvoice() {
+      const resolvedParams = await params;
+      const token = resolvedParams.token;
+      setAccessToken(token);
+
+      const result = await getInvoiceByAccessToken(token);
+
+      if (!result.success) {
+        setError('error' in result ? String(result.error) : 'Invoice not found');
+        setLoading(false);
+        return;
+      }
+
+      setInvoice(result.invoice);
+      setLoading(false);
+
+      // Track the view (fire and forget)
+      trackInvoiceView(token).catch(console.error);
+    }
+
+    loadInvoice();
+  }, [params]);
+
+  if (loading) {
+    return <InvoicePortalSkeleton />;
   }
 
-  return {
-    title: `Invoice ${result.invoice.invoiceNumber} — ${result.invoice.business.name}`,
-    description: `View invoice ${result.invoice.invoiceNumber} from ${result.invoice.business.name}`,
-    robots: { index: false, follow: false },
-  };
-}
-
-export default async function InvoicePortalPage({ params }: InvoicePortalPageProps) {
-  const { token } = await params;
-  const result = await getInvoiceByAccessToken(token);
-
-  if (!result.success) {
+  if (error || !invoice) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Invoice Not Found</h1>
-          <p className="text-muted-foreground">
-            {result.error || 'This invoice may have been deleted or the link is invalid.'}
+      <div className="flex min-h-screen items-center justify-center bg-gray-100/80 dark:bg-neutral-950">
+        <div className="mx-auto max-w-md rounded-lg border bg-card p-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-semibold">Invoice Not Found</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This invoice may have been deleted or the link is invalid.
           </p>
         </div>
       </div>
     );
   }
 
-  // Track the view (fire and forget — don't block render)
-  trackInvoiceView(token).catch(console.error);
-
   return (
-    <div className="min-h-screen">
-      <InvoicePortalHeader invoice={result.invoice} />
-      <main className="container mx-auto max-w-4xl px-4 py-8">
-        <InvoicePortalView invoice={result.invoice} accessToken={token} />
-      </main>
-      <footer className="border-t py-6">
-        <div className="container mx-auto max-w-4xl px-4 text-center text-sm text-muted-foreground">
-          Powered by{' '}
-          <a href="/" className="font-medium text-foreground hover:underline">
-            QuoteCraft
-          </a>
-        </div>
-      </footer>
-    </div>
+    <PortalDocumentShell
+      business={invoice.business}
+      branding={invoice.branding}
+      documentType="invoice"
+      documentNumber={invoice.invoiceNumber}
+      statusBadge={<InvoiceStatusBadge status={invoice.status} />}
+      onDownloadPdf={() => {
+        window.open(`/api/download/invoice/${invoice.id}?token=${accessToken}`, '_blank');
+      }}
+    >
+      <InvoicePortalView invoice={invoice} accessToken={accessToken!} />
+    </PortalDocumentShell>
   );
 }

@@ -128,6 +128,7 @@ export function BlockRenderer({ block, index, isSelected, isPreview }: BlockRend
           variant="ghost"
           size="icon"
           className="h-8 w-8 cursor-grab active:cursor-grabbing"
+          aria-label="Drag to reorder"
           {...attributes}
           {...listeners}
         >

@@ -30,10 +30,14 @@ function isSafeUrl(url: string): boolean {
  * Format currency for display
  */
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 /**
@@ -75,7 +79,9 @@ function formatAddress(address: unknown): string {
  */
 function getBaseStyles(primaryColor: string = '#3B82F6'): string {
   return `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    /* Bug #91: Removed external Google Fonts import to avoid latency, SSRF risk,
+       and dependency on external services during PDF generation.
+       Using system font stack instead — Inter is still preferred if locally available. */
 
     * {
       margin: 0;

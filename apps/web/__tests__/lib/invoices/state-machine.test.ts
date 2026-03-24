@@ -7,7 +7,7 @@ const allowedTransitions: Record<string, string[]> = {
   partial: ['paid', 'voided'],
   paid: ['voided'],
   overdue: ['paid', 'partial', 'voided'],
-  voided: ['draft'],
+  voided: [],
 };
 
 function isValidTransition(from: string, to: string): boolean {
@@ -24,7 +24,7 @@ describe('Invoice State Machine', () => {
     it('allows partial -> paid', () => expect(isValidTransition('partial', 'paid')).toBe(true));
     it('allows paid -> voided', () => expect(isValidTransition('paid', 'voided')).toBe(true));
     it('allows overdue -> paid', () => expect(isValidTransition('overdue', 'paid')).toBe(true));
-    it('allows voided -> draft (reopen)', () => expect(isValidTransition('voided', 'draft')).toBe(true));
+    // Voided is a terminal state — no outgoing transitions allowed
   });
 
   describe('invalid transitions', () => {
@@ -35,6 +35,7 @@ describe('Invoice State Machine', () => {
     it('blocks paid -> draft', () => expect(isValidTransition('paid', 'draft')).toBe(false));
     it('blocks voided -> sent', () => expect(isValidTransition('voided', 'sent')).toBe(false));
     it('blocks voided -> paid', () => expect(isValidTransition('voided', 'paid')).toBe(false));
+    it('blocks voided -> draft (terminal state)', () => expect(isValidTransition('voided', 'draft')).toBe(false));
   });
 
   describe('all statuses have defined transitions', () => {
@@ -43,7 +44,10 @@ describe('Invoice State Machine', () => {
     it.each(allStatuses)('status "%s" has defined transitions', (status) => {
       const transitions = allowedTransitions[status];
       expect(transitions).toBeDefined();
-      expect(transitions!.length).toBeGreaterThan(0);
+      // voided is a terminal state with no outgoing transitions
+      if (status !== 'voided') {
+        expect(transitions!.length).toBeGreaterThan(0);
+      }
     });
   });
 });

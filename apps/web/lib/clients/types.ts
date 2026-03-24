@@ -81,7 +81,12 @@ export function safeParseMetadata(raw: unknown): ClientMetadata {
     type: (meta.type === 'company' || meta.type === 'individual') ? meta.type : 'individual',
     website: typeof meta.website === 'string' ? meta.website : undefined,
     tags: Array.isArray(meta.tags) ? meta.tags.filter((t): t is string => typeof t === 'string') : [],
-    contacts: Array.isArray(meta.contacts) ? meta.contacts as ClientContact[] : [],
+    // Low #104: Validate each contact object's shape before casting
+    contacts: Array.isArray(meta.contacts)
+      ? (meta.contacts as unknown as ClientContact[]).filter(
+          (c) => c && typeof c === 'object' && typeof c.id === 'string' && typeof c.name === 'string' && typeof c.email === 'string'
+        )
+      : [],
   };
 }
 

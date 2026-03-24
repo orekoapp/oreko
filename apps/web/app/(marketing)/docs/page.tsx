@@ -82,7 +82,7 @@ export default function DocsPage() {
             <p>
               Sign up for a free account at{' '}
               <Link href="/register" className="text-primary hover:underline">
-                quote.persuado.tech/register
+                quotecraft.app/register
               </Link>
               . You can also self-host QuoteCraft using Docker.
             </p>

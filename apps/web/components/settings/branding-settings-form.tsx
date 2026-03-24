@@ -70,9 +70,11 @@ interface BrandingSettingsFormProps {
 
 export function BrandingSettingsForm({ initialData, businessData }: BrandingSettingsFormProps) {
   const [isSaving, setIsSaving] = React.useState(false);
-  const [lightLogo, setLightLogo] = React.useState<string | null>(null);
-  const [darkLogo, setDarkLogo] = React.useState<string | null>(null);
-  const [socialLinks, setSocialLinks] = React.useState<{ platform: string; url: string }[]>([]);
+  const [lightLogo, setLightLogo] = React.useState<string | null>(initialData?.logoUrl || null);
+  const [darkLogo, setDarkLogo] = React.useState<string | null>(initialData?.darkLogoUrl || null);
+  const [socialLinks, setSocialLinks] = React.useState<{ platform: string; url: string }[]>(
+    (businessData?.socialLinks as { platform: string; url: string }[]) || []
+  );
 
   const form = useForm<BrandingFormValues>({
     resolver: zodResolver(brandingSchema),
@@ -92,6 +94,7 @@ export function BrandingSettingsForm({ initialData, businessData }: BrandingSett
 
   const accentColor = form.watch('accentColor');
 
+  // Low #47: Revoke old blob URL before creating new one to prevent memory leak
   const handleLogoUpload = (type: 'light' | 'dark') => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -99,6 +102,11 @@ export function BrandingSettingsForm({ initialData, businessData }: BrandingSett
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
+        // Revoke previous blob URL if it exists
+        const oldUrl = type === 'light' ? lightLogo : darkLogo;
+        if (oldUrl?.startsWith('blob:')) {
+          URL.revokeObjectURL(oldUrl);
+        }
         const url = URL.createObjectURL(file);
         if (type === 'light') setLightLogo(url);
         else setDarkLogo(url);
@@ -134,6 +142,7 @@ export function BrandingSettingsForm({ initialData, businessData }: BrandingSett
         updateBrandingSettings({
           accentColor: data.accentColor,
           logoUrl: lightLogo || initialData?.logoUrl || undefined,
+          darkLogoUrl: darkLogo || initialData?.darkLogoUrl || undefined,
         }),
         updateBusinessProfile({
           businessName: data.businessName,
@@ -147,6 +156,7 @@ export function BrandingSettingsForm({ initialData, businessData }: BrandingSett
             postalCode: data.postalCode,
             country: data.country,
           },
+          socialLinks,
         }),
       ]);
       toast.success('Branding settings updated');

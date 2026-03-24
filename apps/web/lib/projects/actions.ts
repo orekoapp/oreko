@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { z } from 'zod';
+import { toNumber } from '@/lib/utils';
 import type { ProjectActivity, ProjectNote, ProjectContract } from './types';
 
 // Constants
@@ -13,7 +14,7 @@ const DEFAULT_PAGE_SIZE = 25;
  * Get the current user's active workspace
  */
 async function getActiveWorkspace() {
-  const { workspaceId, userId } = await getCurrentUserWorkspace();
+  const { workspaceId, userId, role } = await getCurrentUserWorkspace();
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
@@ -26,6 +27,7 @@ async function getActiveWorkspace() {
   return {
     userId,
     workspace,
+    role,
   };
 }
 
@@ -49,7 +51,12 @@ export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
  * Create a new project
  */
 export async function createProject(data: CreateProjectInput) {
-  const { workspace } = await getActiveWorkspace();
+  const { workspace, role } = await getActiveWorkspace();
+
+  // MEDIUM #25: Viewers cannot create projects
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const validated = createProjectSchema.parse(data);
 
@@ -228,7 +235,19 @@ export async function getProject(projectId: string) {
     throw new Error('Project not found');
   }
 
-  return project;
+  // Convert Prisma Decimal objects to plain numbers for client components
+  return {
+    ...project,
+    quotes: project.quotes.map((q) => ({
+      ...q,
+      total: Number(q.total),
+    })),
+    invoices: project.invoices.map((i) => ({
+      ...i,
+      total: Number(i.total),
+      amountDue: Number(i.amountDue),
+    })),
+  };
 }
 
 /**
@@ -238,7 +257,12 @@ export async function updateProject(
   projectId: string,
   data: UpdateProjectInput
 ) {
-  const { workspace } = await getActiveWorkspace();
+  const { workspace, role } = await getActiveWorkspace();
+
+  // MEDIUM #25: Viewers cannot update projects
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const validated = updateProjectSchema.parse(data);
 
@@ -280,7 +304,12 @@ export async function updateProject(
  * Soft delete a project (sets deletedAt timestamp)
  */
 export async function deleteProject(projectId: string) {
-  const { workspace } = await getActiveWorkspace();
+  const { workspace, role } = await getActiveWorkspace();
+
+  // MEDIUM #25: Viewers cannot delete projects
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions');
+  }
 
   const project = await prisma.project.findFirst({
     where: {
@@ -388,12 +417,12 @@ export async function getProjectStats(projectId: string) {
     accepted: project.quotes.filter((q) => q.status === 'accepted').length,
     expired: project.quotes.filter((q) => q.status === 'expired').length,
     totalValue: project.quotes.reduce(
-      (sum, q) => sum + Number(q.total),
+      (sum, q) => sum + toNumber(q.total),
       0
     ),
     acceptedValue: project.quotes
       .filter((q) => q.status === 'accepted')
-      .reduce((sum, q) => sum + Number(q.total), 0),
+      .reduce((sum, q) => sum + toNumber(q.total), 0),
   };
 
   // Calculate invoice stats
@@ -406,15 +435,15 @@ export async function getProjectStats(projectId: string) {
     overdue: project.invoices.filter((i) => i.status !== 'paid' && i.status !== 'voided' && i.status !== 'draft' && i.dueDate && new Date(i.dueDate) < new Date()).length,
     partial: project.invoices.filter((i) => i.status === 'partial').length,
     totalValue: project.invoices.reduce(
-      (sum, i) => sum + Number(i.total),
+      (sum, i) => sum + toNumber(i.total),
       0
     ),
     totalPaid: project.invoices.reduce(
-      (sum, i) => sum + Number(i.amountPaid),
+      (sum, i) => sum + toNumber(i.amountPaid),
       0
     ),
     totalDue: project.invoices.reduce(
-      (sum, i) => sum + Number(i.amountDue),
+      (sum, i) => sum + toNumber(i.amountDue),
       0
     ),
   };
@@ -518,7 +547,7 @@ export async function getProjectActivity(projectId: string): Promise<ProjectActi
         id: `qa-${quote.id}`,
         type: 'quote_accepted',
         title: `Quote ${quote.quoteNumber} accepted`,
-        amount: Number(quote.total),
+        amount: toNumber(quote.total),
         date: quote.createdAt,
       });
     }
@@ -527,7 +556,7 @@ export async function getProjectActivity(projectId: string): Promise<ProjectActi
         id: `qs-${quote.id}`,
         type: 'quote_sent',
         title: `Quote ${quote.quoteNumber} sent`,
-        amount: Number(quote.total),
+        amount: toNumber(quote.total),
         date: quote.sentAt,
       });
     }
@@ -539,7 +568,7 @@ export async function getProjectActivity(projectId: string): Promise<ProjectActi
       id: `ic-${invoice.id}`,
       type: 'invoice_created',
       title: `Invoice ${invoice.invoiceNumber} created`,
-      amount: Number(invoice.total),
+      amount: toNumber(invoice.total),
       date: invoice.createdAt,
     });
     if (invoice.sentAt) {
@@ -547,7 +576,7 @@ export async function getProjectActivity(projectId: string): Promise<ProjectActi
         id: `is-${invoice.id}`,
         type: 'invoice_sent',
         title: `Invoice ${invoice.invoiceNumber} sent`,
-        amount: Number(invoice.total),
+        amount: toNumber(invoice.total),
         date: invoice.sentAt,
       });
     }
@@ -556,7 +585,7 @@ export async function getProjectActivity(projectId: string): Promise<ProjectActi
         id: `ip-${invoice.id}`,
         type: 'invoice_paid',
         title: `Invoice ${invoice.invoiceNumber} paid`,
-        amount: Number(invoice.amountPaid),
+        amount: toNumber(invoice.amountPaid),
         date: invoice.paidAt,
       });
     }

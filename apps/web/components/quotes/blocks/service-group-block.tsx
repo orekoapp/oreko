@@ -13,6 +13,10 @@ interface ServiceGroupBlockContentProps {
   block: ServiceGroupBlock;
 }
 
+// TODO Bug #53: Nested service-item children can't enter editing mode because
+// selectedBlockId from the top-level store never matches their IDs. This needs
+// a deeper architectural change — either a scoped selection context for groups
+// or forwarding selection state into child items via props.
 export function ServiceGroupBlockContent({ block }: ServiceGroupBlockContentProps) {
   const { updateBlock, selectedBlockId, previewMode, document } = useQuoteBuilderStore();
   const isEditing = selectedBlockId === block.id && !previewMode;
@@ -24,14 +28,21 @@ export function ServiceGroupBlockContent({ block }: ServiceGroupBlockContentProp
     0
   );
 
+  // Bug #81: Use document locale instead of hardcoded en-US
+  const locale = (document?.settings as any)?.locale ?? 'en-US';
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    const parts = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
-    }).format(amount);
+    }).formatToParts(amount);
+    return parts.map((p, i) => {
+      if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+      return p.value;
+    }).join('');
   };
 
-  const handleChange = (field: keyof typeof block.content, value: string | boolean) => {
+  // Bug #80: Widened type to accept arrays (for items) and other content field types
+  const handleChange = (field: keyof typeof block.content, value: unknown) => {
     updateBlock(block.id, { [field]: value });
   };
 

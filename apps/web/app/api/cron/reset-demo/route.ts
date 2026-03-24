@@ -3,6 +3,7 @@ import { prisma } from '@quotecraft/database';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { DEMO_CONFIG } from '@/lib/demo/constants';
+import { logger } from '@/lib/logger';
 
 /**
  * Vercel Cron Job - Runs daily at midnight UTC
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    console.log('[Demo Reset] Starting demo workspace reset...');
+    logger.info('[Demo Reset] Starting demo workspace reset...');
 
     // Fix duplicate demo users caused by trailing whitespace in env var.
     // The env var DEMO_USER_EMAIL may have had a trailing newline, creating
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
       select: { id: true, email: true },
     });
     if (dirtyUsers.length > 0) {
-      console.log(`[Demo Reset] Found ${dirtyUsers.length} duplicate demo user(s) with dirty email, cleaning up...`);
+      logger.info({ count: dirtyUsers.length }, '[Demo Reset] Found duplicate demo user(s) with dirty email, cleaning up...');
       // Ensure the clean user exists first
       const cleanUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
       for (const dirty of dirtyUsers) {
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
 
     if (!demoWorkspace) {
       // Create demo workspace if it doesn't exist
-      console.log('[Demo Reset] Demo workspace not found, creating...');
+      logger.info('[Demo Reset] Demo workspace not found, creating...');
       await createDemoWorkspaceAndData();
       return NextResponse.json({
         success: true,
@@ -95,7 +96,7 @@ export async function GET(request: Request) {
     }
 
     // Delete all existing demo data (in correct order to respect foreign keys)
-    console.log('[Demo Reset] Deleting existing demo data...');
+    logger.info('[Demo Reset] Deleting existing demo data...');
 
     // Delete invoice events, line items, and invoices
     await prisma.invoiceEvent.deleteMany({
@@ -216,10 +217,10 @@ export async function GET(request: Request) {
     });
 
     // Re-seed demo data
-    console.log('[Demo Reset] Re-seeding demo data...');
+    logger.info('[Demo Reset] Re-seeding demo data...');
     await seedDemoData(demoWorkspace.id);
 
-    console.log('[Demo Reset] Demo workspace reset complete');
+    logger.info('[Demo Reset] Demo workspace reset complete');
 
     return NextResponse.json({
       success: true,
@@ -227,12 +228,12 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('[Demo Reset] Error resetting demo workspace:', error);
+    logger.error({ err: error }, '[Demo Reset] Error resetting demo workspace');
     return NextResponse.json(
       {
         success: false,
+        // Low #12: Don't leak internal error details in response
         error: 'Failed to reset demo workspace',
-        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

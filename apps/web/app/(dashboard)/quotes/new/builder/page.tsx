@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   DndContext,
@@ -24,12 +24,20 @@ import { useState } from 'react';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
 import { createBlock, type BlockType, type QuoteBlock } from '@/lib/quotes/types';
 import { BlocksPanel } from '@/components/quotes/builder/blocks-panel';
-import { RateCardPanel } from '@/components/quotes/builder/rate-card-panel';
+
 import { DocumentCanvas } from '@/components/quotes/builder/document-canvas';
 import { PropertiesPanel } from '@/components/quotes/builder/properties-panel';
 import { BuilderToolbar } from '@/components/quotes/builder/builder-toolbar';
 
 export default function QuoteBuilderPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading builder...</div>}>
+      <QuoteBuilderContent />
+    </Suspense>
+  );
+}
+
+function QuoteBuilderContent() {
   const searchParams = useSearchParams();
   const clientId = searchParams.get('clientId');
 
@@ -37,7 +45,6 @@ export default function QuoteBuilderPage() {
     document,
     showBlocksPanel,
     showPropertiesPanel,
-    showRateCardPanel,
     addBlock,
     moveBlock,
     resetDocument,
@@ -50,13 +57,17 @@ export default function QuoteBuilderPage() {
 
   // Reset only if the persisted document is from a previously saved quote (has a real ID).
   // If it's a fresh unsaved draft (empty ID), keep the user's in-progress work.
+  // Uses hasInitialized ref to run once on mount — deps intentionally omitted to prevent infinite loops.
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
     if (!document) {
       resetDocument();
     } else if (document.id) {
       // Stale saved quote from localStorage — clear it for a fresh start
       resetDocument();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Set clientId on document when available
@@ -86,7 +97,7 @@ export default function QuoteBuilderPage() {
       const store = useQuoteBuilderStore.getState();
       if (store.showBlocksPanel) store.toggleBlocksPanel();
       if (store.showPropertiesPanel) store.togglePropertiesPanel();
-      if (store.showRateCardPanel) store.toggleRateCardPanel();
+
     }
   }, []);
 
@@ -190,7 +201,6 @@ export default function QuoteBuilderPage() {
       >
         <div className="relative flex flex-1 overflow-hidden">
           {showBlocksPanel && <BlocksPanel />}
-          {showRateCardPanel && <RateCardPanel />}
 
           <DocumentCanvas />
 

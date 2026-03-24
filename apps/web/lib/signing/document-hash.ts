@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 
 /**
  * Compute a SHA-256 hash of document content at signing time.
@@ -23,6 +23,23 @@ interface QuoteHashInput {
   signedAt: string;
 }
 
+interface InvoiceHashInput {
+  invoiceId: string;
+  lineItems: Array<{
+    name: string;
+    description: string | null;
+    quantity: number;
+    rate: number;
+    amount: number;
+  }>;
+  terms: string;
+  notes: string;
+  subtotal: number;
+  total: number;
+  amountPaid: number;
+  paidAt: string;
+}
+
 interface ContractHashInput {
   contractInstanceId: string;
   content: string;
@@ -35,21 +52,47 @@ interface ContractHashInput {
  * Includes all financially significant fields + signer identity.
  */
 export function computeQuoteDocumentHash(input: QuoteHashInput): string {
+  // Bug #160: Explicitly convert numeric fields to Number() to handle Prisma Decimal objects
   const payload = JSON.stringify({
     quoteId: input.quoteId,
     lineItems: input.lineItems.map((item) => ({
       name: item.name,
       description: item.description || '',
-      quantity: item.quantity,
-      rate: item.rate,
-      amount: item.amount,
+      quantity: Number(item.quantity),
+      rate: Number(item.rate),
+      amount: Number(item.amount),
     })),
     terms: input.terms,
     notes: input.notes,
-    subtotal: input.subtotal,
-    total: input.total,
+    subtotal: Number(input.subtotal),
+    total: Number(input.total),
     signerName: input.signerName,
     signedAt: input.signedAt,
+  });
+
+  return createHash('sha256').update(payload).digest('hex');
+}
+
+/**
+ * Compute SHA-256 hash for an invoice at payment time.
+ * Includes all financially significant fields for audit trail.
+ */
+export function computeInvoiceDocumentHash(input: InvoiceHashInput): string {
+  const payload = JSON.stringify({
+    invoiceId: input.invoiceId,
+    lineItems: input.lineItems.map((item) => ({
+      name: item.name,
+      description: item.description || '',
+      quantity: Number(item.quantity),
+      rate: Number(item.rate),
+      amount: Number(item.amount),
+    })),
+    terms: input.terms,
+    notes: input.notes,
+    subtotal: Number(input.subtotal),
+    total: Number(input.total),
+    amountPaid: Number(input.amountPaid),
+    paidAt: input.paidAt,
   });
 
   return createHash('sha256').update(payload).digest('hex');
@@ -74,6 +117,8 @@ export function computeContractDocumentHash(input: ContractHashInput): string {
  * Verify a document hash matches the expected value.
  * Returns true if the hash matches, false if tampered.
  */
+// Bug #96: Use constant-time comparison to prevent timing side-channel attacks
 export function verifyDocumentHash(computedHash: string, storedHash: string): boolean {
-  return computedHash === storedHash;
+  if (computedHash.length !== storedHash.length) return false;
+  return timingSafeEqual(Buffer.from(computedHash), Buffer.from(storedHash));
 }

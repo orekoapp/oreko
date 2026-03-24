@@ -14,7 +14,7 @@ const releases = [
     changes: [
       'Visual quote builder with drag-and-drop blocks',
       'Client management system',
-      'Rate card system for consistent pricing',
+
       'One-click quote to invoice conversion',
       'E-signature capture with audit trail',
       'Stripe payment integration',

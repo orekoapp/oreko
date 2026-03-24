@@ -1,6 +1,7 @@
 import { prisma } from '@quotecraft/database';
 import bcrypt from 'bcryptjs';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logger, maskEmail } from '@/lib/logger';
 
 /** Rate limit: 5 login attempts per email per 15 minutes */
 const LOGIN_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
@@ -8,7 +9,7 @@ const LOGIN_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 export async function verifyCredentials(email: string, password: string) {
   // Rate limit by email to prevent brute-force attacks
   const normalizedEmail = email.toLowerCase().trim();
-  const rateLimitResult = checkRateLimit(`login:${normalizedEmail}`, LOGIN_RATE_LIMIT);
+  const rateLimitResult = await checkRateLimit(`login:${normalizedEmail}`, LOGIN_RATE_LIMIT);
   if (rateLimitResult.limited) {
     throw new Error('Too many login attempts. Please try again in 15 minutes.');
   }
@@ -26,24 +27,30 @@ export async function verifyCredentials(email: string, password: string) {
     },
   });
 
+  // Bug #84: Reject soft-deleted users — also checked in JWT callback for existing tokens
   if (!user || user.deletedAt) {
+    const reason = !user ? 'user not found' : 'soft-deleted account';
+    logger.warn({ email: maskEmail(normalizedEmail), reason }, '[auth] Failed login attempt');
     return null;
   }
 
   if (!user.passwordHash) {
     // User signed up with OAuth, doesn't have a password
+    logger.warn({ email: maskEmail(normalizedEmail), reason: 'OAuth-only account (no password)' }, '[auth] Failed login attempt');
     return null;
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash);
 
   if (!isValid) {
+    logger.warn({ email: maskEmail(normalizedEmail), reason: 'wrong password' }, '[auth] Failed login attempt');
     return null;
   }
 
   // Bug #17: Enforce email verification before allowing login
   // Use dedicated env var instead of NODE_ENV (Vercel previews may use NODE_ENV=development)
-  if (!user.emailVerifiedAt && process.env.SKIP_EMAIL_VERIFICATION !== 'true') {
+  const skipVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true' && process.env.NODE_ENV !== 'production';
+  if (!user.emailVerifiedAt && !skipVerification) {
     throw new Error('Please verify your email before logging in. Check your inbox for a verification link.');
   }
 

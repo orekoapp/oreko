@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { Banknote, Loader2, CreditCard, Building2, Wallet, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { DollarSign, Loader2, CreditCard, Building2, Banknote, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -24,6 +24,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { recordPayment } from '@/lib/invoices/actions';
 
 export interface PaymentRecord {
@@ -39,45 +45,59 @@ export interface PaymentRecord {
 interface RecordPaymentDialogProps {
   invoiceId: string;
   amountDue: number;
-  currency: string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  currency?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onPaymentRecorded?: (payment?: PaymentRecord) => void;
 }
 
 const paymentMethods = [
-  { value: 'card', label: 'Credit/Debit Card', icon: CreditCard },
   { value: 'bank_transfer', label: 'Bank Transfer', icon: Building2 },
+  { value: 'card', label: 'Credit Card', icon: CreditCard },
   { value: 'cash', label: 'Cash', icon: Banknote },
+  { value: 'check', label: 'Check', icon: Wallet },
+  { value: 'paypal', label: 'PayPal', icon: Wallet },
   { value: 'other', label: 'Other', icon: Wallet },
 ];
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 export function RecordPaymentDialog({
   invoiceId,
   amountDue,
-  currency,
-  open: controlledOpen,
-  onOpenChange: controlledOnOpenChange,
+  currency = 'USD',
+  open,
+  onOpenChange,
   onPaymentRecorded,
 }: RecordPaymentDialogProps) {
-  const router = useRouter();
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : internalOpen;
-  const setOpen = isControlled ? (controlledOnOpenChange || (() => {})) : setInternalOpen;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amount, setAmount] = useState(amountDue.toString());
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentDate, setPaymentDate] = useState<Date>(new Date());
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setAmount(amountDue.toString());
+      setPaymentDate(new Date());
+      setPaymentMethod('bank_transfer');
+      setReferenceNumber('');
+      setNotes('');
+      setError(null);
+    }
+  }, [open, amountDue]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,15 +124,10 @@ export function RecordPaymentDialog({
       });
 
       if (result.success) {
+        // CR #23: Use callback instead of full reload to preserve state
         toast.success('Payment recorded successfully');
-        setOpen(false);
+        onOpenChange(false);
         onPaymentRecorded?.();
-        router.refresh();
-        // Reset form
-        setAmount(amountDue.toString());
-        setPaymentMethod('card');
-        setReferenceNumber('');
-        setNotes('');
       } else {
         setError(result.error || 'Failed to record payment');
       }
@@ -122,15 +137,7 @@ export function RecordPaymentDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {!isControlled && (
-        <DialogTrigger asChild>
-          <Button className="w-full">
-            <DollarSign className="mr-2 h-4 w-4" />
-            Record Payment
-          </Button>
-        </DialogTrigger>
-      )}
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -142,12 +149,13 @@ export function RecordPaymentDialog({
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            {/* Amount */}
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount</Label>
+              <Label htmlFor="payment-amount">Amount</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Banknote className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="amount"
+                  id="payment-amount"
                   type="number"
                   step="0.01"
                   min="0.01"
@@ -179,8 +187,36 @@ export function RecordPaymentDialog({
               </div>
             </div>
 
+            {/* Payment Date */}
             <div className="grid gap-2">
-              <Label htmlFor="paymentMethod">Payment Method</Label>
+              <Label>Payment Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !paymentDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {paymentDate ? format(paymentDate, 'PPP') : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={paymentDate}
+                    onSelect={(d) => d && setPaymentDate(d)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Payment Method */}
+            <div className="grid gap-2">
+              <Label htmlFor="payment-method">Payment Method</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select payment method" />
@@ -198,20 +234,22 @@ export function RecordPaymentDialog({
               </Select>
             </div>
 
+            {/* Reference Number */}
             <div className="grid gap-2">
-              <Label htmlFor="referenceNumber">Reference Number (Optional)</Label>
+              <Label htmlFor="payment-reference">Reference Number (Optional)</Label>
               <Input
-                id="referenceNumber"
+                id="payment-reference"
                 value={referenceNumber}
                 onChange={(e) => setReferenceNumber(e.target.value)}
                 placeholder="Transaction ID, check number, etc."
               />
             </div>
 
+            {/* Notes */}
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Label htmlFor="payment-notes">Notes (Optional)</Label>
               <Textarea
-                id="notes"
+                id="payment-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add any payment notes..."
@@ -228,7 +266,7 @@ export function RecordPaymentDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
               Cancel

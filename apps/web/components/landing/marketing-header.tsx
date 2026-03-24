@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, Github } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/shared';
+import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'Features', href: '/features' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'About', href: '/about' },
   { label: 'Docs', href: '/docs' },
 ];
 
@@ -18,115 +17,100 @@ export function MarketingHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (href.startsWith('#')) {
-      e.preventDefault();
-      const element = document.querySelector(href);
-      element?.scrollIntoView({ behavior: 'smooth' });
-      setIsMobileMenuOpen(false);
-    }
-  };
+  // Low #85: Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
 
   return (
     <header
       className={cn(
-        'fixed top-0 w-full z-50 transition-all duration-300',
+        'sticky top-0 w-full z-50 transition-all duration-200',
         isScrolled
-          ? 'bg-white/80 backdrop-blur-md shadow-sm dark:bg-slate-900/80'
-          : 'bg-transparent'
+          ? 'bg-background/95 backdrop-blur-sm border-b border-border shadow-xs'
+          : 'bg-background'
       )}
     >
-      <nav aria-label="Main navigation" className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Logo href="/" />
+      <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">Q</span>
+          </div>
+          <span className="font-display font-medium text-lg text-foreground">QuoteCraft</span>
+        </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-8">
+        <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
-              onClick={(e) => handleSmoothScroll(e, link.href)}
-              className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-medium"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
-          <a
-            href="https://github.com/WisdmLabs/quote-software"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-medium"
+        </div>
+
+        <div className="hidden md:flex items-center gap-3">
+          <Link
+            href="/login"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
           >
-            <Github className="h-4 w-4" />
-            <span>GitHub</span>
-          </a>
-        </div>
-
-        {/* Desktop CTAs */}
-        <div className="hidden md:flex items-center space-x-4">
-          <Link href="/login">
-            <Button variant="ghost">Sign In</Button>
+            Sign in
           </Link>
-          <Link href="/register">
-            <Button>Get Started</Button>
+          <Link
+            href="/register"
+            className="text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-4 py-2 rounded-md transition-colors"
+          >
+            Start free trial
           </Link>
         </div>
 
-        {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2"
+          className="md:hidden p-2 -mr-2 text-foreground"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={isMobileMenuOpen}
         >
-          {isMobileMenuOpen ? (
-            <X className="h-6 w-6 text-slate-900 dark:text-white" />
-          ) : (
-            <Menu className="h-6 w-6 text-slate-900 dark:text-white" />
-          )}
+          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </nav>
 
-      {/* Mobile Menu */}
+      {/* Bug #114: Close mobile menu on route change + Bug #115: Close on Escape */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-lg">
-          <div className="container mx-auto px-4 py-4 space-y-4">
+        <div
+          className="md:hidden border-t border-border bg-background"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation menu"
+          onKeyDown={(e) => { if (e.key === 'Escape') setIsMobileMenuOpen(false); }}
+        >
+          <div className="max-w-6xl mx-auto px-6 py-4 space-y-1">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
-                onClick={(e) => handleSmoothScroll(e, link.href)}
-                className="block text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-medium py-2"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block text-sm text-muted-foreground hover:text-foreground py-2.5"
               >
                 {link.label}
-              </a>
-            ))}
-            <a
-              href="https://github.com/WisdmLabs/quote-software"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-medium py-2"
-            >
-              <Github className="h-4 w-4" />
-              <span>GitHub</span>
-            </a>
-            <div className="pt-4 space-y-2 border-t border-slate-200 dark:border-slate-800">
-              <Link href="/login" className="block">
-                <Button variant="outline" className="w-full">
-                  Sign In
-                </Button>
               </Link>
-              <Link href="/register" className="block">
-                <Button className="w-full">Get Started</Button>
+            ))}
+            <div className="pt-3 mt-2 border-t border-border space-y-2">
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="block text-sm text-muted-foreground py-2">
+                Sign in
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block text-center text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-4 py-2.5 rounded-md"
+              >
+                Start free trial
               </Link>
             </div>
           </div>

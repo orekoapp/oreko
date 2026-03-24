@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 // Email rate limit: 20 emails per hour per key (workspace or IP)
 const EMAIL_RATE_LIMIT = { limit: 20, windowMs: 60 * 60 * 1000 };
@@ -54,7 +55,7 @@ function getEmailClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
-    console.warn('RESEND_API_KEY is not set. Email functionality will be disabled.');
+    logger.warn('RESEND_API_KEY is not set. Email functionality will be disabled.');
     return null;
   }
 
@@ -65,7 +66,7 @@ function getEmailClient(): Resend | null {
 // Get default config
 function getDefaultConfig(): EmailConfig {
   return {
-    from: process.env.EMAIL_FROM || 'QuoteCraft <noreply@quote.persuado.tech>',
+    from: process.env.EMAIL_FROM || 'QuoteCraft <noreply@quotecraft.app>',
     replyTo: process.env.EMAIL_REPLY_TO,
   };
 }
@@ -82,9 +83,9 @@ export async function sendEmail(
 ): Promise<EmailResult> {
   // Apply rate limit if a key is provided (e.g., workspaceId)
   if (rateLimitKey) {
-    const rl = checkRateLimit(`email:${rateLimitKey}`, EMAIL_RATE_LIMIT);
+    const rl = await checkRateLimit(`email:${rateLimitKey}`, EMAIL_RATE_LIMIT);
     if (rl.limited) {
-      console.warn(`Email rate limited for key ${rateLimitKey}`);
+      logger.warn({ rateLimitKey }, 'Email rate limited');
       return {
         success: false,
         error: 'Email rate limit exceeded. Please try again later.',
@@ -95,7 +96,7 @@ export async function sendEmail(
   const client = getEmailClient();
 
   if (!client) {
-    console.warn('Email client not configured. Email not sent:', options.subject);
+    logger.warn({ subject: options.subject }, 'Email client not configured. Email not sent');
     return {
       success: false,
       error: 'Email service not configured',
@@ -105,14 +106,33 @@ export async function sendEmail(
   const config = getDefaultConfig();
 
   try {
-    // Strip newlines from subject to prevent email header injection
-    const safeSubject = options.subject.replace(/[\r\n]+/g, ' ').trim();
+    // Strip newlines and non-printable characters to prevent email header injection
+    // Low #32: Also remove control characters that can break email client rendering
+    const safeSubject = options.subject
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .trim();
+
+    // Bug #89: Generate plaintext fallback by stripping HTML tags if no text provided
+    const htmlContent = options.html || options.text || 'This email has no content';
+    const textContent = options.text || htmlContent
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
 
     const { data, error } = await client.emails.send({
       from: config.from,
       to: Array.isArray(options.to) ? options.to : [options.to],
       subject: safeSubject,
-      html: options.html || options.text || 'This email has no content',
+      html: htmlContent,
+      text: textContent,
       replyTo: options.replyTo ?? config.replyTo,
       cc: options.cc,
       bcc: options.bcc,
@@ -121,7 +141,7 @@ export async function sendEmail(
     });
 
     if (error) {
-      console.error('Email send error:', error);
+      logger.error({ err: error }, 'Email send error');
       return {
         success: false,
         error: error.message,
@@ -134,7 +154,7 @@ export async function sendEmail(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Email send exception:', message);
+    logger.error({ err: message }, 'Email send exception');
     return {
       success: false,
       error: message,
@@ -142,9 +162,22 @@ export async function sendEmail(
   }
 }
 
+// Validate URL is safe for embedding in email href attributes
+function validateEmailUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error('Invalid URL protocol');
+    }
+    return url;
+  } catch {
+    return '#';
+  }
+}
+
 // Pre-built email templates
 export async function sendQuoteSentEmail(params: {
-  to: string;
+  to: string | string[];
   clientName: string;
   quoteName: string;
   quoteUrl: string;
@@ -159,6 +192,7 @@ export async function sendQuoteSentEmail(params: {
   const safeClientName = escapeHtml(clientName);
   const safeQuoteName = escapeHtml(quoteName);
   const safeMessage = message ? escapeHtml(message) : '';
+  const safeQuoteUrl = validateEmailUrl(quoteUrl);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -168,11 +202,11 @@ export async function sendQuoteSentEmail(params: {
       ${safeMessage ? `<p>${safeMessage}</p>` : ''}
       ${validUntil ? `<p>This quote is valid until ${validUntil.toLocaleDateString()}.</p>` : ''}
       <p style="margin: 24px 0;">
-        <a href="${quoteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        <a href="${safeQuoteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           View Quote
         </a>
       </p>
-      <p>Or copy this link: ${quoteUrl}</p>
+      <p>Or copy this link: ${safeQuoteUrl}</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
         Sent via QuoteCraft on behalf of ${safeBusinessName}
@@ -191,7 +225,7 @@ export async function sendQuoteSentEmail(params: {
 }
 
 export async function sendInvoiceSentEmail(params: {
-  to: string;
+  to: string | string[];
   clientName: string;
   invoiceNumber: string;
   invoiceUrl: string;

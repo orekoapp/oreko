@@ -192,6 +192,7 @@ export interface QuoteDocument {
   quoteNumber: string;
   status: QuoteStatus;
   title: string;
+  currency: string;
   issueDate: string;
   expirationDate: string | null;
   blocks: QuoteBlock[];

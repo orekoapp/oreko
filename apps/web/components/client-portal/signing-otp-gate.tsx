@@ -42,14 +42,19 @@ export function SigningOtpGate({
     (_, start, middle, domain) => `${start}${'*'.repeat(Math.min(middle.length, 5))}${domain}`
   );
 
+  // CR #18: Wrap in try/catch to handle network failures — useTransition won't catch them
   const handleSendOtp = () => {
     startTransition(async () => {
-      const result = await sendSigningOtp({ type, accessToken });
-      if (result.success) {
-        toast.success('Verification code sent to your email');
-        setStep('verify');
-      } else {
-        toast.error(result.error);
+      try {
+        const result = await sendSigningOtp({ type, accessToken });
+        if (result.success) {
+          toast.success('Verification code sent to your email');
+          setStep('verify');
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error('Network error. Please check your connection and try again.');
       }
     });
   };
@@ -61,17 +66,21 @@ export function SigningOtpGate({
     }
 
     startTransition(async () => {
-      const result = await verifySigningOtpAction({
-        type,
-        accessToken,
-        code: code.trim(),
-        email: clientEmail,
-      });
-      if (result.success) {
-        toast.success('Identity verified');
-        onVerified();
-      } else {
-        toast.error(result.error);
+      try {
+        const result = await verifySigningOtpAction({
+          type,
+          accessToken,
+          code: code.trim(),
+          email: clientEmail,
+        });
+        if (result.success) {
+          toast.success('Identity verified');
+          onVerified();
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error('Network error. Please check your connection and try again.');
       }
     });
   };

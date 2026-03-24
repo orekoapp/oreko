@@ -46,6 +46,9 @@ export function WorkspaceSettingsForm({ initialData }: WorkspaceSettingsFormProp
       } else {
         setError(result.error || 'Failed to update workspace settings');
       }
+    } catch {
+      // Bug #165: Catch unexpected errors (network failure, etc.)
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

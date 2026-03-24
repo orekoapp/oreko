@@ -7,7 +7,7 @@ import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import Image from '@tiptap/extension-image';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import {
   Bold,
   Italic,
@@ -50,6 +50,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={title}
+      aria-label={title}
       className={cn(
         'p-1.5 rounded-md transition-colors',
         active
@@ -100,7 +101,10 @@ export function RichTextEditor({
     ],
     content: value,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      // Bug #197: Skip onChange when syncing external value to prevent infinite loop
+      if (!skipNextUpdate.current) {
+        onChange(editor.getHTML());
+      }
     },
     editorProps: {
       attributes: {
@@ -110,10 +114,16 @@ export function RichTextEditor({
     },
   });
 
-  // Sync external value changes
+  // Bug #197: Sync external value changes with skip flag to prevent infinite loop.
+  // setContent triggers onUpdate → onChange → parent re-renders → value changes → repeat.
+  // The skipRef prevents the onUpdate callback from firing onChange when we're syncing.
+  const skipNextUpdate = useRef(false);
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
+      skipNextUpdate.current = true;
       editor.commands.setContent(value, false);
+      // Reset flag after a tick to allow future user edits
+      requestAnimationFrame(() => { skipNextUpdate.current = false; });
     }
   }, [value, editor]);
 
@@ -130,6 +140,12 @@ export function RichTextEditor({
       return;
     }
 
+    // HIGH #48: Block non-http(s) protocols to prevent javascript: XSS
+    if (!/^https?:\/\//i.test(url)) {
+      window.alert('Only http:// and https:// URLs are allowed.');
+      return;
+    }
+
     editor
       .chain()
       .focus()
@@ -143,6 +159,11 @@ export function RichTextEditor({
 
     const url = window.prompt('Enter image URL', 'https://');
     if (url) {
+      // HIGH #48: Block non-http(s) protocols to prevent javascript: XSS
+      if (!/^https?:\/\//i.test(url)) {
+        window.alert('Only http:// and https:// URLs are allowed.');
+        return;
+      }
       editor.chain().focus().setImage({ src: url }).run();
     }
   }, [editor]);

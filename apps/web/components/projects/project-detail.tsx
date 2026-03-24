@@ -54,9 +54,10 @@ interface ProjectDetailProps {
   activity: ProjectActivity[];
   notes: ProjectNote[];
   contracts: ProjectContract[];
+  currency?: string;
 }
 
-export function ProjectDetail({ project, stats, activity, notes, contracts }: ProjectDetailProps) {
+export function ProjectDetail({ project, stats, activity, notes, contracts, currency = 'USD' }: ProjectDetailProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -124,7 +125,7 @@ export function ProjectDetail({ project, stats, activity, notes, contracts }: Pr
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More actions">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -165,19 +166,19 @@ export function ProjectDetail({ project, stats, activity, notes, contracts }: Pr
           <div>
             <p className="text-sm text-muted-foreground">Project Value</p>
             <p className="text-2xl font-semibold tracking-tight mt-1">
-              {formatCurrency(projectValue)}
+              {formatCurrency(projectValue, currency)}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Outstanding</p>
             <p className="text-2xl font-semibold tracking-tight mt-1 text-amber-600">
-              {formatCurrency(totalDue)}
+              {formatCurrency(totalDue, currency)}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Received</p>
             <p className="text-2xl font-semibold tracking-tight mt-1 text-emerald-600">
-              {formatCurrency(totalReceived)}
+              {formatCurrency(totalReceived, currency)}
             </p>
           </div>
         </div>
@@ -223,7 +224,7 @@ export function ProjectDetail({ project, stats, activity, notes, contracts }: Pr
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium tabular-nums">
-                        {formatCurrency(Number(invoice.total))}
+                        {formatCurrency(Number(invoice.total), (invoice as any).currency || currency)}
                       </span>
                       <StatusBadge status={invoice.status} />
                     </div>
@@ -260,7 +261,7 @@ export function ProjectDetail({ project, stats, activity, notes, contracts }: Pr
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium tabular-nums">
-                        {formatCurrency(Number(quote.total))}
+                        {formatCurrency(Number(quote.total), (quote as any).currency || currency)}
                       </span>
                       <StatusBadge status={quote.status} />
                     </div>
@@ -442,7 +443,7 @@ export function ProjectDetail({ project, stats, activity, notes, contracts }: Pr
                     <p className="text-sm">{item.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {formatRelativeDate(item.date)}
-                      {item.amount != null && ` \u00b7 ${formatCurrency(item.amount)}`}
+                      {item.amount != null && ` \u00b7 ${formatCurrency(item.amount, currency)}`}
                     </p>
                   </div>
                 </div>

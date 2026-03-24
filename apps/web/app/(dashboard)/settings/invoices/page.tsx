@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NumberSequenceForm, InvoiceDefaultsForm } from '@/components/settings';
 import { getNumberSequences, getInvoiceDefaults } from '@/lib/settings/actions';
 

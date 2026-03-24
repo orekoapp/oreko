@@ -1,8 +1,22 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+type DecimalLike = { toNumber: () => number }
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Convert a Prisma Decimal (or any numeric-ish value) to a plain number.
+ * Handles null, undefined, Decimal objects, and already-plain numbers.
+ */
+export function toNumber(value: DecimalLike | number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'object' && 'toNumber' in value) {
+    return (value as { toNumber: () => number }).toNumber();
+  }
+  return Number(value) || 0;
 }
 
 /**
@@ -13,12 +27,17 @@ export function formatCurrency(
   currency: string = 'USD',
   locale: string = 'en-US'
 ): string {
-  return new Intl.NumberFormat(locale, {
+  const parts = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount)
+  }).formatToParts(amount);
+  // Insert space between currency symbol and number
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 /**
@@ -69,4 +88,15 @@ export function formatRelativeTime(
   }
 
   return rtf.format(0, 'second')
+}
+
+/**
+ * Get the base URL for the app — works on Vercel (production + preview) and locally.
+ * Priority: NEXT_PUBLIC_APP_URL > VERCEL_URL > VERCEL_BRANCH_URL > localhost
+ */
+export function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  if (process.env.VERCEL_BRANCH_URL) return `https://${process.env.VERCEL_BRANCH_URL}`;
+  return 'http://localhost:3000';
 }

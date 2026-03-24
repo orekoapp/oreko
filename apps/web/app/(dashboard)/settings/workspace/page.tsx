@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { WorkspaceSettingsForm } from '@/components/settings/workspace-settings-form';
 import { DangerZone } from '@/components/settings/danger-zone';
@@ -19,7 +21,7 @@ export default async function WorkspaceSettingsPage() {
   const workspace = await getWorkspaceSettings();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>General</CardTitle>

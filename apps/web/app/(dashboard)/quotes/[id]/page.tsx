@@ -81,7 +81,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           </Button>
           {quote.status === 'draft' && (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/quotes/${id}/builder`}>
+              <Link href={`/quotes/${id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Link>
@@ -95,7 +95,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               quoteId={quote.id}
               quoteTitle={quote.title}
               total={quote.totals.total}
-              currency={quote.settings.currency}
+              currency={quote.currency}
             />
           )}
         </div>
@@ -159,10 +159,10 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                             </div>
                             <div className="text-right">
                               <p className="text-sm text-muted-foreground">
-                                {block.content.quantity} x {formatCurrency(block.content.rate)}
+                                {block.content.quantity} x {formatCurrency(block.content.rate, quote.currency)}
                               </p>
                               <p className="font-semibold">
-                                {formatCurrency(lineTotal)}
+                                {formatCurrency(lineTotal, quote.currency)}
                               </p>
                             </div>
                           </div>
@@ -176,23 +176,23 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                   <div className="ml-auto w-64 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>{formatCurrency(quote.totals.subtotal)}</span>
+                      <span>{formatCurrency(quote.totals.subtotal, quote.currency)}</span>
                     </div>
                     {quote.totals.discountAmount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
-                        <span>-{formatCurrency(quote.totals.discountAmount)}</span>
+                        <span>-{formatCurrency(quote.totals.discountAmount, quote.currency)}</span>
                       </div>
                     )}
                     {quote.totals.taxTotal > 0 && (
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>{formatCurrency(quote.totals.taxTotal)}</span>
+                        <span>{formatCurrency(quote.totals.taxTotal, quote.currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between border-t pt-2 text-lg font-bold">
                       <span>Total</span>
-                      <span>{formatCurrency(quote.totals.total)}</span>
+                      <span>{formatCurrency(quote.totals.total, quote.currency)}</span>
                     </div>
                   </div>
                 </div>
@@ -228,7 +228,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(quote.totals.total)}
+                  {formatCurrency(quote.totals.total, quote.currency)}
                 </p>
               </div>
               <div>
@@ -267,12 +267,14 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               ) : (
                 <p className="text-muted-foreground text-sm">No client assigned</p>
               )}
-              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                <Link href={`/clients/${quote.clientId}`}>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View Client
-                </Link>
-              </Button>
+              {quote.clientId && (
+                <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+                  <Link href={`/clients/${quote.clientId}`}>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View Client
+                  </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -319,11 +321,15 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <CardContent className="space-y-3">
                 <div className="rounded-lg border bg-green-50 dark:bg-green-950 p-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={quote.signatureData.data}
-                    alt="Client signature"
-                    className="max-h-20 mx-auto"
-                  />
+                  {(quote.signatureData.data.startsWith('data:image/') || quote.signatureData.data.startsWith('https://')) ? (
+                    <img
+                      src={quote.signatureData.data}
+                      alt="Client signature"
+                      className="max-h-20 mx-auto"
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center">Invalid signature data</p>
+                  )}
                 </div>
                 <div className="space-y-1 text-sm">
                   <p><span className="text-muted-foreground">Signed by:</span> {quote.signatureData.signerName}</p>

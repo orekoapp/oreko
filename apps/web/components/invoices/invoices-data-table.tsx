@@ -24,9 +24,11 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { deleteInvoice, duplicateInvoice, getInvoice } from '@/lib/invoices/actions';
+import { getBusinessProfile } from '@/lib/settings/actions';
 import { cn } from '@/lib/utils';
 import { SendEmailDialog } from '@/components/shared/send-email-dialog';
 import { RecordPaymentDialog } from './record-payment-dialog';
@@ -36,11 +38,16 @@ const ACCENT = '#3786b3';
 const ACCENT_LIGHT = '#e3f2fa';
 const ACCENT_BG = 'bg-sky-50/60';
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+// Bug #172: Accept currency parameter instead of hardcoding USD
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+    currency,
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 function formatDate(dateString: string): string {
@@ -53,9 +60,11 @@ function formatDate(dateString: string): string {
 
 interface InvoicesDataTableProps {
   data: InvoiceListItem[];
+  /** IDs of invoices that have recurring enabled, passed from server */
+  recurringInvoiceIds?: string[];
 }
 
-export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps) {
+export function InvoicesDataTable({ data: initialData, recurringInvoiceIds: serverRecurringIds }: InvoicesDataTableProps) {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<any | null>(null);
@@ -63,6 +72,12 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
 
   // Local data state for status/payment updates
   const [data, setData] = useState(initialData);
+
+  // Business name for email dialog
+  const [businessName, setBusinessName] = useState('');
+  useEffect(() => {
+    getBusinessProfile().then((p) => setBusinessName(p?.businessName || '')).catch(() => {});
+  }, []);
 
   // Dialog states
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -75,8 +90,10 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
   // Payment history for viewing invoice
   const [viewPayments, setViewPayments] = useState<any[]>([]);
 
-  // Recurring invoice IDs (placeholder for future backend support)
-  const [recurringIds, setRecurringIds] = useState<Set<string>>(new Set());
+  // Recurring invoice IDs — populated from server data
+  const [recurringIds, setRecurringIds] = useState<Set<string>>(
+    new Set(serverRecurringIds || [])
+  );
 
   const handleView = async (invoice: InvoiceListItem) => {
     try {
@@ -186,8 +203,19 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
   }, []);
 
   const handleRecurringSaved = useCallback((settings: RecurringSettings) => {
+    if (recurringTarget) {
+      setRecurringIds((prev) => {
+        const next = new Set(prev);
+        if (settings.enabled) {
+          next.add(recurringTarget.id);
+        } else {
+          next.delete(recurringTarget.id);
+        }
+        return next;
+      });
+    }
     setRecurringTarget(null);
-  }, []);
+  }, [recurringTarget]);
 
   const columns = getInvoiceColumns({
     onView: handleView,
@@ -240,12 +268,13 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
         statusFilterKey="status"
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
-        onRowClick={(invoice) => router.push(`/invoices/${invoice.id}`)}
+        onRowClick={(invoice) => handleView(invoice)}
       />
 
       {/* Invoice View Dialog -- Payment Page Style */}
       <Dialog open={!!viewingInvoice} onOpenChange={(open) => !open && handleCloseView()}>
         <DialogContent className="!flex !flex-col !max-w-[520px] !max-h-[90vh] !p-0 !gap-0 overflow-hidden">
+          <DialogTitle className="sr-only">Invoice Preview</DialogTitle>
           {invoice && (
             <>
               {/* Scrollable content */}
@@ -270,7 +299,7 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                       {invoice.client?.name || 'Invoice'}
                     </h3>
                     <p className="text-3xl font-bold tracking-tight mt-1" style={{ color: ACCENT }}>
-                      {formatCurrency(invoice.totals.total)}
+                      {formatCurrency(invoice.totals.total, invoice.currency)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Invoice #{invoice.invoiceNumber} &middot; Due {formatDate(invoice.dueDate)}
@@ -298,7 +327,7 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                                 </p>
                               </div>
                               <span className="font-medium tabular-nums text-green-600 text-sm">
-                                +{formatCurrency(pmt.amount)}
+                                +{formatCurrency(pmt.amount, invoice.currency)}
                               </span>
                             </div>
                           ))}
@@ -348,7 +377,7 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                                   {item.name || 'Untitled Item'}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {item.quantity} &times; {formatCurrency(item.rate)}
+                                  {item.quantity} &times; {formatCurrency(item.rate, invoice.currency)}
                                   {item.description && (
                                     <span className="ml-1.5 text-muted-foreground/70">
                                       &middot; {item.description}
@@ -357,7 +386,7 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                                 </p>
                               </div>
                               <span className="ml-4 font-medium tabular-nums text-sm">
-                                {formatCurrency(item.amount)}
+                                {formatCurrency(item.amount, invoice.currency)}
                               </span>
                             </div>
                           ))}
@@ -369,11 +398,11 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                             <div className="space-y-2 mb-3">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span className="tabular-nums">{formatCurrency(invoice.totals.subtotal)}</span>
+                                <span className="tabular-nums">{formatCurrency(invoice.totals.subtotal, invoice.currency)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Discount</span>
-                                <span className="tabular-nums text-green-600">-{formatCurrency(invoice.totals.discountAmount)}</span>
+                                <span className="tabular-nums text-green-600">-{formatCurrency(invoice.totals.discountAmount, invoice.currency)}</span>
                               </div>
                             </div>
                           )}
@@ -384,12 +413,12 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                               {invoice.totals.discountAmount === 0 && (
                                 <div className="flex justify-between text-sm">
                                   <span className="text-muted-foreground">Subtotal</span>
-                                  <span className="tabular-nums">{formatCurrency(invoice.totals.subtotal)}</span>
+                                  <span className="tabular-nums">{formatCurrency(invoice.totals.subtotal, invoice.currency)}</span>
                                 </div>
                               )}
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Paid</span>
-                                <span className="tabular-nums text-green-600">-{formatCurrency(invoice.totals.amountPaid)}</span>
+                                <span className="tabular-nums text-green-600">-{formatCurrency(invoice.totals.amountPaid, invoice.currency)}</span>
                               </div>
                             </div>
                           )}
@@ -404,7 +433,7 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                           >
                             <span className="font-semibold text-sm">Total Due</span>
                             <span className="text-lg font-bold tabular-nums" style={{ color: ACCENT }}>
-                              {formatCurrency(invoice.totals.amountDue)}
+                              {formatCurrency(invoice.totals.amountDue, invoice.currency)}
                             </span>
                           </div>
                         </div>
@@ -447,23 +476,6 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
                 </div>
               </div>
 
-              {/* Footer Actions */}
-              {(invoice.status as string) === 'draft' && (
-                <div className="border-t p-3 flex items-center justify-end bg-background">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={() => {
-                      handleCloseView();
-                      router.push(`/invoices/${invoice.id}/edit`);
-                    }}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
-              )}
             </>
           )}
         </DialogContent>
@@ -480,7 +492,9 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
             documentNumber={sendTarget.invoiceNumber}
             recipientEmail={sendTarget.client.email || ''}
             recipientName={sendTarget.client.name}
+            businessName={businessName}
             total={sendTarget.total}
+            currency={sendTarget.currency}
             dueDate={sendTarget.dueDate}
             onSent={handleSendComplete}
           />
@@ -492,7 +506,8 @@ export function InvoicesDataTable({ data: initialData }: InvoicesDataTableProps)
         <RecordPaymentDialog
           invoiceId={paymentTarget.id}
           amountDue={(data.find((i) => i.id === paymentTarget.id)?.amountDue) ?? paymentTarget.amountDue}
-          currency="USD"
+          // Low #173: Use invoice's actual currency instead of hardcoded USD
+          currency={data.find((i) => i.id === paymentTarget.id)?.currency}
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
           onPaymentRecorded={handlePaymentRecorded}

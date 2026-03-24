@@ -16,10 +16,11 @@ export interface SoftDeletable {
 
 /**
  * Address type
+ * Note: The app uses `street` (not `line1/line2`) and full country names (not 2-letter codes).
+ * DB stores addresses as JSON in the `address` column.
  */
 export interface Address {
-  line1: string;
-  line2?: string;
+  street: string;
   city: string;
   state: string;
   postalCode: string;
@@ -42,7 +43,7 @@ export interface User extends BaseModel, SoftDeletable {
 export interface Workspace extends BaseModel, SoftDeletable {
   name: string;
   slug: string;
-  ownerId: string;
+  ownerId: string | null;
   settings: WorkspaceSettings;
 }
 
@@ -89,13 +90,22 @@ export interface BusinessProfile {
   workspaceId: string;
   businessName: string;
   logoUrl: string | null;
+  darkLogoUrl: string | null;
   email: string | null;
   phone: string | null;
   website: string | null;
   address: Address | null;
   taxId: string | null;
+  locale: string;
   currency: string;
   timezone: string;
+  socialLinks: Record<string, string> | null;
+  emailSignature: string | null;
+  emailFooter: string | null;
+  clientEmail: string | null;
+  autoCountersign: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -122,7 +132,7 @@ export interface RateCard extends BaseModel, SoftDeletable {
   categoryId: string | null;
   name: string;
   description: string | null;
-  pricingType: 'hourly' | 'daily' | 'fixed' | 'package';
+  pricingType: 'hourly' | 'daily' | 'fixed' | 'package' | 'service' | 'product' | 'recurring';
   rate: number;
   unit: string | null;
   taxRateId: string | null;
@@ -144,6 +154,9 @@ export type QuoteStatus =
 /**
  * Quote type
  */
+// Note: Prisma returns Decimal objects for money fields (subtotal, discountValue, discountAmount,
+// taxTotal, total, amount, rate, amountPaid, amountDue). All server actions convert to number
+// via Number() before returning to the client.
 export interface Quote extends BaseModel, SoftDeletable {
   workspaceId: string;
   clientId: string;
@@ -161,6 +174,8 @@ export interface Quote extends BaseModel, SoftDeletable {
   notes: string | null;
   terms: string | null;
   internalNotes: string | null;
+  projectId: string | null;
+  currency: string;
   settings: QuoteSettings;
   accessToken: string;
   viewedAt: Date | null;
@@ -252,6 +267,8 @@ export interface Invoice extends BaseModel, SoftDeletable {
   notes: string | null;
   terms: string | null;
   internalNotes: string | null;
+  projectId: string | null;
+  currency: string;
   settings: InvoiceSettings;
   accessToken: string;
   viewedAt: Date | null;
@@ -313,7 +330,7 @@ export interface Payment extends BaseModel {
   invoiceId: string;
   amount: number;
   currency: string;
-  paymentMethod: 'card' | 'bank_transfer' | 'check' | 'cash' | 'manual';
+  paymentMethod: 'card' | 'bank_transfer' | 'credit_card' | 'check' | 'cash' | 'paypal' | 'manual' | 'other';
   status: PaymentStatus;
   stripePaymentIntentId: string | null;
   stripeChargeId: string | null;
@@ -329,7 +346,8 @@ export interface Payment extends BaseModel {
 /**
  * Tax rate type
  */
-export interface TaxRate extends BaseModel {
+// Low #7: Added SoftDeletable to match Prisma schema (TaxRate has deletedAt)
+export interface TaxRate extends BaseModel, SoftDeletable {
   workspaceId: string;
   name: string;
   rate: number;

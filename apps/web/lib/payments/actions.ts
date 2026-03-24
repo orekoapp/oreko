@@ -8,12 +8,14 @@ import {
   createRefund,
 } from '@/lib/services/stripe';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
+import { toNumber, getBaseUrl } from '@/lib/utils';
 import type {
   PaymentListItem,
   PaymentDetail,
   PaymentSettingsData,
   StripeOnboardingResult,
 } from './types';
+import { logger } from '@/lib/logger';
 
 /**
  * Bug #85: Sanitize Stripe errors — never expose raw Stripe messages to end users.
@@ -100,7 +102,7 @@ export async function updatePaymentSettings(data: {
     revalidatePath('/settings/payments');
     return { success: true };
   } catch (error) {
-    console.error('Failed to update payment settings:', error);
+    logger.error({ err: error }, 'Failed to update payment settings');
     return { success: false, error: sanitizeStripeError(error) };
   }
 }
@@ -117,7 +119,7 @@ export async function createStripeOnboardingLink(options?: {
   }
 
   const { workspaceId } = await getCurrentUserWorkspace();
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
   const returnPath = options?.returnTo === 'onboarding'
     ? '/onboarding?stripe=success'
     : '/settings/payments?success=true';
@@ -127,7 +129,7 @@ export async function createStripeOnboardingLink(options?: {
 
   try {
     // Get or create payment settings
-    let settings = await prisma.paymentSettings.findUnique({
+    const settings = await prisma.paymentSettings.findUnique({
       where: { workspaceId },
     });
 
@@ -175,7 +177,7 @@ export async function createStripeOnboardingLink(options?: {
 
     return { success: true, url: accountLink.url };
   } catch (error) {
-    console.error('Failed to create Stripe onboarding link:', error);
+    logger.error({ err: error }, 'Failed to create Stripe onboarding link');
     return { success: false, error: sanitizeStripeError(error) };
   }
 }
@@ -227,7 +229,7 @@ export async function checkStripeAccountStatus(): Promise<{
       payoutsEnabled: account.payouts_enabled ?? false,
     };
   } catch (error) {
-    console.error('Failed to check Stripe account status:', error);
+    logger.error({ err: error }, 'Failed to check Stripe account status');
     return { connected: false, status: 'error', chargesEnabled: false, payoutsEnabled: false };
   }
 }
@@ -237,42 +239,55 @@ export async function checkStripeAccountStatus(): Promise<{
 /**
  * Get payments for workspace
  */
+// Low #63: Added page/offset pagination support
 export async function getPayments(filter?: {
   invoiceId?: string;
   status?: string;
   limit?: number;
-}): Promise<PaymentListItem[]> {
+  page?: number;
+}): Promise<{ data: PaymentListItem[]; total: number }> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
-  const payments = await prisma.payment.findMany({
-    where: {
-      invoice: {
-        workspaceId,
-        ...(filter?.invoiceId && { id: filter.invoiceId }),
-      },
-      ...(filter?.status && { status: filter.status }),
+  const limit = filter?.limit ?? 50;
+  const page = filter?.page ?? 1;
+  const skip = (page - 1) * limit;
+
+  const where = {
+    invoice: {
+      workspaceId,
+      ...(filter?.invoiceId && { id: filter.invoiceId }),
     },
-    include: {
-      invoice: {
-        select: {
-          invoiceNumber: true,
-          client: {
-            select: {
-              name: true,
-              company: true,
+    ...(filter?.status && { status: filter.status }),
+    deletedAt: null,
+  };
+
+  const [payments, total] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      include: {
+        invoice: {
+          select: {
+            invoiceNumber: true,
+            client: {
+              select: {
+                name: true,
+                company: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: filter?.limit ?? 50,
-  });
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip,
+    }),
+    prisma.payment.count({ where }),
+  ]);
 
-  return payments.map((p) => ({
+  const items = payments.map((p) => ({
     id: p.id,
     invoiceId: p.invoiceId,
-    amount: Number(p.amount),
+    amount: toNumber(p.amount),
     currency: p.currency,
     paymentMethod: p.paymentMethod as PaymentListItem['paymentMethod'],
     status: p.status as PaymentListItem['status'],
@@ -288,6 +303,8 @@ export async function getPayments(filter?: {
       },
     },
   }));
+
+  return { data: items, total };
 }
 
 /**
@@ -323,7 +340,7 @@ export async function getPaymentById(paymentId: string): Promise<PaymentDetail |
   return {
     id: payment.id,
     invoiceId: payment.invoiceId,
-    amount: Number(payment.amount),
+    amount: toNumber(payment.amount),
     currency: payment.currency,
     paymentMethod: payment.paymentMethod as PaymentDetail['paymentMethod'],
     status: payment.status as PaymentDetail['status'],
@@ -378,6 +395,21 @@ export async function refundPayment(
       return { success: false, error: 'No Stripe payment intent linked to this payment' };
     }
 
+    // Bug #14: Validate refund amount does not exceed payment amount
+    if (params?.amount !== undefined) {
+      if (params.amount <= 0) {
+        return { success: false, error: 'Refund amount must be greater than zero' };
+      }
+      if (params.amount > Number(payment.amount)) {
+        return { success: false, error: 'Refund amount cannot exceed payment amount' };
+      }
+      // Check for prior partial refunds
+      const maxRefundable = Number(payment.amount) - Number(payment.refundAmount || 0);
+      if (params.amount > maxRefundable) {
+        return { success: false, error: 'Refund amount exceeds remaining refundable amount' };
+      }
+    }
+
     // Amount in cents for Stripe (DB stores dollars)
     const refundAmountCents = params?.amount
       ? Math.round(params.amount * 100)
@@ -396,7 +428,7 @@ export async function refundPayment(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to refund payment:', error);
+    logger.error({ err: error }, 'Failed to refund payment');
     return { success: false, error: sanitizeStripeError(error) };
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import type { ServiceItemBlock } from '@/lib/quotes/types';
 import { useQuoteBuilderStore } from '@/lib/stores/quote-builder-store';
@@ -17,16 +18,27 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
 
   const lineTotal = block.content.quantity * block.content.rate;
 
+  // Bug #81: Use document locale instead of hardcoded en-US
+  const locale = (document?.settings as any)?.locale ?? 'en-US';
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    const parts = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
-    }).format(amount);
+    }).formatToParts(amount);
+    return parts.map((p, i) => {
+      if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+      return p.value;
+    }).join('');
   };
 
-  const handleChange = (field: keyof typeof block.content, value: string | number | null) => {
-    updateBlock(block.id, { [field]: value });
-  };
+  // Bug #74: Debounce updateBlock calls to avoid excessive store updates
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const handleChange = useCallback((field: keyof typeof block.content, value: string | number | null) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      updateBlock(block.id, { [field]: value });
+    }, 300);
+  }, [block.id, updateBlock]);
 
   if (isEditing) {
     return (
@@ -46,8 +58,8 @@ export function ServiceItemBlockContent({ block }: ServiceItemBlockContentProps)
             <Input
               type="number"
               value={block.content.quantity}
-              onChange={(e) => handleChange('quantity', parseFloat(e.target.value) || 0)}
-              min={0}
+              onChange={(e) => handleChange('quantity', Math.max(1, parseFloat(e.target.value) || 1))}
+              min={1}
               step="0.01"
               className="mt-1 text-foreground"
             />

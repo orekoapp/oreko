@@ -5,6 +5,7 @@ import { prisma } from '@quotecraft/database';
 import { sendEmail } from '@/lib/services/email';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { generateSigningOtp, verifySigningOtp, isSigningVerified } from './otp';
+import { logger } from '@/lib/logger';
 
 async function getClientIp(): Promise<string> {
   const headersList = await headers();
@@ -27,7 +28,7 @@ export async function sendSigningOtp(input: {
     const ip = await getClientIp();
 
     // Rate limit: 5 OTP sends per 10 minutes per IP
-    const rateLimitResult = checkRateLimit(`otp-send:${ip}`, { limit: 5, windowMs: 10 * 60 * 1000 });
+    const rateLimitResult = await checkRateLimit(`otp-send:${ip}`, { limit: 5, windowMs: 10 * 60 * 1000 });
     if (rateLimitResult.limited) {
       return { success: false, error: 'Too many verification requests. Please wait a few minutes.' };
     }
@@ -38,8 +39,9 @@ export async function sendSigningOtp(input: {
     let documentId: string;
 
     if (input.type === 'quote') {
+      // Bug #155: Only allow OTP for quotes in signable status
       const quote = await prisma.quote.findFirst({
-        where: { accessToken: input.accessToken, deletedAt: null },
+        where: { accessToken: input.accessToken, deletedAt: null, status: { in: ['sent', 'viewed'] } },
         select: {
           id: true,
           client: { select: { email: true, name: true } },
@@ -61,8 +63,10 @@ export async function sendSigningOtp(input: {
       businessName = quote.workspace.businessProfile?.businessName || quote.workspace.name;
       documentId = quote.id;
     } else {
+      // MEDIUM #19: Filter out soft-deleted contract instances
+      // Bug #155: Only allow OTP for contracts in signable status
       const contract = await prisma.contractInstance.findFirst({
-        where: { accessToken: input.accessToken },
+        where: { accessToken: input.accessToken, deletedAt: null, status: { in: ['sent', 'viewed'] } },
         select: {
           id: true,
           client: { select: { email: true, name: true } },
@@ -87,17 +91,19 @@ export async function sendSigningOtp(input: {
 
     // Generate OTP
     const otpKey = `${input.type}:${documentId}`;
-    const code = generateSigningOtp(otpKey, clientEmail);
+    const code = await generateSigningOtp(otpKey, clientEmail);
 
     // Send email with OTP
     const emailResult = await sendEmail({
       to: clientEmail,
-      subject: `Your verification code: ${code}`,
+      // Low #33: Don't expose OTP code in subject line (visible in notifications/previews)
+      subject: 'Your QuoteCraft verification code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Verify your identity</h2>
-          <p>Hi ${clientName},</p>
-          <p>${businessName} has requested your signature on a document. To verify your identity, please enter this code:</p>
+          <!-- Low #34: Escape client/business names to prevent XSS in email -->
+          <p>Hi ${clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;')},</p>
+          <p>${businessName.replace(/</g, '&lt;').replace(/>/g, '&gt;')} has requested your signature on a document. To verify your identity, please enter this code:</p>
           <div style="margin: 24px 0; text-align: center;">
             <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; background: #f3f4f6; padding: 16px 32px; border-radius: 8px; display: inline-block;">
               ${code}
@@ -117,7 +123,7 @@ export async function sendSigningOtp(input: {
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending signing OTP:', error);
+    logger.error({ err: error }, 'Error sending signing OTP');
     return { success: false, error: 'Failed to send verification code' };
   }
 }
@@ -135,7 +141,7 @@ export async function verifySigningOtpAction(input: {
     const ip = await getClientIp();
 
     // Rate limit: 10 verify attempts per 10 minutes per IP
-    const rateLimitResult = checkRateLimit(`otp-verify:${ip}`, { limit: 10, windowMs: 10 * 60 * 1000 });
+    const rateLimitResult = await checkRateLimit(`otp-verify:${ip}`, { limit: 10, windowMs: 10 * 60 * 1000 });
     if (rateLimitResult.limited) {
       return { success: false, error: 'Too many attempts. Please wait a few minutes.' };
     }
@@ -151,8 +157,9 @@ export async function verifySigningOtpAction(input: {
       if (!quote) return { success: false, error: 'Document not found' };
       documentId = quote.id;
     } else {
+      // MEDIUM #19: Filter out soft-deleted contract instances
       const contract = await prisma.contractInstance.findFirst({
-        where: { accessToken: input.accessToken },
+        where: { accessToken: input.accessToken, deletedAt: null },
         select: { id: true },
       });
       if (!contract) return { success: false, error: 'Document not found' };
@@ -160,7 +167,7 @@ export async function verifySigningOtpAction(input: {
     }
 
     const otpKey = `${input.type}:${documentId}`;
-    const result = verifySigningOtp(otpKey, input.code, input.email);
+    const result = await verifySigningOtp(otpKey, input.code, input.email);
 
     if (!result.valid) {
       return { success: false, error: result.error || 'Invalid code' };
@@ -168,7 +175,7 @@ export async function verifySigningOtpAction(input: {
 
     return { success: true };
   } catch (error) {
-    console.error('Error verifying signing OTP:', error);
+    logger.error({ err: error }, 'Error verifying signing OTP');
     return { success: false, error: 'Verification failed' };
   }
 }
@@ -191,15 +198,16 @@ export async function checkSigningVerification(input: {
       if (!quote) return false;
       documentId = quote.id;
     } else {
+      // MEDIUM #19: Filter out soft-deleted contract instances
       const contract = await prisma.contractInstance.findFirst({
-        where: { accessToken: input.accessToken },
+        where: { accessToken: input.accessToken, deletedAt: null },
         select: { id: true },
       });
       if (!contract) return false;
       documentId = contract.id;
     }
 
-    return isSigningVerified(`${input.type}:${documentId}`);
+    return await isSigningVerified(`${input.type}:${documentId}`);
   } catch {
     return false;
   }

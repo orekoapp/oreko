@@ -3,9 +3,11 @@
 import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { QuoteBlock } from './types';
-import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { toNumber } from '@/lib/utils';
+import { notifyWorkspaceMembers } from '@/lib/notifications/internal';
 import { createInvoiceFromQuoteInternal } from '@/lib/invoices/internal';
-import { computeQuoteDocumentHash } from '@/lib/signing/document-hash';
+import { computeQuoteDocumentHash, verifyDocumentHash } from '@/lib/signing/document-hash';
+import { logger } from '@/lib/logger';
 
 /**
  * Public quote data for client portal (subset of full quote)
@@ -15,6 +17,7 @@ export interface PublicQuoteData {
   quoteNumber: string;
   status: string;
   title: string;
+  currency: string;
   issueDate: string;
   expirationDate: string | null;
   isExpired: boolean;
@@ -46,12 +49,16 @@ export interface PublicQuoteData {
     email: string | null;
     phone: string | null;
     logoUrl: string | null;
-    address: unknown;
+    address: string | Record<string, string> | null;
+    website?: string | null;
   };
   branding: {
     primaryColor: string | null;
     accentColor: string | null;
     logoUrl: string | null;
+    companyName?: string;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
   } | null;
   lineItems: Array<{
     id: string;
@@ -64,6 +71,7 @@ export interface PublicQuoteData {
     taxAmount: number;
   }>;
   hasContract: boolean;
+  documentIntegrity?: 'verified' | 'tampered' | 'unchecked';
 }
 
 /**
@@ -130,6 +138,15 @@ export async function getQuoteByAccessToken(
       return { success: false, error: 'This quote has been declined' };
     }
 
+    // Bug #19: Limit access to accepted quotes after 90 days
+    if (quote.status === 'accepted') {
+      const acceptedDate = quote.acceptedAt || quote.updatedAt;
+      const daysSinceAccepted = (Date.now() - new Date(acceptedDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceAccepted > 90) {
+        return { success: false, error: 'This quote has expired' };
+      }
+    }
+
     // Check if quote is expired
     const now = new Date();
     const isExpired =
@@ -146,6 +163,36 @@ export async function getQuoteByAccessToken(
       }
     }
 
+    // Verify document hash integrity for signed/accepted quotes
+    let documentIntegrity: 'verified' | 'tampered' | 'unchecked' = 'unchecked';
+    if (quote.signedAt && quote.signatureData) {
+      try {
+        const sigData = quote.signatureData as Record<string, unknown>;
+        const storedHash = sigData.documentHash as string | undefined;
+        if (storedHash) {
+          const recomputedHash = computeQuoteDocumentHash({
+            quoteId: quote.id,
+            lineItems: quote.lineItems.map((item) => ({
+              name: item.name,
+              description: item.description,
+              quantity: toNumber(item.quantity),
+              rate: toNumber(item.rate),
+              amount: toNumber(item.amount),
+            })),
+            terms: quote.terms || '',
+            notes: quote.notes || '',
+            subtotal: toNumber(quote.subtotal),
+            total: toNumber(quote.total),
+            signerName: (sigData.signerName as string) || 'Unknown',
+            signedAt: (sigData.signedAt as string) || quote.signedAt.toISOString(),
+          });
+          documentIntegrity = verifyDocumentHash(recomputedHash, storedHash) ? 'verified' : 'tampered';
+        }
+      } catch (err) {
+        logger.error({ err }, 'Document hash verification failed');
+      }
+    }
+
     // Parse settings from JSON
     const settings = quote.settings as Record<string, unknown>;
     const blocks = (settings.blocks as QuoteBlock[]) || [];
@@ -155,15 +202,16 @@ export async function getQuoteByAccessToken(
       quoteNumber: quote.quoteNumber,
       status: quote.status,
       title: quote.title || 'Quote',
+      currency: quote.currency || (settings.currency as string) || 'USD',
       issueDate: quote.issueDate.toISOString().split('T')[0] ?? '',
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] ?? null,
       isExpired,
       blocks,
       totals: {
-        subtotal: Number(quote.subtotal),
-        discountAmount: Number(quote.discountAmount),
-        taxTotal: Number(quote.taxTotal),
-        total: Number(quote.total),
+        subtotal: toNumber(quote.subtotal),
+        discountAmount: toNumber(quote.discountAmount),
+        taxTotal: toNumber(quote.taxTotal),
+        total: toNumber(quote.total),
       },
       settings: {
         requireSignature: (settings.requireSignature as boolean) ?? true,
@@ -186,7 +234,7 @@ export async function getQuoteByAccessToken(
         email: quote.workspace.businessProfile?.email || null,
         phone: quote.workspace.businessProfile?.phone || null,
         logoUrl: quote.workspace.businessProfile?.logoUrl || null,
-        address: quote.workspace.businessProfile?.address || null,
+        address: (quote.workspace.businessProfile?.address as string | Record<string, string>) || null,
       },
       branding: quote.workspace.brandingSettings
         ? {
@@ -199,18 +247,19 @@ export async function getQuoteByAccessToken(
         id: item.id,
         name: item.name,
         description: item.description,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
-        amount: Number(item.amount),
+        quantity: toNumber(item.quantity),
+        rate: toNumber(item.rate),
+        amount: toNumber(item.amount),
         taxRate: item.taxRate ? Number(item.taxRate) : null,
-        taxAmount: Number(item.taxAmount),
+        taxAmount: toNumber(item.taxAmount),
       })),
       hasContract: quote.contractInstances.length > 0,
+      documentIntegrity,
     };
 
     return { success: true, quote: publicQuote };
   } catch (error) {
-    console.error('Error fetching quote by access token:', error);
+    logger.error({ err: error }, 'Error fetching quote by access token');
     return { success: false, error: 'Failed to load quote' };
   }
 }
@@ -229,15 +278,19 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
 
     if (!quote) return;
 
-    const isFirstView = quote.viewedAt === null;
+    // Atomically set viewedAt only if it hasn't been set yet (prevents race condition)
+    const updated = await prisma.quote.updateMany({
+      where: { id: quote.id, viewedAt: null },
+      data: { viewedAt: new Date() },
+    });
+    const isFirstView = updated.count > 0;
 
-    // Update view count and first view timestamp
+    // Update view count and status
     await prisma.$transaction([
       prisma.quote.update({
         where: { accessToken },
         data: {
           viewCount: { increment: 1 },
-          ...(isFirstView && { viewedAt: new Date() }),
           ...(quote.status === 'sent' && { status: 'viewed' }),
         },
       }),
@@ -253,7 +306,7 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
       }),
     ]);
 
-    // Notify workspace members on first view
+    // Notify workspace members on first view (only the request that atomically set viewedAt)
     if (isFirstView) {
       await notifyWorkspaceMembers({
         workspaceId: quote.workspaceId,
@@ -266,41 +319,80 @@ export async function trackQuoteView(accessToken: string): Promise<void> {
       }).catch(() => {}); // Don't fail if notification fails
     }
   } catch (error) {
-    console.error('Error tracking quote view:', error);
+    logger.error({ err: error }, 'Error tracking quote view');
     // Don't throw - view tracking should not break the page
   }
 }
 
 /**
- * Accept a quote with signature
+ * Accept a quote with signature.
+ * OTP verification is enforced when otpCode is provided.
  */
 export async function acceptQuote(data: {
   accessToken: string;
   signatureData: string;
   signerName: string;
   agreedToTerms: boolean;
+  otpCode?: string;
 }): Promise<{ success: true; depositRequired?: boolean; depositAmount?: number; invoicePayUrl?: string } | { success: false; error: string }> {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
     // Rate limit by IP to prevent abuse on unauthenticated endpoint
     const { checkRateLimit } = await import('@/lib/rate-limit');
-    const rateLimitResult = checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
+    const rateLimitResult = await checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
     if (rateLimitResult.limited) {
       return { success: false, error: 'Too many attempts. Please try again later.' };
     }
 
-    // Validate signature - must be a valid base64 PNG data URL from SignaturePad
-    if (!data.signatureData || !data.signerName) {
-      return { success: false, error: 'Signature is required' };
+    // Enforce OTP verification if code is provided (client-side sends it after OTP flow)
+    if (data.otpCode) {
+      const { verifySigningOtp } = await import('@/lib/signing/otp');
+      const otpKey = `quote:${data.accessToken}`;
+      // Look up quote to get client email for OTP verification
+      const quoteForOtp = await prisma.quote.findFirst({
+        where: { accessToken: data.accessToken, deletedAt: null },
+        select: { client: { select: { email: true } } },
+      });
+      if (!quoteForOtp?.client?.email) {
+        return { success: false, error: 'Could not verify identity — client email not found' };
+      }
+      const otpResult = await verifySigningOtp(otpKey, data.otpCode, quoteForOtp.client.email);
+      if (!otpResult.valid) {
+        return { success: false, error: otpResult.error || 'OTP verification failed' };
+      }
     }
-    if (!data.signatureData.startsWith('data:image/png;base64,')) {
-      return { success: false, error: 'Invalid signature format' };
-    }
-    // Ensure signature has sufficient data (not just a blank canvas or single dot)
-    const signatureBase64 = data.signatureData.replace('data:image/png;base64,', '');
-    if (signatureBase64.length < 1000) {
-      return { success: false, error: 'Signature is too simple. Please provide a full signature.' };
+
+    // Bug #68: Only validate signatureData if the quote actually requires signature
+    // First fetch quote settings to check requireSignature
+    const quoteForSigCheck = await prisma.quote.findFirst({
+      where: { accessToken: data.accessToken, deletedAt: null },
+      select: { settings: true },
+    });
+    const sigSettings = (quoteForSigCheck?.settings as Record<string, unknown>) ?? {};
+    const requireSignature = (sigSettings.requireSignature as boolean) ?? true;
+
+    if (requireSignature) {
+      if (!data.signatureData || !data.signerName) {
+        return { success: false, error: 'Signature is required' };
+      }
+      const isDrawn = data.signatureData.startsWith('data:image/png;base64,');
+      const isTyped = data.signatureData.startsWith('typed:');
+      if (!isDrawn && !isTyped) {
+        return { success: false, error: 'Invalid signature format' };
+      }
+      if (isDrawn) {
+        const signatureBase64 = data.signatureData.replace('data:image/png;base64,', '');
+        if (signatureBase64.length < 1000) {
+          return { success: false, error: 'Signature is too simple. Please provide a full signature.' };
+        }
+      }
+      if (isTyped) {
+        const typedName = data.signatureData.replace('typed:', '').trim();
+        if (typedName.length < 2) {
+          return { success: false, error: 'Please type your full name as signature.' };
+        }
+      }
     }
     if (data.signerName.trim().length < 2) {
       return { success: false, error: 'Please enter your full name' };
@@ -311,8 +403,9 @@ export async function acceptQuote(data: {
     }
 
     // Find the quote with line items for document hash
-    const quote = await prisma.quote.findUnique({
-      where: { accessToken: data.accessToken },
+    // HIGH #3-7: Add deletedAt check to prevent operating on soft-deleted quotes
+    const quote = await prisma.quote.findFirst({
+      where: { accessToken: data.accessToken, deletedAt: null },
       select: {
         id: true,
         status: true,
@@ -358,38 +451,49 @@ export async function acceptQuote(data: {
       lineItems: quote.lineItems.map((item) => ({
         name: item.name,
         description: item.description,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
-        amount: Number(item.amount),
+        quantity: toNumber(item.quantity),
+        rate: toNumber(item.rate),
+        amount: toNumber(item.amount),
       })),
       terms: quote.terms || '',
       notes: quote.notes || '',
-      subtotal: Number(quote.subtotal),
-      total: Number(quote.total),
+      subtotal: toNumber(quote.subtotal),
+      total: toNumber(quote.total),
       signerName: data.signerName,
       signedAt: signedAtISO,
     });
 
-    // Update quote with acceptance
-    await prisma.$transaction([
-      prisma.quote.update({
-        where: { accessToken: data.accessToken },
-        data: {
-          status: 'accepted',
-          acceptedAt: signedAt,
-          signedAt,
-          signatureData: {
-            type: 'drawn',
-            encrypted: false,
-            data: data.signatureData,
-            signerName: data.signerName,
-            signedAt: signedAtISO,
-            ipAddress,
-            userAgent,
-            documentHash,
-          },
+    // Atomic conditional update — prevents double-accept race condition
+    // Only updates if status is still 'sent' or 'viewed' (not already accepted)
+    const acceptResult = await prisma.quote.updateMany({
+      where: {
+        accessToken: data.accessToken,
+        status: { in: ['sent', 'viewed'] },
+        deletedAt: null,
+      },
+      data: {
+        status: 'accepted',
+        acceptedAt: signedAt,
+        signedAt,
+        signatureData: {
+          type: 'drawn',
+          encrypted: false,
+          data: data.signatureData,
+          signerName: data.signerName,
+          signedAt: signedAtISO,
+          ipAddress,
+          userAgent,
+          documentHash,
         },
-      }),
+      },
+    });
+
+    if (acceptResult.count === 0) {
+      return { success: false, error: 'This quote has already been accepted or is no longer available' };
+    }
+
+    // Create event and notifications (side effects — safe to run after atomic update)
+    await prisma.$transaction([
       prisma.quoteEvent.create({
         data: {
           quoteId: quote.id,
@@ -431,7 +535,7 @@ export async function acceptQuote(data: {
         }
       } catch (error) {
         // Log but don't fail acceptance - invoice can be created manually
-        console.error('Auto-invoice creation failed:', error);
+        logger.error({ err: error }, 'Auto-invoice creation failed');
       }
     }
 
@@ -440,7 +544,7 @@ export async function acceptQuote(data: {
     if (depositRequired && autoInvoice) {
       const depositType = (quoteSettings.depositType as 'percentage' | 'fixed') ?? 'percentage';
       const depositValue = (quoteSettings.depositValue as number) ?? 50;
-      const total = Number(quote.total);
+      const total = toNumber(quote.total);
       const depositAmount = depositType === 'percentage'
         ? Math.round(total * (depositValue / 100) * 100) / 100
         : Math.min(depositValue, total);
@@ -458,7 +562,7 @@ export async function acceptQuote(data: {
           },
         });
       } catch (error) {
-        console.error('Deposit schedule creation failed:', error);
+        logger.error({ err: error }, 'Deposit schedule creation failed');
       }
 
       return {
@@ -471,7 +575,7 @@ export async function acceptQuote(data: {
 
     return { success: true };
   } catch (error) {
-    console.error('Error accepting quote:', error);
+    logger.error({ err: error }, 'Error accepting quote');
     return { success: false, error: 'Failed to accept quote' };
   }
 }
@@ -489,14 +593,15 @@ export async function declineQuote(data: {
 
     // Rate limit by IP to prevent abuse on unauthenticated endpoint
     const { checkRateLimit } = await import('@/lib/rate-limit');
-    const rateLimitResult = checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
+    const rateLimitResult = await checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
     if (rateLimitResult.limited) {
       return { success: false, error: 'Too many attempts. Please try again later.' };
     }
 
     // Find the quote
-    const quote = await prisma.quote.findUnique({
-      where: { accessToken: data.accessToken },
+    // MEDIUM #18: Filter out soft-deleted quotes
+    const quote = await prisma.quote.findFirst({
+      where: { accessToken: data.accessToken, deletedAt: null },
       select: {
         id: true,
         status: true,
@@ -520,15 +625,25 @@ export async function declineQuote(data: {
       return { success: false, error: 'This quote cannot be declined' };
     }
 
-    // Update quote
+    // Atomic conditional update — prevents race condition with concurrent accept
+    const declineResult = await prisma.quote.updateMany({
+      where: {
+        accessToken: data.accessToken,
+        status: { in: ['sent', 'viewed'] },
+        deletedAt: null,
+      },
+      data: {
+        status: 'declined',
+        declinedAt: new Date(),
+      },
+    });
+
+    if (declineResult.count === 0) {
+      return { success: false, error: 'This quote has already been accepted or declined' };
+    }
+
+    // Create event (side effect — safe after atomic update)
     await prisma.$transaction([
-      prisma.quote.update({
-        where: { accessToken: data.accessToken },
-        data: {
-          status: 'declined',
-          declinedAt: new Date(),
-        },
-      }),
       prisma.quoteEvent.create({
         data: {
           quoteId: quote.id,
@@ -557,7 +672,7 @@ export async function declineQuote(data: {
 
     return { success: true };
   } catch (error) {
-    console.error('Error declining quote:', error);
+    logger.error({ err: error }, 'Error declining quote');
     return { success: false, error: 'Failed to decline quote' };
   }
 }

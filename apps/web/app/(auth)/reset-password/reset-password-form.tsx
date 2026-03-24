@@ -31,15 +31,18 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  // Store token in ref so it survives URL clearing
+  const tokenRef = React.useRef(searchParams.get('token'));
+  const token = tokenRef.current;
 
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isInvalidToken, setIsInvalidToken] = React.useState(!token);
 
   // Bug #12: Clear token from URL/history to prevent exposure in browser history
+  // Bug #48: Guard against missing window.history.replaceState in edge environments
   React.useEffect(() => {
-    if (token) {
+    if (token && typeof window !== 'undefined' && window.history?.replaceState) {
       window.history.replaceState({}, '', '/reset-password');
     }
   }, [token]);

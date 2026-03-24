@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { TeamMemberList } from '@/components/settings/team-member-list';
 import { InviteMemberButton } from '@/components/settings/invite-member-button';
 import { getWorkspaceMembers, getCurrentUserRole, getPendingInvitations } from '@/lib/settings/actions';
@@ -17,7 +19,7 @@ export default async function TeamSettingsPage() {
   const canManageTeam = currentUserRole === 'owner' || currentUserRole === 'admin';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {canManageTeam && (
         <div className="flex justify-end">
           <InviteMemberButton />

@@ -21,11 +21,15 @@ const statusColors: Record<QuoteStatus, { variant: 'default' | 'secondary' | 'de
   converted: { variant: 'default', className: 'bg-purple-500 hover:bg-purple-600' },
 };
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+    currency,
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 interface CreateQuoteColumnsProps {
@@ -69,6 +73,7 @@ export function createQuoteColumns({
       enableHiding: false,
     },
     {
+      id: 'quote',
       accessorKey: 'quoteNumber',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Quote" />
@@ -147,18 +152,19 @@ export function createQuoteColumns({
         const total = row.getValue('total') as number;
         return (
           <div className="text-right font-medium">
-            {formatCurrency(total)}
+            {formatCurrency(total, row.original.currency)}
           </div>
         );
       },
     },
     {
+      id: 'created',
       accessorKey: 'issueDate',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Created" />
       ),
       cell: ({ row }) => {
-        const issueDate = new Date(row.getValue('issueDate') as string);
+        const issueDate = new Date(row.original.issueDate);
         return (
           <div className="text-sm text-muted-foreground">
             {issueDate.toLocaleDateString()}
@@ -167,12 +173,13 @@ export function createQuoteColumns({
       },
     },
     {
+      id: 'expires',
       accessorKey: 'expirationDate',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Expires" />
       ),
       cell: ({ row }) => {
-        const expirationDate = row.getValue('expirationDate') as string | null;
+        const expirationDate = row.original.expirationDate as string | null;
         if (!expirationDate) {
           return <div className="text-sm text-muted-foreground">-</div>;
         }
@@ -190,11 +197,12 @@ export function createQuoteColumns({
       cell: ({ row }) => {
         const status = row.original.status;
         const canDelete = status === 'draft';
+        const canEdit = status === 'draft';
         return (
           <DataTableRowActions
             row={row.original}
             onView={onView}
-            onEdit={onEdit}
+            onEdit={canEdit ? onEdit : undefined}
             onDuplicate={onDuplicate}
             onDelete={canDelete ? onDelete : undefined}
             onDownload={onDownload}

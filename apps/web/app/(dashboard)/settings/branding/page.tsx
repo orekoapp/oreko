@@ -1,6 +1,8 @@
 import { BrandingSettingsForm } from '@/components/settings';
 import { getBrandingSettings, getBusinessProfile } from '@/lib/settings/actions';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Branding - Settings',
 };

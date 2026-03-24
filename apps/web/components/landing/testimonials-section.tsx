@@ -1,88 +1,114 @@
-import { Quote } from 'lucide-react';
+'use client';
 
-// Bug #256: Using initials-based avatars (gradient circles) — no null avatar fields
+import { Quote } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Marquee } from '@/components/ui/marquee';
+import { SpotlightCard } from '@/components/ui/spotlight-card';
+
 const testimonials = [
   {
     quote:
-      "Finally, invoices I'm proud to send to clients. The visual builder is incredible and the one-click conversion saved me hours.",
+      'QuoteCraft replaced three different tools for us. We create quotes, convert to invoices, and track payments all in one place. Our cash flow improved within the first month.',
     name: 'Sarah Chen',
-    role: 'Freelance Designer',
-    handle: '@sarahchendesigns',
+    role: 'Founder, Brightpath Design',
   },
   {
     quote:
-      "Switched from Bloom and saving $200/year. Same features, better experience. The self-hosted option sealed the deal.",
+      'The self-hosted option was the deciding factor. We needed client data on our own servers for compliance, and QuoteCraft made that straightforward.',
     name: 'Marcus Rivera',
-    role: 'Marketing Consultant',
-    handle: '@marcusrivera',
+    role: 'Director of Operations, Nexus Consulting',
   },
   {
     quote:
-      'Self-hosting was a breeze. Docker compose up and done. Total data ownership without the monthly subscription.',
-    name: 'David Kim',
-    role: 'Software Developer',
-    handle: '@devdavidkim',
+      'I switched from Bonsai and saved $300 a year. The quote builder is actually better and the interface is cleaner. Highly recommend for freelancers.',
+    name: 'Priya Patel',
+    role: 'Independent UX Consultant',
   },
   {
     quote:
-      'My clients actually comment on how professional my quotes look now. The signature feature is seamless.',
-    name: 'Jennifer Walsh',
-    role: 'Interior Designer',
-    handle: 'Walsh Interiors',
+      'Finally a tool that looks as professional as the work we deliver. The client portal alone has saved us hours of back-and-forth emails.',
+    name: 'James Okafor',
+    role: 'Creative Director, Mosaic Studio',
+  },
+  {
+    quote:
+      'We tried everything from FreshBooks to HoneyBook. QuoteCraft is the only one that lets us own our data while still having a beautiful interface.',
+    name: 'Lisa Nguyen',
+    role: 'Co-founder, Springboard Agency',
+  },
+  {
+    quote:
+      'The quote-to-invoice conversion is magic. One click and everything carries over. No more re-typing line items or chasing mismatched totals.',
+    name: 'David Park',
+    role: 'Freelance Photographer',
   },
 ];
 
-export function TestimonialsSection() {
+function TestimonialCard({
+  quote,
+  name,
+  role,
+}: {
+  quote: string;
+  name: string;
+  role: string;
+}) {
   return (
-    <section className="py-20 md:py-28 bg-slate-50 dark:bg-slate-900/50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            Loved by Freelancers and Agencies
-          </h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Join thousands of professionals who've upgraded their invoicing game.
-          </p>
+    <SpotlightCard className="w-[350px] shrink-0 rounded-xl border border-border bg-background p-8 flex flex-col transition-shadow hover:shadow-md">
+      <Quote className="h-5 w-5 text-primary/40 mb-4" />
+      <p className="text-foreground/80 text-sm leading-relaxed flex-1">
+        &ldquo;{quote}&rdquo;
+      </p>
+      <div className="mt-6 pt-6 border-t border-border flex items-center gap-3">
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+          {name
+            .split(' ')
+            .map((n) => n[0])
+            .join('')}
         </div>
-
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className="relative p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
-            >
-              <Quote className="absolute top-6 right-6 h-8 w-8 text-slate-200 dark:text-slate-700" />
-
-              <blockquote className="text-lg text-slate-700 dark:text-slate-300 mb-6 relative z-10">
-                "{testimonial.quote}"
-              </blockquote>
-
-              <div className="flex items-center gap-4">
-                {/* Avatar */}
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-semibold">
-                  {testimonial.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')}
-                </div>
-
-                {/* Info */}
-                <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    {testimonial.name}
-                  </p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {testimonial.role}
-                  </p>
-                  <p className="text-sm text-blue-600 dark:text-blue-400">
-                    {testimonial.handle}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div>
+          <p className="font-medium text-foreground text-sm">{name}</p>
+          <p className="text-xs text-muted-foreground">{role}</p>
         </div>
       </div>
+    </SpotlightCard>
+  );
+}
+
+export function TestimonialsSection() {
+  return (
+    <section className="bg-accent/50 py-24 overflow-hidden">
+      <div className="max-w-6xl mx-auto px-6 mb-12">
+        <motion.div
+          className="max-w-xl"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        >
+          <h2 className="font-display text-3xl font-medium text-foreground tracking-tight">
+            Trusted by businesses everywhere
+          </h2>
+          <p className="mt-4 text-muted-foreground leading-relaxed">
+            Freelancers, agencies, and small teams use QuoteCraft to manage their
+            quoting and invoicing.
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Marquee row 1 */}
+      <Marquee speed={35} className="mb-4 [--gap:1rem]">
+        {testimonials.slice(0, 3).map((t) => (
+          <TestimonialCard key={t.name} {...t} />
+        ))}
+      </Marquee>
+
+      {/* Marquee row 2 — reverse direction */}
+      <Marquee speed={35} reverse className="[--gap:1rem]">
+        {testimonials.slice(3).map((t) => (
+          <TestimonialCard key={t.name} {...t} />
+        ))}
+      </Marquee>
     </section>
   );
 }

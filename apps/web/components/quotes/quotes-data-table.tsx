@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -27,9 +27,11 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { duplicateQuote, deleteQuote, getQuote } from '@/lib/quotes/actions';
+import { getBusinessProfile } from '@/lib/settings/actions';
 import { createInvoiceFromQuote } from '@/lib/invoices/actions';
 import { cn } from '@/lib/utils';
 import { SendEmailDialog } from '@/components/shared/send-email-dialog';
@@ -38,11 +40,15 @@ const ACCENT = '#3786b3';
 const ACCENT_LIGHT = '#e3f2fa';
 const ACCENT_BG = 'bg-sky-50/60';
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+    currency,
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 function formatDate(dateString: string): string {
@@ -121,6 +127,12 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
     }
   };
 
+  // Business name for email dialog
+  const [businessName, setBusinessName] = useState('');
+  useEffect(() => {
+    getBusinessProfile().then((p) => setBusinessName(p?.businessName || '')).catch(() => {});
+  }, []);
+
   // Dialog states
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendTarget, setSendTarget] = useState<QuoteListItem | null>(null);
@@ -142,12 +154,15 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
     setSendTarget(null);
   }, [sendTarget]);
 
-  // Copy Link
+  // Bug #75: Copy Link — use access token URL (not quoteNumber).
+  // QuoteListItem doesn't include accessToken, so we fall back to the quote detail page.
   const handleCopyLink = useCallback(async (quote: QuoteListItem) => {
-    const url = `${window.location.origin}/accept/${quote.quoteNumber}`;
+    // The public portal URL requires an access token which isn't available on the list item.
+    // Copy the internal quote link instead so the user can share from the detail page.
+    const url = `${window.location.origin}/quotes/${quote.id}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
+      toast.success('Link copied — share the portal link from the quote detail page');
     } catch {
       toast.error('Failed to copy link');
     }
@@ -184,7 +199,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
   const columns = getQuoteColumns({
     onView: handleView,
     onEdit: (quote) => {
-      router.push(`/quotes/${quote.id}/builder`);
+      router.push(`/quotes/${quote.id}/edit`);
     },
     onDuplicate: handleDuplicate,
     onDelete: handleDelete,
@@ -266,13 +281,14 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
         statusFilterKey="status"
         pageSizes={[10, 25, 50, 100]}
         emptyState={emptyState}
-        onRowClick={(quote) => router.push(`/quotes/${quote.id}`)}
+        onRowClick={(quote) => handleView(quote)}
         bulkActions={bulkActions}
       />
 
       {/* Quote View Dialog — Payment Page Style */}
       <Dialog open={!!viewingQuote} onOpenChange={(open) => !open && handleCloseView()}>
         <DialogContent className="!flex !flex-col !max-w-[520px] !max-h-[90vh] !p-0 !gap-0 overflow-hidden">
+          <DialogTitle className="sr-only">Quote Preview</DialogTitle>
           {quote && (
             <>
               {/* Scrollable content */}
@@ -297,7 +313,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                       {quote.client?.name || 'Quote'}
                     </h3>
                     <p className="text-3xl font-bold tracking-tight mt-1" style={{ color: ACCENT }}>
-                      {formatCurrency(quote.totals.total)}
+                      {formatCurrency(quote.totals.total, quote.currency)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Quote #{quote.quoteNumber} &middot; {quote.expirationDate ? `Valid until ${formatDate(String(quote.expirationDate))}` : `Issued ${formatDate(String(quote.issueDate))}`}
@@ -346,7 +362,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                                   {item.name || 'Untitled Item'}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {item.quantity} &times; {formatCurrency(item.rate)}
+                                  {item.quantity} &times; {formatCurrency(item.rate, quote.currency)}
                                   {item.description && (
                                     <span className="ml-1.5 text-muted-foreground/70">
                                       &middot; {item.description}
@@ -355,7 +371,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                                 </p>
                               </div>
                               <span className="ml-4 font-medium tabular-nums text-sm">
-                                {formatCurrency(item.amount)}
+                                {formatCurrency(item.amount, quote.currency)}
                               </span>
                             </div>
                           ))}
@@ -367,11 +383,11 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                             <div className="space-y-2 mb-3">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span className="tabular-nums">{formatCurrency(quote.totals.subtotal)}</span>
+                                <span className="tabular-nums">{formatCurrency(quote.totals.subtotal, quote.currency)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Discount</span>
-                                <span className="tabular-nums text-green-600">-{formatCurrency(quote.totals.discountAmount)}</span>
+                                <span className="tabular-nums text-green-600">-{formatCurrency(quote.totals.discountAmount, quote.currency)}</span>
                               </div>
                             </div>
                           )}
@@ -382,12 +398,12 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                               {quote.totals.discountAmount === 0 && (
                                 <div className="flex justify-between text-sm">
                                   <span className="text-muted-foreground">Subtotal</span>
-                                  <span className="tabular-nums">{formatCurrency(quote.totals.subtotal)}</span>
+                                  <span className="tabular-nums">{formatCurrency(quote.totals.subtotal, quote.currency)}</span>
                                 </div>
                               )}
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Tax</span>
-                                <span className="tabular-nums">{formatCurrency(quote.totals.taxTotal)}</span>
+                                <span className="tabular-nums">{formatCurrency(quote.totals.taxTotal, quote.currency)}</span>
                               </div>
                             </div>
                           )}
@@ -402,7 +418,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                           >
                             <span className="font-semibold text-sm">Total</span>
                             <span className="text-lg font-bold tabular-nums" style={{ color: ACCENT }}>
-                              {formatCurrency(quote.totals.total)}
+                              {formatCurrency(quote.totals.total, quote.currency)}
                             </span>
                           </div>
                         </div>
@@ -462,23 +478,6 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                 </div>
               </div>
 
-              {/* Footer Actions — Edit only for drafts */}
-              {(quote.status as string) === 'draft' && (
-                <div className="border-t p-3 flex items-center justify-end bg-background">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={() => {
-                      handleCloseView();
-                      router.push(`/quotes/${quote.id}/builder`);
-                    }}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
-              )}
             </>
           )}
         </DialogContent>
@@ -494,7 +493,9 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
           documentNumber={sendTarget.quoteNumber}
           recipientEmail={sendTarget.client?.email || ''}
           recipientName={sendTarget.client?.name || ''}
+          businessName={businessName}
           total={sendTarget.total}
+          currency={sendTarget.currency}
           dueDate={sendTarget.expirationDate || undefined}
           onSent={handleSendComplete}
         />

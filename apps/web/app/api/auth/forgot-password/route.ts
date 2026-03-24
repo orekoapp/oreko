@@ -1,8 +1,11 @@
+import { getBaseUrl } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes, createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
 import { sendEmail } from '@/lib/services/email';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { validateRequestOrigin } from '@/lib/csrf';
+import { logger } from '@/lib/logger';
 
 function escapeHtml(str: string): string {
   return str
@@ -15,12 +18,16 @@ function escapeHtml(str: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
     // Bug #16: Record start time to normalize response timing and prevent email enumeration via timing
     const startTime = Date.now();
     const MIN_RESPONSE_TIME = 500; // ms — ensures consistent timing regardless of user existence
 
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateLimitResult = checkRateLimit(`forgot-password:${clientIp}`, { limit: 5, windowMs: 300000 }); // 5 requests per 5 minutes
+    const rateLimitResult = await checkRateLimit(`forgot-password:${clientIp}`, { limit: 5, windowMs: 300000 }); // 5 requests per 5 minutes
     if (rateLimitResult.limited) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -92,7 +99,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Build reset URL (email gets raw token)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
     // Send email
@@ -128,7 +135,7 @@ export async function POST(request: NextRequest) {
     // Bug #16: Use same timing-normalized response as non-existent user path
     return delayedResponse();
   } catch (error) {
-    console.error('Forgot password error:', error);
+    logger.error({ err: error }, 'Forgot password error');
     return NextResponse.json(
       { error: 'Something went wrong' },
       { status: 500 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -25,9 +25,11 @@ import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { deleteContractInstance, getContractInstanceById } from '@/lib/contracts/actions';
+import { getBusinessProfile } from '@/lib/settings/actions';
 import { CountersignDialog } from './countersign-dialog';
 import { ContractEditor } from './contract-editor';
 import { formatDate } from '@/lib/utils';
@@ -78,6 +80,12 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
 
   // Local data for status updates
   const [data, setData] = useState(initialData);
+
+  // Business name for email dialog
+  const [businessName, setBusinessName] = useState('');
+  useEffect(() => {
+    getBusinessProfile().then((p) => setBusinessName(p?.businessName || '')).catch(() => {});
+  }, []);
 
   // Dialog states
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -161,7 +169,9 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
 
   // Copy Link
   const handleCopyLink = useCallback(async (contract: ContractInstanceListItem) => {
-    const url = `https://quotecraft.app/c/${contract.id}`;
+    // Bug #185: Use dynamic base URL instead of hardcoded domain
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const url = `${baseUrl}/c/${(contract as any).accessToken || contract.id}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success('Link copied to clipboard');
@@ -177,6 +187,7 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
 
   const columns = getContractColumns({
     onView: handleView,
+    onDetails: (contract) => router.push(`/contracts/${contract.id}`),
     onCountersign: handleCountersign,
     onSend: handleSend,
     onResend: handleResend,
@@ -231,6 +242,7 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
       {/* Contract View Dialog */}
       <Dialog open={!!viewingContract} onOpenChange={(open) => !open && handleCloseView()}>
         <DialogContent className="!flex !flex-col !max-w-[860px] !max-h-[90vh] !p-0 !gap-0 overflow-hidden">
+          <DialogTitle className="sr-only">Contract Preview</DialogTitle>
           {contract && (
             <>
               {/* Header */}
@@ -299,7 +311,7 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
                   </div>
 
                   {/* Signatures */}
-                  {(contract.signatureData || contract.status === 'pending') && (
+                  {(contract.signatureData || contract.status === 'pending' || contract.status === 'signed') && (
                     <>
                       <Separator className="bg-border/60" />
                       <div>
@@ -339,9 +351,32 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
                           {/* Business Signature */}
                           <div className="rounded-lg border bg-background p-4">
                             <p className="text-xs font-medium text-muted-foreground mb-2">Business Signature</p>
-                            <div className="h-16 border-2 border-dashed rounded flex items-center justify-center text-sm text-muted-foreground">
-                              {contract.status === 'signed' ? 'Countersigned' : 'Awaiting countersignature'}
-                            </div>
+                            {contract.countersignatureData ? (
+                              <>
+                                {contract.countersignatureData.type === 'drawn' ? (
+                                  <img
+                                    src={contract.countersignatureData.value}
+                                    alt="Business Signature"
+                                    className="max-h-16"
+                                  />
+                                ) : (
+                                  <p
+                                    className="text-2xl"
+                                    style={{ fontFamily: "'Brush Script MT', cursive" }}
+                                  >
+                                    {contract.countersignatureData.value}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Countersigned by {contract.countersignatureData.name} on{' '}
+                                  {formatDate(new Date(contract.countersignatureData.date))}
+                                </p>
+                              </>
+                            ) : (
+                              <div className="h-16 border-2 border-dashed rounded flex items-center justify-center text-sm text-muted-foreground">
+                                Awaiting countersignature
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -424,6 +459,7 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
           documentNumber={sendTarget.id.slice(0, 8)}
           recipientEmail={sendTarget.clientEmail || ''}
           recipientName={sendTarget.clientName}
+          businessName={businessName}
           contractName={sendTarget.contractName}
           onSent={handleSendComplete}
         />

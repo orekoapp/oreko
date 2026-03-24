@@ -17,17 +17,14 @@ import type {
   RateCardSelection,
   RateCardImportResult,
 } from './types';
-
-// Helper to convert Prisma Decimal to number
-function toNumber(value: Prisma.Decimal | number | null | undefined): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === 'number') return value;
-  return value.toNumber();
-}
+import { toNumber } from '@/lib/utils';
 
 // ============================================
 // RATE CARD ACTIONS
 // ============================================
+// HIGH #19: All Prisma Decimal fields (rate, taxRate.rate, amount, quantity)
+// MUST be converted with toNumber() before returning to client components.
+// Prisma returns Decimal objects, not plain numbers, which breaks serialization.
 
 // Get rate cards with pagination and filters
 export async function getRateCards(filter?: RateCardFilter): Promise<PaginatedRateCards> {
@@ -57,7 +54,8 @@ export async function getRateCards(filter?: RateCardFilter): Promise<PaginatedRa
     }),
   };
 
-  const orderBy: Prisma.RateCardOrderByWithRelationInput = filter?.sortBy
+  const SORTABLE_COLUMNS = ['name', 'rate', 'pricingType', 'createdAt', 'updatedAt'];
+  const orderBy: Prisma.RateCardOrderByWithRelationInput = filter?.sortBy && SORTABLE_COLUMNS.includes(filter.sortBy)
     ? { [filter.sortBy]: filter.sortOrder || 'asc' }
     : { name: 'asc' };
 
@@ -171,7 +169,12 @@ export async function getRateCardById(id: string): Promise<RateCardDetail> {
 
 // Create rate card
 export async function createRateCard(input: CreateRateCardInput): Promise<{ id: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #211: Viewers cannot create rate cards
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot create rate cards');
+  }
 
   const rateCard = await prisma.rateCard.create({
     data: {
@@ -194,7 +197,12 @@ export async function createRateCard(input: CreateRateCardInput): Promise<{ id: 
 
 // Update rate card
 export async function updateRateCard(input: UpdateRateCardInput): Promise<{ id: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #211: Viewers cannot update rate cards
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot update rate cards');
+  }
 
   // Verify ownership
   const existing = await prisma.rateCard.findFirst({
@@ -241,7 +249,12 @@ export async function updateRateCard(input: UpdateRateCardInput): Promise<{ id: 
 
 // Delete rate card (soft delete)
 export async function deleteRateCard(id: string): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #211: Viewers cannot delete rate cards
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot delete rate cards');
+  }
 
   // Verify ownership
   const existing = await prisma.rateCard.findFirst({
@@ -266,7 +279,12 @@ export async function deleteRateCard(id: string): Promise<void> {
 
 // Bulk delete rate cards
 export async function bulkDeleteRateCards(ids: string[]): Promise<{ deleted: number }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #211: Viewers cannot delete rate cards
+  if (role === 'viewer') {
+    throw new Error('Insufficient permissions: viewers cannot delete rate cards');
+  }
 
   const result = await prisma.rateCard.updateMany({
     where: {
@@ -284,7 +302,10 @@ export async function bulkDeleteRateCards(ids: string[]): Promise<{ deleted: num
 
 // Toggle rate card active status
 export async function toggleRateCardActive(id: string): Promise<{ isActive: boolean }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot modify rate cards');
+  }
 
   const existing = await prisma.rateCard.findFirst({
     where: {
@@ -313,7 +334,10 @@ export async function duplicateRateCard(
   id: string,
   newName?: string
 ): Promise<{ id: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot duplicate rate cards');
+  }
 
   const existing = await prisma.rateCard.findFirst({
     where: {
@@ -606,25 +630,25 @@ export async function importRateCards(
     categoryMap.set(name, category.id);
   }
 
+  // Pre-fetch all existing rate card names for batch duplicate checking (avoids N+1)
+  const existingNames = new Set<string>();
+  if (skipDuplicates) {
+    const existing = await prisma.rateCard.findMany({
+      where: { workspaceId, deletedAt: null },
+      select: { name: true },
+    });
+    existing.forEach(r => existingNames.add(r.name));
+  }
+
   // Process each row
   for (let i = 0; i < data.length; i++) {
     const row = data[i]!;
 
     try {
-      // Check for duplicate
-      if (skipDuplicates) {
-        const existing = await prisma.rateCard.findFirst({
-          where: {
-            workspaceId,
-            name: row.name,
-            deletedAt: null,
-          },
-        });
-
-        if (existing) {
-          result.skipped++;
-          continue;
-        }
+      // Check for duplicate using pre-fetched set
+      if (skipDuplicates && existingNames.has(row.name)) {
+        result.skipped++;
+        continue;
       }
 
       await prisma.rateCard.create({

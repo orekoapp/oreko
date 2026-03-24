@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function NewEmailTemplatePage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/settings/emails">

@@ -47,6 +47,7 @@ const statusConfig: Record<
 
 interface ContractColumnsOptions {
   onView?: (contract: ContractInstanceListItem) => void;
+  onDetails?: (contract: ContractInstanceListItem) => void;
   onEdit?: (contract: ContractInstanceListItem) => void;
   onSend?: (contract: ContractInstanceListItem) => void;
   onCountersign?: (contract: ContractInstanceListItem) => void;
@@ -59,7 +60,7 @@ interface ContractColumnsOptions {
 export function getContractColumns(
   options: ContractColumnsOptions = {}
 ): ColumnDef<ContractInstanceListItem>[] {
-  const { onView, onEdit, onSend, onCountersign, onResend, onCopyLink, onDownload, onDelete } = options;
+  const { onView, onDetails, onEdit, onSend, onCountersign, onResend, onCopyLink, onDownload, onDelete } = options;
 
   return [
     {
@@ -87,6 +88,7 @@ export function getContractColumns(
       enableHiding: false,
     },
     {
+      id: 'contract',
       accessorKey: 'contractName',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Contract" />
@@ -96,7 +98,7 @@ export function getContractColumns(
         return (
           <div>
             <div className="font-medium text-primary">
-              {row.getValue('contractName')}
+              {row.original.contractName}
             </div>
             {quoteName && (
               <div className="text-sm text-muted-foreground">{quoteName}</div>
@@ -106,7 +108,7 @@ export function getContractColumns(
       },
       filterFn: (row, id, value) => {
         const searchValue = value.toLowerCase();
-        const contractName = (row.getValue('contractName') as string).toLowerCase();
+        const contractName = (row.original.contractName as string).toLowerCase();
         const clientName = row.original.clientName.toLowerCase();
         const clientEmail = row.original.clientEmail?.toLowerCase() ?? '';
         return contractName.includes(searchValue) || clientName.includes(searchValue) || clientEmail.includes(searchValue);
@@ -137,12 +139,13 @@ export function getContractColumns(
       },
     },
     {
+      id: 'client',
       accessorKey: 'clientName',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Client" />
       ),
       cell: ({ row }) => {
-        const clientName = row.getValue('clientName') as string;
+        const clientName = row.original.clientName;
         const clientEmail = row.original.clientEmail;
         const initials = clientName
           .split(' ')
@@ -167,6 +170,7 @@ export function getContractColumns(
       },
     },
     {
+      id: 'created',
       accessorKey: 'createdAt',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Created" />
@@ -174,7 +178,7 @@ export function getContractColumns(
       cell: ({ row }) => {
         return (
           <div className="text-muted-foreground">
-            {formatDate(row.getValue('createdAt'))}
+            {formatDate(row.original.createdAt)}
           </div>
         );
       },
@@ -185,11 +189,11 @@ export function getContractColumns(
         const contract = row.original;
         const actions: RowAction<ContractInstanceListItem>[] = [];
 
-        if (onView) {
+        if (onDetails) {
           actions.push({
-            label: 'View',
-            icon: <Eye className="mr-2 h-4 w-4" />,
-            onClick: onView,
+            label: 'Details',
+            icon: <FileText className="mr-2 h-4 w-4" />,
+            onClick: onDetails,
           });
         }
         if (onEdit && contract.status === 'draft') {
@@ -251,7 +255,6 @@ export function getContractColumns(
           <DataTableRowActions
             row={contract}
             actions={actions}
-            onView={onView}
             onDelete={onDelete}
           />
         );

@@ -31,7 +31,7 @@ async function ContractListContent({
 
 function ContractListSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Skeleton className="h-10 w-80" />
         <Skeleton className="h-10 w-40" />
@@ -45,7 +45,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Contracts</h1>

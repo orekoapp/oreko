@@ -36,14 +36,17 @@ export default function DashboardError({
             We encountered an unexpected error. Please try again.
           </CardDescription>
         </CardHeader>
+        {/* Low #73: Only show error details in development to prevent info leakage */}
         <CardContent>
           <div className="rounded-md bg-muted p-3">
             <p className="text-sm font-mono text-muted-foreground break-all">
-              {error.message || 'An unknown error occurred'}
+              {process.env.NODE_ENV === 'development'
+                ? error.message || 'An unknown error occurred'
+                : 'An unexpected error occurred. Please try again or contact support.'}
             </p>
             {error.digest && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Error ID: {error.digest}
+                Reference: {error.digest}
               </p>
             )}
           </div>

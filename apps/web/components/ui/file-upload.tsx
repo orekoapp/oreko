@@ -55,10 +55,22 @@ export function FileUpload({
       return;
     }
 
-    // Validate file type
-    if (accept !== '*' && !file.type.match(accept.replace('*', '.*'))) {
-      setError('Invalid file type');
-      return;
+    // Bug #124: Fixed file type validation for multi-part accept strings
+    if (accept !== '*') {
+      const acceptParts = accept.split(',').map((p) => p.trim());
+      const isValid = acceptParts.some((part) => {
+        if (part.startsWith('.')) {
+          // Extension-based: .pdf, .doc
+          return file.name.toLowerCase().endsWith(part.toLowerCase());
+        }
+        // MIME-type based: image/*, application/pdf
+        const regex = new RegExp('^' + part.replace('*', '.*') + '$');
+        return regex.test(file.type);
+      });
+      if (!isValid) {
+        setError('Invalid file type');
+        return;
+      }
     }
 
     if (onUpload) {
@@ -160,7 +172,8 @@ export function FileUpload({
           onDrop={disabled ? undefined : handleDrop}
           onDragOver={disabled ? undefined : handleDragOver}
           onDragLeave={disabled ? undefined : handleDragLeave}
-          onClick={() => !disabled && inputRef.current?.click()}
+          // Low #82: Block clicks during upload to prevent concurrent uploads
+          onClick={() => !disabled && !isUploading && inputRef.current?.click()}
         >
           <input
             ref={inputRef}

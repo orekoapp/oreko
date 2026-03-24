@@ -15,18 +15,23 @@ interface ClientLTV {
 
 interface ClientLifetimeValueCardProps {
   data?: ClientLTV[];
+  currency?: string;
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
-export function ClientLifetimeValueCard({ data: propData }: ClientLifetimeValueCardProps) {
+export function ClientLifetimeValueCard({ data: propData, currency = 'USD' }: ClientLifetimeValueCardProps) {
   const { clientData, averageLTV } = useMemo(() => {
     if (!propData || propData.length === 0) {
       return { clientData: [], averageLTV: 0 };
@@ -56,7 +61,7 @@ export function ClientLifetimeValueCard({ data: propData }: ClientLifetimeValueC
         <div className="flex items-baseline justify-between">
           <CardTitle className="text-sm font-medium">Client Lifetime Value</CardTitle>
           <span className="text-xs text-muted-foreground/60">
-            Avg {formatCurrency(averageLTV)}
+            Avg {formatCurrency(averageLTV, currency)}
           </span>
         </div>
       </CardHeader>
@@ -83,7 +88,7 @@ export function ClientLifetimeValueCard({ data: propData }: ClientLifetimeValueC
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-medium tabular-nums">
-                    {formatCurrency(client.ltv)}
+                    {formatCurrency(client.ltv, currency)}
                   </p>
                   {client.growth !== undefined && (
                     <span

@@ -55,19 +55,19 @@ describe('calculateDepositAmount', () => {
 
 describe('formatQuoteCurrency', () => {
   it('formats USD currency with dollar sign', () => {
-    expect(formatQuoteCurrency(1234.56)).toBe('$1,234.56');
+    expect(formatQuoteCurrency(1234.56)).toBe('$ 1,234.56');
   });
 
   it('formats zero amount', () => {
-    expect(formatQuoteCurrency(0)).toBe('$0.00');
+    expect(formatQuoteCurrency(0)).toBe('$ 0.00');
   });
 
   it('formats negative amounts', () => {
-    expect(formatQuoteCurrency(-100)).toBe('-$100.00');
+    expect(formatQuoteCurrency(-100)).toBe('-$ 100.00');
   });
 
   it('formats large amounts with commas', () => {
-    expect(formatQuoteCurrency(1000000)).toBe('$1,000,000.00');
+    expect(formatQuoteCurrency(1000000)).toBe('$ 1,000,000.00');
   });
 
   it('formats EUR currency', () => {
@@ -83,7 +83,7 @@ describe('formatQuoteCurrency', () => {
   });
 
   it('handles small decimal amounts', () => {
-    expect(formatQuoteCurrency(0.01)).toBe('$0.01');
+    expect(formatQuoteCurrency(0.01)).toBe('$ 0.01');
   });
 });
 

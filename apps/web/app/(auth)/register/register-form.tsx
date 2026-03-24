@@ -40,6 +40,8 @@ export function RegisterForm() {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -67,21 +69,8 @@ export function RegisterForm() {
         return;
       }
 
-      // Auto sign in after registration
-      const signInResult = await signIn('credentials', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        toast.error('Account created but failed to sign in. Please try logging in.');
-        window.location.href = '/login';
-        return;
-      }
-
-      // Full page reload to ensure server picks up the new auth cookie
-      window.location.href = '/onboarding';
+      toast.success('Account created! Please check your email to verify.');
+      router.push('/verify-email');
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
@@ -164,14 +153,13 @@ export function RegisterForm() {
           </div>
 
           <div className="flex items-start space-x-2">
+            {/* Bug #194: Use setValue instead of fragile synthetic event hack */}
             <Checkbox
               id="termsAccepted"
               disabled={isLoading}
-              {...register('termsAccepted')}
+              checked={watch('termsAccepted')}
               onCheckedChange={(checked) => {
-                // react-hook-form expects a change event, but Checkbox uses onCheckedChange
-                const event = { target: { name: 'termsAccepted', value: checked === true } };
-                register('termsAccepted').onChange(event as any);
+                if (checked === true) setValue('termsAccepted', true, { shouldValidate: true });
               }}
             />
             <div className="grid gap-1.5 leading-none">

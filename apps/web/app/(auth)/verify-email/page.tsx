@@ -28,8 +28,9 @@ export default function VerifyEmailPage() {
     }
   };
 
+  // Low #69: Removed min-h-screen — AuthLayout already handles centering
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex items-center justify-center">
       <div className="mx-auto max-w-md text-center space-y-6 p-8">
         <div className="flex justify-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">

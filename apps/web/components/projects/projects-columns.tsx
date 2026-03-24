@@ -95,6 +95,7 @@ export function getProjectColumns(options: ProjectColumnsOptions = {}): ColumnDe
       },
     },
     {
+      id: 'status',
       accessorKey: 'isActive',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
@@ -152,6 +153,7 @@ export function getProjectColumns(options: ProjectColumnsOptions = {}): ColumnDe
       },
     },
     {
+      id: 'created',
       accessorKey: 'createdAt',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Created" />

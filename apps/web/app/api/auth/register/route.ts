@@ -1,3 +1,4 @@
+import { getBaseUrl } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { z } from 'zod';
@@ -6,6 +7,7 @@ import { hashPassword } from '@/lib/auth/credentials';
 import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
 import { passwordSchema } from '@/lib/validations/auth';
 import { validateRequestOrigin } from '@/lib/csrf';
+import { logger, maskEmail, maskIp } from '@/lib/logger';
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -45,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateLimitResult = checkRateLimit(`register:${clientIp}`, strictRateLimitOptions);
+    const rateLimitResult = await checkRateLimit(`register:${clientIp}`, strictRateLimitOptions);
     if (rateLimitResult.limited) {
       return NextResponse.json(
         { error: 'Too many registration attempts. Please try again later.' },
@@ -64,9 +66,10 @@ export async function POST(request: Request) {
       where: { email },
     });
 
+    // MEDIUM #2: Use generic error to prevent user enumeration
     if (existingUser) {
       return NextResponse.json(
-        { error: 'An account with this email already exists' },
+        { error: 'Unable to create account. Please try again.' },
         { status: 400 }
       );
     }
@@ -131,21 +134,16 @@ export async function POST(request: Request) {
       });
 
       const { sendVerificationEmail } = await import('@/lib/services/email');
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = getBaseUrl();
       const verifyUrl = `${baseUrl}/verify-email/confirm?token=${rawToken}`; // Email gets raw token
       await sendVerificationEmail({ to: email, name, verifyUrl });
     } catch (emailError) {
       // Don't fail registration if verification email fails
-      console.error('Failed to send verification email:', emailError);
+      logger.error({ err: emailError }, 'Failed to send verification email');
     }
 
     // Bug #72: Audit log for new account creation
-    console.info('[AUDIT] New account registered:', {
-      userId: result.id,
-      email: result.email,
-      ip: clientIp,
-      timestamp: new Date().toISOString(),
-    });
+    logger.info({ userId: result.id, email: maskEmail(result.email), ip: maskIp(clientIp) }, '[AUDIT] New account registered');
 
     return NextResponse.json({
       user: result,
@@ -153,13 +151,15 @@ export async function POST(request: Request) {
     }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // Return user-friendly messages without exposing internal schema details
+      const messages = error.errors.map(e => e.message);
       return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
+        { error: 'Invalid request data', messages },
         { status: 400 }
       );
     }
 
-    console.error('Registration error:', error);
+    logger.error({ err: error }, 'Registration error');
     return NextResponse.json(
       { error: 'Something went wrong' },
       { status: 500 }

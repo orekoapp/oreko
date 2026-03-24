@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { hash, compare } from 'bcryptjs';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 interface ActionResult {
   success: boolean;
@@ -66,14 +67,20 @@ export async function changePassword(input: ChangePasswordInput): Promise<Action
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash },
+      data: { passwordHash, passwordChangedAt: new Date() },
+    });
+
+    // Delete DB sessions for defense-in-depth + set passwordChangedAt so JWT callback
+    // will reject tokens issued before this timestamp (forces re-login on all devices)
+    await prisma.session.deleteMany({
+      where: { userId: user.id },
     });
 
     revalidatePath('/settings/account');
 
     return { success: true };
   } catch (error) {
-    console.error('Change password error:', error);
+    logger.error({ err: error }, 'Change password error');
 
     if (error instanceof Error && error.message === 'Demo mode - mutations disabled') {
       return { success: false, error: 'Changes are disabled in demo mode' };
@@ -117,7 +124,7 @@ export async function updateProfile(input: UpdateProfileInput): Promise<ActionRe
 
     return { success: true };
   } catch (error) {
-    console.error('Update profile error:', error);
+    logger.error({ err: error }, 'Update profile error');
 
     if (error instanceof Error && error.message === 'Demo mode - mutations disabled') {
       return { success: false, error: 'Changes are disabled in demo mode' };

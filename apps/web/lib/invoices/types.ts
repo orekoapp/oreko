@@ -73,6 +73,11 @@ export interface InvoiceDocument {
   terms: string;
   internalNotes: string;
   client?: InvoiceClient | null;
+  // Recurring fields
+  isRecurring?: boolean;
+  recurringInterval?: string | null;
+  nextRecurringDate?: string | null;
+  parentInvoiceId?: string | null;
 }
 
 export interface InvoiceListItem {
@@ -94,6 +99,7 @@ export interface InvoiceListItem {
     company: string | null;
   };
   isOverdue: boolean;
+  isRecurring?: boolean;
 }
 
 export interface CreateInvoiceData {
@@ -103,6 +109,7 @@ export interface CreateInvoiceData {
   invoiceNumber?: string;
   currency?: string;
   dueDate: string;
+  isDraft?: boolean;
   lineItems: Array<{
     name: string;
     description?: string;
@@ -110,6 +117,8 @@ export interface CreateInvoiceData {
     rate: number;
     taxRate?: number;
   }>;
+  discountType?: 'percentage' | 'fixed' | null;
+  discountValue?: number | null;
   notes?: string;
   terms?: string;
   internalNotes?: string;
@@ -118,6 +127,7 @@ export interface CreateInvoiceData {
 export interface UpdateInvoiceData {
   projectId?: string | null;
   title?: string;
+  currency?: string;
   dueDate?: string;
   lineItems?: Array<{
     name: string;
@@ -126,11 +136,15 @@ export interface UpdateInvoiceData {
     rate: number;
     taxRate?: number;
   }>;
+  discountType?: 'percentage' | 'fixed' | null;
+  discountValue?: number | null;
   notes?: string;
   terms?: string;
   internalNotes?: string;
 }
 
+// Note: default currency here is a fallback only; actual currency is set
+// from workspace settings when creating a new invoice or from the document itself.
 export const DEFAULT_INVOICE_SETTINGS: InvoiceSettings = {
   currency: 'USD',
   showLineItemPrices: true,

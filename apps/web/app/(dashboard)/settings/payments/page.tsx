@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { PaymentSettingsForm } from '@/components/payments';
 import { getPaymentSettings } from '@/lib/payments/actions';
 import { isStripeEnabled } from '@/lib/services/stripe';

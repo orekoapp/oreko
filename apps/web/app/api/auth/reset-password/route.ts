@@ -3,12 +3,19 @@ import { createHash } from 'crypto';
 import { hash } from 'bcryptjs';
 import { prisma } from '@quotecraft/database';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
+import { validateRequestOrigin } from '@/lib/csrf';
 import { passwordSchema } from '@/lib/validations/auth';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
+  // Low #14: CSRF protection
+  if (!validateRequestOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
   try {
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateLimitResult = checkRateLimit(`reset-password:${clientIp}`, { limit: 5, windowMs: 300000 }); // 5 requests per 5 minutes
+    const rateLimitResult = await checkRateLimit(`reset-password:${clientIp}`, { limit: 5, windowMs: 300000 }); // 5 requests per 5 minutes
     if (rateLimitResult.limited) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -87,15 +94,20 @@ export async function POST(request: NextRequest) {
     // Hash the new password
     const passwordHash = await hash(password, 12);
 
-    // Update user password and mark token as used
+    // Bug #83: Update password, mark token used, AND invalidate existing sessions
     await prisma.$transaction([
       prisma.user.update({
         where: { id: resetToken.userId },
-        data: { passwordHash },
+        data: { passwordHash, passwordChangedAt: new Date() },
       }),
       prisma.passwordResetToken.update({
         where: { id: resetToken.id },
         data: { usedAt: new Date() },
+      }),
+      // Invalidate all existing sessions so stolen JWTs from before the reset
+      // won't work if the app ever switches to DB sessions
+      prisma.session.deleteMany({
+        where: { userId: resetToken.userId },
       }),
     ]);
 
@@ -104,7 +116,7 @@ export async function POST(request: NextRequest) {
       message: 'Password reset successfully',
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error({ err: error }, 'Reset password error');
     return NextResponse.json(
       { error: 'Something went wrong' },
       { status: 500 }

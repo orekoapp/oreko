@@ -15,10 +15,12 @@ import type { RecentQuote, RecentInvoice } from '@/lib/dashboard/types';
 
 interface RecentQuotesProps {
   quotes: RecentQuote[];
+  currency?: string;
 }
 
 interface RecentInvoicesProps {
   invoices: RecentInvoice[];
+  currency?: string;
 }
 
 const statusDot: Record<string, string> = {
@@ -34,7 +36,7 @@ const statusDot: Record<string, string> = {
   void: 'bg-muted-foreground/30',
 };
 
-export function RecentQuotes({ quotes }: RecentQuotesProps) {
+export function RecentQuotes({ quotes, currency = 'USD' }: RecentQuotesProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-0">
@@ -74,7 +76,7 @@ export function RecentQuotes({ quotes }: RecentQuotesProps) {
                 </div>
                 <div className="ml-3 flex items-center gap-3 shrink-0">
                   <span className="text-sm tabular-nums text-muted-foreground">
-                    {formatCurrency(quote.total)}
+                    {formatCurrency(quote.total, currency)}
                   </span>
                   <Badge
                     variant="outline"
@@ -92,7 +94,7 @@ export function RecentQuotes({ quotes }: RecentQuotesProps) {
   );
 }
 
-export function RecentInvoices({ invoices }: RecentInvoicesProps) {
+export function RecentInvoices({ invoices, currency = 'USD' }: RecentInvoicesProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-0">
@@ -133,7 +135,7 @@ export function RecentInvoices({ invoices }: RecentInvoicesProps) {
                 <div className="ml-3 flex items-center gap-3 shrink-0">
                   <div className="text-right">
                     <span className="text-sm tabular-nums text-muted-foreground">
-                      {formatCurrency(invoice.total)}
+                      {formatCurrency(invoice.total, currency)}
                     </span>
                   </div>
                   <Badge

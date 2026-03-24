@@ -72,24 +72,47 @@ export const CHART_PALETTE = [
 // ============================================
 
 /**
+ * Get currency symbol from currency code
+ */
+function getCurrencySymbol(currency: string): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
+    .formatToParts(0)
+    .find(p => p.type === 'currency')?.value ?? '$';
+}
+
+/**
  * Format number as currency for chart display
  * Values are already in dollars (not cents)
  */
 export function formatChartCurrency(value: number, currency?: string | number): string {
   // Recharts tickFormatter passes (value, index) — ignore numeric second arg
   const curr = typeof currency === 'string' && currency.length === 3 ? currency : 'USD';
-  // For compact display, use symbol prefix from Intl
-  const symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency: curr, maximumFractionDigits: 0 })
-    .formatToParts(0)
-    .find(p => p.type === 'currency')?.value ?? '$';
+  const symbol = getCurrencySymbol(curr);
 
   if (value >= 1000000) {
-    return `${symbol}${(value / 1000000).toFixed(1)}M`;
+    return `${symbol} ${(value / 1000000).toFixed(1)}M`;
   }
   if (value >= 1000) {
-    return `${symbol}${(value / 1000).toFixed(1)}K`;
+    return `${symbol} ${(value / 1000).toFixed(1)}K`;
   }
-  return `${symbol}${value.toFixed(0)}`;
+  return `${symbol} ${value.toFixed(0)}`;
+}
+
+/**
+ * Create a currency formatter closure for Recharts tickFormatter.
+ * Usage: tickFormatter={makeChartCurrencyFormatter('INR')}
+ */
+export function makeChartCurrencyFormatter(currency: string = 'USD'): (value: number) => string {
+  const symbol = getCurrencySymbol(currency);
+  return (value: number) => {
+    if (value >= 1000000) {
+      return `${symbol} ${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${symbol} ${(value / 1000).toFixed(1)}K`;
+    }
+    return `${symbol} ${value.toFixed(0)}`;
+  };
 }
 
 /**
@@ -97,11 +120,15 @@ export function formatChartCurrency(value: number, currency?: string | number): 
  * Values are already in dollars (not cents)
  */
 export function formatFullCurrency(value: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
-  }).format(value);
+  }).formatToParts(value);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 /**

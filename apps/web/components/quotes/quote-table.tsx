@@ -33,7 +33,7 @@ export function QuoteTable({ quotes, isLoading = false }: QuoteTableProps) {
   };
 
   const handleEdit = (quote: QuoteListItem) => {
-    router.push(`/quotes/${quote.id}/builder`);
+    router.push(`/quotes/${quote.id}/edit`);
   };
 
   const handleDuplicate = async (quote: QuoteListItem) => {

@@ -64,8 +64,13 @@ export function ClientForm({
 
   const clientType = form.watch('type');
 
+  // Bug #202: Wrap in try/catch so server errors show feedback
   const handleSubmit = form.handleSubmit(async (data) => {
-    await onSubmit(data);
+    try {
+      await onSubmit(data);
+    } catch {
+      form.setError('root', { message: 'Failed to save client. Please try again.' });
+    }
   });
 
   return (
@@ -176,7 +181,7 @@ export function ClientForm({
             <p className="text-sm text-destructive">{form.formState.errors.address.message}</p>
           )}
           <div className="space-y-2">
-            <Label htmlFor="address.street">Street Address *</Label>
+            <Label htmlFor="address.street">Street Address</Label>
             <Input
               id="address.street"
               {...form.register('address.street')}
@@ -189,7 +194,7 @@ export function ClientForm({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="address.city">City *</Label>
+              <Label htmlFor="address.city">City</Label>
               <Input
                 id="address.city"
                 {...form.register('address.city')}
@@ -225,7 +230,7 @@ export function ClientForm({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address.country">Country *</Label>
+              <Label htmlFor="address.country">Country</Label>
               <Input
                 id="address.country"
                 {...form.register('address.country')}
@@ -307,12 +312,19 @@ export function ClientForm({
                   </div>
 
                   <div className="mt-3 flex items-center space-x-2">
+                    {/* Bug #203: Only one contact can be primary — uncheck others */}
                     <Checkbox
                       id={`contacts.${index}.isPrimary`}
                       checked={form.watch(`contacts.${index}.isPrimary`)}
-                      onCheckedChange={(checked) =>
-                        form.setValue(`contacts.${index}.isPrimary`, checked === true)
-                      }
+                      onCheckedChange={(checked) => {
+                        if (checked === true) {
+                          // Uncheck all other contacts
+                          fields.forEach((_, i) => {
+                            if (i !== index) form.setValue(`contacts.${i}.isPrimary`, false);
+                          });
+                        }
+                        form.setValue(`contacts.${index}.isPrimary`, checked === true);
+                      }}
                     />
                     <Label htmlFor={`contacts.${index}.isPrimary`} className="text-sm font-normal">
                       Primary contact

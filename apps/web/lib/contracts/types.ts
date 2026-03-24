@@ -85,9 +85,13 @@ export interface ContractInstanceDetail {
   signedAt: Date | null;
   signatureData: SignatureData | null;
   signerIpAddress: string | null;
+  countersignedAt: Date | null;
+  countersignatureData: SignatureData | null;
+  countersignerName: string | null;
   pdfUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
+  documentIntegrity?: 'verified' | 'tampered' | 'unchecked';
 }
 
 // Signature data
@@ -118,6 +122,8 @@ export interface CreateContractInstanceInput {
   quoteId?: string;
   content?: string;
   variableValues?: Record<string, string>;
+  // Bug #186: Allow creating and immediately sending
+  sendImmediately?: boolean;
 }
 
 // Sign contract input

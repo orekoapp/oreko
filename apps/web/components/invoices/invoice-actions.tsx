@@ -122,7 +122,8 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
   const canEdit = invoice.status === 'draft';
   const canSend = invoice.status === 'draft';
   const canVoid = invoice.status !== 'draft' && invoice.status !== 'voided' && invoice.status !== 'paid';
-  const canDelete = invoice.status === 'draft' || invoice.status === 'voided';
+  // Low #56: Only allow deleting drafts — server rejects voided invoice deletion
+  const canDelete = invoice.status === 'draft';
   const hasDropdownActions = canVoid || canDelete;
 
   return (
@@ -162,7 +163,7 @@ export function InvoiceActions({ invoice, isOverdue }: InvoiceActionsProps) {
         {hasDropdownActions && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" aria-label="More actions">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

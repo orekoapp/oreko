@@ -17,6 +17,7 @@ import { sendPaymentReceivedEmail } from '@/lib/services/email';
 import { formatCurrency } from '@/lib/utils';
 import type { PaymentIntentResult } from './types';
 import { domainEvents } from '@/lib/events/emitter';
+import { logger } from '@/lib/logger';
 
 /**
  * Create payment intent for invoice (called from checkout API route).
@@ -130,7 +131,13 @@ export async function createInvoicePaymentIntent(
 
     // Get currency from invoice model (falls back to settings for legacy data)
     const settings = invoice.settings as Record<string, unknown>;
-    const currency = invoice.currency || (settings?.currency as string) || 'USD';
+    const currency = (invoice.currency || (settings?.currency as string) || 'USD').toLowerCase();
+
+    // Bug #18: Validate currency is supported by Stripe before creating PaymentIntent
+    const SUPPORTED_CURRENCIES = ['usd', 'eur', 'gbp', 'cad', 'aud', 'jpy', 'inr', 'sgd', 'hkd', 'nzd', 'chf', 'sek', 'nok', 'dkk', 'mxn', 'brl'];
+    if (!SUPPORTED_CURRENCIES.includes(currency)) {
+      return { success: false, error: `Unsupported currency: ${currency.toUpperCase()}. Please update the invoice currency.` };
+    }
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer({
@@ -178,7 +185,7 @@ export async function createInvoicePaymentIntent(
       paymentIntentId: paymentIntent.id,
     };
   } catch (error) {
-    console.error('Failed to create payment intent:', error);
+    logger.error({ err: error }, 'Failed to create payment intent');
     return { success: false, error: 'Failed to create payment' };
   }
 }
@@ -204,7 +211,7 @@ export async function processAccountUpdate(account: {
   });
 
   if (!paymentSettings) {
-    console.warn('No workspace found for Stripe account:', account.id);
+    logger.warn({ stripeAccountId: account.id }, 'No workspace found for Stripe account');
     return;
   }
 
@@ -244,18 +251,23 @@ export async function processRefundWebhook(
   try {
     const payment = await prisma.payment.findFirst({
       where: { stripePaymentIntentId: paymentIntentId, status: 'completed' },
-      include: { invoice: true },
     });
 
     if (!payment) {
-      console.warn('Completed payment not found for refund:', paymentIntentId);
+      logger.warn({ paymentIntentId }, 'Completed payment not found for refund');
       return { success: false };
     }
 
     const refundAmount = amountRefundedCents / 100; // Convert cents to dollars
-    const isFullRefund = refundAmount >= Number(payment.amount);
+    // Bug #15: Use tolerance for floating-point comparison to avoid missing full refunds
+    const isFullRefund = refundAmount >= Number(payment.amount) - 0.01;
 
     await prisma.$transaction(async (tx) => {
+      // Read invoice INSIDE the transaction to avoid stale data from concurrent webhooks
+      const invoice = await tx.invoice.findUniqueOrThrow({
+        where: { id: payment.invoiceId },
+      });
+
       // Update payment with refund info
       await tx.payment.update({
         where: { id: payment.id },
@@ -267,13 +279,13 @@ export async function processRefundWebhook(
         },
       });
 
-      // Recalculate invoice amounts
-      const invoiceTotal = Number(payment.invoice.total);
-      const currentAmountPaid = Number(payment.invoice.amountPaid);
+      // Recalculate invoice amounts using fresh data from within the transaction
+      const invoiceTotal = Number(invoice.total);
+      const currentAmountPaid = Number(invoice.amountPaid);
       const newAmountPaid = Math.max(0, currentAmountPaid - refundAmount);
       const newAmountDue = Math.max(0, invoiceTotal - newAmountPaid);
 
-      let newStatus = payment.invoice.status;
+      let newStatus = invoice.status;
       if (newAmountPaid <= 0) {
         newStatus = 'sent'; // Fully refunded, back to sent
       } else if (newAmountPaid < invoiceTotal) {
@@ -314,7 +326,7 @@ export async function processRefundWebhook(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to process refund webhook:', error);
+    logger.error({ err: error }, 'Failed to process refund webhook');
     return { success: false };
   }
 }
@@ -344,13 +356,13 @@ export async function processPaymentWebhook(
     });
 
     if (!payment) {
-      console.warn('Payment not found for payment intent:', paymentIntentId);
+      logger.warn({ paymentIntentId }, 'Payment not found for payment intent');
       return { success: false };
     }
 
     // Prevent duplicate webhook processing - skip if already completed or failed
     if (payment.status === 'completed' || payment.status === 'failed') {
-      console.info('Payment already processed, skipping duplicate webhook:', paymentIntentId);
+      logger.info({ paymentIntentId }, 'Payment already processed, skipping duplicate webhook');
       return { success: true };
     }
 
@@ -389,7 +401,7 @@ export async function processPaymentWebhook(
           data: {
             amountDue: newAmountDue,
             status: newInvoiceStatus,
-            ...(newInvoiceStatus === 'paid' && { paidAt: new Date() }),
+            ...(!payment.invoice.paidAt && { paidAt: new Date() }),
           },
         });
 
@@ -423,7 +435,7 @@ export async function processPaymentWebhook(
         amount: formatCurrency(paymentAmount),
         receiptUrl: receiptUrl || undefined,
         rateLimitKey: `workspace:${payment.invoice.workspaceId}`,
-      }).catch((err) => console.error('Failed to send payment confirmation email:', err));
+      }).catch((err) => logger.error({ err }, 'Failed to send payment confirmation email'));
     } else {
       // Payment failed
       await prisma.payment.update({
@@ -434,7 +446,7 @@ export async function processPaymentWebhook(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to process payment webhook:', error);
+    logger.error({ err: error }, 'Failed to process payment webhook');
     return { success: false };
   }
 }

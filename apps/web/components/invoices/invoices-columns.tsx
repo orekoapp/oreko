@@ -6,8 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
 import { DataTableRowActions, RowAction } from '@/components/ui/data-table/data-table-row-actions';
 import { InvoiceListItem } from '@/lib/invoices/types';
-import { AlertCircle, Eye, Pencil, Send, Link2, Copy, Download, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { AlertCircle, Pencil, Send, Link2, Copy, Download, Banknote, RefreshCw, Trash2 } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
   draft: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
@@ -29,11 +28,15 @@ const statusLabels: Record<string, string> = {
   voided: 'Voided',
 };
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+    currency,
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 function formatDate(dateString: string): string {
@@ -90,6 +93,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
       enableHiding: false,
     },
     {
+      id: 'Invoice ID',
       accessorKey: 'invoiceNumber',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Invoice ID" />
@@ -98,9 +102,16 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const isRecurring = recurringInvoiceIds?.has(row.original.id);
         return (
           <div className="flex items-center gap-1.5">
-            <Link href={`/invoices/${row.original.id}`} className="font-medium text-primary hover:underline">
-              #{row.getValue('invoiceNumber')}
-            </Link>
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline text-left"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView?.(row.original);
+              }}
+            >
+              #{row.original.invoiceNumber}
+            </button>
             {isRecurring && (
               <span title="Recurring invoice">
                 <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
@@ -185,18 +196,19 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const total = row.getValue('total') as number;
         const amountDue = row.original.amountDue;
         const status = row.original.status;
+        const curr = row.original.currency;
 
         return (
           <div className="whitespace-nowrap">
-            <div className="font-medium">{formatCurrency(total)}</div>
+            <div className="font-medium">{formatCurrency(total, curr)}</div>
             {status === 'partial' && amountDue > 0 && (
               <div className="text-sm text-amber-600">
-                {formatCurrency(amountDue)} remaining
+                {formatCurrency(amountDue, curr)} remaining
               </div>
             )}
             {status !== 'partial' && amountDue > 0 && amountDue !== total && (
               <div className="text-sm text-orange-600">
-                Due: {formatCurrency(amountDue)}
+                Due: {formatCurrency(amountDue, curr)}
               </div>
             )}
           </div>
@@ -204,6 +216,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
       },
     },
     {
+      id: 'Issued Date',
       accessorKey: 'issueDate',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Issued Date" />
@@ -211,12 +224,13 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
       cell: ({ row }) => {
         return (
           <div className="text-muted-foreground">
-            {formatDate(row.getValue('issueDate'))}
+            {formatDate(row.original.issueDate)}
           </div>
         );
       },
     },
     {
+      id: 'Due Date',
       accessorKey: 'dueDate',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Due Date" />
@@ -224,7 +238,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
       cell: ({ row }) => {
         return (
           <div className="text-muted-foreground">
-            {formatDate(row.getValue('dueDate'))}
+            {formatDate(row.original.dueDate)}
           </div>
         );
       },
@@ -235,14 +249,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         const invoice = row.original;
         const actions: RowAction<InvoiceListItem>[] = [];
 
-        if (onView) {
-          actions.push({
-            label: 'View',
-            icon: <Eye className="mr-2 h-4 w-4" />,
-            onClick: onView,
-          });
-        }
-        if (onEdit) {
+        if (onEdit && invoice.status === 'draft') {
           actions.push({
             label: 'Edit',
             icon: <Pencil className="mr-2 h-4 w-4" />,
@@ -250,8 +257,9 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
           });
         }
         if (onSend) {
+          const isSent = invoice.status !== 'draft';
           actions.push({
-            label: 'Send Invoice',
+            label: isSent ? 'Resend Invoice' : 'Send Invoice',
             icon: <Send className="mr-2 h-4 w-4" />,
             onClick: onSend,
             separator: true,
@@ -282,7 +290,7 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
         if (onRecordPayment && invoice.status !== 'paid' && invoice.status !== 'voided') {
           actions.push({
             label: 'Record Payment',
-            icon: <DollarSign className="mr-2 h-4 w-4" />,
+            icon: <Banknote className="mr-2 h-4 w-4" />,
             onClick: onRecordPayment,
             separator: true,
           });
@@ -308,8 +316,6 @@ export function getInvoiceColumns(options: InvoiceColumnsOptions = {}): ColumnDe
           <DataTableRowActions
             row={invoice}
             actions={actions}
-            onView={onView}
-            onDelete={onDelete}
           />
         );
       },

@@ -206,14 +206,14 @@ describe('updateClientSchema', () => {
 
   it('accepts update with just id', () => {
     const result = updateClientSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
     });
     expect(result.success).toBe(true);
   });
 
   it('accepts partial update', () => {
     const result = updateClientSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Updated Name',
       phone: '555-123-4567',
     });
@@ -252,7 +252,7 @@ describe('clientFilterSchema', () => {
 describe('bulkDeleteClientsSchema', () => {
   it('accepts array of client IDs', () => {
     const result = bulkDeleteClientsSchema.safeParse({
-      ids: ['clrqm9k3k0000q3wz8k7v4z1w', 'clrqm9k3k0001q3wz8k7v4z1x'],
+      ids: ['550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001'],
     });
     expect(result.success).toBe(true);
   });
@@ -266,7 +266,7 @@ describe('bulkDeleteClientsSchema', () => {
 
   it('rejects more than 100 IDs', () => {
     const result = bulkDeleteClientsSchema.safeParse({
-      ids: Array(101).fill('clrqm9k3k0000q3wz8k7v4z1w'),
+      ids: Array(101).fill('550e8400-e29b-41d4-a716-446655440000'),
     });
     expect(result.success).toBe(false);
   });

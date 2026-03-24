@@ -35,9 +35,11 @@ interface CreditNoteDialogProps {
     rate: number;
     amount: number;
   }>;
+  currency?: string;
 }
 
-export function CreditNoteDialog({ invoiceId, invoiceLineItems }: CreditNoteDialogProps) {
+export function CreditNoteDialog(props: CreditNoteDialogProps) {
+  const { invoiceId, invoiceLineItems } = props;
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,10 +120,14 @@ export function CreditNoteDialog({ invoiceId, invoiceLineItems }: CreditNoteDial
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    const parts = new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: props.currency || 'USD',
+    }).formatToParts(amount);
+    return parts.map((p, i) => {
+      if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+      return p.value;
+    }).join('');
   };
 
   return (

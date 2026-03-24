@@ -13,6 +13,7 @@ interface CreditNoteItem {
   creditNoteNumber: string;
   reason: string;
   amount: number;
+  currency: string;
   status: string;
   issuedAt: string | null;
   createdAt: string;
@@ -28,11 +29,15 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | '
   voided: 'destructive',
 };
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-US', {
+function formatCurrency(amount: number, currency: string = 'USD') {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+    currency,
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 export function CreditNotesList({ creditNotes }: CreditNotesListProps) {
@@ -82,7 +87,7 @@ export function CreditNotesList({ creditNotes }: CreditNotesListProps) {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="font-semibold text-sm">{formatCurrency(cn.amount)}</span>
+            <span className="font-semibold text-sm">{formatCurrency(cn.amount, cn.currency)}</span>
             {cn.status === 'draft' && (
               <Button
                 variant="outline"

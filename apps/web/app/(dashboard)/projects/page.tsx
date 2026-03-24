@@ -6,21 +6,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ProjectsDataTable } from '@/components/projects';
 import { getProjects } from '@/lib/projects/actions';
 
-interface ProjectsPageProps {
-  searchParams: Promise<{
-    search?: string;
-    status?: string;
-    page?: string;
-    sortBy?: string;
-    sortOrder?: string;
-  }>;
-}
-
 export const metadata = {
   title: 'Projects',
 };
 
-export default async function ProjectsPage({ searchParams }: ProjectsPageProps) {
+export default async function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

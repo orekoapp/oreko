@@ -10,6 +10,8 @@ import type {
 export interface BusinessProfileData {
   businessName: string;
   logoUrl: string | null;
+  darkLogoUrl: string | null;
+  socialLinks: { platform: string; url: string }[] | null;
   email: string | null;
   phone: string | null;
   website: string | null;
@@ -34,6 +36,7 @@ export interface BrandingSettingsData {
   secondaryColor: string | null;
   accentColor: string | null;
   logoUrl: string | null;
+  darkLogoUrl: string | null;
   faviconUrl: string | null;
   customCss: string | null;
   fontFamily: string | null;
@@ -94,6 +97,7 @@ export interface UpdateBusinessProfileInput {
   phone?: string;
   website?: string;
   address?: Address;
+  socialLinks?: { platform: string; url: string }[];
   taxId?: string;
   currency?: string;
   timezone?: string;
@@ -105,6 +109,7 @@ export interface UpdateBrandingSettingsInput {
   secondaryColor?: string;
   accentColor?: string;
   logoUrl?: string;
+  darkLogoUrl?: string;
   faviconUrl?: string;
   customCss?: string;
   fontFamily?: string;
@@ -115,6 +120,20 @@ export interface UpdatePaymentSettingsInput {
   enabledPaymentMethods?: string[];
   passProcessingFees?: boolean;
   defaultPaymentTerms?: number;
+}
+
+// Email settings type
+export interface EmailSettingsData {
+  emailSignature: string | null;
+  emailFooter: string | null;
+  clientEmail: string | null;
+}
+
+// Update email settings input
+export interface UpdateEmailSettingsInput {
+  emailSignature?: string;
+  emailFooter?: string;
+  clientEmail?: string;
 }
 
 // Update number sequence input

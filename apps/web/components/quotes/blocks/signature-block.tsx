@@ -61,8 +61,8 @@ export function SignatureBlockContent({ block }: SignatureBlockContentProps) {
           <p className="text-xs text-muted-foreground mt-1">Required</p>
         )}
         {previewMode && (
-          <p className="text-sm text-primary mt-3">
-            Click here to sign when viewing the quote
+          <p className="text-sm text-muted-foreground mt-3 italic">
+            Signature will appear here when the client signs
           </p>
         )}
       </div>

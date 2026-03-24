@@ -147,6 +147,25 @@ async function deleteCloudflare(key: string): Promise<void> {
   );
 }
 
+// Bug #152: Maximum file size enforced at storage layer (10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+// Bug #153: Allowed MIME types for uploads
+const ALLOWED_CONTENT_TYPES = [
+  'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif',
+  'application/pdf',
+  'text/csv',
+];
+
+// Bug #151: Sanitize filenames to prevent special character issues
+function sanitizeFilename(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace special chars with underscore
+    .replace(/_{2,}/g, '_')            // Collapse multiple underscores
+    .replace(/^\.+/, '')               // Remove leading dots
+    .slice(0, 200);                    // Limit length
+}
+
 // Main storage functions
 export async function uploadFile(
   buffer: Buffer | Uint8Array,
@@ -154,6 +173,21 @@ export async function uploadFile(
 ): Promise<UploadResult> {
   const config = getStorageConfig();
   const bufferData = Buffer.from(buffer);
+
+  // Bug #152: Enforce file size limit
+  if (bufferData.length > MAX_FILE_SIZE) {
+    throw new Error(`File size (${Math.round(bufferData.length / 1024 / 1024)}MB) exceeds maximum of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+  }
+
+  // Bug #153: Validate content type if provided
+  if (options.contentType && !ALLOWED_CONTENT_TYPES.includes(options.contentType)) {
+    throw new Error(`Content type '${options.contentType}' is not allowed`);
+  }
+
+  // Bug #151: Sanitize filename
+  if (options.filename) {
+    options = { ...options, filename: sanitizeFilename(options.filename) };
+  }
 
   switch (config.provider) {
     case 'local':

@@ -2,8 +2,18 @@ import NextAuth from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import type { Adapter } from 'next-auth/adapters';
 import type { Session } from 'next-auth';
+import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 import { prisma } from '@quotecraft/database';
 import { authConfig } from './config';
+
+// HIGH #33: Validate NEXTAUTH_SECRET in production (skip during next build)
+if (
+  process.env.NODE_ENV === 'production' &&
+  !process.env.NEXTAUTH_SECRET &&
+  process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD
+) {
+  throw new Error('NEXTAUTH_SECRET is required in production');
+}
 
 const nextAuth = NextAuth({
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -11,7 +21,9 @@ const nextAuth = NextAuth({
     strategy: 'jwt',
     maxAge: 7 * 24 * 60 * 60, // 7 days — Bug #15: sessions expire instead of lasting forever
   },
-  trustHost: true,
+  // Bug #87: Only trust host header in environments with known-good reverse proxies
+  // (Vercel, Docker with Traefik). In local dev this is safe since there's no proxy.
+  trustHost: process.env.VERCEL === '1' || process.env.NODE_ENV === 'development' || process.env.TRUST_HOST === 'true',
   ...authConfig,
 });
 

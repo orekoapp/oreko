@@ -2,15 +2,12 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Send,
-  ExternalLink,
   CheckCircle2,
   Clock,
   Hourglass,
   Eye,
   Mail,
   FileText,
-  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ContractEditor } from '@/components/contracts/contract-editor';
+import { ContractDetailActions } from '@/components/contracts/contract-detail-actions';
 import { getContractInstanceById } from '@/lib/contracts/actions';
 import { formatDate } from '@/lib/utils';
 
@@ -30,13 +28,22 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
-  const instance = await getContractInstanceById(id);
-  return {
-    title: instance?.contractName || 'Contract',
-    description: 'View contract details',
-  };
+  if (!UUID_REGEX.test(id)) {
+    return { title: 'Contract Not Found' };
+  }
+  try {
+    const instance = await getContractInstanceById(id);
+    return {
+      title: instance?.contractName || 'Contract',
+      description: 'View contract details',
+    };
+  } catch {
+    return { title: 'Contract Not Found' };
+  }
 }
 
 const statusConfig: Record<
@@ -84,7 +91,6 @@ export default async function ContractDetailPage({ params }: PageProps) {
   }
 
   const config = statusConfig[instance.status] ?? statusConfig.draft;
-  const clientViewUrl = `/c/${instance.accessToken}`;
 
   return (
     <div className="container max-w-4xl py-6">
@@ -96,43 +102,26 @@ export default async function ContractDetailPage({ params }: PageProps) {
           </Link>
         </Button>
 
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold">{instance.contractName}</h1>
               <Badge variant={config?.variant ?? 'secondary'} className="gap-1">
                 {config?.icon}
                 {config?.label ?? instance.status}
               </Badge>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mt-1">
               For {instance.clientName} · Created {formatDate(instance.createdAt)}
             </p>
           </div>
-          <div className="flex gap-2">
-            {instance.status === 'draft' && (
-              <Button>
-                <Send className="mr-2 h-4 w-4" />
-                Send to Client
-              </Button>
-            )}
-            {instance.status !== 'draft' && (
-              <Button variant="outline" asChild>
-                <Link href={clientViewUrl} target="_blank">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View as Client
-                </Link>
-              </Button>
-            )}
-            {instance.pdfUrl && (
-              <Button variant="outline" asChild>
-                <a href={instance.pdfUrl} download>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF
-                </a>
-              </Button>
-            )}
-          </div>
+          <ContractDetailActions
+            contractId={instance.id}
+            contractName={instance.contractName}
+            status={instance.status}
+            accessToken={instance.accessToken}
+            pdfUrl={instance.pdfUrl}
+          />
         </div>
       </div>
 
@@ -181,7 +170,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        {(instance.signatureData || instance.status === 'pending') && (
+        {(instance.signatureData || instance.status === 'pending' || instance.status === 'signed') && (
           <Card>
             <CardHeader>
               <CardTitle>Signatures</CardTitle>
@@ -193,12 +182,14 @@ export default async function ContractDetailPage({ params }: PageProps) {
                   <p className="text-sm font-medium mb-2">Client Signature</p>
                   {instance.signatureData ? (
                     <div className="border rounded-lg p-4 bg-card">
-                      {instance.signatureData.type === 'drawn' ? (
+                      {instance.signatureData.type === 'drawn' && (instance.signatureData.value.startsWith('data:image/') || instance.signatureData.value.startsWith('https://')) ? (
                         <img
                           src={instance.signatureData.value}
                           alt="Client Signature"
                           className="max-h-24"
                         />
+                      ) : instance.signatureData.type === 'drawn' ? (
+                        <p className="text-sm text-muted-foreground">Invalid signature data</p>
                       ) : (
                         <p
                           className="text-3xl"
@@ -222,13 +213,27 @@ export default async function ContractDetailPage({ params }: PageProps) {
                 {/* Business Signature */}
                 <div>
                   <p className="text-sm font-medium mb-2">Business Signature</p>
-                  {instance.status === 'signed' ? (
+                  {instance.countersignatureData ? (
                     <div className="border rounded-lg p-4 bg-card">
-                      <p
-                        className="text-3xl"
-                        style={{ fontFamily: "'Brush Script MT', cursive" }}
-                      >
-                        Countersigned
+                      {instance.countersignatureData.type === 'drawn' && (instance.countersignatureData.value.startsWith('data:image/') || instance.countersignatureData.value.startsWith('https://')) ? (
+                        <img
+                          src={instance.countersignatureData.value}
+                          alt="Business Signature"
+                          className="max-h-24"
+                        />
+                      ) : instance.countersignatureData.type === 'drawn' ? (
+                        <p className="text-sm text-muted-foreground">Invalid signature data</p>
+                      ) : (
+                        <p
+                          className="text-3xl"
+                          style={{ fontFamily: "'Brush Script MT', cursive" }}
+                        >
+                          {instance.countersignatureData.value}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Countersigned by {instance.countersignatureData.name} on{' '}
+                        {formatDate(new Date(instance.countersignatureData.date))}
                       </p>
                     </div>
                   ) : (

@@ -3,7 +3,9 @@
 import { prisma } from '@quotecraft/database';
 import { headers } from 'next/headers';
 import type { InvoiceLineItem } from './types';
-import { notifyWorkspaceMembers } from '@/lib/notifications/actions';
+import { toNumber } from '@/lib/utils';
+import { notifyWorkspaceMembers } from '@/lib/notifications/internal';
+import { logger } from '@/lib/logger';
 
 /**
  * Public invoice data for client portal (subset of full invoice)
@@ -13,6 +15,7 @@ export interface PublicInvoiceData {
   invoiceNumber: string;
   status: string;
   title: string;
+  currency: string;
   issueDate: string;
   dueDate: string;
   isOverdue: boolean;
@@ -42,12 +45,16 @@ export interface PublicInvoiceData {
     email: string | null;
     phone: string | null;
     logoUrl: string | null;
-    address: unknown;
+    address: string | Record<string, string> | null;
+    website?: string | null;
   };
   branding: {
     primaryColor: string | null;
     accentColor: string | null;
     logoUrl: string | null;
+    companyName?: string;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
   } | null;
   lineItems: Array<{
     id: string;
@@ -127,10 +134,11 @@ export async function getInvoiceByAccessToken(
     }
 
     // Bug #22: Reject access to invoices created more than 365 days ago (general expiration)
+    // Low #59: TODO — Make expiry configurable per workspace (currently hardcoded 365/90 days)
     const daysSinceCreated = Math.ceil(
       (new Date().getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24)
     );
-    if (daysSinceCreated > 365 && invoice.status !== 'sent' && invoice.status !== 'viewed') {
+    if (daysSinceCreated > 365) {
       return { success: false, error: 'This invoice link has expired' };
     }
 
@@ -165,7 +173,7 @@ export async function getInvoiceByAccessToken(
     const settings = invoice.settings as Record<string, unknown>;
 
     // Voided invoices owe nothing regardless of DB value
-    const amountDue = invoice.status === 'voided' ? 0 : Number(invoice.amountDue);
+    const amountDue = invoice.status === 'voided' ? 0 : toNumber(invoice.amountDue);
 
     // Determine if online payment is possible
     const paymentConfigured = !!invoice.workspace.paymentSettings?.stripeOnboardingComplete;
@@ -180,16 +188,17 @@ export async function getInvoiceByAccessToken(
       invoiceNumber: invoice.invoiceNumber,
       status: isOverdue ? 'overdue' : invoice.status,
       title: invoice.title || 'Invoice',
+      currency: invoice.currency || (settings.currency as string) || 'USD',
       issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
       dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
       isOverdue,
       daysOverdue,
       totals: {
-        subtotal: Number(invoice.subtotal),
-        discountAmount: Number(invoice.discountAmount),
-        taxTotal: Number(invoice.taxTotal),
-        total: Number(invoice.total),
-        amountPaid: Number(invoice.amountPaid),
+        subtotal: toNumber(invoice.subtotal),
+        discountAmount: toNumber(invoice.discountAmount),
+        taxTotal: toNumber(invoice.taxTotal),
+        total: toNumber(invoice.total),
+        amountPaid: toNumber(invoice.amountPaid),
         amountDue,
       },
       settings: {
@@ -209,7 +218,7 @@ export async function getInvoiceByAccessToken(
         email: invoice.workspace.businessProfile?.email || null,
         phone: invoice.workspace.businessProfile?.phone || null,
         logoUrl: invoice.workspace.businessProfile?.logoUrl || null,
-        address: invoice.workspace.businessProfile?.address || null,
+        address: (invoice.workspace.businessProfile?.address as string | Record<string, string>) || null,
       },
       branding: invoice.workspace.brandingSettings
         ? {
@@ -222,15 +231,15 @@ export async function getInvoiceByAccessToken(
         id: item.id,
         name: item.name,
         description: item.description,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
-        amount: Number(item.amount),
+        quantity: toNumber(item.quantity),
+        rate: toNumber(item.rate),
+        amount: toNumber(item.amount),
         taxRate: item.taxRate ? Number(item.taxRate) : null,
-        taxAmount: Number(item.taxAmount),
+        taxAmount: toNumber(item.taxAmount),
       })),
       payments: invoice.payments.map((payment: (typeof invoice.payments)[number]) => ({
         id: payment.id,
-        amount: Number(payment.amount),
+        amount: toNumber(payment.amount),
         paymentMethod: payment.paymentMethod,
         processedAt: payment.processedAt?.toISOString() || null,
       })),
@@ -240,7 +249,7 @@ export async function getInvoiceByAccessToken(
 
     return { success: true, invoice: publicInvoice };
   } catch (error) {
-    console.error('Error fetching invoice by access token:', error);
+    logger.error({ err: error }, 'Error fetching invoice by access token');
     return { success: false, error: 'Failed to load invoice' };
   }
 }
@@ -252,22 +261,28 @@ export async function trackInvoiceView(accessToken: string): Promise<void> {
   try {
     const { ipAddress, userAgent } = await getRequestMetadata();
 
-    const invoice = await prisma.invoice.findUnique({
-      where: { accessToken },
+    // HIGH #3-7: Add deletedAt check to prevent tracking views on soft-deleted invoices
+    const invoice = await prisma.invoice.findFirst({
+      where: { accessToken, deletedAt: null },
       select: { id: true, status: true, viewedAt: true, workspaceId: true, invoiceNumber: true },
     });
 
     if (!invoice) return;
 
-    const isFirstView = invoice.viewedAt === null;
+    // Use atomic updateMany to prevent TOCTOU race on first view detection
+    // Only set viewedAt if it's currently null (atomic check-and-set)
+    const firstViewResult = await prisma.invoice.updateMany({
+      where: { accessToken, viewedAt: null },
+      data: { viewedAt: new Date() },
+    });
+    const isFirstView = firstViewResult.count > 0;
 
-    // Update view count and first view timestamp
+    // Update view count and status
     await prisma.$transaction([
       prisma.invoice.update({
         where: { accessToken },
         data: {
           viewCount: { increment: 1 },
-          ...(isFirstView && { viewedAt: new Date() }),
           ...(invoice.status === 'sent' && { status: 'viewed' }),
         },
       }),
@@ -296,7 +311,7 @@ export async function trackInvoiceView(accessToken: string): Promise<void> {
       }).catch(() => {});
     }
   } catch (error) {
-    console.error('Error tracking invoice view:', error);
+    logger.error({ err: error }, 'Error tracking invoice view');
     // Don't throw - view tracking should not break the page
   }
 }

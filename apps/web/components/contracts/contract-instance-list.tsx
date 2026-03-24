@@ -176,6 +176,7 @@ export function ContractInstanceList({
             <SelectItem value="sent">Sent</SelectItem>
             <SelectItem value="viewed">Viewed</SelectItem>
             <SelectItem value="signed">Signed</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -236,7 +237,7 @@ export function ContractInstanceList({
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More actions">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

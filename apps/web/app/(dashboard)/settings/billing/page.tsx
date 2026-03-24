@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { CheckCircle, AlertCircle, CreditCard, MoreHorizontal, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,8 +52,9 @@ export default async function BillingSettingsPage() {
                 <div>
                   <h3 className="font-semibold capitalize">{currentPlan === 'free' ? 'Free Plan' : `${currentPlan} Plan`}</h3>
                   <p className="text-sm text-muted-foreground">
+                    {/* Low #51: Fixed label — nextBillingDate is not the start date */}
                     {billing?.nextBillingDate
-                      ? `Started on ${new Date(billing.nextBillingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                      ? `Next billing on ${new Date(billing.nextBillingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                       : 'Free tier — no billing'}
                   </p>
                 </div>
@@ -72,7 +75,7 @@ export default async function BillingSettingsPage() {
                     </>
                   )}
                 </div>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="More actions">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </div>
@@ -160,7 +163,7 @@ export default async function BillingSettingsPage() {
                   <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 dark:text-green-400">
                     {invoice.status}
                   </Badge>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More actions">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </div>

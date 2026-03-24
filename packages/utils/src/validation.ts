@@ -8,6 +8,10 @@ export const emailSchema = z.string().email('Invalid email address').min(1, 'Ema
 /**
  * Password validation schema with requirements
  */
+// MEDIUM #41: Special character requirement intentionally omitted here.
+// Auth actions (register, reset-password) enforce additional strength checks
+// including special characters. This base schema is used for general validation
+// where we only require minimum complexity.
 export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
@@ -49,12 +53,18 @@ export const currencyCodeSchema = z
   .toUpperCase();
 
 /**
- * Positive decimal validation for money amounts
+ * Positive decimal validation for money amounts.
+ * Bug #145: Removed multipleOf(0.01) because 0.01 can't be represented exactly
+ * in IEEE 754 floating point, causing valid amounts like 0.1+0.2=0.30000000000000004
+ * to fail validation. Using refine with rounding instead.
  */
 export const moneySchema = z
   .number()
   .nonnegative('Amount cannot be negative')
-  .multipleOf(0.01, 'Amount must have at most 2 decimal places');
+  .refine(
+    (val) => Math.abs(val - Math.round(val * 100) / 100) < 0.001,
+    'Amount must have at most 2 decimal places'
+  );
 
 /**
  * Percentage validation (0-100)
@@ -73,12 +83,11 @@ export const uuidSchema = z.string().uuid('Invalid UUID format');
  * Address schema
  */
 export const addressSchema = z.object({
-  line1: z.string().min(1, 'Address line 1 is required'),
-  line2: z.string().optional(),
+  street: z.string().min(1, 'Street address is required'),
   city: z.string().min(1, 'City is required'),
   state: z.string().min(1, 'State is required'),
   postalCode: z.string().min(1, 'Postal code is required'),
-  country: z.string().min(2, 'Country is required').max(2, 'Use 2-letter country code'),
+  country: z.string().min(1, 'Country is required'),
 });
 
 /**

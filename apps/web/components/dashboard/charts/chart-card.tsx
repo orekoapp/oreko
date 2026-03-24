@@ -51,7 +51,7 @@ export function ChartCard({
           {(onExport || onExpand) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More actions">
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">More options</span>
                 </Button>

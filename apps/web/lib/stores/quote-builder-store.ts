@@ -80,6 +80,8 @@ interface QuoteBuilderActions {
 
 type QuoteBuilderStore = QuoteBuilderState & QuoteBuilderActions;
 
+// Note: default currency here is a fallback only; actual currency is set
+// during document init from workspace settings or the document's own currency.
 const DEFAULT_SETTINGS: QuoteSettings = {
   requireSignature: true,
   autoConvertToInvoice: false,
@@ -109,6 +111,7 @@ const createEmptyDocument = (): QuoteDocument => ({
   quoteNumber: '',
   status: 'draft',
   title: 'Untitled Quote',
+  currency: 'USD',
   issueDate: new Date().toISOString().split('T')[0] ?? new Date().toISOString().slice(0, 10),
   expirationDate: null,
   blocks: [
@@ -272,6 +275,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
               }
             }
           });
+          get().pushHistory(); // Bug #50: Push undo history on block updates
           get().recalculateTotals();
         },
 
@@ -413,7 +417,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
               // Remove any future history if we're not at the end
               state.history = state.history.slice(0, state.historyIndex + 1);
               // Add current state
-              state.history.push(structuredClone(state.document.blocks));
+              state.history.push(JSON.parse(JSON.stringify(state.document.blocks)));
               state.historyIndex = state.history.length - 1;
               // Limit history size
               if (state.history.length > 50) {
@@ -430,7 +434,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
               state.historyIndex--;
               const historyEntry = state.history[state.historyIndex];
               if (historyEntry) {
-                state.document.blocks = structuredClone(historyEntry);
+                state.document.blocks = JSON.parse(JSON.stringify(historyEntry));
               }
               state.isDirty = true;
             }
@@ -444,7 +448,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
               state.historyIndex++;
               const historyEntry = state.history[state.historyIndex];
               if (historyEntry) {
-                state.document.blocks = structuredClone(historyEntry);
+                state.document.blocks = JSON.parse(JSON.stringify(historyEntry));
               }
               state.isDirty = true;
             }
@@ -517,6 +521,23 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
         }),
         // Don't persist to localStorage if document is empty or saved
         skipHydration: false,
+        // Bug #66: On hydration, check if persisted document ID matches current URL.
+        // If not, the store will be re-initialized by initDocument() with the correct data.
+        onRehydrateStorage: () => {
+          return (state) => {
+            if (state?.document?.id && typeof window !== 'undefined') {
+              // Check if URL contains a quote ID that differs from persisted doc
+              const urlMatch = window.location.pathname.match(/\/quotes\/([^/]+)/);
+              const urlQuoteId = urlMatch?.[1];
+              if (urlQuoteId && urlQuoteId !== state.document.id && !state.document.id.startsWith('temp-')) {
+                // Reset persisted state - the page will call initDocument with correct data
+                state.document = null;
+                state.isDirty = false;
+                state.selectedBlockId = null;
+              }
+            }
+          };
+        },
       }
     ),
     { name: 'QuoteBuilder' }

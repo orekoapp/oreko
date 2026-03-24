@@ -16,6 +16,8 @@ import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -57,6 +59,7 @@ interface SendEmailDialogProps {
   // Preview data
   businessName?: string;
   total?: number;
+  currency?: string;
   dueDate?: string;
   lineItems?: LineItemPreview[];
   notes?: string;
@@ -68,11 +71,15 @@ interface SendEmailDialogProps {
 const ACCENT = '#3786b3';
 const ACCENT_LIGHT = '#e3f2fa';
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+    currency,
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 function formatDate(dateString: string): string {
@@ -93,8 +100,9 @@ export function SendEmailDialog({
   documentNumber,
   recipientEmail,
   recipientName,
-  businessName = 'Robert P. Loving',
+  businessName = 'Your Business',
   total = 0,
+  currency: docCurrency = 'USD',
   dueDate,
   lineItems = [],
   notes,
@@ -131,11 +139,77 @@ export function SendEmailDialog({
     }
   }, [open, templatesLoaded]);
 
+  const stripHtml = (html: string): string => {
+    // First decode all HTML entities (handles double-encoded HTML)
+    let text = html
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+    // Decode again in case of double-encoding
+    text = text
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+    // Now strip all HTML tags
+    text = text
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p>/gi, '\n\n')
+      .replace(/<\/?(p|div|h[1-6]|ul|ol|li|blockquote|section|article|header|footer|main|nav|aside|figure|figcaption|details|summary)[^>]*>/gi, '\n')
+      .replace(/<\/?(strong|b|em|i|u|s|strike|del|ins|sub|sup|small|mark|abbr|code|kbd|samp|var|span)[^>]*>/gi, '')
+      .replace(/<a[^>]*href="([^"]*)"[^>]*>[^<]*<\/a>/gi, '$1')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    return text;
+  };
+
+  const replaceVariables = (text: string): string => {
+    return text
+      .replace(/\{\{client_name\}\}/gi, recipientName || '')
+      .replace(/\{\{clientName\}\}/gi, recipientName || '')
+      .replace(/\{\{business_name\}\}/gi, businessName || '')
+      .replace(/\{\{businessName\}\}/gi, businessName || '')
+      .replace(/\{\{document_number\}\}/gi, documentNumber || '')
+      .replace(/\{\{documentNumber\}\}/gi, documentNumber || '')
+      .replace(/\{\{quote_number\}\}/gi, documentNumber || '')
+      .replace(/\{\{quoteNumber\}\}/gi, documentNumber || '')
+      .replace(/\{\{invoice_number\}\}/gi, documentNumber || '')
+      .replace(/\{\{invoiceNumber\}\}/gi, documentNumber || '')
+      .replace(/\{\{quote_total\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{quoteTotal\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{invoice_total\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{invoiceTotal\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{total\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{amount\}\}/gi, total ? formatCurrency(total, docCurrency) : formatCurrency(0, docCurrency))
+      .replace(/\{\{due_date\}\}/gi, dueDate ? formatDate(dueDate) : '')
+      .replace(/\{\{dueDate\}\}/gi, dueDate ? formatDate(dueDate) : '')
+      .replace(/\{\{quote_valid_until\}\}/gi, dueDate ? formatDate(dueDate) : '')
+      .replace(/\{\{quoteValidUntil\}\}/gi, dueDate ? formatDate(dueDate) : '')
+      .replace(/\{\{contract_name\}\}/gi, contractName || '')
+      .replace(/\{\{contractName\}\}/gi, contractName || '')
+      .replace(/\{\{quote_name\}\}/gi, contractName || documentNumber || '')
+      .replace(/\{\{quoteName\}\}/gi, contractName || documentNumber || '')
+      .replace(/\{\{#if\s+\w+\}\}[\s\S]*?\{\{\/if\}\}/gi, '')
+      .replace(/\{\{quote_url\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{quoteUrl\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{invoice_url\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{invoiceUrl\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{contract_url\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{contractUrl\}\}/gi, '[Link will be included automatically]')
+      .replace(/\{\{message\}\}/gi, '');
+  };
+
   const handleImportTemplate = async (templateId: string) => {
     const detail = await getEmailTemplateById(templateId);
     if (detail) {
-      setSubject(detail.subject);
-      setMessage(detail.body);
+      setSubject(replaceVariables(detail.subject));
+      setMessage(replaceVariables(stripHtml(detail.body)));
       toast.success('Template imported');
     }
   };
@@ -144,8 +218,12 @@ export function SendEmailDialog({
   const effectiveMessage = message || `Your message preview will appear here...`;
 
   const handleAddRecipient = () => {
-    if (!newRecipientEmail.trim()) return;
-    const name = newRecipientEmail.split('@')[0] || 'Recipient';
+    const email = newRecipientEmail.trim();
+    if (!email) return;
+    // Validate email format before adding
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return;
+    const name = email.split('@')[0] || 'Recipient';
     setRecipients((prev) => [
       ...prev,
       { id: Date.now().toString(), name, email: newRecipientEmail.trim() },
@@ -159,6 +237,7 @@ export function SendEmailDialog({
     setRecipients((prev) => prev.filter((r) => r.id !== id));
   };
 
+  // Bug #105: Pass custom recipients, subject, and message to server actions
   const handleSend = async () => {
     if (recipients.length === 0) {
       toast.error('Please add at least one recipient');
@@ -167,14 +246,20 @@ export function SendEmailDialog({
 
     setIsSending(true);
     try {
+      const emailOptions = {
+        recipients: recipients.map((r) => r.email),
+        subject: subject || undefined,
+        message: message || undefined,
+      };
+
       let result: { success: boolean; error?: string; emailSent?: boolean };
 
       if (type === 'quote') {
-        result = await sendQuote(documentId);
+        result = await sendQuote(documentId, emailOptions);
       } else if (type === 'invoice') {
-        result = await sendInvoice(documentId);
+        result = await sendInvoice(documentId, emailOptions);
       } else {
-        const contractResult = await sendContractInstance(documentId);
+        const contractResult = await sendContractInstance(documentId, emailOptions);
         result = { success: true, emailSent: contractResult.emailSent };
       }
 
@@ -214,10 +299,10 @@ export function SendEmailDialog({
         {/* ─── Header ───────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-background shrink-0">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">Send {label}</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <DialogTitle className="text-xl font-semibold tracking-tight">Send {label}</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-0.5">
               {label} #{documentNumber}
-            </p>
+            </DialogDescription>
           </div>
         </div>
 
@@ -437,13 +522,17 @@ export function SendEmailDialog({
 
                 {/* Message preview */}
                 <div className="px-6 pb-4">
+                  {/* CR #24: Split once, not twice per render */}
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {message ? message.split('\n').map((line, i) => (
-                      <span key={i}>
-                        {line}
-                        {i < message.split('\n').length - 1 && <br />}
-                      </span>
-                    )) : (
+                    {message ? (() => {
+                      const lines = message.split('\n');
+                      return lines.map((line, i) => (
+                        <span key={i}>
+                          {line}
+                          {i < lines.length - 1 && <br />}
+                        </span>
+                      ));
+                    })() : (
                       <span className="italic">Your message preview will appear here...</span>
                     )}
                   </p>
@@ -491,7 +580,7 @@ export function SendEmailDialog({
                               {item.name || 'Untitled Item'}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {item.quantity} &times; {formatCurrency(item.rate)}
+                              {item.quantity} &times; {formatCurrency(item.rate, docCurrency)}
                               {item.description && (
                                 <span className="ml-1.5 text-muted-foreground/70">
                                   &middot; {item.description}
@@ -500,7 +589,7 @@ export function SendEmailDialog({
                             </p>
                           </div>
                           <span className="ml-4 font-medium tabular-nums text-sm">
-                            {formatCurrency(item.amount)}
+                            {formatCurrency(item.amount, docCurrency)}
                           </span>
                         </div>
                       ))}
@@ -513,7 +602,7 @@ export function SendEmailDialog({
                     <div className="flex justify-between text-sm font-semibold">
                       <span>{type === 'invoice' ? 'Total Due' : 'Total'}</span>
                       <span className="tabular-nums" style={{ color: ACCENT }}>
-                        {formatCurrency(total)}
+                        {formatCurrency(total, docCurrency)}
                       </span>
                     </div>
                   )}

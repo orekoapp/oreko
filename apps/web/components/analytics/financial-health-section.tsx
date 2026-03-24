@@ -16,20 +16,24 @@ interface FinancialHealthSectionProps {
   paymentAging: PaymentAgingData;
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 const AGING_BUCKETS_CONFIG = [
-  { label: 'Current', color: 'bg-emerald-500' },
-  { label: '1-30 Days', color: 'bg-amber-400' },
-  { label: '31-60 Days', color: 'bg-orange-500' },
-  { label: '60+ Days', color: 'bg-red-500' },
+  { label: 'Current', color: 'bg-emerald-500', dot: 'bg-emerald-500' },
+  { label: '1-30 Days', color: 'bg-amber-400', dot: 'bg-amber-400' },
+  { label: '31-60 Days', color: 'bg-orange-500', dot: 'bg-orange-500' },
+  { label: '60+ Days', color: 'bg-red-500', dot: 'bg-red-500' },
 ] as const;
 
 export function FinancialHealthSection({
@@ -56,70 +60,62 @@ export function FinancialHealthSection({
   }, [paymentAging]);
 
   const healthStatus = useMemo(() => {
-    if (outstandingAmount === 0) return { label: 'Excellent', color: 'text-emerald-600', icon: CheckCircle2 };
+    if (outstandingAmount === 0) return { label: 'Healthy', color: 'text-emerald-600 dark:text-emerald-400', icon: CheckCircle2 };
     const overdueRatio = (overdueAmount / outstandingAmount) * 100;
-    if (overdueRatio < 10) return { label: 'Excellent', color: 'text-emerald-600', icon: CheckCircle2 };
-    if (overdueRatio < 25) return { label: 'Good', color: 'text-amber-500', icon: Clock };
-    return { label: 'Attention', color: 'text-red-500', icon: AlertTriangle };
+    if (overdueRatio < 10) return { label: 'Healthy', color: 'text-emerald-600 dark:text-emerald-400', icon: CheckCircle2 };
+    if (overdueRatio < 25) return { label: 'Fair', color: 'text-amber-500', icon: Clock };
+    return { label: 'Needs Attention', color: 'text-red-500 dark:text-red-400', icon: AlertTriangle };
   }, [outstandingAmount, overdueAmount]);
 
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+      <CardHeader className="pb-2">
+        <div className="flex items-baseline justify-between">
           <CardTitle className="text-sm font-medium">Financial Health</CardTitle>
           <div className={cn('flex items-center gap-1.5 text-xs font-medium', healthStatus.color)}>
-            <healthStatus.icon className="h-3.5 w-3.5" />
+            <healthStatus.icon className="h-3 w-3" />
             <span>{healthStatus.label}</span>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Key Metrics - 2x2 grid */}
-        <div className="grid grid-cols-2 gap-4">
+      <CardContent>
+        {/* Key metrics row */}
+        <div className="flex items-center gap-6 mb-5">
           <div>
-            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Outstanding</p>
-            <p className="text-lg font-semibold mt-0.5">{formatCurrency(outstandingAmount)}</p>
+            <p className="text-2xl font-semibold tracking-tight">{formatCurrency(outstandingAmount)}</p>
+            <p className="text-xs text-muted-foreground">Outstanding</p>
           </div>
+          <div className="h-8 w-px bg-border" />
           <div>
-            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Overdue</p>
-            <p className="text-lg font-semibold text-red-500 mt-0.5">{formatCurrency(overdueAmount)}</p>
+            <p className="text-2xl font-semibold tracking-tight text-red-500 dark:text-red-400">{formatCurrency(overdueAmount)}</p>
+            <p className="text-xs text-muted-foreground">Overdue</p>
           </div>
+          <div className="h-8 w-px bg-border" />
           <div>
-            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Collected (MTD)</p>
-            <p className="text-lg font-semibold text-emerald-600 mt-0.5">{formatCurrency(revenueThisMonth)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Collection Rate</p>
-            <p className="text-lg font-semibold mt-0.5">{collectionRate.toFixed(0)}%</p>
+            <p className="text-2xl font-semibold tracking-tight">{collectionRate.toFixed(0)}%</p>
+            <p className="text-xs text-muted-foreground">Collection rate</p>
           </div>
         </div>
 
-        {/* Aging Buckets */}
+        {/* Aging breakdown */}
         <div className="space-y-2.5">
-          <h4 className="text-xs text-muted-foreground/70 uppercase tracking-wider">Receivables Aging</h4>
           {agingBuckets.map((bucket, i) => {
             const config = AGING_BUCKETS_CONFIG[i]!;
             return (
-              <div key={config.label} className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-1.5 w-1.5 rounded-full ${config.color}`} />
-                    <span className="text-muted-foreground">{config.label}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-muted-foreground/60 tabular-nums">{bucket.percentage.toFixed(0)}%</span>
-                    <span className="font-medium tabular-nums w-16 text-right">
-                      {formatCurrency(bucket.amount)}
-                    </span>
-                  </div>
+              <div key={config.label} className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 w-20 shrink-0">
+                  <span className={`h-1.5 w-1.5 rounded-full ${config.dot} shrink-0`} />
+                  <span className="text-xs text-muted-foreground">{config.label}</span>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ease-out ${config.color}`}
                     style={{ width: `${Math.max(bucket.percentage, bucket.amount > 0 ? 3 : 0)}%` }}
                   />
                 </div>
+                <span className="text-xs font-medium tabular-nums w-14 text-right">
+                  {formatCurrency(bucket.amount)}
+                </span>
               </div>
             );
           })}

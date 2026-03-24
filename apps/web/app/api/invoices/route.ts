@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/invoices
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
                    request.headers.get('x-real-ip') ||
                    'unknown';
-  const rateLimitResult = checkRateLimit(`invoices:${clientIp}`, defaultRateLimitOptions);
+  const rateLimitResult = await checkRateLimit(`invoices:${clientIp}`, defaultRateLimitOptions);
   const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
 
   if (rateLimitResult.limited) {
@@ -86,14 +87,14 @@ export async function GET(request: NextRequest) {
         (sum, payment) => sum + Number(payment.amount),
         0
       );
-      const total = Number(invoice.total);
-      const amountDue = total - amountPaid;
+      const invoiceTotal = Number(invoice.total);
+      const amountDue = invoiceTotal - amountPaid;
 
       return {
         id: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
         status: invoice.status,
-        total,
+        total: invoiceTotal,
         subtotal: Number(invoice.subtotal),
         taxTotal: Number(invoice.taxTotal),
         amountPaid,
@@ -116,7 +117,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching invoices:', error);
+    logger.error({ err: error }, 'Error fetching invoices');
     return NextResponse.json(
       { error: 'Failed to fetch invoices' },
       { status: 500 }

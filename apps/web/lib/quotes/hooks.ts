@@ -18,9 +18,13 @@ export function useAutoSave(quoteId: string | null, debounceMs = 2000) {
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string | null>(null);
+  // Bug #58: Lock to prevent concurrent autosave and manual save
+  const isSavingRef = useRef(false);
 
   const save = useCallback(async () => {
     if (!quoteId || !document || !isDirty) return;
+    // Bug #58: Prevent concurrent saves
+    if (isSavingRef.current) return;
 
     // Create a hash of the current state to avoid duplicate saves
     const stateHash = JSON.stringify({
@@ -33,6 +37,7 @@ export function useAutoSave(quoteId: string | null, debounceMs = 2000) {
     if (stateHash === lastSavedRef.current) return;
 
     try {
+      isSavingRef.current = true;
       setSaving(true);
 
       await updateQuote(quoteId, {
@@ -49,6 +54,8 @@ export function useAutoSave(quoteId: string | null, debounceMs = 2000) {
     } catch (error) {
       console.error('Auto-save failed:', error);
       // Could show a toast notification here
+    } finally {
+      isSavingRef.current = false;
     }
   }, [quoteId, document, isDirty, setSaving, markSaved]);
 

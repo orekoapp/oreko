@@ -30,6 +30,10 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import {
+  updateRecurringSettings,
+  getRecurringSettings,
+} from '@/lib/invoices/recurring';
 
 export interface RecurringSettings {
   enabled: boolean;
@@ -44,6 +48,8 @@ interface RecurringSettingsDialogProps {
   invoiceId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Optional initial settings passed from server component. If not provided, settings are fetched on open. */
+  initialSettings?: RecurringSettings | null;
   onSave?: (settings: RecurringSettings) => void;
 }
 
@@ -54,21 +60,6 @@ const frequencies = [
   { value: 'quarterly', label: 'Quarterly' },
   { value: 'yearly', label: 'Yearly' },
 ];
-
-function getStorageKey(invoiceId: string) {
-  return `qc-recurring-${invoiceId}`;
-}
-
-function loadSettings(invoiceId: string): RecurringSettings {
-  if (typeof window === 'undefined') return getDefaults();
-  try {
-    const stored = localStorage.getItem(getStorageKey(invoiceId));
-    if (stored) return JSON.parse(stored);
-  } catch {
-    // ignore
-  }
-  return getDefaults();
-}
 
 function getDefaults(): RecurringSettings {
   return {
@@ -85,8 +76,10 @@ export function RecurringSettingsDialog({
   invoiceId,
   open,
   onOpenChange,
+  initialSettings,
   onSave,
 }: RecurringSettingsDialogProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [frequency, setFrequency] = useState('monthly');
@@ -95,18 +88,50 @@ export function RecurringSettingsDialog({
   const [noEndDate, setNoEndDate] = useState(true);
   const [autoSend, setAutoSend] = useState(false);
 
-  // Load from localStorage when dialog opens
+  // Load settings from server when dialog opens
   useEffect(() => {
-    if (open) {
-      const settings = loadSettings(invoiceId);
-      setEnabled(settings.enabled);
-      setFrequency(settings.frequency);
-      setStartDate(new Date(settings.startDate));
-      setEndDate(settings.endDate ? new Date(settings.endDate) : undefined);
-      setNoEndDate(settings.noEndDate);
-      setAutoSend(settings.autoSend);
+    if (!open) return;
+
+    // If initial settings are passed from server component, use them
+    if (initialSettings) {
+      setEnabled(initialSettings.enabled);
+      setFrequency(initialSettings.frequency);
+      setStartDate(new Date(initialSettings.startDate));
+      setEndDate(initialSettings.endDate ? new Date(initialSettings.endDate) : undefined);
+      setNoEndDate(initialSettings.noEndDate);
+      setAutoSend(initialSettings.autoSend);
+      return;
     }
-  }, [open, invoiceId]);
+
+    // Otherwise, fetch from server
+    setIsLoading(true);
+    getRecurringSettings(invoiceId)
+      .then((settings) => {
+        if (settings) {
+          setEnabled(settings.enabled);
+          setFrequency(settings.frequency);
+          setStartDate(new Date(settings.startDate));
+          setEndDate(settings.endDate ? new Date(settings.endDate) : undefined);
+          setNoEndDate(settings.noEndDate);
+          setAutoSend(settings.autoSend);
+        } else {
+          // Reset to defaults
+          const defaults = getDefaults();
+          setEnabled(defaults.enabled);
+          setFrequency(defaults.frequency);
+          setStartDate(new Date(defaults.startDate));
+          setEndDate(undefined);
+          setNoEndDate(defaults.noEndDate);
+          setAutoSend(defaults.autoSend);
+        }
+      })
+      .catch(() => {
+        toast.error('Failed to load recurring settings');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [open, invoiceId, initialSettings]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -120,12 +145,31 @@ export function RecurringSettingsDialog({
       autoSend,
     };
 
-    // Save locally for now — recurring invoices backend not yet implemented
-    localStorage.setItem(getStorageKey(invoiceId), JSON.stringify(settings));
-    setIsSaving(false);
-    toast.info('Recurring invoices are not yet fully supported. Settings saved locally only.');
-    onSave?.(settings);
-    onOpenChange(false);
+    try {
+      const result = await updateRecurringSettings(invoiceId, {
+        enabled: settings.enabled,
+        frequency: settings.frequency,
+        startDate: settings.startDate,
+        endDate: settings.endDate,
+        autoSend: settings.autoSend,
+      });
+
+      if (result.success) {
+        toast.success(
+          settings.enabled
+            ? 'Recurring settings saved successfully'
+            : 'Recurring disabled'
+        );
+        onSave?.(settings);
+        onOpenChange(false);
+      } else {
+        toast.error(result.error || 'Failed to save recurring settings');
+      }
+    } catch {
+      toast.error('Failed to save recurring settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -141,117 +185,123 @@ export function RecurringSettingsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-5 py-4">
-          {/* Enable Toggle */}
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-sm font-medium">Enable Recurring</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Automatically generate this invoice on schedule
-              </p>
-            </div>
-            <Switch checked={enabled} onCheckedChange={setEnabled} />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-
-          {enabled && (
-            <>
-              {/* Frequency */}
-              <div className="grid gap-2">
-                <Label>Frequency</Label>
-                <Select value={frequency} onValueChange={setFrequency}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {frequencies.map((f) => (
-                      <SelectItem key={f.value} value={f.value}>
-                        {f.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        ) : (
+          <div className="grid gap-5 py-4">
+            {/* Enable Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">Enable Recurring</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Automatically generate this invoice on schedule
+                </p>
               </div>
+              <Switch checked={enabled} onCheckedChange={setEnabled} />
+            </div>
 
-              {/* Start Date */}
-              <div className="grid gap-2">
-                <Label>Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !startDate && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, 'PPP') : 'Pick a date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={(d) => d && setStartDate(d)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* End Date */}
-              <div className="grid gap-2">
-                <Label>End Date</Label>
-                <div className="flex items-center gap-2 mb-2">
-                  <Checkbox
-                    id="no-end-date"
-                    checked={noEndDate}
-                    onCheckedChange={(checked) => setNoEndDate(!!checked)}
-                  />
-                  <label htmlFor="no-end-date" className="text-sm text-muted-foreground cursor-pointer">
-                    No end date
-                  </label>
+            {enabled && (
+              <>
+                {/* Frequency */}
+                <div className="grid gap-2">
+                  <Label>Frequency</Label>
+                  <Select value={frequency} onValueChange={setFrequency}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {frequencies.map((f) => (
+                        <SelectItem key={f.value} value={f.value}>
+                          {f.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                {!noEndDate && (
+
+                {/* Start Date */}
+                <div className="grid gap-2">
+                  <Label>Start Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className={cn(
                           'w-full justify-start text-left font-normal',
-                          !endDate && 'text-muted-foreground'
+                          !startDate && 'text-muted-foreground'
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, 'PPP') : 'Pick an end date'}
+                        {startDate ? format(startDate, 'PPP') : 'Pick a date'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        disabled={(date) => date < startDate}
+                        selected={startDate}
+                        onSelect={(d) => d && setStartDate(d)}
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
-                )}
-              </div>
-
-              {/* Auto-send */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-medium">Auto-send to Client</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Automatically email the invoice when generated
-                  </p>
                 </div>
-                <Switch checked={autoSend} onCheckedChange={setAutoSend} />
-              </div>
-            </>
-          )}
-        </div>
+
+                {/* End Date */}
+                <div className="grid gap-2">
+                  <Label>End Date</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Checkbox
+                      id="no-end-date"
+                      checked={noEndDate}
+                      onCheckedChange={(checked) => setNoEndDate(!!checked)}
+                    />
+                    <label htmlFor="no-end-date" className="text-sm text-muted-foreground cursor-pointer">
+                      No end date
+                    </label>
+                  </div>
+                  {!noEndDate && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            'w-full justify-start text-left font-normal',
+                            !endDate && 'text-muted-foreground'
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {endDate ? format(endDate, 'PPP') : 'Pick an end date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={endDate}
+                          onSelect={setEndDate}
+                          disabled={(date) => date < startDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+
+                {/* Auto-send */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Auto-send to Client</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Automatically email the invoice when generated
+                    </p>
+                  </div>
+                  <Switch checked={autoSend} onCheckedChange={setAutoSend} />
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <DialogFooter>
           <Button
@@ -262,7 +312,7 @@ export function RecurringSettingsDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button onClick={handleSave} disabled={isSaving || isLoading}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Settings
           </Button>

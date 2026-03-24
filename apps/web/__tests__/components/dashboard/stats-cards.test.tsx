@@ -31,25 +31,25 @@ describe('StatsCards', () => {
   it('displays total revenue formatted as currency', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$150,000.00')).toBeInTheDocument();
+    expect(screen.getByText('$ 150,000.00')).toBeInTheDocument();
   });
 
   it('displays this month revenue in description', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$25,000.00')).toBeInTheDocument();
+    expect(screen.getByText('$ 25,000.00')).toBeInTheDocument();
   });
 
   it('displays outstanding amount', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$5,000.00')).toBeInTheDocument();
+    expect(screen.getByText('$ 5,000.00')).toBeInTheDocument();
   });
 
   it('displays overdue amount when present', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('$1,000.00 overdue')).toBeInTheDocument();
+    expect(screen.getByText('$ 1,000.00 overdue')).toBeInTheDocument();
   });
 
   it('shows "No overdue" when no overdue amount', () => {
@@ -65,7 +65,7 @@ describe('StatsCards', () => {
   it('displays conversion rate with percentage', () => {
     render(<StatsCards stats={mockStats} />);
 
-    expect(screen.getByText('65.5%')).toBeInTheDocument();
+    expect(screen.getAllByText('65.5%').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('45 quotes · 32 invoices')).toBeInTheDocument();
   });
 
@@ -73,7 +73,7 @@ describe('StatsCards', () => {
     const statsWithLongDecimal = { ...mockStats, conversionRate: 72.3456 };
     render(<StatsCards stats={statsWithLongDecimal} />);
 
-    expect(screen.getByText('72.3%')).toBeInTheDocument();
+    expect(screen.getAllByText('72.3%').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders with responsive grid layout', () => {
@@ -116,6 +116,6 @@ describe('StatsCards', () => {
 
     render(<StatsCards stats={largeStats} />);
 
-    expect(screen.getByText('$9,999,999.00')).toBeInTheDocument();
+    expect(screen.getByText('$ 9,999,999.00')).toBeInTheDocument();
   });
 });

@@ -13,10 +13,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Async server component — fetches sidebar data and renders
 async function SidebarWithData({ user }: { user: { name: string | null; email: string; avatarUrl: string | null } }) {
-  const [workspaces, activeWorkspace] = await Promise.all([
+  const results = await Promise.allSettled([
     getUserWorkspaces(),
     getActiveWorkspace(),
   ]);
+  const workspaces = results[0].status === 'fulfilled' ? results[0].value : [];
+  const activeWorkspaceResult = results[1].status === 'fulfilled' ? results[1].value : null;
+
+  // If we can't fetch workspace data, fall back to first workspace or redirect
+  if (!activeWorkspaceResult) {
+    redirect('/login');
+  }
+  const activeWorkspace = activeWorkspaceResult!;
 
   return (
     <AppSidebar
@@ -33,13 +41,15 @@ async function SidebarWithData({ user }: { user: { name: string | null; email: s
 
 // Async server component — fetches header data and renders
 async function HeaderWithData({ user }: { user: { id: string; email: string; name: string | null; avatarUrl: string | null } }) {
-  const [unreadCount, notifications] = await Promise.all([
+  const headerResults = await Promise.allSettled([
     getUnreadNotificationCount(),
     getNotifications(10),
   ]);
+  const unreadCount = headerResults[0].status === 'fulfilled' ? headerResults[0].value : 0;
+  const notificationsResult = headerResults[1].status === 'fulfilled' ? headerResults[1].value : { data: [], total: 0 };
 
   return (
-    <AppHeader user={user} unreadCount={unreadCount} notifications={notifications} />
+    <AppHeader user={user} unreadCount={unreadCount} notifications={notificationsResult.data} />
   );
 }
 

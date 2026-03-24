@@ -2,6 +2,7 @@
 
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
+import { toNumber } from '@/lib/utils';
 import type { QuotePdfData, InvoicePdfData } from './types';
 
 /**
@@ -45,10 +46,10 @@ export async function getQuotePdfData(quoteId: string): Promise<QuotePdfData | n
     issueDate: quote.issueDate.toISOString().split('T')[0] ?? '',
     expirationDate: quote.expirationDate?.toISOString().split('T')[0] ?? null,
     totals: {
-      subtotal: Number(quote.subtotal),
-      discountAmount: Number(quote.discountAmount),
-      taxTotal: Number(quote.taxTotal),
-      total: Number(quote.total),
+      subtotal: toNumber(quote.subtotal),
+      discountAmount: toNumber(quote.discountAmount),
+      taxTotal: toNumber(quote.taxTotal),
+      total: toNumber(quote.total),
     },
     notes: quote.notes,
     terms: quote.terms,
@@ -76,13 +77,13 @@ export async function getQuotePdfData(quoteId: string): Promise<QuotePdfData | n
       id: item.id,
       name: item.name,
       description: item.description,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-      amount: Number(item.amount),
+      quantity: toNumber(item.quantity),
+      rate: toNumber(item.rate),
+      amount: toNumber(item.amount),
       taxRate: item.taxRate ? Number(item.taxRate) : null,
-      taxAmount: Number(item.taxAmount),
+      taxAmount: toNumber(item.taxAmount),
     })),
-    currency: (settings?.currency as string) ?? 'USD',
+    currency: quote.currency || (settings?.currency as string) || 'USD',
     signature: signatureData
       ? {
           signerName: signatureData.signerName as string,
@@ -97,6 +98,13 @@ export async function getQuotePdfData(quoteId: string): Promise<QuotePdfData | n
  * Get quote data for PDF generation by access token (public)
  */
 export async function getQuotePdfDataByToken(accessToken: string): Promise<QuotePdfData | null> {
+  // MEDIUM #30: Rate limit public PDF endpoints to prevent abuse
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = await checkRateLimit(`pdf-quote:${accessToken}`, { limit: 20, windowMs: 60000 });
+  if (rateLimitResult.limited) {
+    return null;
+  }
+
   const quote = await prisma.quote.findFirst({
     where: {
       accessToken,
@@ -120,6 +128,11 @@ export async function getQuotePdfDataByToken(accessToken: string): Promise<Quote
     return null;
   }
 
+  // HIGH #16: Reject voided/expired quotes from public PDF access
+  if (quote.status === 'voided' || quote.status === 'expired') {
+    return null;
+  }
+
   const settings = quote.settings as Record<string, unknown>;
   const signatureData = quote.signatureData as Record<string, unknown> | null;
 
@@ -131,10 +144,10 @@ export async function getQuotePdfDataByToken(accessToken: string): Promise<Quote
     issueDate: quote.issueDate.toISOString().split('T')[0] ?? '',
     expirationDate: quote.expirationDate?.toISOString().split('T')[0] ?? null,
     totals: {
-      subtotal: Number(quote.subtotal),
-      discountAmount: Number(quote.discountAmount),
-      taxTotal: Number(quote.taxTotal),
-      total: Number(quote.total),
+      subtotal: toNumber(quote.subtotal),
+      discountAmount: toNumber(quote.discountAmount),
+      taxTotal: toNumber(quote.taxTotal),
+      total: toNumber(quote.total),
     },
     notes: quote.notes,
     terms: quote.terms,
@@ -162,13 +175,13 @@ export async function getQuotePdfDataByToken(accessToken: string): Promise<Quote
       id: item.id,
       name: item.name,
       description: item.description,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-      amount: Number(item.amount),
+      quantity: toNumber(item.quantity),
+      rate: toNumber(item.rate),
+      amount: toNumber(item.amount),
       taxRate: item.taxRate ? Number(item.taxRate) : null,
-      taxAmount: Number(item.taxAmount),
+      taxAmount: toNumber(item.taxAmount),
     })),
-    currency: (settings?.currency as string) ?? 'USD',
+    currency: quote.currency || (settings?.currency as string) || 'USD',
     signature: signatureData
       ? {
           signerName: signatureData.signerName as string,
@@ -222,12 +235,12 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
     issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
     dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
     totals: {
-      subtotal: Number(invoice.subtotal),
-      discountAmount: Number(invoice.discountAmount),
-      taxTotal: Number(invoice.taxTotal),
-      total: Number(invoice.total),
-      amountPaid: Number(invoice.amountPaid),
-      amountDue: Number(invoice.amountDue),
+      subtotal: toNumber(invoice.subtotal),
+      discountAmount: toNumber(invoice.discountAmount),
+      taxTotal: toNumber(invoice.taxTotal),
+      total: toNumber(invoice.total),
+      amountPaid: toNumber(invoice.amountPaid),
+      amountDue: toNumber(invoice.amountDue),
     },
     notes: invoice.notes,
     terms: invoice.terms,
@@ -256,16 +269,16 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
       id: item.id,
       name: item.name,
       description: item.description,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-      amount: Number(item.amount),
+      quantity: toNumber(item.quantity),
+      rate: toNumber(item.rate),
+      amount: toNumber(item.amount),
       taxRate: item.taxRate ? Number(item.taxRate) : null,
-      taxAmount: Number(item.taxAmount),
+      taxAmount: toNumber(item.taxAmount),
     })),
-    currency: (settings?.currency as string) ?? 'USD',
+    currency: invoice.currency || (settings?.currency as string) || 'USD',
     payments: invoice.payments.map((payment) => ({
       id: payment.id,
-      amount: Number(payment.amount),
+      amount: toNumber(payment.amount),
       method: payment.paymentMethod,
       paidAt: payment.processedAt?.toISOString() ?? payment.createdAt.toISOString(),
       reference: payment.referenceNumber,
@@ -277,6 +290,13 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
  * Get invoice data for PDF generation by access token (public)
  */
 export async function getInvoicePdfDataByToken(accessToken: string): Promise<InvoicePdfData | null> {
+  // MEDIUM #30: Rate limit public PDF endpoints to prevent abuse
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = await checkRateLimit(`pdf-invoice:${accessToken}`, { limit: 20, windowMs: 60000 });
+  if (rateLimitResult.limited) {
+    return null;
+  }
+
   const invoice = await prisma.invoice.findFirst({
     where: {
       accessToken,
@@ -303,6 +323,11 @@ export async function getInvoicePdfDataByToken(accessToken: string): Promise<Inv
     return null;
   }
 
+  // HIGH #16: Reject voided invoices from public PDF access
+  if (invoice.status === 'voided') {
+    return null;
+  }
+
   const settings = invoice.settings as Record<string, unknown>;
 
   return {
@@ -313,12 +338,12 @@ export async function getInvoicePdfDataByToken(accessToken: string): Promise<Inv
     issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
     dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
     totals: {
-      subtotal: Number(invoice.subtotal),
-      discountAmount: Number(invoice.discountAmount),
-      taxTotal: Number(invoice.taxTotal),
-      total: Number(invoice.total),
-      amountPaid: Number(invoice.amountPaid),
-      amountDue: Number(invoice.amountDue),
+      subtotal: toNumber(invoice.subtotal),
+      discountAmount: toNumber(invoice.discountAmount),
+      taxTotal: toNumber(invoice.taxTotal),
+      total: toNumber(invoice.total),
+      amountPaid: toNumber(invoice.amountPaid),
+      amountDue: toNumber(invoice.amountDue),
     },
     notes: invoice.notes,
     terms: invoice.terms,
@@ -347,16 +372,16 @@ export async function getInvoicePdfDataByToken(accessToken: string): Promise<Inv
       id: item.id,
       name: item.name,
       description: item.description,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-      amount: Number(item.amount),
+      quantity: toNumber(item.quantity),
+      rate: toNumber(item.rate),
+      amount: toNumber(item.amount),
       taxRate: item.taxRate ? Number(item.taxRate) : null,
-      taxAmount: Number(item.taxAmount),
+      taxAmount: toNumber(item.taxAmount),
     })),
-    currency: (settings?.currency as string) ?? 'USD',
+    currency: invoice.currency || (settings?.currency as string) || 'USD',
     payments: invoice.payments.map((payment) => ({
       id: payment.id,
-      amount: Number(payment.amount),
+      amount: toNumber(payment.amount),
       method: payment.paymentMethod,
       paidAt: payment.processedAt?.toISOString() ?? payment.createdAt.toISOString(),
       reference: payment.referenceNumber,

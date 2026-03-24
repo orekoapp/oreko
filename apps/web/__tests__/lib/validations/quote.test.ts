@@ -55,11 +55,22 @@ describe('lineItemSchema', () => {
   it('accepts valid line item', () => {
     const result = lineItemSchema.safeParse({
       id: 'item-1',
-      description: 'Web Development Services',
+      name: 'Web Development Services',
       quantity: 10,
-      rate: 15000, // $150.00 in cents
+      rate: 15000,
       unit: 'hour',
       taxable: true,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts line item with optional description', () => {
+    const result = lineItemSchema.safeParse({
+      id: 'item-1',
+      name: 'Service',
+      description: 'Detailed description of the service',
+      quantity: 1,
+      rate: 100,
     });
     expect(result.success).toBe(true);
   });
@@ -67,7 +78,7 @@ describe('lineItemSchema', () => {
   it('accepts minimal line item', () => {
     const result = lineItemSchema.safeParse({
       id: 'item-1',
-      description: 'Service',
+      name: 'Service',
       quantity: 1,
       rate: 100,
     });
@@ -75,10 +86,10 @@ describe('lineItemSchema', () => {
     expect(result.data?.taxable).toBe(true); // Default
   });
 
-  it('rejects empty description', () => {
+  it('rejects empty name', () => {
     const result = lineItemSchema.safeParse({
       id: 'item-1',
-      description: '',
+      name: '',
       quantity: 1,
       rate: 100,
     });
@@ -88,7 +99,7 @@ describe('lineItemSchema', () => {
   it('rejects zero quantity', () => {
     const result = lineItemSchema.safeParse({
       id: 'item-1',
-      description: 'Service',
+      name: 'Service',
       quantity: 0,
       rate: 100,
     });
@@ -98,17 +109,17 @@ describe('lineItemSchema', () => {
   it('rejects negative rate', () => {
     const result = lineItemSchema.safeParse({
       id: 'item-1',
-      description: 'Service',
+      name: 'Service',
       quantity: 1,
       rate: -100,
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects description over 500 chars', () => {
+  it('rejects name over 500 chars', () => {
     const result = lineItemSchema.safeParse({
       id: 'item-1',
-      description: 'x'.repeat(501),
+      name: 'x'.repeat(501),
       quantity: 1,
       rate: 100,
     });
@@ -118,7 +129,7 @@ describe('lineItemSchema', () => {
 
 describe('createQuoteSchema', () => {
   const validQuote = {
-    clientId: 'clrqm9k3k0000q3wz8k7v4z1w',
+    clientId: '550e8400-e29b-41d4-a716-446655440000',
     title: 'Website Redesign Proposal',
     description: 'Complete website redesign with modern UI',
     currency: 'USD',
@@ -196,7 +207,7 @@ describe('createQuoteSchema', () => {
       lineItems: [
         {
           id: 'item-1',
-          description: 'Design work',
+          name: 'Design work',
           quantity: 20,
           rate: 10000,
         },
@@ -209,7 +220,7 @@ describe('createQuoteSchema', () => {
 describe('sendQuoteSchema', () => {
   it('accepts valid send data', () => {
     const result = sendQuoteSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       recipientEmail: 'client@example.com',
       message: 'Please review the attached quote',
     });
@@ -218,14 +229,14 @@ describe('sendQuoteSchema', () => {
 
   it('accepts minimal send data (just id)', () => {
     const result = sendQuoteSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
     });
     expect(result.success).toBe(true);
   });
 
   it('accepts CC emails', () => {
     const result = sendQuoteSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       ccEmails: ['cc1@example.com', 'cc2@example.com'],
     });
     expect(result.success).toBe(true);
@@ -233,7 +244,7 @@ describe('sendQuoteSchema', () => {
 
   it('rejects more than 5 CC emails', () => {
     const result = sendQuoteSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       ccEmails: Array(6).fill('cc@example.com'),
     });
     expect(result.success).toBe(false);
@@ -241,7 +252,7 @@ describe('sendQuoteSchema', () => {
 
   it('rejects message over 2000 chars', () => {
     const result = sendQuoteSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       message: 'x'.repeat(2001),
     });
     expect(result.success).toBe(false);
@@ -310,7 +321,7 @@ describe('declineQuoteSchema', () => {
 describe('convertToInvoiceSchema', () => {
   it('accepts valid conversion data', () => {
     const result = convertToInvoiceSchema.safeParse({
-      quoteId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      quoteId: '550e8400-e29b-41d4-a716-446655440000',
       dueDate: '2026-02-15',
       sendImmediately: true,
     });
@@ -319,7 +330,7 @@ describe('convertToInvoiceSchema', () => {
 
   it('accepts minimal conversion (just quoteId)', () => {
     const result = convertToInvoiceSchema.safeParse({
-      quoteId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      quoteId: '550e8400-e29b-41d4-a716-446655440000',
     });
     expect(result.success).toBe(true);
     expect(result.data?.sendImmediately).toBe(false); // Default
@@ -336,23 +347,23 @@ describe('convertToInvoiceSchema', () => {
 describe('duplicateQuoteSchema', () => {
   it('accepts valid duplication with new title', () => {
     const result = duplicateQuoteSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       title: 'New Quote Copy',
-      clientId: 'clrqm9k3k0001q3wz8k7v4z1x',
+      clientId: '550e8400-e29b-41d4-a716-446655440001',
     });
     expect(result.success).toBe(true);
   });
 
   it('accepts minimal duplication (just id)', () => {
     const result = duplicateQuoteSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
     });
     expect(result.success).toBe(true);
   });
 
   it('rejects title over 200 chars', () => {
     const result = duplicateQuoteSchema.safeParse({
-      id: 'clrqm9k3k0000q3wz8k7v4z1w',
+      id: '550e8400-e29b-41d4-a716-446655440000',
       title: 'x'.repeat(201),
     });
     expect(result.success).toBe(false);
@@ -365,7 +376,7 @@ describe('quoteFilterSchema', () => {
       page: 1,
       limit: 20,
       status: 'sent',
-      clientId: 'clrqm9k3k0000q3wz8k7v4z1w',
+      clientId: '550e8400-e29b-41d4-a716-446655440000',
       search: 'website',
       sortBy: 'createdAt',
       sortOrder: 'desc',

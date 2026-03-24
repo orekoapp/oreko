@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { ContractSettingsForm } from '@/components/settings/contract-settings-form';
 import { getContractSettings } from '@/lib/contracts/actions';
 

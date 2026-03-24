@@ -16,17 +16,23 @@ export interface NotificationData {
   createdAt: Date;
 }
 
-// Get notifications for the current user
-export async function getNotifications(limit = 20): Promise<NotificationData[]> {
+// Low #91: Added offset pagination support
+export async function getNotifications(limit = 20, offset = 0): Promise<{ data: NotificationData[]; total: number }> {
   const { userId, workspaceId } = await getCurrentUserWorkspace();
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId, workspaceId },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
+  const where = { userId, workspaceId };
 
-  return notifications;
+  const [notifications, total] = await Promise.all([
+    prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.notification.count({ where }),
+  ]);
+
+  return { data: notifications, total };
 }
 
 // Get unread notification count
@@ -40,10 +46,11 @@ export async function getUnreadNotificationCount(): Promise<number> {
 
 // Mark a single notification as read
 export async function markNotificationRead(notificationId: string): Promise<void> {
-  const { userId } = await getCurrentUserWorkspace();
+  const { userId, workspaceId } = await getCurrentUserWorkspace();
 
+  // HIGH #51: Include workspaceId to prevent cross-workspace notification manipulation
   await prisma.notification.updateMany({
-    where: { id: notificationId, userId },
+    where: { id: notificationId, userId, workspaceId },
     data: { isRead: true, readAt: new Date() },
   });
 
@@ -62,62 +69,3 @@ export async function markAllNotificationsRead(): Promise<void> {
   revalidatePath('/');
 }
 
-// Create a notification (used internally when events happen)
-export async function createNotification(input: {
-  userId: string;
-  workspaceId: string;
-  type: string;
-  title: string;
-  message?: string;
-  entityType?: string;
-  entityId?: string;
-  link?: string;
-}): Promise<void> {
-  await prisma.notification.create({
-    data: {
-      userId: input.userId,
-      workspaceId: input.workspaceId,
-      type: input.type,
-      title: input.title,
-      message: input.message,
-      entityType: input.entityType,
-      entityId: input.entityId,
-      link: input.link,
-    },
-  });
-}
-
-// Create notifications for all workspace members (e.g., when a quote is viewed by a client)
-export async function notifyWorkspaceMembers(input: {
-  workspaceId: string;
-  excludeUserId?: string;
-  type: string;
-  title: string;
-  message?: string;
-  entityType?: string;
-  entityId?: string;
-  link?: string;
-}): Promise<void> {
-  const members = await prisma.workspaceMember.findMany({
-    where: {
-      workspaceId: input.workspaceId,
-      ...(input.excludeUserId ? { userId: { not: input.excludeUserId } } : {}),
-    },
-    select: { userId: true },
-  });
-
-  if (members.length === 0) return;
-
-  await prisma.notification.createMany({
-    data: members.map((m) => ({
-      userId: m.userId,
-      workspaceId: input.workspaceId,
-      type: input.type,
-      title: input.title,
-      message: input.message,
-      entityType: input.entityType,
-      entityId: input.entityId,
-      link: input.link,
-    })),
-  });
-}

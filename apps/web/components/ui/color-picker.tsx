@@ -47,6 +47,11 @@ export function ColorPicker({
   const [color, setColor] = React.useState(value);
   const [open, setOpen] = React.useState(false);
 
+  // Bug #113: Sync internal state when parent updates value prop
+  React.useEffect(() => {
+    setColor(value);
+  }, [value]);
+
   const handleColorChange = (newColor: string) => {
     setColor(newColor);
     onChange?.(newColor);
@@ -105,6 +110,7 @@ export function ColorPicker({
             {presetColors.map((presetColor) => (
               <button
                 key={presetColor}
+                aria-label={`Select color ${presetColor}`}
                 className={cn(
                   'h-8 w-8 rounded-md border-2 transition-all hover:scale-110',
                   color === presetColor

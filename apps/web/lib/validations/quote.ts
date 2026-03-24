@@ -26,10 +26,11 @@ export const quoteBlockTypeSchema = z.enum([
   'signature',
 ]);
 
-// Line item schema
+// Line item schema — name is required (matches Prisma QuoteLineItem model)
 export const lineItemSchema = z.object({
   id: z.string(),
-  description: z.string().min(1, 'Description is required').max(500),
+  name: z.string().min(1, 'Name is required').max(500),
+  description: z.string().max(2000).optional(),
   quantity: z.number().min(0.01, 'Quantity must be greater than 0'),
   rate: moneySchema,
   unit: z.string().max(20).optional(),
@@ -50,11 +51,23 @@ export const quoteDocumentSettingsSchema = z.object({
   autoConvertToInvoice: z.boolean().default(false),
   depositRequired: z.boolean().default(false),
   depositType: z.enum(['percentage', 'fixed']).default('percentage'),
-  depositValue: z.number().min(0).max(100).default(0),
+  depositValue: z.number().min(0).max(999999999).default(0),
   showLineItemPrices: z.boolean().default(true),
   currency: z.string().length(3).default('USD'),
   taxInclusive: z.boolean().default(false),
-}).partial();
+}).partial().superRefine((data, ctx) => {
+  // Validate depositValue based on depositType
+  if (data.depositType === 'percentage' && data.depositValue !== undefined && data.depositValue > 100) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.too_big,
+      maximum: 100,
+      type: 'number',
+      inclusive: true,
+      message: 'Deposit percentage cannot exceed 100%',
+      path: ['depositValue'],
+    });
+  }
+});
 export type QuoteDocumentSettings = z.infer<typeof quoteDocumentSettingsSchema>;
 
 // Create quote schema

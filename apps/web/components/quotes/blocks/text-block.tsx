@@ -22,11 +22,12 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
     justify: 'text-justify',
   }[block.content.alignment];
 
+  // Bug #51: Include block.content.html in deps to avoid stale closure in contentEditable
   useEffect(() => {
     if (isEditing && editorRef.current) {
       editorRef.current.focus();
     }
-  }, [isEditing]);
+  }, [isEditing, block.content.html]);
 
   const handleBlur = () => {
     if (editorRef.current) {
@@ -37,6 +38,18 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
 
   // Sanitize HTML content using DOMPurify to prevent XSS
   const safeHtml = sanitizeHtml(block.content.html || '');
+
+  // Set initial content via ref to avoid controlled/uncontrolled conflict with contentEditable
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (isEditing && editorRef.current && !initializedRef.current) {
+      editorRef.current.innerHTML = safeHtml;
+      initializedRef.current = true;
+    }
+    if (!isEditing) {
+      initializedRef.current = false;
+    }
+  }, [isEditing, safeHtml]);
 
   if (isEditing) {
     return (
@@ -49,7 +62,6 @@ export function TextBlockContent({ block }: TextBlockContentProps) {
           alignmentClass
         )}
         onBlur={handleBlur}
-        dangerouslySetInnerHTML={{ __html: safeHtml }}
       />
     );
   }

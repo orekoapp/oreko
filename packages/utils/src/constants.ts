@@ -47,8 +47,13 @@ export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS]
  */
 export const PAYMENT_METHOD = {
   CARD: 'card',
-  BANK: 'bank',
+  BANK_TRANSFER: 'bank_transfer',
+  CREDIT_CARD: 'credit_card',
+  CHECK: 'check',
+  CASH: 'cash',
+  PAYPAL: 'paypal',
   MANUAL: 'manual',
+  OTHER: 'other',
 } as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHOD)[keyof typeof PAYMENT_METHOD];

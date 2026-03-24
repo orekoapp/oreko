@@ -13,6 +13,7 @@ export async function generateMetadata({ params }: PageProps) {
   return {
     title: instance?.contractName || 'Contract',
     description: 'View and sign your contract',
+    robots: { index: false, follow: false },
   };
 }
 

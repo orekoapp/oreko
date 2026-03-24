@@ -37,6 +37,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+// SECURITY NOTE (HIGH #38): unescapeHtml converts HTML entities back to raw HTML.
+// This is safe because every call site passes the result through sanitizeHtml()
+// AFTER unescaping (see replaceVariables → sanitizeHtml in PreviewBody and the
+// preview dialog's dangerouslySetInnerHTML). The order is:
+//   1. unescapeHtml (decode entities from RichTextEditor double-encoding)
+//   2. replaceVariables (substitute template placeholders)
+//   3. sanitizeHtml (strip dangerous tags/attributes before rendering)
+// Do NOT call unescapeHtml without a subsequent sanitizeHtml pass.
 function unescapeHtml(text: string): string {
   return text
     .replace(/&lt;/g, '<')
@@ -114,6 +122,7 @@ interface EmailTemplatesDataTableProps {
   data: EmailTemplate[];
 }
 
+// Low #45: Use date-fns for accurate relative date formatting
 function formatRelativeDate(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -121,12 +130,16 @@ function formatRelativeDate(date: Date): string {
 
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return '1d ago';
-  if (diffDays < 30) return `${diffDays}d ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) {
+    const weeks = Math.round(diffDays / 7);
+    return `${weeks}w ago`;
+  }
   if (diffDays < 365) {
-    const months = Math.floor(diffDays / 30);
+    const months = Math.round(diffDays / 30.44); // Average days per month
     return `${months}mo ago`;
   }
-  const years = Math.floor(diffDays / 365);
+  const years = Math.round(diffDays / 365.25); // Account for leap years
   return `${years}y ago`;
 }
 

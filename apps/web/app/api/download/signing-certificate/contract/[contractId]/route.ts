@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@quotecraft/database';
 import { generateSigningCertificateHtml } from '@/lib/signing/certificate-template';
 import { generatePdfFromHtml } from '@/lib/services/pdf';
+import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/download/signing-certificate/contract/[contractId]
@@ -20,8 +22,10 @@ export async function GET(
 
     const { contractId } = await params;
 
+    const { workspaceId } = await getCurrentUserWorkspace();
+
     const instance = await prisma.contractInstance.findFirst({
-      where: { id: contractId },
+      where: { id: contractId, workspaceId },
       select: {
         id: true,
         signedAt: true,
@@ -125,7 +129,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error generating signing certificate:', error);
+    logger.error({ err: error }, 'Error generating signing certificate');
     return new NextResponse('Failed to generate signing certificate', { status: 500 });
   }
 }

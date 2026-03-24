@@ -25,10 +25,15 @@ export function PropertiesPanel() {
   const { document, selectedBlockId, updateBlock, togglePropertiesPanel } = useQuoteBuilderStore();
   const [contractTemplates, setContractTemplates] = useState<{ id: string; name: string }[]>([]);
 
+  // Bug #76: Add error handling for contract template fetch
   useEffect(() => {
-    getContractTemplates().then((result) => {
-      setContractTemplates(result.data.map((t) => ({ id: t.id, name: t.name })));
-    });
+    getContractTemplates()
+      .then((result) => {
+        setContractTemplates(result.data.map((t) => ({ id: t.id, name: t.name })));
+      })
+      .catch((error) => {
+        console.error('Failed to load contract templates:', error);
+      });
   }, []);
 
   const selectedBlock = document?.blocks.find((b) => b.id === selectedBlockId);
@@ -88,22 +93,21 @@ export function PropertiesPanel() {
 }
 
 // Document Settings Panel (shown when no block is selected)
+// CR #26: All hooks called before conditional return (Rules of Hooks)
 function DocumentSettingsPanel({ contractTemplates }: { contractTemplates: { id: string; name: string }[] }) {
-  const { document, updateSettings } = useQuoteBuilderStore();
+  const { document, updateSettings, markDirty } = useQuoteBuilderStore();
 
   if (!document) return null;
 
   const contractTemplateId = document.contractTemplateId || '';
   const selectedTemplate = contractTemplates.find((t) => t.id === contractTemplateId);
-
   const handleContractChange = (value: string) => {
-    // Store on document directly via the store
     useQuoteBuilderStore.setState((state) => {
       if (state.document) {
         state.document.contractTemplateId = value === 'none' ? null : value;
-        state.isDirty = true;
       }
     });
+    markDirty();
   };
 
   return (
@@ -168,6 +172,12 @@ function BlockProperties({ block, onUpdate }: BlockPropertiesProps) {
       return <ImageProperties block={block} onUpdate={handleUpdate} />;
     case 'signature':
       return <SignatureProperties block={block} onUpdate={handleUpdate} />;
+    case 'table':
+      return <TableProperties block={block} onUpdate={handleUpdate} />;
+    case 'columns':
+      return <ColumnsProperties block={block} onUpdate={handleUpdate} />;
+    case 'service-group':
+      return <ServiceGroupProperties block={block} onUpdate={handleUpdate} />;
     default:
       return (
         <p className="text-sm text-muted-foreground">
@@ -283,8 +293,8 @@ function ServiceItemProperties({
           <Input
             type="number"
             value={block.content.quantity}
-            onChange={(e) => onUpdate({ quantity: parseFloat(e.target.value) || 0 })}
-            min={0}
+            onChange={(e) => onUpdate({ quantity: Math.max(1, parseFloat(e.target.value) || 1) })}
+            min={1}
             step="0.01"
           />
         </div>
@@ -520,6 +530,17 @@ function ImageProperties({
   );
 }
 
+// TODO Bug #67: Signature block preview mode can be misleading — the unsigned placeholder
+// looks similar to the signed state. Consider adding a clearer visual distinction (e.g. "Preview Only" badge).
+
+// Bug #69: Drag and drop insertion logic is fully implemented in the builder page components
+// (quotes/[id]/builder/page.tsx and quotes/new/builder/page.tsx). The onDragEnd handler
+// correctly calculates insertion index when dropping on existing blocks (overIndex + 1)
+// and appends to the end when dropping on the canvas background.
+
+// TODO Bug #78: Signature data is stored as base64 in the DB, which bloats storage.
+// Consider moving signature images to file storage (S3/R2) and storing only the URL.
+
 // Signature Block Properties
 function SignatureProperties({
   block,
@@ -573,6 +594,181 @@ function SignatureProperties({
           </Button>
         </div>
       )}
+    </>
+  );
+}
+
+// Table Block Properties
+function TableProperties({
+  block,
+  onUpdate,
+}: {
+  block: Extract<QuoteBlock, { type: 'table' }>;
+  onUpdate: (updates: Partial<typeof block.content>) => void;
+}) {
+  const addColumn = () => {
+    const newHeaders = [...block.content.headers, `Column ${block.content.headers.length + 1}`];
+    const newRows = block.content.rows.map((row) => [...row, '']);
+    onUpdate({ headers: newHeaders, rows: newRows });
+  };
+
+  const removeColumn = () => {
+    if (block.content.headers.length <= 1) return;
+    const newHeaders = block.content.headers.slice(0, -1);
+    const newRows = block.content.rows.map((row) => row.slice(0, -1));
+    onUpdate({ headers: newHeaders, rows: newRows });
+  };
+
+  const addRow = () => {
+    const newRow = Array(block.content.headers.length).fill('');
+    onUpdate({ rows: [...block.content.rows, newRow] });
+  };
+
+  const removeRow = () => {
+    if (block.content.rows.length <= 1) return;
+    onUpdate({ rows: block.content.rows.slice(0, -1) });
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>Columns ({block.content.headers.length})</Label>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1" onClick={removeColumn} disabled={block.content.headers.length <= 1}>
+            Remove
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" onClick={addColumn}>
+            Add
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Rows ({block.content.rows.length})</Label>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1" onClick={removeRow} disabled={block.content.rows.length <= 1}>
+            Remove
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" onClick={addRow}>
+            Add
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Label>Striped Rows</Label>
+        <Switch
+          checked={block.content.striped}
+          onCheckedChange={(checked) => onUpdate({ striped: checked })}
+        />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Label>Bordered</Label>
+        <Switch
+          checked={block.content.bordered}
+          onCheckedChange={(checked) => onUpdate({ bordered: checked })}
+        />
+      </div>
+    </>
+  );
+}
+
+// Columns Block Properties
+function ColumnsProperties({
+  block,
+  onUpdate,
+}: {
+  block: Extract<QuoteBlock, { type: 'columns' }>;
+  onUpdate: (updates: Partial<typeof block.content>) => void;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>Column Ratio</Label>
+        <Select
+          value={block.content.ratio}
+          onValueChange={(value) => onUpdate({ ratio: value as typeof block.content.ratio })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="50-50">Equal (50/50)</SelectItem>
+            <SelectItem value="33-67">Narrow Left (33/67)</SelectItem>
+            <SelectItem value="67-33">Wide Left (67/33)</SelectItem>
+            <SelectItem value="25-75">Sidebar Left (25/75)</SelectItem>
+            <SelectItem value="75-25">Sidebar Right (75/25)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Gap</Label>
+        <Select
+          value={block.content.gap}
+          onValueChange={(value) => onUpdate({ gap: value as 'sm' | 'md' | 'lg' })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="sm">Small</SelectItem>
+            <SelectItem value="md">Medium</SelectItem>
+            <SelectItem value="lg">Large</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <p className="text-xs text-muted-foreground pt-2">
+        Edit column contents directly in the canvas.
+      </p>
+    </>
+  );
+}
+
+// Service Group Block Properties
+function ServiceGroupProperties({
+  block,
+  onUpdate,
+}: {
+  block: Extract<QuoteBlock, { type: 'service-group' }>;
+  onUpdate: (updates: Partial<typeof block.content>) => void;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>Group Title</Label>
+        <Input
+          value={block.content.title}
+          onChange={(e) => onUpdate({ title: e.target.value })}
+          placeholder="Service Group"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Description</Label>
+        <Input
+          value={block.content.description}
+          onChange={(e) => onUpdate({ description: e.target.value })}
+          placeholder="Optional description"
+        />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Label>Collapsed by Default</Label>
+        <Switch
+          checked={block.content.collapsed}
+          onCheckedChange={(checked) => onUpdate({ collapsed: checked })}
+        />
+      </div>
+
+      <div className="pt-2 border-t">
+        <p className="text-xs text-muted-foreground">
+          {block.content.items.length} item{block.content.items.length !== 1 ? 's' : ''} in this group.
+          Add service items inside the group on the canvas.
+        </p>
+      </div>
     </>
   );
 }

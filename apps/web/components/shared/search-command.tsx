@@ -14,6 +14,7 @@ import {
   Plus,
   FolderKanban,
   ScrollText,
+  Mail,
   Loader2,
 } from 'lucide-react';
 
@@ -40,27 +41,39 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   const [results, setResults] = React.useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = React.useState(false);
 
-  // Debounced search
+  // Low #22: Debounced search with stale result prevention
   React.useEffect(() => {
     if (!query || query.trim().length < 2) {
       setResults([]);
       return;
     }
 
+    let cancelled = false;
+
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
         const data = await globalSearch(query);
-        setResults(data);
+        // Prevent stale results from overwriting newer ones
+        if (!cancelled) {
+          setResults(data);
+        }
       } catch {
-        setResults([]);
-        toast.error('Search failed. Please try again.');
+        if (!cancelled) {
+          setResults([]);
+          toast.error('Search failed. Please try again.');
+        }
       } finally {
-        setIsSearching(false);
+        if (!cancelled) {
+          setIsSearching(false);
+        }
       }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [query]);
 
   // Reset state when dialog closes
@@ -86,6 +99,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
       case 'client': return <Users className="mr-2 h-4 w-4" />;
       case 'contract': return <ScrollText className="mr-2 h-4 w-4" />;
       case 'project': return <FolderKanban className="mr-2 h-4 w-4" />;
+      case 'email-template': return <Mail className="mr-2 h-4 w-4" />;
       default: return null;
     }
   };
@@ -95,6 +109,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   const clientResults = results.filter((r) => r.type === 'client');
   const contractResults = results.filter((r) => r.type === 'contract');
   const projectResults = results.filter((r) => r.type === 'project');
+  const emailTemplateResults = results.filter((r) => r.type === 'email-template');
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
@@ -206,6 +221,24 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
           </CommandGroup>
         )}
 
+        {emailTemplateResults.length > 0 && (
+          <CommandGroup heading="Email Templates">
+            {emailTemplateResults.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={`email-template-${result.title}-${result.subtitle}`}
+                onSelect={() => runCommand(() => router.push(result.href))}
+              >
+                {getIcon(result.type)}
+                <div className="flex flex-col">
+                  <span>{result.title}</span>
+                  <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
         {results.length > 0 && <CommandSeparator />}
 
         <CommandGroup heading="Quick Actions">
@@ -246,6 +279,14 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
           <CommandItem onSelect={() => runCommand(() => router.push('/projects'))}>
             <FolderKanban className="mr-2 h-4 w-4" />
             <span>Projects</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/contracts'))}>
+            <ScrollText className="mr-2 h-4 w-4" />
+            <span>Contracts</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/settings/emails'))}>
+            <Mail className="mr-2 h-4 w-4" />
+            <span>Email Templates</span>
           </CommandItem>
 <CommandItem onSelect={() => runCommand(() => router.push('/analytics'))}>
             <BarChart3 className="mr-2 h-4 w-4" />

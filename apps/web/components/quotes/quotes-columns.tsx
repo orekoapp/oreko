@@ -6,8 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header';
 import { DataTableRowActions, RowAction } from '@/components/ui/data-table/data-table-row-actions';
 import { QuoteListItem } from '@/lib/quotes/types';
-import { Eye, Pencil, Send, Link2, FileOutput, Copy, Download, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { Pencil, Send, Link2, FileOutput, Copy, Download, Trash2 } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
   draft: 'border-gray-300 text-gray-600 bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-900',
@@ -20,10 +19,14 @@ const statusColors: Record<string, string> = {
 };
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 function formatDate(dateString: string): string {
@@ -77,15 +80,23 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
       enableHiding: false,
     },
     {
+      id: 'Quote ID',
       accessorKey: 'quoteNumber',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Quote ID" />
       ),
       cell: ({ row }) => {
         return (
-          <Link href={`/quotes/${row.original.id}`} className="font-medium text-primary hover:underline">
-            #{row.getValue('quoteNumber')}
-          </Link>
+          <button
+            type="button"
+            className="font-medium text-primary hover:underline text-left"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView?.(row.original);
+            }}
+          >
+            #{row.original.quoteNumber}
+          </button>
         );
       },
     },
@@ -160,13 +171,15 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Amount" />
       ),
+      // Bug #62: Use quote's currency field instead of hardcoded USD
       cell: ({ row }) => {
         return (
-          <div className="font-medium">{formatCurrency(row.getValue('total'))}</div>
+          <div className="font-medium">{formatCurrency(row.getValue('total'), row.original.currency)}</div>
         );
       },
     },
     {
+      id: 'Issue Date',
       accessorKey: 'issueDate',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Issue Date" />
@@ -174,18 +187,19 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
       cell: ({ row }) => {
         return (
           <div className="text-muted-foreground">
-            {formatDate(row.getValue('issueDate'))}
+            {formatDate(row.original.issueDate)}
           </div>
         );
       },
     },
     {
+      id: 'Expires',
       accessorKey: 'expirationDate',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Expires" />
       ),
       cell: ({ row }) => {
-        const expirationDate = row.getValue('expirationDate') as string | null;
+        const expirationDate = row.original.expirationDate as string | null;
         return (
           <div className="text-muted-foreground">
             {expirationDate ? formatDate(expirationDate) : '-'}
@@ -199,23 +213,16 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
         const quote = row.original;
         const actions: RowAction<QuoteListItem>[] = [];
 
-        if (onView) {
-          actions.push({
-            label: 'View',
-            icon: <Eye className="mr-2 h-4 w-4" />,
-            onClick: onView,
-          });
-        }
-        if (onEdit) {
+        if (onEdit && quote.status === 'draft') {
           actions.push({
             label: 'Edit',
             icon: <Pencil className="mr-2 h-4 w-4" />,
             onClick: onEdit,
           });
         }
-        if (onSend) {
+        if (onSend && (quote.status === 'draft' || quote.status === 'sent')) {
           actions.push({
-            label: 'Send Quote',
+            label: quote.status === 'sent' ? 'Resend Quote' : 'Send Quote',
             icon: <Send className="mr-2 h-4 w-4" />,
             onClick: onSend,
             separator: true,
@@ -265,8 +272,6 @@ export function getQuoteColumns(options: QuoteColumnsOptions = {}): ColumnDef<Qu
           <DataTableRowActions
             row={quote}
             actions={actions}
-            onView={onView}
-            onDelete={onDelete}
           />
         );
       },

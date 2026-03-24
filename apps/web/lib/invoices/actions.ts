@@ -11,9 +11,10 @@ import type {
   CreateInvoiceData,
   UpdateInvoiceData,
 } from './types';
-import { sendInvoiceSentEmail } from '@/lib/services/email';
-import { createNotification } from '@/lib/notifications/actions';
-import { formatCurrency } from '@/lib/utils';
+import { sendTemplatedEmail } from '@/lib/email/actions';
+import { createNotification } from '@/lib/notifications/internal';
+import { logger } from '@/lib/logger';
+import { formatCurrency, toNumber, getBaseUrl } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { generateInvoiceNumber } from './internal';
 import { domainEvents } from '@/lib/events/emitter';
@@ -44,10 +45,11 @@ async function getActiveWorkspace() {
 }
 
 /**
- * Calculate totals from line items
+ * Calculate totals from line items, applying discount before tax total
  */
 function calculateTotals(
-  lineItems: Array<{ quantity: number; rate: number; taxRate?: number }>
+  lineItems: Array<{ quantity: number; rate: number; taxRate?: number }>,
+  discount?: { type?: 'percentage' | 'fixed' | null; value?: number | null }
 ) {
   let subtotal = 0;
   let taxTotal = 0;
@@ -60,16 +62,35 @@ function calculateTotals(
     }
   }
 
+  subtotal = Math.round(subtotal * 100) / 100;
+  taxTotal = Math.round(taxTotal * 100) / 100;
+
+  // Calculate discount amount
+  let discountAmount = 0;
+  if (discount?.type && discount.value != null && discount.value > 0) {
+    if (discount.type === 'percentage') {
+      discountAmount = subtotal * (discount.value / 100);
+    } else if (discount.type === 'fixed') {
+      discountAmount = discount.value;
+    }
+  }
+
+  // Clamp: discount cannot exceed subtotal (prevents negative total before tax)
+  discountAmount = Math.min(discountAmount, subtotal);
+  discountAmount = Math.round(discountAmount * 100) / 100;
+
   return {
-    subtotal: Math.round(subtotal * 100) / 100,
-    taxTotal: Math.round(taxTotal * 100) / 100,
-    total: Math.round((subtotal + taxTotal) * 100) / 100,
+    subtotal,
+    taxTotal,
+    discountAmount,
+    total: Math.round((subtotal + taxTotal - discountAmount) * 100) / 100,
   };
 }
 
 /**
  * Create a new invoice
  */
+// Low #57: Both calls are cached via React.cache() — no actual redundant DB query
 export async function createInvoice(data: CreateInvoiceData) {
   const { userId, workspace } = await getActiveWorkspace();
   const { role } = await getCurrentUserWorkspace();
@@ -77,6 +98,14 @@ export async function createInvoice(data: CreateInvoiceData) {
   // Bug #456: RBAC — viewers cannot create invoices
   if (role === 'viewer') {
     return { success: false, error: 'Insufficient permissions: viewers cannot create invoices' };
+  }
+
+  // MEDIUM #13: Basic input validation
+  if (!data.clientId || typeof data.clientId !== 'string') {
+    return { success: false, error: 'Client is required' };
+  }
+  if (!data.lineItems || !Array.isArray(data.lineItems) || data.lineItems.length === 0) {
+    return { success: false, error: 'At least one line item is required' };
   }
 
   // Verify client belongs to workspace
@@ -122,7 +151,27 @@ export async function createInvoice(data: CreateInvoiceData) {
     }
   }
 
-  const { subtotal, taxTotal, total } = calculateTotals(data.lineItems);
+  // Bug #17: Validate discount values before calculating totals
+  if (data.discountType === 'percentage' && data.discountValue != null) {
+    if (data.discountValue < 0 || data.discountValue > 100) {
+      return { success: false, error: 'Discount percentage must be between 0 and 100' };
+    }
+  }
+  if (data.discountType === 'fixed' && data.discountValue != null) {
+    if (data.discountValue < 0) {
+      return { success: false, error: 'Discount amount cannot be negative' };
+    }
+    // Cap fixed discount at subtotal (calculateTotals also clamps, but reject early for clarity)
+    const preliminarySubtotal = data.lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+    if (data.discountValue > preliminarySubtotal) {
+      data.discountValue = preliminarySubtotal;
+    }
+  }
+
+  const { subtotal, taxTotal, discountAmount, total } = calculateTotals(
+    data.lineItems,
+    { type: data.discountType, value: data.discountValue }
+  );
 
   const lineItems = data.lineItems.map((item, index) => ({
     name: item.name,
@@ -144,12 +193,15 @@ export async function createInvoice(data: CreateInvoiceData) {
       projectId: data.projectId || null,
       invoiceNumber,
       title: data.title,
-      status: 'draft',
+      status: data.isDraft !== false ? 'draft' : 'sent',
       currency,
       accessToken: generateAccessToken(),
       issueDate: new Date(),
       dueDate: new Date(data.dueDate),
       subtotal,
+      discountType: data.discountType || null,
+      discountValue: data.discountValue ?? null,
+      discountAmount,
       taxTotal,
       total,
       amountDue: total,
@@ -189,20 +241,20 @@ export async function createInvoice(data: CreateInvoiceData) {
     success: true,
     invoice: {
       ...invoice,
-      subtotal: Number(invoice.subtotal),
+      subtotal: toNumber(invoice.subtotal),
       discountValue: invoice.discountValue ? Number(invoice.discountValue) : null,
-      discountAmount: Number(invoice.discountAmount),
-      taxTotal: Number(invoice.taxTotal),
-      total: Number(invoice.total),
-      amountPaid: Number(invoice.amountPaid),
-      amountDue: Number(invoice.amountDue),
+      discountAmount: toNumber(invoice.discountAmount),
+      taxTotal: toNumber(invoice.taxTotal),
+      total: toNumber(invoice.total),
+      amountPaid: toNumber(invoice.amountPaid),
+      amountDue: toNumber(invoice.amountDue),
       lineItems: invoice.lineItems.map((li) => ({
         ...li,
-        quantity: Number(li.quantity),
-        rate: Number(li.rate),
-        amount: Number(li.amount),
+        quantity: toNumber(li.quantity),
+        rate: toNumber(li.rate),
+        amount: toNumber(li.amount),
         taxRate: li.taxRate ? Number(li.taxRate) : null,
-        taxAmount: Number(li.taxAmount),
+        taxAmount: toNumber(li.taxAmount),
       })),
     },
   };
@@ -239,26 +291,32 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
     return { success: false, error: 'Quote not found' };
   }
 
-  // Check if an invoice already exists for this quote
-  const existingInvoice = await prisma.invoice.findFirst({
-    where: { quoteId: quote.id },
-  });
-
-  if (existingInvoice) {
-    return { success: false, error: 'Invoice already exists for this quote' };
-  }
-
-  const invoiceNumber = await generateInvoiceNumber(workspace.id);
-
   // Bug #123: Validate discount values from source quote
-  const discountValue = Number(quote.discountValue) || 0;
-  const discountAmount = Number(quote.discountAmount) || 0;
-  const subtotal = Number(quote.subtotal);
-  if (quote.discountType === 'percentage' && (discountValue < 0 || discountValue > 100)) {
-    return { success: false, error: 'Discount percentage must be between 0 and 100' };
-  }
-  if (discountAmount < 0 || discountAmount > subtotal) {
-    return { success: false, error: 'Discount amount cannot be negative or exceed subtotal' };
+  const discountValue = toNumber(quote.discountValue) || 0;
+  let discountAmount = toNumber(quote.discountAmount) || 0;
+  const subtotal = toNumber(quote.subtotal);
+
+  // Bug #13: Recalculate discount during quote-to-invoice conversion
+  // Recalculate subtotal from actual line items to ensure discount doesn't exceed it
+  const lineItemSubtotal = quote.lineItems.reduce(
+    (sum, item) => sum + toNumber(item.amount),
+    0
+  );
+
+  if (quote.discountType === 'percentage') {
+    if (discountValue < 0 || discountValue > 100) {
+      return { success: false, error: 'Discount percentage must be between 0 and 100' };
+    }
+    // Recalculate percentage-based discount amount from actual line item subtotal
+    discountAmount = Math.round(lineItemSubtotal * (discountValue / 100) * 100) / 100;
+  } else {
+    // For fixed amount discounts, cap at the actual subtotal
+    if (discountAmount < 0) {
+      return { success: false, error: 'Discount amount cannot be negative' };
+    }
+    if (discountAmount > lineItemSubtotal) {
+      discountAmount = lineItemSubtotal;
+    }
   }
 
   // Calculate due date (configurable, default: 30 days from now)
@@ -266,7 +324,20 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + dueDays);
 
-  const invoice = await prisma.$transaction(async (tx) => {
+  let invoice;
+  try {
+  invoice = await prisma.$transaction(async (tx) => {
+    // Bug #7: Check for existing invoice INSIDE transaction to prevent race condition
+    const existingInvoice = await tx.invoice.findFirst({
+      where: { quoteId: quote.id },
+    });
+
+    if (existingInvoice) {
+      throw new Error('DUPLICATE_INVOICE');
+    }
+
+    const invoiceNumber = await generateInvoiceNumber(workspace.id);
+
     // Create the invoice
     const newInvoice = await tx.invoice.create({
       data: {
@@ -280,13 +351,13 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
         currency: quote.currency,
         issueDate: new Date(),
         dueDate,
-        subtotal: quote.subtotal,
+        subtotal: lineItemSubtotal,
         discountType: quote.discountType,
         discountValue: quote.discountValue,
-        discountAmount: quote.discountAmount,
+        discountAmount: discountAmount,
         taxTotal: quote.taxTotal,
-        total: quote.total,
-        amountDue: quote.total,
+        total: lineItemSubtotal - discountAmount + toNumber(quote.taxTotal),
+        amountDue: lineItemSubtotal - discountAmount + toNumber(quote.taxTotal),
         notes: quote.notes,
         terms: quote.terms,
         settings: {} as unknown as Prisma.InputJsonValue,
@@ -340,6 +411,12 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
 
     return newInvoice;
   });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'DUPLICATE_INVOICE') {
+      return { success: false, error: 'Invoice already exists for this quote' };
+    }
+    throw err;
+  }
 
   revalidatePath(ROUTES.invoices);
   revalidatePath(ROUTES.quotes);
@@ -353,20 +430,20 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
     success: true,
     invoice: {
       ...invoice,
-      subtotal: Number(invoice.subtotal),
+      subtotal: toNumber(invoice.subtotal),
       discountValue: invoice.discountValue ? Number(invoice.discountValue) : null,
-      discountAmount: Number(invoice.discountAmount),
-      taxTotal: Number(invoice.taxTotal),
-      total: Number(invoice.total),
-      amountPaid: Number(invoice.amountPaid),
-      amountDue: Number(invoice.amountDue),
+      discountAmount: toNumber(invoice.discountAmount),
+      taxTotal: toNumber(invoice.taxTotal),
+      total: toNumber(invoice.total),
+      amountPaid: toNumber(invoice.amountPaid),
+      amountDue: toNumber(invoice.amountDue),
       lineItems: invoice.lineItems.map((li) => ({
         ...li,
-        quantity: Number(li.quantity),
-        rate: Number(li.rate),
-        amount: Number(li.amount),
+        quantity: toNumber(li.quantity),
+        rate: toNumber(li.rate),
+        amount: toNumber(li.amount),
         taxRate: li.taxRate ? Number(li.taxRate) : null,
-        taxAmount: Number(li.taxAmount),
+        taxAmount: toNumber(li.taxAmount),
       })),
     },
   };
@@ -403,9 +480,18 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
     return { success: false, error: 'Can only edit draft invoices' };
   }
 
-  let subtotal = Number(existingInvoice.subtotal);
-  let taxTotal = Number(existingInvoice.taxTotal);
-  let total = Number(existingInvoice.total);
+  let subtotal = toNumber(existingInvoice.subtotal);
+  let taxTotal = toNumber(existingInvoice.taxTotal);
+  let discountAmount = toNumber(existingInvoice.discountAmount);
+  let total = toNumber(existingInvoice.total);
+
+  // Resolve discount: use provided values, fall back to existing invoice values
+  const discountType = data.discountType !== undefined
+    ? data.discountType
+    : (existingInvoice.discountType as 'percentage' | 'fixed' | null);
+  const discountValue = data.discountValue !== undefined
+    ? data.discountValue
+    : (existingInvoice.discountValue ? Number(existingInvoice.discountValue) : null);
 
   if (data.lineItems) {
     for (const item of data.lineItems) {
@@ -416,9 +502,22 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
         return { success: false, error: 'Line item quantity cannot be negative' };
       }
     }
-    const totals = calculateTotals(data.lineItems);
+    const totals = calculateTotals(data.lineItems, { type: discountType, value: discountValue });
     subtotal = totals.subtotal;
     taxTotal = totals.taxTotal;
+    discountAmount = totals.discountAmount;
+    total = totals.total;
+  } else if (data.discountType !== undefined || data.discountValue !== undefined) {
+    // Line items didn't change but discount did — recalculate with existing line items
+    const existingItems = existingInvoice.lineItems.map((li) => ({
+      quantity: toNumber(li.quantity),
+      rate: toNumber(li.rate),
+      taxRate: li.taxRate ? Number(li.taxRate) : undefined,
+    }));
+    const totals = calculateTotals(existingItems, { type: discountType, value: discountValue });
+    subtotal = totals.subtotal;
+    taxTotal = totals.taxTotal;
+    discountAmount = totals.discountAmount;
     total = totals.total;
   }
 
@@ -435,15 +534,22 @@ export async function updateInvoice(invoiceId: string, data: UpdateInvoiceData) 
       data: {
         projectId: data.projectId !== undefined ? data.projectId : undefined,
         title: data.title,
+        currency: data.currency,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         notes: data.notes,
         terms: data.terms,
         internalNotes: data.internalNotes,
-        ...(data.lineItems && {
+        // Always persist discount fields if they changed
+        ...(data.discountType !== undefined && { discountType: data.discountType || null }),
+        ...(data.discountValue !== undefined && { discountValue: data.discountValue ?? null }),
+        ...((data.lineItems || data.discountType !== undefined || data.discountValue !== undefined) && {
           subtotal,
+          discountAmount,
           taxTotal,
           total,
-          amountDue: Math.max(0, total - Number(existingInvoice.amountPaid)),
+          amountDue: Math.max(0, total - toNumber(existingInvoice.amountPaid)),
+        }),
+        ...(data.lineItems && {
           lineItems: {
             create: data.lineItems.map((item, index) => ({
               name: item.name,
@@ -511,18 +617,18 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
     accessToken: invoice.accessToken,
     status: invoice.status as InvoiceStatus,
     title: invoice.title || 'Invoice',
-    currency: invoice.currency || 'USD',
+    currency: invoice.currency,
     issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
     dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
     lineItems: invoice.lineItems.map((item: (typeof invoice.lineItems)[number]) => ({
       id: item.id,
       name: item.name,
       description: item.description,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-      amount: Number(item.amount),
+      quantity: toNumber(item.quantity),
+      rate: toNumber(item.rate),
+      amount: toNumber(item.amount),
       taxRate: item.taxRate ? Number(item.taxRate) : null,
-      taxAmount: Number(item.taxAmount),
+      taxAmount: toNumber(item.taxAmount),
       sortOrder: item.sortOrder,
     })),
     settings: {
@@ -536,14 +642,14 @@ export async function getInvoice(invoiceId: string): Promise<InvoiceDocument | n
       reminderDays: (settings.reminderDays as number[]) ?? [7, 3, 1],
     },
     totals: {
-      subtotal: Number(invoice.subtotal),
+      subtotal: toNumber(invoice.subtotal),
       discountType: invoice.discountType as 'percentage' | 'fixed' | null,
       discountValue: invoice.discountValue ? Number(invoice.discountValue) : null,
-      discountAmount: Number(invoice.discountAmount),
-      taxTotal: Number(invoice.taxTotal),
-      total: Number(invoice.total),
-      amountPaid: Number(invoice.amountPaid),
-      amountDue: Number(invoice.amountDue),
+      discountAmount: toNumber(invoice.discountAmount),
+      taxTotal: toNumber(invoice.taxTotal),
+      total: toNumber(invoice.total),
+      amountPaid: toNumber(invoice.amountPaid),
+      amountDue: toNumber(invoice.amountDue),
     },
     notes: invoice.notes || '',
     terms: invoice.terms || '',
@@ -611,14 +717,15 @@ export async function getInvoices(filters?: {
     return {
       id: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
-      status: (isOverdue && invoice.status !== 'partial' ? 'overdue' : invoice.status) as InvoiceStatus,
+      // Bug #176: Partially-paid overdue invoices should also show as overdue
+      status: (isOverdue ? 'overdue' : invoice.status) as InvoiceStatus,
       title: invoice.title || 'Invoice',
-      currency: invoice.currency || 'USD',
+      currency: invoice.currency,
       issueDate: invoice.issueDate.toISOString().split('T')[0] ?? '',
       dueDate: invoice.dueDate.toISOString().split('T')[0] ?? '',
-      total: Number(invoice.total),
-      amountPaid: Number(invoice.amountPaid),
-      amountDue: Number(invoice.amountDue),
+      total: toNumber(invoice.total),
+      amountPaid: toNumber(invoice.amountPaid),
+      amountDue: toNumber(invoice.amountDue),
       accessToken: invoice.accessToken ?? null,
       client: {
         id: invoice.client?.id ?? '',
@@ -627,6 +734,7 @@ export async function getInvoices(filters?: {
         company: invoice.client?.company ?? null,
       },
       isOverdue,
+      isRecurring: invoice.isRecurring,
     };
   });
 }
@@ -661,7 +769,7 @@ export async function updateInvoiceStatus(
   // Validate status transitions
   const allowedTransitions: Record<string, string[]> = {
     draft: ['sent', 'voided'],
-    sent: ['viewed', 'paid', 'partial', 'voided', 'draft'],
+    sent: ['viewed', 'paid', 'partial', 'voided'],
     viewed: ['paid', 'partial', 'voided'],
     partial: ['paid', 'voided'],
     paid: ['voided'],
@@ -678,8 +786,8 @@ export async function updateInvoiceStatus(
   }
 
   // Enforce payment constraints for payment-related statuses
-  const amountPaid = Number(invoice.amountPaid);
-  const total = Number(invoice.total);
+  const amountPaid = toNumber(invoice.amountPaid);
+  const total = toNumber(invoice.total);
   if (status === 'paid' && amountPaid < total) {
     return {
       success: false,
@@ -700,11 +808,16 @@ export async function updateInvoiceStatus(
   // Set timestamps based on status
   if (status === 'sent' && !invoice.sentAt) {
     updateData.sentAt = new Date();
-  } else if (status === 'paid') {
-    updateData.paidAt = new Date();
-    // Always set amountPaid to total when marking as paid for consistency
-    updateData.amountPaid = invoice.total;
-    updateData.amountDue = 0;
+  } else if (status === 'paid' || status === 'partial') {
+    if (!invoice.paidAt) updateData.paidAt = new Date();
+    if (status === 'paid') {
+      // Bug #16: Only override amountPaid if it doesn't already match total
+      // This preserves the payment ledger when payments were recorded incrementally
+      if (Math.abs(amountPaid - total) > 0.01) {
+        updateData.amountPaid = invoice.total;
+      }
+      updateData.amountDue = 0;
+    }
   } else if (status === 'voided') {
     updateData.voidedAt = new Date();
     updateData.amountDue = 0;
@@ -731,7 +844,7 @@ export async function updateInvoiceStatus(
 
   try {
     if (status === 'paid') {
-      domainEvents.emit({ type: 'invoice.paid', payload: { invoiceId, amount: Number(invoice.total) } });
+      domainEvents.emit({ type: 'invoice.paid', payload: { invoiceId, amount: toNumber(invoice.total) } });
     } else if (status === 'voided') {
       domainEvents.emit({ type: 'invoice.voided', payload: { invoiceId } });
     }
@@ -743,68 +856,93 @@ export async function updateInvoiceStatus(
 /**
  * Send invoice to client
  */
-export async function sendInvoice(invoiceId: string) {
-  const result = await updateInvoiceStatus(invoiceId, 'sent');
+// Bug #105: Accept optional email customization from SendEmailDialog
+interface SendEmailOptions {
+  recipients?: string[];
+  subject?: string;
+  message?: string;
+}
 
-  if (!result.success) {
-    return { ...result, emailSent: false };
-  }
-
-  // Fetch invoice with client for email
+export async function sendInvoice(invoiceId: string, emailOptions?: SendEmailOptions) {
+  // Fetch invoice with client for email first
   const { workspace } = await getActiveWorkspace();
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, workspaceId: workspace.id },
     include: { client: true },
   });
 
+  if (!invoice) {
+    return { success: false, error: 'Invoice not found', emailSent: false };
+  }
+
+  if (!invoice.client?.email) {
+    return { success: false, error: 'Client has no email address', emailSent: false };
+  }
+
+  // Try sending email FIRST — only update status if email succeeds
+  const baseUrl = getBaseUrl();
+  const invoiceUrl = `${baseUrl}/i/${invoice.accessToken}`;
+
+  // Bug #105: Use custom recipients from dialog if provided
+  const emailRecipients = emailOptions?.recipients?.length
+    ? emailOptions.recipients
+    : [invoice.client.email];
+
   let emailSent = false;
-
-  if (invoice?.client?.email) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const invoiceUrl = `${baseUrl}/i/${invoice.accessToken}`;
-
-    try {
-      const emailResult = await sendInvoiceSentEmail({
-        to: invoice.client.email,
+  try {
+    const emailResult = await sendTemplatedEmail({
+      type: 'invoice_sent',
+      to: emailRecipients,
+      variables: {
+        businessName: workspace.name,
+        businessEmail: (await prisma.businessProfile.findUnique({ where: { workspaceId: workspace.id }, select: { email: true } }))?.email || '',
         clientName: invoice.client.name,
+        clientEmail: invoice.client.email,
         invoiceNumber: invoice.invoiceNumber,
         invoiceUrl,
-        businessName: workspace.name,
-        amount: formatCurrency(Number(invoice.total)),
-        dueDate: invoice.dueDate,
-        rateLimitKey: workspace.id,
-      });
-      emailSent = emailResult.success;
-      if (!emailResult.success) {
-        console.error('Failed to send invoice email:', emailResult.error);
-      }
-    } catch (err) {
-      console.error('Failed to send invoice email:', err);
+        invoiceTotal: formatCurrency(toNumber(invoice.total), invoice.currency),
+        amountDue: formatCurrency(toNumber(invoice.amountDue), invoice.currency),
+        amountPaid: formatCurrency(toNumber(invoice.amountPaid), invoice.currency),
+        invoiceDueDate: invoice.dueDate ? invoice.dueDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined,
+        message: emailOptions?.message || undefined,
+      },
+      customSubject: emailOptions?.subject || undefined,
+    });
+    emailSent = emailResult.success;
+    if (!emailResult.success) {
+      logger.error({ err: emailResult.error }, 'Failed to send invoice email');
+      return { success: false, error: 'Email could not be sent. Please check your email settings.', emailSent: false };
     }
+  } catch (err) {
+    logger.error({ err }, 'Failed to send invoice email');
+    return { success: false, error: 'Email could not be sent. Please check your email settings.', emailSent: false };
+  }
+
+  // Email sent successfully — now update status to 'sent'
+  const result = await updateInvoiceStatus(invoiceId, 'sent');
+
+  if (!result.success) {
+    return { ...result, emailSent: true };
   }
 
   // Create notification for sender
-  if (invoice) {
-    const { userId } = await getCurrentUserWorkspace();
-    createNotification({
-      userId,
-      workspaceId: workspace.id,
-      type: 'invoice_sent',
-      title: `Invoice ${invoice.invoiceNumber} sent`,
-      message: invoice.client?.email ? `Sent to ${invoice.client.email}` : undefined,
-      entityType: 'invoice',
-      entityId: invoiceId,
-      link: `/invoices/${invoiceId}`,
-    }).catch(() => {});
-  }
+  const { userId } = await getCurrentUserWorkspace();
+  createNotification({
+    userId,
+    workspaceId: workspace.id,
+    type: 'invoice_sent',
+    title: `Invoice ${invoice.invoiceNumber} sent`,
+    message: `Sent to ${invoice.client.email}`,
+    entityType: 'invoice',
+    entityId: invoiceId,
+    link: `/invoices/${invoiceId}`,
+  }).catch(() => {});
 
   try {
-    if (invoice?.client?.email) {
-      domainEvents.emit({ type: 'invoice.sent', payload: { invoiceId, clientEmail: invoice.client.email } });
-    }
+    domainEvents.emit({ type: 'invoice.sent', payload: { invoiceId, clientEmail: invoice.client.email } });
   } catch {}
 
-  return { success: true, emailSent };
+  return { success: true, emailSent: true };
 }
 
 /**
@@ -896,15 +1034,15 @@ export async function recordPayment(
   }
 
   // Bug #125: Prevent overpayment
-  const currentAmountPaid = Number(invoice.amountPaid);
-  const total = Number(invoice.total);
+  const currentAmountPaid = toNumber(invoice.amountPaid);
+  const total = toNumber(invoice.total);
   const maxPayable = total - currentAmountPaid;
   if (data.amount > maxPayable) {
     return { success: false, error: `Payment exceeds remaining balance. Maximum payable: $${maxPayable.toFixed(2)}` };
   }
 
   // Bug #67: Use interactive transaction with atomic increment to prevent race conditions
-  await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // Atomically increment amountPaid
     const updated = await tx.invoice.update({
       where: { id: invoiceId },
@@ -914,7 +1052,7 @@ export async function recordPayment(
       select: { amountPaid: true },
     });
 
-    const newAmountPaid = Number(updated.amountPaid);
+    const newAmountPaid = toNumber(updated.amountPaid);
     const newAmountDue = total - newAmountPaid;
 
     // Determine new status
@@ -927,7 +1065,7 @@ export async function recordPayment(
       newStatus = invoice.status as InvoiceStatus;
     }
 
-    await tx.payment.create({
+    const payment = await tx.payment.create({
       data: {
         invoiceId,
         amount: data.amount,
@@ -944,7 +1082,7 @@ export async function recordPayment(
       data: {
         amountDue: Math.max(0, newAmountDue),
         status: newStatus,
-        ...(newStatus === 'paid' && { paidAt: new Date() }),
+        ...(!invoice.paidAt && { paidAt: new Date() }),
       },
     });
 
@@ -963,11 +1101,13 @@ export async function recordPayment(
       },
     });
 
-    return { newAmountPaid, newAmountDue, newStatus };
+    return { paymentId: payment.id, newAmountPaid, newAmountDue, newStatus };
   });
 
   revalidatePath(ROUTES.invoices);
   revalidatePath(ROUTES.invoiceDetail(invoiceId));
+
+  domainEvents.emit({ type: 'payment.received', payload: { paymentId: result.paymentId, invoiceId, amount: data.amount } });
 
   return { success: true };
 }
@@ -1051,8 +1191,17 @@ export async function duplicateInvoice(invoiceId: string) {
 }
 
 // ============================================
-// INVOICE TEMPLATES (STUB)
+// INVOICE TEMPLATES
 // ============================================
+
+export interface InvoiceTemplateLineItem {
+  id: string;
+  name: string;
+  description: string;
+  rate: number;
+  qty: number;
+  taxable: boolean;
+}
 
 export interface InvoiceTemplateListItem {
   id: string;
@@ -1060,38 +1209,197 @@ export interface InvoiceTemplateListItem {
   description: string;
   paymentTerms: string;
   currency: string;
+  lineItems: InvoiceTemplateLineItem[];
+  notes: string;
+  terms: string;
   usageCount: number;
   isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export async function getInvoiceTemplates(filter?: { search?: string; page?: number }) {
-  // Not yet backed by database — return empty list
+  const { workspace } = await getActiveWorkspace();
+
+  const page = filter?.page ?? 1;
+  const limit = 10;
+  const skip = (page - 1) * limit;
+
+  const where = {
+    workspaceId: workspace.id,
+    deletedAt: null,
+    ...(filter?.search ? { name: { contains: filter.search, mode: 'insensitive' as const } } : {}),
+  };
+
+  const [templates, total] = await Promise.all([
+    prisma.invoiceTemplate.findMany({
+      where,
+      orderBy: [{ isDefault: 'desc' }, { updatedAt: 'desc' }],
+      skip,
+      take: limit,
+    }),
+    prisma.invoiceTemplate.count({ where }),
+  ]);
+
+  const data: InvoiceTemplateListItem[] = templates.map((t) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description ?? '',
+    paymentTerms: t.paymentTerms,
+    currency: t.currency,
+    lineItems: (typeof t.lineItems === 'string' ? JSON.parse(t.lineItems) : t.lineItems) as InvoiceTemplateLineItem[] ?? [],
+    notes: t.notes ?? '',
+    terms: t.terms ?? '',
+    usageCount: t.usageCount,
+    isDefault: t.isDefault,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+  }));
+
   return {
-    data: [] as InvoiceTemplateListItem[],
-    meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+    data,
+    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
 }
 
-export async function deleteInvoiceTemplate(id: string) {
-  // Not yet backed by database
-  return { success: false, error: 'Invoice templates are not yet implemented' };
-}
+export async function createInvoiceTemplate(data: {
+  name: string;
+  description?: string;
+  paymentTerms?: string;
+  currency?: string;
+  lineItems?: InvoiceTemplateLineItem[];
+  notes?: string;
+  terms?: string;
+  isDefault?: boolean;
+}) {
+  const { workspace } = await getActiveWorkspace();
 
-export async function duplicateInvoiceTemplate(id: string) {
-  // Not yet backed by database
-  return { success: false, error: 'Invoice templates are not yet implemented' };
+  if (!data.name?.trim()) {
+    return { success: false, error: 'Template name is required' };
+  }
+
+  // If setting as default, unset any existing default
+  if (data.isDefault) {
+    await prisma.invoiceTemplate.updateMany({
+      where: { workspaceId: workspace.id, isDefault: true },
+      data: { isDefault: false },
+    });
+  }
+
+  const template = await prisma.invoiceTemplate.create({
+    data: {
+      workspaceId: workspace.id,
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      paymentTerms: data.paymentTerms || 'net30',
+      currency: data.currency || 'USD',
+      lineItems: (data.lineItems ?? []) as unknown as any,
+      notes: data.notes?.trim() || null,
+      terms: data.terms?.trim() || null,
+      isDefault: data.isDefault ?? false,
+    },
+  });
+
+  revalidatePath('/templates/invoices');
+  return { success: true, id: template.id };
 }
 
 export async function updateInvoiceTemplate(data: {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   paymentTerms: string;
   currency: string;
+  lineItems?: InvoiceTemplateLineItem[];
+  notes?: string;
+  terms?: string;
   isDefault: boolean;
 }) {
-  // Not yet backed by database
-  return { success: false, error: 'Invoice templates are not yet implemented' };
+  const { workspace } = await getActiveWorkspace();
+
+  const template = await prisma.invoiceTemplate.findFirst({
+    where: { id: data.id, workspaceId: workspace.id, deletedAt: null },
+  });
+
+  if (!template) {
+    return { success: false, error: 'Template not found' };
+  }
+
+  if (!data.name?.trim()) {
+    return { success: false, error: 'Template name is required' };
+  }
+
+  // If setting as default, unset any existing default
+  if (data.isDefault && !template.isDefault) {
+    await prisma.invoiceTemplate.updateMany({
+      where: { workspaceId: workspace.id, isDefault: true },
+      data: { isDefault: false },
+    });
+  }
+
+  await prisma.invoiceTemplate.update({
+    where: { id: data.id },
+    data: {
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      paymentTerms: data.paymentTerms,
+      currency: data.currency,
+      lineItems: (data.lineItems ?? template.lineItems) as unknown as any,
+      notes: data.notes?.trim() ?? template.notes,
+      terms: data.terms?.trim() ?? template.terms,
+      isDefault: data.isDefault,
+    },
+  });
+
+  revalidatePath('/templates/invoices');
+  return { success: true };
+}
+
+export async function deleteInvoiceTemplate(id: string) {
+  const { workspace } = await getActiveWorkspace();
+
+  const template = await prisma.invoiceTemplate.findFirst({
+    where: { id, workspaceId: workspace.id, deletedAt: null },
+  });
+
+  if (!template) {
+    return { success: false, error: 'Template not found' };
+  }
+
+  await prisma.invoiceTemplate.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  });
+
+  revalidatePath('/templates/invoices');
+  return { success: true };
+}
+
+export async function duplicateInvoiceTemplate(id: string) {
+  const { workspace } = await getActiveWorkspace();
+
+  const template = await prisma.invoiceTemplate.findFirst({
+    where: { id, workspaceId: workspace.id, deletedAt: null },
+  });
+
+  if (!template) {
+    return { success: false, error: 'Template not found' };
+  }
+
+  const duplicate = await prisma.invoiceTemplate.create({
+    data: {
+      workspaceId: workspace.id,
+      name: `${template.name} (Copy)`,
+      description: template.description,
+      paymentTerms: template.paymentTerms,
+      currency: template.currency,
+      lineItems: (template.lineItems ?? []) as unknown as any,
+      notes: template.notes,
+      terms: template.terms,
+      isDefault: false,
+    },
+  });
+
+  revalidatePath('/templates/invoices');
+  return { success: true, id: duplicate.id };
 }

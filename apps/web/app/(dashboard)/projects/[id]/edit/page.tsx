@@ -12,7 +12,6 @@ import type { UpdateProjectInput } from '@/lib/projects/actions';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { notFound } from 'next/navigation';
 
 interface EditProjectPageProps {
   params: Promise<{ id: string }>;
@@ -94,17 +93,17 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
     );
   }
 
+  // HIGH #46: notFound() throws in client components — redirect instead
   if (!project) {
-    notFound();
+    router.push('/projects');
+    return null;
   }
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={resolvedParams ? `/projects/${resolvedParams.id}` : '/projects'}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Edit Project</h1>

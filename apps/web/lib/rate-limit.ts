@@ -1,48 +1,11 @@
 /**
- * In-memory rate limiter with sliding window.
- *
- * IMPORTANT: This is a per-instance rate limiter. On serverless platforms
- * (Vercel, AWS Lambda), each function instance has its own memory, so rate
- * limits are NOT shared across instances. This means an attacker can bypass
- * limits by spreading requests across instances.
- *
- * For production hardening, replace with a distributed rate limiter:
- * - Upstash Redis (@upstash/ratelimit)
- * - Vercel KV
- * - Redis (ioredis)
- *
- * The current implementation still provides basic protection against:
- * - Single-instance bursts (warm lambda reuse)
- * - Development/self-hosted single-process deployments
+ * Distributed rate limiter using Upstash Redis.
+ * Falls back to in-memory when Redis is not configured (local dev).
  */
+import { logger } from '@/lib/logger';
 
-interface RateLimitRecord {
-  count: number;
-  resetAt: number;
-}
-
-const requestCounts = new Map<string, RateLimitRecord>();
-
-// Track last cleanup time for lazy cleanup (no setInterval in serverless)
-let lastCleanup = Date.now();
-const CLEANUP_INTERVAL = 60000; // 1 minute
-
-/**
- * Lazy cleanup: remove expired entries when enough time has passed.
- * Called on every rate limit check instead of using setInterval,
- * which is problematic in serverless environments.
- */
-function lazyCleanup() {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) return;
-  lastCleanup = now;
-
-  for (const [key, record] of requestCounts.entries()) {
-    if (now > record.resetAt) {
-      requestCounts.delete(key);
-    }
-  }
-}
+import { Ratelimit } from '@upstash/ratelimit';
+import { getRedis } from './redis';
 
 export interface RateLimitOptions {
   /** Maximum requests allowed in the window */
@@ -62,51 +25,94 @@ export interface RateLimitResult {
   reset: number;
 }
 
-/**
- * Check rate limit for a given key (typically IP address or user ID).
- *
- * NOTE: Per-instance only. See module-level comment for limitations.
- */
-export function checkRateLimit(
-  key: string,
-  options: RateLimitOptions
-): RateLimitResult {
-  lazyCleanup();
+// Cache Upstash Ratelimit instances by config key
+const rateLimiters = new Map<string, Ratelimit>();
 
+function getUpstashRateLimiter(options: RateLimitOptions): Ratelimit | null {
+  const redis = getRedis();
+  if (!redis) return null;
+
+  const configKey = `${options.limit}:${options.windowMs}`;
+  let limiter = rateLimiters.get(configKey);
+  if (!limiter) {
+    const windowSec = Math.ceil(options.windowMs / 1000);
+    limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(options.limit, `${windowSec} s`),
+      prefix: 'rl',
+    });
+    rateLimiters.set(configKey, limiter);
+  }
+  return limiter;
+}
+
+// ─── In-memory fallback (for local dev without Redis) ───────────────
+
+interface InMemoryRecord {
+  count: number;
+  resetAt: number;
+}
+
+const inMemoryStore = new Map<string, InMemoryRecord>();
+let lastCleanup = Date.now();
+
+function inMemoryCleanup() {
   const now = Date.now();
-  const record = requestCounts.get(key);
+  if (now - lastCleanup < 60000) return;
+  lastCleanup = now;
+  for (const [key, record] of inMemoryStore.entries()) {
+    if (now > record.resetAt) inMemoryStore.delete(key);
+  }
+}
 
-  // If no record exists or window has expired, create new window
+function checkInMemory(key: string, options: RateLimitOptions): RateLimitResult {
+  inMemoryCleanup();
+  const now = Date.now();
+  const record = inMemoryStore.get(key);
+
   if (!record || now > record.resetAt) {
     const resetAt = now + options.windowMs;
-    requestCounts.set(key, { count: 1, resetAt });
-    return {
-      limited: false,
-      limit: options.limit,
-      remaining: options.limit - 1,
-      reset: Math.floor(resetAt / 1000),
-    };
+    inMemoryStore.set(key, { count: 1, resetAt });
+    return { limited: false, limit: options.limit, remaining: options.limit - 1, reset: Math.floor(resetAt / 1000) };
   }
 
-  // Increment count
   record.count++;
-
-  // Check if over limit
   if (record.count > options.limit) {
-    return {
-      limited: true,
-      limit: options.limit,
-      remaining: 0,
-      reset: Math.floor(record.resetAt / 1000),
-    };
+    return { limited: true, limit: options.limit, remaining: 0, reset: Math.floor(record.resetAt / 1000) };
   }
 
-  return {
-    limited: false,
-    limit: options.limit,
-    remaining: options.limit - record.count,
-    reset: Math.floor(record.resetAt / 1000),
-  };
+  return { limited: false, limit: options.limit, remaining: options.limit - record.count, reset: Math.floor(record.resetAt / 1000) };
+}
+
+// ─── Main export ────────────────────────────────────────────────────
+
+/**
+ * Check rate limit for a given key.
+ * Uses Upstash Redis when available, falls back to in-memory for local dev.
+ * All callers must await this function.
+ */
+export async function checkRateLimit(
+  key: string,
+  options: RateLimitOptions
+): Promise<RateLimitResult> {
+  const upstash = getUpstashRateLimiter(options);
+
+  if (!upstash) {
+    return checkInMemory(key, options);
+  }
+
+  try {
+    const result = await upstash.limit(key);
+    return {
+      limited: !result.success,
+      limit: result.limit,
+      remaining: result.remaining,
+      reset: result.reset,
+    };
+  } catch (err) {
+    logger.error({ err }, '[rate-limit] Redis error, falling back to in-memory');
+    return checkInMemory(key, options);
+  }
 }
 
 /**

@@ -3,6 +3,7 @@ import { constructWebhookEvent, isStripeEnabled } from '@/lib/services/stripe';
 import { processPaymentWebhook, processAccountUpdate, processRefundWebhook } from '@/lib/payments/internal';
 import { prisma } from '@quotecraft/database';
 import type Stripe from 'stripe';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/webhooks/stripe
@@ -25,23 +26,26 @@ export async function POST(request: NextRequest) {
   try {
     event = constructWebhookEvent(body, signature);
   } catch (error) {
-    console.error('Webhook signature verification failed:', error);
+    logger.error({ err: error }, 'Webhook signature verification failed');
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
   try {
-    // Idempotency check: skip already-processed events
-    const existing = await prisma.stripeWebhookEvent.findUnique({
-      where: { id: event.id },
-    });
-    if (existing) {
-      return NextResponse.json({ received: true, duplicate: true });
+    // Idempotency check: atomically insert the event record.
+    // If a concurrent webhook already inserted it, the unique constraint
+    // violation is caught and we skip processing (prevents race condition
+    // where two concurrent requests both pass a findUnique check).
+    try {
+      await prisma.stripeWebhookEvent.create({
+        data: { id: event.id, type: event.type },
+      });
+    } catch (err: unknown) {
+      // P2002 = Prisma unique constraint violation — event already processed
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'P2002') {
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+      throw err; // Re-throw unexpected errors
     }
-
-    // Record event before processing to prevent concurrent duplicates
-    await prisma.stripeWebhookEvent.create({
-      data: { id: event.id, type: event.type },
-    });
 
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -72,6 +76,8 @@ export async function POST(request: NextRequest) {
           : charge.payment_intent?.id;
         if (paymentIntentId) {
           await processRefundWebhook(paymentIntentId, charge.amount_refunded);
+        } else {
+          logger.warn({ eventId: event.id }, '[stripe-webhook] Orphaned refund event: charge.payment_intent is null. Refund processed by Stripe but no matching payment in QuoteCraft.');
         }
         break;
       }
@@ -83,12 +89,20 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.debug({ eventType: event.type }, 'Unhandled Stripe event type');
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    logger.error({ err: error }, 'Error processing webhook');
+    // Permanent business logic errors (not found, invalid data) → 200 so Stripe stops retrying
+    const message = error instanceof Error ? error.message : '';
+    const isPermanent = message.includes('not found') || message.includes('invalid') || message.includes('already');
+    if (isPermanent) {
+      return NextResponse.json({ received: true, error: 'Permanent failure — will not retry' }, { status: 200 });
+    }
+    // Transient errors (DB timeout, network) → 500 so Stripe retries with exponential backoff
+    // Idempotency guard prevents duplicate processing on successful retry
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }

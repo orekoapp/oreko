@@ -4,6 +4,7 @@ import { uploadFile } from '@/lib/services/storage';
 import { updateBusinessLogo } from '@/lib/settings/actions';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';
+import { logger } from '@/lib/logger';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Rate limit: 20 uploads per minute per user
-  const rateLimitResult = checkRateLimit(`upload:${session.user.id}`, { limit: 20, windowMs: 60000 });
+  const rateLimitResult = await checkRateLimit(`upload:${session.user.id}`, { limit: 20, windowMs: 60000 });
   if (rateLimitResult.limited) {
     return NextResponse.json(
       { error: 'Too many uploads. Please try again later.' },
@@ -51,7 +52,9 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const purpose = formData.get('purpose') as string | null;
+    const rawPurpose = formData.get('purpose') as string | null;
+    const VALID_PURPOSES = ['logo', 'signature', 'attachment', 'profile'];
+    const purpose = rawPurpose && VALID_PURPOSES.includes(rawPurpose) ? rawPurpose : 'attachment';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -104,22 +107,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Bug #73: Audit log for file uploads
-    console.info('[AUDIT] File uploaded:', {
-      userId: session.user.id,
-      filename: result.key,
-      size: result.size,
-      contentType: detectedType,
-      purpose: purpose || 'general',
-      timestamp: new Date().toISOString(),
-    });
+    logger.info({ userId: session.user.id, filename: result.key, size: result.size, contentType: detectedType, purpose: purpose || 'general' }, '[AUDIT] File uploaded');
 
+    // Bug #93: Return response with security headers for served content
     return NextResponse.json({
       url: result.url,
       key: result.key,
       size: result.size,
+    }, {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+      },
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error({ err: error }, 'Upload error');
     return NextResponse.json(
       { error: 'Failed to upload file' },
       { status: 500 }

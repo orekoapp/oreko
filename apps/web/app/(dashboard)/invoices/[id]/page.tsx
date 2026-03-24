@@ -4,23 +4,27 @@ import {
   Edit,
   Send,
   ExternalLink,
-  DollarSign,
+  Banknote,
   AlertCircle,
   CheckCircle,
   Clock,
   Ban,
+  RefreshCw,
 } from 'lucide-react';
 import { getInvoice } from '@/lib/invoices/actions';
 import { getCreditNotesForInvoice } from '@/lib/credit-notes/actions';
+import { getRecurringSettings } from '@/lib/invoices/recurring';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { isInvoiceOverdue, getDaysUntilDue } from '@/lib/invoices/types';
 import { InvoiceActions } from '@/components/invoices/invoice-actions';
 import { RecordPaymentButton } from '@/components/invoices/record-payment-button';
 import { CreditNoteDialog } from '@/components/invoices/credit-note-dialog';
 import { CreditNotesList } from '@/components/invoices/credit-notes-list';
+import { RecurringSettingsButton } from '@/components/invoices/recurring-settings-button';
 
 interface InvoiceDetailPageProps {
   params: Promise<{ id: string }>;
@@ -45,17 +49,21 @@ const statusColors: Record<string, { bg: string; text: string; icon: React.React
   draft: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300', icon: <Edit className="h-4 w-4" /> },
   sent: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-700 dark:text-blue-300', icon: <Send className="h-4 w-4" /> },
   viewed: { bg: 'bg-yellow-100 dark:bg-yellow-900', text: 'text-yellow-700 dark:text-yellow-300', icon: <Clock className="h-4 w-4" /> },
-  partial: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-700 dark:text-purple-300', icon: <DollarSign className="h-4 w-4" /> },
+  partial: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-700 dark:text-purple-300', icon: <Banknote className="h-4 w-4" /> },
   paid: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-700 dark:text-green-300', icon: <CheckCircle className="h-4 w-4" /> },
   overdue: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-700 dark:text-red-300', icon: <AlertCircle className="h-4 w-4" /> },
   voided: { bg: 'bg-gray-200 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400', icon: <Ban className="h-4 w-4" /> },
 };
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  const parts = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-  }).format(amount);
+  }).formatToParts(amount);
+  return parts.map((p, i) => {
+    if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+    return p.value;
+  }).join('');
 }
 
 export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
@@ -89,6 +97,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   }
 
   const creditNotes = await getCreditNotesForInvoice(invoice.id);
+  const recurringSettings = await getRecurringSettings(invoice.id);
 
   const isOverdue = isInvoiceOverdue(invoice.dueDate, invoice.status);
   const daysUntilDue = getDaysUntilDue(invoice.dueDate);
@@ -113,6 +122,12 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               {statusStyle.icon}
               {displayStatus}
             </span>
+            {recurringSettings?.enabled && (
+              <Badge variant="outline" className="gap-1 border-violet-300 text-violet-600 bg-violet-50 dark:border-violet-600 dark:text-violet-400 dark:bg-violet-950">
+                <RefreshCw className="h-3 w-3" />
+                Recurring
+              </Badge>
+            )}
           </div>
           <p className="text-muted-foreground">
             {invoice.invoiceNumber} &bull; Issued on{' '}
@@ -120,7 +135,17 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           </p>
         </div>
 
-        <InvoiceActions invoice={invoice} isOverdue={isOverdue} />
+        <div className="flex items-center gap-2">
+          {invoice.status === 'draft' && (
+            <Button asChild>
+              <Link href={`/invoices/${invoice.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Invoice
+              </Link>
+            </Button>
+          )}
+          <InvoiceActions invoice={invoice} isOverdue={isOverdue} />
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -179,10 +204,10 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                             </td>
                             <td className="px-4 py-3 text-right">{item.quantity}</td>
                             <td className="px-4 py-3 text-right">
-                              {formatCurrency(item.rate, invoice.settings.currency)}
+                              {formatCurrency(item.rate, invoice.currency)}
                             </td>
                             <td className="px-4 py-3 text-right font-medium">
-                              {formatCurrency(item.amount, invoice.settings.currency)}
+                              {formatCurrency(item.amount, invoice.currency)}
                             </td>
                           </tr>
                         ))}
@@ -196,33 +221,33 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   <div className="ml-auto w-64 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>{formatCurrency(invoice.totals.subtotal, invoice.settings.currency)}</span>
+                      <span>{formatCurrency(invoice.totals.subtotal, invoice.currency)}</span>
                     </div>
                     {invoice.totals.discountAmount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
-                        <span>-{formatCurrency(invoice.totals.discountAmount, invoice.settings.currency)}</span>
+                        <span>-{formatCurrency(invoice.totals.discountAmount, invoice.currency)}</span>
                       </div>
                     )}
                     {invoice.totals.taxTotal > 0 && (
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>{formatCurrency(invoice.totals.taxTotal, invoice.settings.currency)}</span>
+                        <span>{formatCurrency(invoice.totals.taxTotal, invoice.currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between border-t pt-2 text-lg font-bold">
                       <span>Total</span>
-                      <span>{formatCurrency(invoice.totals.total, invoice.settings.currency)}</span>
+                      <span>{formatCurrency(invoice.totals.total, invoice.currency)}</span>
                     </div>
                     {invoice.totals.amountPaid > 0 && (
                       <>
                         <div className="flex justify-between text-sm text-green-600">
                           <span>Amount Paid</span>
-                          <span>-{formatCurrency(invoice.totals.amountPaid, invoice.settings.currency)}</span>
+                          <span>-{formatCurrency(invoice.totals.amountPaid, invoice.currency)}</span>
                         </div>
                         <div className={`flex justify-between border-t pt-2 font-bold ${invoice.totals.amountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                           <span>Amount Due</span>
-                          <span>{formatCurrency(invoice.totals.amountDue, invoice.settings.currency)}</span>
+                          <span>{formatCurrency(invoice.totals.amountDue, invoice.currency)}</span>
                         </div>
                       </>
                     )}
@@ -260,7 +285,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
                 <p data-testid="invoice-total" className="text-2xl font-bold">
-                  {formatCurrency(invoice.totals.total, invoice.settings.currency)}
+                  {formatCurrency(invoice.totals.total, invoice.currency)}
                 </p>
               </div>
               <div>
@@ -275,7 +300,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               <div>
                 <p className="text-sm text-muted-foreground">Amount Due</p>
                 <p data-testid="amount-due" className={`text-xl font-bold ${displayAmountDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                  {formatCurrency(displayAmountDue, invoice.settings.currency)}
+                  {formatCurrency(displayAmountDue, invoice.currency)}
                 </p>
               </div>
               <div>
@@ -324,6 +349,53 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             </CardContent>
           </Card>
 
+          {/* Recurring Settings */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Recurring</CardTitle>
+                <RecurringSettingsButton
+                  invoiceId={invoice.id}
+                  initialSettings={recurringSettings}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {recurringSettings?.enabled ? (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Frequency</span>
+                    <span className="font-medium capitalize">{recurringSettings.frequency}</span>
+                  </div>
+                  {recurringSettings.nextRecurringDate && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Next Invoice</span>
+                      <span className="font-medium">
+                        {new Date(recurringSettings.nextRecurringDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {recurringSettings.endDate && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Ends</span>
+                      <span className="font-medium">
+                        {new Date(recurringSettings.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Auto-send</span>
+                    <span className="font-medium">{recurringSettings.autoSend ? 'Yes' : 'No'}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Not configured. Click the settings button to enable recurring.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Payment Actions */}
           {invoice.status !== 'draft' && invoice.status !== 'voided' && invoice.totals.amountDue > 0 && (
             <Card>
@@ -334,7 +406,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 <RecordPaymentButton
                   invoiceId={invoice.id}
                   amountDue={invoice.totals.amountDue}
-                  currency={invoice.settings.currency}
+                  currency={invoice.currency}
                 />
               </CardContent>
             </Card>
@@ -349,6 +421,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   <CreditNoteDialog
                     invoiceId={invoice.id}
                     invoiceLineItems={invoice.lineItems}
+                    currency={invoice.currency}
                   />
                 </div>
               </CardHeader>
@@ -403,7 +476,7 @@ async function InvoiceActivity({ invoiceId }: { invoiceId: string }) {
     if (eventType.includes('paid')) return <CheckCircle className="h-4 w-4 text-green-500" />;
     if (eventType.includes('viewed')) return <Clock className="h-4 w-4 text-yellow-500" />;
     if (eventType.includes('voided')) return <Ban className="h-4 w-4 text-gray-500" />;
-    if (eventType.includes('payment')) return <DollarSign className="h-4 w-4 text-green-500" />;
+    if (eventType.includes('payment')) return <Banknote className="h-4 w-4 text-green-500" />;
     return <Clock className="h-4 w-4 text-muted-foreground" />;
   };
 

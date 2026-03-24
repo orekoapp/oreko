@@ -78,7 +78,7 @@
     --sidebar-accent-foreground: var(--base-900);
     --sidebar-border: var(--base-200);
     --sidebar-ring: var(--primary-500);
-    --font-size-scale: 1;
+    --font-size-scale: 1.03; /* Intentional: 3% bump over browser default (16px → ~16.5px) for improved readability */
     --radius: 0.5rem;
     --shadow-2xs: 0px 4px 8px -1px rgb(0 0 0 / 0.05);
     --shadow-xs: 0px 4px 8px -1px rgb(0 0 0 / 0.05);
@@ -326,10 +326,10 @@
   color: var(--base-950);
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — hidden by default (intentional design decision by Shubham) */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 0px;
+  height: 0px;
 }
 
 ::-webkit-scrollbar-track {
@@ -337,12 +337,26 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--muted-foreground) / 0.3);
+  background: transparent;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--muted-foreground) / 0.5);
+  background: transparent;
+}
+
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 /* Print styles for quotes/invoices */

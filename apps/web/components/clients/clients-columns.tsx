@@ -15,10 +15,11 @@ interface ClientColumnsOptions {
   onDelete?: (client: ClientListItem) => void;
   onCreateQuote?: (client: ClientListItem) => void;
   onCreateInvoice?: (client: ClientListItem) => void;
+  currency?: string;
 }
 
 export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<ClientListItem>[] {
-  const { onView, onEdit, onDelete, onCreateQuote, onCreateInvoice } = options;
+  const { onView, onEdit, onDelete, onCreateQuote, onCreateInvoice, currency = 'USD' } = options;
 
   return [
     {
@@ -100,26 +101,26 @@ export function getClientColumns(options: ClientColumnsOptions = {}): ColumnDef<
       },
     },
     {
+      id: 'revenue',
       accessorKey: 'totalRevenue',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Revenue" />
       ),
       cell: ({ row }) => {
-        const revenue = row.getValue('totalRevenue') as number;
+        const revenue = row.original.totalRevenue as number;
         return (
-          <div className="font-medium">{formatCurrency(revenue)}</div>
+          <div className="font-medium">{formatCurrency(revenue, currency)}</div>
         );
       },
     },
     {
       id: 'actions',
       cell: ({ row }) => {
+        // Low #89: Disable quick actions since custom actions array already has view/delete
         return (
           <DataTableRowActions
             row={row.original}
-            onView={onView}
-            onEdit={onEdit}
-            onDelete={onDelete}
+            showQuickActions={false}
             actions={[
               ...(onView ? [{ label: 'View Details', icon: <User className="mr-2 h-4 w-4" />, onClick: onView }] : []),
               ...(onEdit ? [{ label: 'Edit', icon: <Pencil className="mr-2 h-4 w-4" />, onClick: onEdit }] : []),

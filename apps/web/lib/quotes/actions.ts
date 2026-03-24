@@ -5,10 +5,12 @@ import { revalidatePath } from 'next/cache';
 import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
-import { sendQuoteSentEmail } from '@/lib/services/email';
-import { createNotification } from '@/lib/notifications/actions';
+import { sendTemplatedEmail } from '@/lib/email/actions';
+import { createNotification } from '@/lib/notifications/internal';
 import { ROUTES } from '@/lib/routes';
 import { domainEvents } from '@/lib/events/emitter';
+import { toNumber, getBaseUrl, formatCurrency } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 /**
  * Bug #134: Safely parse quote settings from JSON with runtime validation.
@@ -98,6 +100,27 @@ async function generateQuoteNumber(workspaceId: string): Promise<string> {
   return parts.join('-');
 }
 
+/**
+ * Preview the next quote number without incrementing the counter.
+ * Used in the new quote form to show what number will be assigned.
+ */
+export async function getNextQuoteNumber(): Promise<string> {
+  const { workspace } = await getActiveWorkspace();
+
+  const seq = await prisma.numberSequence.findUnique({
+    where: { workspaceId_type: { workspaceId: workspace.id, type: 'quote' } },
+  });
+
+  const nextValue = (seq?.currentValue ?? 0) + 1;
+  const prefix = (seq?.prefix || 'QT').replace(/-$/, '');
+  const padding = seq?.padding ?? 4;
+  const paddedValue = String(nextValue).padStart(padding, '0');
+
+  const parts = [prefix, paddedValue];
+  if (seq?.suffix) parts.push(seq.suffix);
+  return parts.join('-');
+}
+
 /** Allowed block types for server-side validation */
 const VALID_BLOCK_TYPES = new Set([
   'header', 'text', 'service-item', 'service-group',
@@ -112,7 +135,11 @@ export async function createQuote(data: {
   clientId: string;
   projectId?: string | null;
   currency?: string;
+  expirationDate?: string;
   blocks?: QuoteBlock[];
+  notes?: string;
+  terms?: string;
+  isDraft?: boolean;
 }) {
   const { userId, workspace } = await getActiveWorkspace();
   const { role } = await getCurrentUserWorkspace();
@@ -156,17 +183,30 @@ export async function createQuote(data: {
 
   const quoteNumber = await generateQuoteNumber(workspace.id);
 
-  // Extract service items from blocks to create line items
-  const serviceItems = data.blocks
-    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item') || [];
+  // Bug #49: Extract service items recursively (includes items inside service-group blocks)
+  const serviceItems: ServiceItemBlock[] = [];
+  function extractServiceItems(blocks: QuoteBlock[]) {
+    for (const block of blocks) {
+      if (block.type === 'service-item') {
+        serviceItems.push(block as ServiceItemBlock);
+      } else if (block.type === 'service-group') {
+        const groupContent = block.content as { items?: QuoteBlock[] };
+        if (Array.isArray(groupContent.items)) {
+          extractServiceItems(groupContent.items);
+        }
+      }
+    }
+  }
+  if (data.blocks) extractServiceItems(data.blocks);
 
   // Validate line item values
+  // CR #8: Also reject Infinity/NaN to prevent PDF generation crashes
   for (const block of serviceItems) {
-    if (block.content.rate < 0) {
-      return { success: false, error: 'Line item rate cannot be negative' };
+    if (!Number.isFinite(block.content.rate) || block.content.rate < 0 || block.content.rate > 1_000_000) {
+      return { success: false, error: 'Line item rate must be between 0 and 1,000,000' };
     }
-    if (block.content.quantity < 0) {
-      return { success: false, error: 'Line item quantity cannot be negative' };
+    if (!Number.isFinite(block.content.quantity) || block.content.quantity < 0 || block.content.quantity > 1_000_000) {
+      return { success: false, error: 'Line item quantity must be between 0 and 1,000,000' };
     }
   }
 
@@ -196,8 +236,12 @@ export async function createQuote(data: {
       projectId: data.projectId || null,
       quoteNumber,
       title: data.title,
-      status: 'draft',
+      status: data.isDraft !== false ? 'draft' : 'sent',
+      currency,
+      expirationDate: data.expirationDate ? new Date(data.expirationDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       accessToken: generateAccessToken(),
+      notes: data.notes || null,
+      terms: data.terms || null,
       subtotal,
       taxTotal,
       total,
@@ -237,18 +281,18 @@ export async function createQuote(data: {
     success: true,
     quote: {
       ...quote,
-      subtotal: Number(quote.subtotal),
-      taxTotal: Number(quote.taxTotal),
-      total: Number(quote.total),
+      subtotal: toNumber(quote.subtotal),
+      taxTotal: toNumber(quote.taxTotal),
+      total: toNumber(quote.total),
       discountValue: quote.discountValue ? Number(quote.discountValue) : null,
-      discountAmount: Number(quote.discountAmount),
+      discountAmount: toNumber(quote.discountAmount),
       lineItems: quote.lineItems.map((li) => ({
         ...li,
-        quantity: Number(li.quantity),
-        rate: Number(li.rate),
-        amount: Number(li.amount),
+        quantity: toNumber(li.quantity),
+        rate: toNumber(li.rate),
+        amount: toNumber(li.amount),
         taxRate: li.taxRate ? Number(li.taxRate) : null,
-        taxAmount: Number(li.taxAmount),
+        taxAmount: toNumber(li.taxAmount),
       })),
     },
   };
@@ -261,6 +305,7 @@ export async function updateQuote(
   quoteId: string,
   data: {
     title?: string;
+    currency?: string;
     projectId?: string | null;
     blocks?: QuoteBlock[];
     notes?: string;
@@ -277,11 +322,17 @@ export async function updateQuote(
     return { success: false as const, error: 'Insufficient permissions: viewers cannot edit quotes' };
   }
 
-  // Verify quote belongs to workspace
+  // Validate title length if provided
+  if (data.title !== undefined && data.title.length > 500) {
+    return { success: false as const, error: 'Title must be less than 500 characters' };
+  }
+
+  // CR #10: Verify quote belongs to workspace (include deletedAt filter)
   const existingQuote = await prisma.quote.findFirst({
     where: {
       id: quoteId,
       workspaceId: workspace.id,
+      deletedAt: null,
     },
   });
 
@@ -294,18 +345,33 @@ export async function updateQuote(
     return { success: false as const, error: 'Cannot modify a quote that has been accepted or signed' };
   }
 
-  // Extract service items from blocks
-  const serviceBlocks = data.blocks
-    ?.filter((block): block is ServiceItemBlock => block.type === 'service-item');
+  // Bug #49: Extract service items recursively (includes items inside service-group blocks)
+  let serviceBlocks: ServiceItemBlock[] | undefined;
+  if (data.blocks) {
+    serviceBlocks = [];
+    function extractUpdateServiceItems(blocks: QuoteBlock[]) {
+      for (const block of blocks) {
+        if (block.type === 'service-item') {
+          serviceBlocks!.push(block as ServiceItemBlock);
+        } else if (block.type === 'service-group') {
+          const groupContent = block.content as { items?: QuoteBlock[] };
+          if (Array.isArray(groupContent.items)) {
+            extractUpdateServiceItems(groupContent.items);
+          }
+        }
+      }
+    }
+    extractUpdateServiceItems(data.blocks);
+  }
 
   // Validate line item values
   if (serviceBlocks) {
     for (const block of serviceBlocks) {
-      if (block.content.rate < 0) {
-        return { success: false as const, error: 'Line item rate cannot be negative' };
+      if (!Number.isFinite(block.content.rate) || block.content.rate < 0 || block.content.rate > 999999999) {
+        return { success: false as const, error: 'Line item rate must be a valid number between 0 and 999,999,999' };
       }
-      if (block.content.quantity < 0) {
-        return { success: false as const, error: 'Line item quantity cannot be negative' };
+      if (!Number.isFinite(block.content.quantity) || block.content.quantity < 0 || block.content.quantity > 999999) {
+        return { success: false as const, error: 'Line item quantity must be a valid number between 0 and 999,999' };
       }
     }
   }
@@ -366,9 +432,14 @@ export async function updateQuote(
         data: {
           title: data.title,
           ...(data.projectId !== undefined && { projectId: data.projectId }),
+          currency: data.currency || undefined,
           notes: data.notes,
           terms: data.terms,
           internalNotes: data.internalNotes,
+          // Always include discount fields when calculated
+          ...(discountType && { discountType }),
+          ...(discountValue !== undefined && { discountValue }),
+          ...(discountAmount !== undefined && { discountAmount }),
           ...(data.blocks && {
             subtotal,
             taxTotal,
@@ -396,23 +467,23 @@ export async function updateQuote(
       success: true as const,
       quote: {
         ...quote,
-        subtotal: Number(quote.subtotal),
-        taxTotal: Number(quote.taxTotal),
-        total: Number(quote.total),
+        subtotal: toNumber(quote.subtotal),
+        taxTotal: toNumber(quote.taxTotal),
+        total: toNumber(quote.total),
         discountValue: quote.discountValue ? Number(quote.discountValue) : null,
-        discountAmount: Number(quote.discountAmount),
+        discountAmount: toNumber(quote.discountAmount),
         lineItems: quote.lineItems.map((li) => ({
           ...li,
-          quantity: Number(li.quantity),
-          rate: Number(li.rate),
-          amount: Number(li.amount),
+          quantity: toNumber(li.quantity),
+          rate: toNumber(li.rate),
+          amount: toNumber(li.amount),
           taxRate: li.taxRate ? Number(li.taxRate) : null,
-          taxAmount: Number(li.taxAmount),
+          taxAmount: toNumber(li.taxAmount),
         })),
       },
     };
   } catch (error) {
-    console.error('Failed to update quote:', error);
+    logger.error({ err: error }, 'Failed to update quote');
     return { success: false as const, error: 'Failed to save quote. Please try again.' };
   }
 }
@@ -465,8 +536,8 @@ export async function getQuote(quoteId: string) {
       content: {
         name: item.name,
         description: item.description || '',
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
+        quantity: toNumber(item.quantity),
+        rate: toNumber(item.rate),
         unit: 'hour',
         taxRate: item.taxRate ? Number(item.taxRate) : null,
         rateCardId: item.rateCardId || null,
@@ -482,6 +553,7 @@ export async function getQuote(quoteId: string) {
     quoteNumber: quote.quoteNumber,
     status: quote.status as QuoteDocument['status'],
     title: quote.title || 'Untitled Quote',
+    currency: quote.currency || parsedSettings.currency,
     issueDate: quote.issueDate.toISOString().split('T')[0] ?? '',
     expirationDate: quote.expirationDate?.toISOString().split('T')[0] ?? null,
     blocks,
@@ -497,12 +569,12 @@ export async function getQuote(quoteId: string) {
       taxInclusive: parsedSettings.taxInclusive,
     },
     totals: {
-      subtotal: Number(quote.subtotal),
+      subtotal: toNumber(quote.subtotal),
       discountType: quote.discountType as 'percentage' | 'fixed' | null,
       discountValue: quote.discountValue ? Number(quote.discountValue) : null,
-      discountAmount: Number(quote.discountAmount),
-      taxTotal: Number(quote.taxTotal),
-      total: Number(quote.total),
+      discountAmount: toNumber(quote.discountAmount),
+      taxTotal: toNumber(quote.taxTotal),
+      total: toNumber(quote.total),
     },
     notes: quote.notes || '',
     terms: quote.terms || '',
@@ -582,8 +654,8 @@ export async function getQuotes(options?: {
       quoteNumber: quote.quoteNumber,
       title: quote.title,
       status: quote.status,
-      total: Number(quote.total),
-      currency: quote.currency || 'USD',
+      total: toNumber(quote.total),
+      currency: quote.currency,
       issueDate: quote.issueDate.toISOString().split('T')[0],
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] || null,
       client: quote.client ? {
@@ -656,6 +728,7 @@ export async function duplicateQuote(quoteId: string) {
     where: {
       id: quoteId,
       workspaceId: workspace.id,
+      deletedAt: null, // MEDIUM #17: Filter out soft-deleted quotes
     },
     include: {
       lineItems: true,
@@ -792,7 +865,14 @@ export async function updateQuoteStatus(
  * Send quote to client
  * Updates status to 'sent' and triggers email notification
  */
-export async function sendQuote(quoteId: string) {
+// Bug #105: Accept optional email customization from SendEmailDialog
+interface SendEmailOptions {
+  recipients?: string[];
+  subject?: string;
+  message?: string;
+}
+
+export async function sendQuote(quoteId: string, emailOptions?: SendEmailOptions) {
   const { userId, workspace } = await getActiveWorkspace();
   const { role } = await getCurrentUserWorkspace();
 
@@ -806,6 +886,7 @@ export async function sendQuote(quoteId: string) {
     where: {
       id: quoteId,
       workspaceId: workspace.id,
+      deletedAt: null,
     },
     include: {
       client: true,
@@ -816,16 +897,70 @@ export async function sendQuote(quoteId: string) {
     return { success: false, error: 'Quote not found' };
   }
 
+  // HIGH #8: Validate that the current status allows transition to 'sent'
+  const validSendStatuses = ['draft', 'sent', 'viewed']; // Can send/resend from these states
+  if (!validSendStatuses.includes(quote.status)) {
+    return { success: false, error: 'Cannot send a quote with status: ' + quote.status };
+  }
+
   if (!quote.client?.email) {
     return { success: false, error: 'Client email is required to send quote' };
   }
 
   // Prevent sending empty quotes
-  if (Math.abs(Number(quote.total)) < 0.01) {
+  if (Math.abs(toNumber(quote.total)) < 0.01) {
     return { success: false, error: 'Cannot send a quote with zero total. Add line items first.' };
   }
 
-  // Update quote status to sent
+  const baseUrl = getBaseUrl();
+  const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
+
+  // Validate and limit email recipients
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let emailRecipients: string[];
+  if (emailOptions?.recipients?.length) {
+    if (emailOptions.recipients.length > 10) {
+      return { success: false, error: 'Maximum 10 recipients allowed' };
+    }
+    const invalidEmails = emailOptions.recipients.filter(e => !emailRegex.test(e));
+    if (invalidEmails.length > 0) {
+      return { success: false, error: `Invalid email addresses: ${invalidEmails.join(', ')}` };
+    }
+    emailRecipients = emailOptions.recipients;
+  } else {
+    emailRecipients = [quote.client.email];
+  }
+
+  let emailSent = false;
+  try {
+    const emailResult = await sendTemplatedEmail({
+      type: 'quote_sent',
+      to: emailRecipients,
+      variables: {
+        businessName: workspace.name,
+        businessEmail: (await prisma.businessProfile.findUnique({ where: { workspaceId: workspace.id }, select: { email: true } }))?.email || '',
+        clientName: quote.client.name,
+        clientEmail: quote.client.email,
+        quoteName: quote.title || `Quote ${quote.quoteNumber}`,
+        quoteNumber: quote.quoteNumber,
+        quoteUrl,
+        quoteTotal: formatCurrency(toNumber(quote.total), quote.currency),
+        quoteValidUntil: quote.expirationDate ? quote.expirationDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined,
+        message: emailOptions?.message || undefined,
+      },
+      customSubject: emailOptions?.subject || undefined,
+    });
+    emailSent = emailResult.success;
+    if (!emailResult.success) {
+      logger.error({ err: emailResult.error }, 'Failed to send quote email');
+      return { success: false, error: 'Email could not be sent. Please check your email settings.' };
+    }
+  } catch (err) {
+    logger.error({ err }, 'Failed to send quote email');
+    return { success: false, error: 'Email could not be sent. Please check your email settings.' };
+  }
+
+  // Update quote status to sent (only after email succeeds)
   await prisma.quote.update({
     where: {
       id: quoteId,
@@ -845,34 +980,11 @@ export async function sendQuote(quoteId: string) {
       actorId: userId,
       actorType: 'user',
       metadata: {
-        recipientEmail: quote.client.email,
+        recipientEmail: emailRecipients.join(', '),
         sentAt: new Date().toISOString(),
       },
     },
   });
-
-  // Send email notification
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const quoteUrl = `${baseUrl}/q/${quote.accessToken}`;
-
-  let emailSent = false;
-  try {
-    const emailResult = await sendQuoteSentEmail({
-      to: quote.client.email,
-      clientName: quote.client.name,
-      quoteName: quote.title || `Quote ${quote.quoteNumber}`,
-      quoteUrl,
-      businessName: workspace.name,
-      validUntil: quote.expirationDate ?? undefined,
-      rateLimitKey: workspace.id,
-    });
-    emailSent = emailResult.success;
-    if (!emailResult.success) {
-      console.error('Failed to send quote email:', emailResult.error);
-    }
-  } catch (err) {
-    console.error('Failed to send quote email:', err);
-  }
 
   // Create notification for sender
   createNotification({

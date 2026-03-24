@@ -33,6 +33,7 @@ function createTestDocument(blocks: QuoteBlock[] = []): QuoteDocument {
     quoteNumber: 'QT-0001',
     status: 'draft',
     title: 'Test Quote',
+    currency: 'USD',
     issueDate: '2026-01-01',
     expirationDate: null,
     blocks,

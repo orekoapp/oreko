@@ -45,10 +45,14 @@ export function AcceptQuoteDialog({
   const hasTerms = !!quote.terms;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    const parts = new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: quote.settings.currency,
-    }).format(amount);
+      currency: quote.currency,
+    }).formatToParts(amount);
+    return parts.map((p, i) => {
+      if (p.type === 'currency' && parts[i + 1]?.type !== 'literal') return p.value + ' ';
+      return p.value;
+    }).join('');
   };
 
   const depositAmount = quote.settings.depositRequired
@@ -62,7 +66,7 @@ export function AcceptQuoteDialog({
   const canSubmit =
     signerName.trim().length > 0 &&
     (!requiresSignature || signatureData) &&
-    (!hasTerms || agreedToTerms);
+    agreedToTerms;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -102,7 +106,7 @@ export function AcceptQuoteDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -113,7 +117,7 @@ export function AcceptQuoteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto flex-1">
           {/* Quote Summary */}
           <div className="rounded-lg bg-muted/50 p-4">
             <div className="flex justify-between text-sm">
@@ -169,26 +173,31 @@ export function AcceptQuoteDialog({
                 </div>
               )}
 
-              {/* Terms Agreement */}
-              {hasTerms && (
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="agree-terms"
-                    checked={agreedToTerms}
-                    onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
-                    disabled={isSubmitting}
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label
-                      htmlFor="agree-terms"
-                      className="text-sm font-normal leading-snug"
-                    >
-                      I have read and agree to the terms and conditions outlined in
-                      this quote.
-                    </Label>
-                  </div>
+              {/* Terms */}
+              {quote.terms && (
+                <div className="rounded-lg border bg-muted/30 p-3 max-h-40 overflow-y-auto">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Terms & Conditions</p>
+                  <p className="text-sm whitespace-pre-wrap">{quote.terms}</p>
                 </div>
               )}
+
+              {/* Terms Agreement Checkbox */}
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="agree-terms"
+                  checked={agreedToTerms}
+                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                  disabled={isSubmitting}
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <Label
+                    htmlFor="agree-terms"
+                    className="text-sm font-normal leading-snug"
+                  >
+                    I have read and agree to the terms and conditions{quote.terms ? ' above' : ' outlined in this quote'}.
+                  </Label>
+                </div>
+              </div>
             </>
           )}
         </div>

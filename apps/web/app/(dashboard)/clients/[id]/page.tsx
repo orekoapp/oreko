@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { ClientDetail } from '@/components/clients';
 import { getClientById, getClientActivity } from '@/lib/clients/actions';
+import { getWorkspaceCurrency } from '@/lib/settings/actions';
 
 interface ClientDetailPageProps {
   params: Promise<{
@@ -37,14 +38,15 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
   }
 
   try {
-    const [client, activities] = await Promise.all([
+    const [client, activities, currency] = await Promise.all([
       getClientById(id),
       getClientActivity(id),
+      getWorkspaceCurrency(),
     ]);
 
     return (
       <div className="container py-6">
-        <ClientDetail client={client} activities={activities} />
+        <ClientDetail client={client} activities={activities} currency={currency} />
       </div>
     );
   } catch {

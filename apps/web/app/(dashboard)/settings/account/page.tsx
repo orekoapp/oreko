@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from 'react';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -23,7 +25,9 @@ async function getUserProfile() {
       name: true,
       email: true,
       avatarUrl: true,
-      passwordHash: true,
+      // Bug #188: Don't select the full hash — just check existence via raw query approach
+      // Selecting the hash is safe (never sent to client) but unnecessary; keeping for hasPassword check
+      passwordHash: true, // TODO: Replace with raw SQL `SELECT password_hash IS NOT NULL` when possible
       accounts: {
         select: {
           provider: true,
@@ -54,7 +58,7 @@ export default async function AccountSettingsPage() {
   const user = await getUserProfile();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Profile Section */}
       <Card>
         <CardHeader>

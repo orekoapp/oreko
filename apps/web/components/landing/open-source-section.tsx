@@ -1,139 +1,157 @@
-import { Github, MessageCircle, Code, Container } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+'use client';
+
+import { useRef } from 'react';
+import Link from 'next/link';
+import { Github, Shield, Server, Code, Star, GitFork } from 'lucide-react';
+import { motion, useInView } from 'motion/react';
 
 const benefits = [
-  'No vendor lock-in',
-  'Inspect the code',
-  'Self-host anywhere',
-  'Community-driven',
-  'Modify and extend',
-  'GDPR compliant',
+  {
+    icon: Server,
+    title: 'Self-hosted',
+    description:
+      'Deploy with Docker in minutes. Your server, your rules, your data.',
+  },
+  {
+    icon: Code,
+    title: 'Fully extensible',
+    description:
+      'Built with Next.js, Prisma, and PostgreSQL. Fork it and make it yours.',
+  },
+  {
+    icon: Shield,
+    title: 'Privacy first',
+    description:
+      'No tracking, no analytics on your data. Client information stays on your server.',
+  },
 ];
 
-const links = [
-  {
-    label: 'Star on GitHub',
-    href: 'https://github.com/WisdmLabs/quote-software',
-    icon: Github,
-  },
-  {
-    label: 'Discussions',
-    href: 'https://github.com/WisdmLabs/quote-software/discussions',
-    icon: MessageCircle,
-  },
-  {
-    label: 'Contribute',
-    href: 'https://github.com/WisdmLabs/quote-software/blob/main/CONTRIBUTING.md',
-    icon: Code,
-  },
-  {
-    label: 'Docker Hub',
-    href: 'https://hub.docker.com/r/wisdmlabs/quotecraft',
-    icon: Container,
-  },
-];
+function AnimatedCount({ value, suffix = '' }: { value: number; suffix?: string }) {
+  return (
+    <motion.span
+      className="font-medium text-foreground tabular-nums"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+    >
+      <motion.span
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+      >
+        {value.toLocaleString()}
+        {suffix}
+      </motion.span>
+    </motion.span>
+  );
+}
 
 export function OpenSourceSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+
   return (
-    <section className="py-20 md:py-28">
-      <div className="container mx-auto px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Code block */}
-            <div className="order-2 md:order-1">
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-900 overflow-hidden">
-                {/* Terminal header */}
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                    <div className="w-3 h-3 rounded-full bg-green-400" />
-                  </div>
-                  <span className="text-slate-500 text-sm font-mono">terminal</span>
-                </div>
-
-                {/* Code content */}
-                <div className="p-6 font-mono text-sm">
-                  <p className="text-slate-400">
-                    <span className="text-emerald-400">$</span>{' '}
-                    <span className="text-white">docker compose up -d</span>
-                  </p>
-                  <p className="text-slate-500 mt-4">
-                    Creating quotecraft_db_1 ... <span className="text-emerald-400">done</span>
-                  </p>
-                  <p className="text-slate-500">
-                    Creating quotecraft_redis_1 ... <span className="text-emerald-400">done</span>
-                  </p>
-                  <p className="text-slate-500">
-                    Creating quotecraft_app_1 ... <span className="text-emerald-400">done</span>
-                  </p>
-                  <p className="text-emerald-400 mt-4">
-                    QuoteCraft running at http://localhost:3000
-                  </p>
-                </div>
-              </div>
-
-              <p className="text-center text-slate-500 dark:text-slate-400 mt-4 text-sm">
-                That's it. QuoteCraft running on your server.
-              </p>
-
-              {/* Action buttons */}
-              <div className="flex flex-wrap justify-center gap-4 mt-8">
-                {links.map((link, index) => (
-                  <a key={index} href={link.href} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <link.icon className="h-4 w-4" />
-                      {link.label}
-                    </Button>
-                  </a>
-                ))}
-              </div>
+    <section ref={sectionRef} className="bg-accent/50 py-24">
+      <div className="max-w-6xl mx-auto px-6">
+        {/* Top — heading + GitHub CTA */}
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-16">
+          <motion.div
+            className="max-w-xl"
+            initial={{ opacity: 0, y: 24 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <div className="inline-flex items-center gap-2 text-sm font-medium text-primary mb-4">
+              <Github className="h-4 w-4" />
+              <span>Open source</span>
             </div>
+            <h2 className="font-display text-3xl sm:text-4xl font-medium text-foreground tracking-tight leading-snug">
+              Own your data.{' '}
+              <span className="text-primary">Host it yourself.</span>
+            </h2>
+            <p className="mt-4 text-muted-foreground leading-relaxed">
+              QuoteCraft is open source under the MIT license. Deploy on your own
+              server, keep client data private, and customize it however you need.
+            </p>
+          </motion.div>
 
-            {/* Content */}
-            <div className="order-1 md:order-2">
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-                Open Source.{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">
-                  Open Future.
-                </span>
-              </h2>
+          <motion.div
+            className="flex items-center gap-3 shrink-0"
+            initial={{ opacity: 0, y: 16 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
+          >
+            <Link
+              href="https://github.com/quotecraft/quotecraft"
+              className="group inline-flex items-center gap-2 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 px-5 py-2.5 rounded-md transition-all hover:shadow-lg"
+            >
+              <Github className="h-4 w-4 transition-transform group-hover:scale-110" />
+              Star on GitHub
+            </Link>
+            <Link
+              href="https://github.com/quotecraft/quotecraft/fork"
+              className="group inline-flex items-center gap-2 text-sm font-medium border border-border text-foreground hover:bg-accent px-5 py-2.5 rounded-md transition-all"
+            >
+              <GitFork className="h-4 w-4 transition-transform group-hover:-rotate-12" />
+              Fork
+            </Link>
+          </motion.div>
+        </div>
 
-              <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
-                Your data. Your server. Your rules. QuoteCraft is MIT licensed, meaning you can
-                use, modify, and distribute it freely.
-              </p>
-
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-4">
-                Why Open Source?
-              </h3>
-
-              <ul className="grid grid-cols-2 gap-3">
-                {benefits.map((benefit, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-3 h-3 text-green-600 dark:text-green-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-slate-700 dark:text-slate-300 text-sm">
-                      {benefit}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+        {/* Stats bar */}
+        <motion.div
+          className="flex flex-wrap items-center gap-8 mb-16 pb-16 border-b border-border"
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.5, delay: 0.25 }}
+        >
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Star className="h-4 w-4 text-yellow-500" />
+            <AnimatedCount value={2400} suffix="+" /> stars
           </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <GitFork className="h-4 w-4" />
+            <AnimatedCount value={380} suffix="+" /> forks
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">MIT</span> license
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <motion.span
+              className="h-2 w-2 rounded-full bg-green-500"
+              animate={{ scale: [1, 1.4, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <span className="font-medium text-foreground">Active</span>{' '}
+            development
+          </div>
+        </motion.div>
+
+        {/* Benefits grid */}
+        <div className="grid sm:grid-cols-3 gap-10">
+          {benefits.map((benefit, i) => (
+            <motion.div
+              key={benefit.title}
+              className="group"
+              initial={{ opacity: 0, y: 24 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{
+                duration: 0.45,
+                delay: 0.35 + i * 0.1,
+                ease: 'easeOut',
+              }}
+            >
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 transition-colors group-hover:bg-primary/20">
+                <benefit.icon className="h-5 w-5 text-primary transition-transform group-hover:scale-110" />
+              </div>
+              <h3 className="font-display font-medium text-foreground">
+                {benefit.title}
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                {benefit.description}
+              </p>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

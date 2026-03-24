@@ -85,10 +85,11 @@ export function DataTable<TData, TValue>({
       const selectedRows = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
       onRowSelect(selectedRows);
     }
-  }, [rowSelection, onRowSelect, table]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- HIGH #49: `table` is recreated every render; depend on `rowSelection` only
+  }, [rowSelection, onRowSelect]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="rounded-lg border">
         <div className="p-4">
           <DataTableToolbar

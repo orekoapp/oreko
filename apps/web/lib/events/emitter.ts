@@ -1,4 +1,5 @@
 import type { DomainEvent, DomainEventType, DomainEventPayload } from './types';
+import { logger } from '@/lib/logger';
 
 type EventHandler<T extends DomainEventType> = (payload: DomainEventPayload<T>) => void | Promise<void>;
 
@@ -37,11 +38,11 @@ class DomainEventEmitter {
         // If handler returns a promise, catch errors asynchronously
         if (result && typeof result.catch === 'function') {
           result.catch((err: unknown) => {
-            console.error(`[DomainEvents] Async error in handler for "${event.type}":`, err);
+            logger.error({ err, eventType: event.type }, '[DomainEvents] Async error in handler');
           });
         }
       } catch (err) {
-        console.error(`[DomainEvents] Error in handler for "${event.type}":`, err);
+        logger.error({ err, eventType: event.type }, '[DomainEvents] Error in handler');
       }
     }
   }
@@ -54,3 +55,19 @@ class DomainEventEmitter {
 
 /** Singleton domain event emitter */
 export const domainEvents = new DomainEventEmitter();
+
+// Initialize outbound webhook listeners once
+let _webhooksInitialized = false;
+export function ensureWebhooksInitialized(): void {
+  if (_webhooksInitialized) return;
+  _webhooksInitialized = true;
+  // Dynamic import to avoid circular dependency
+  import('@/lib/webhooks/outbound').then(({ initOutboundWebhooks }) => {
+    initOutboundWebhooks();
+  });
+}
+
+// Auto-init on first import in server context
+if (typeof window === 'undefined') {
+  ensureWebhooksInitialized();
+}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createInvoicePaymentIntent } from '@/lib/payments/internal';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/checkout/invoice/[invoiceId]
@@ -19,7 +20,7 @@ export async function POST(
 
     // Rate limit: 10 checkout attempts per minute per IP
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateLimitResult = checkRateLimit(`checkout:${clientIp}`, { limit: 10, windowMs: 60000 });
+    const rateLimitResult = await checkRateLimit(`checkout:${clientIp}`, { limit: 10, windowMs: 60000 });
     if (rateLimitResult.limited) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -52,7 +53,7 @@ export async function POST(
       paymentIntentId: result.paymentIntentId,
     });
   } catch (error) {
-    console.error('Error creating checkout session:', error);
+    logger.error({ err: error }, 'Error creating checkout session');
     return NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }

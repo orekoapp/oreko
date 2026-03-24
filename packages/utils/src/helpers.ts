@@ -3,10 +3,20 @@ import { QUOTE_STATUS, INVOICE_STATUS, type QuoteStatus, type InvoiceStatus } fr
 /**
  * Generate a random string
  */
+// Low #31: Use rejection sampling to avoid modulo bias
 export function generateRandomString(length: number = 32): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(bytes, (byte) => chars[byte % chars.length]).join('');
+  const maxValid = 256 - (256 % chars.length); // 256 - (256 % 62) = 248
+  const result: string[] = [];
+  while (result.length < length) {
+    const bytes = crypto.getRandomValues(new Uint8Array(length * 2)); // Over-allocate to reduce loops
+    for (const byte of bytes) {
+      if (byte < maxValid && result.length < length) {
+        result.push(chars[byte % chars.length]!);
+      }
+    }
+  }
+  return result.join('');
 }
 
 /**
@@ -56,6 +66,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean = false;
+  let trailingArgs: Parameters<T> | null = null;
 
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
@@ -63,7 +74,17 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
       inThrottle = true;
       setTimeout(() => {
         inThrottle = false;
+        // Execute trailing call if one was queued during throttle period
+        if (trailingArgs) {
+          func(...trailingArgs);
+          trailingArgs = null;
+          inThrottle = true;
+          setTimeout(() => { inThrottle = false; }, limit);
+        }
       }, limit);
+    } else {
+      // Queue the latest call as trailing
+      trailingArgs = args;
     }
   };
 }
@@ -82,7 +103,8 @@ export function isEmpty(value: unknown): boolean {
   if (value === null || value === undefined) return true;
   if (typeof value === 'string') return value.trim().length === 0;
   if (Array.isArray(value)) return value.length === 0;
-  if (typeof value === 'object') return Object.keys(value).length === 0;
+  if (value instanceof Date || value instanceof Map || value instanceof Set) return false;
+  if (typeof value === 'object') return Object.keys(value as object).length === 0;
   return false;
 }
 
@@ -117,9 +139,12 @@ export function pick<T extends Record<string, unknown>, K extends keyof T>(
 /**
  * Get initials from a name
  */
-export function getInitials(name: string, maxLength: number = 2): string {
+export function getInitials(name: string | null | undefined, maxLength: number = 2): string {
+  if (!name?.trim()) return '';
   return name
-    .split(' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .map((n) => n[0])
     .join('')
     .toUpperCase()
