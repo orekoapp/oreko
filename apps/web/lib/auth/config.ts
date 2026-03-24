@@ -14,7 +14,7 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
+      const isLoggedIn = !!auth?.user?.id;
       const pathname = nextUrl.pathname;
 
       // Public routes — explicitly listed, everything else requires auth
