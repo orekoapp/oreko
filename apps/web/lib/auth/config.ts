@@ -23,6 +23,7 @@ export const authConfig: NextAuthConfig = {
         '/register',
         '/forgot-password',
         '/reset-password',
+        '/verify-email',
         '/p/',  // Client portal (public quote view)
         '/q/',  // Quote portal
         '/i/',  // Invoice portal
