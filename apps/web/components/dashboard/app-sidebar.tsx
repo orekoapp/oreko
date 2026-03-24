@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
   FileText,
@@ -344,11 +345,9 @@ export function AppSidebar({ user, workspaces, activeWorkspace }: AppSidebarProp
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/api/auth/signout">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => signOut({ callbackUrl: '/login' })}>
                     <LogOut className="mr-2 size-4" />
                     Log out
-                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
