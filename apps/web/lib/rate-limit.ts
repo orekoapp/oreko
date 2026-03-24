@@ -88,30 +88,9 @@ function checkInMemory(key: string, options: RateLimitOptions): RateLimitResult 
 /**
  * Check rate limit for a given key.
  * Uses Upstash Redis when available, falls back to in-memory for local dev.
+ * All callers must await this function.
  */
-export function checkRateLimit(
-  key: string,
-  options: RateLimitOptions
-): RateLimitResult {
-  const upstash = getUpstashRateLimiter(options);
-
-  if (!upstash) {
-    // Fallback to in-memory (local dev)
-    return checkInMemory(key, options);
-  }
-
-  // Upstash ratelimit is async, but our interface is sync.
-  // Use fire-and-forget for the Redis call, and use in-memory as immediate check.
-  // This is a pragmatic approach — the in-memory check provides instant protection,
-  // while Redis provides cross-instance consistency.
-  return checkInMemory(key, options);
-}
-
-/**
- * Async rate limit check — preferred for new code.
- * Uses Upstash Redis directly when available.
- */
-export async function checkRateLimitAsync(
+export async function checkRateLimit(
   key: string,
   options: RateLimitOptions
 ): Promise<RateLimitResult> {

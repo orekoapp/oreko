@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateLimitResult = checkRateLimit(`verify-email:${clientIp}`, strictRateLimitOptions);
+    const rateLimitResult = await checkRateLimit(`verify-email:${clientIp}`, strictRateLimitOptions);
     if (rateLimitResult.limited) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },

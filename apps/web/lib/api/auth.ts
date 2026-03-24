@@ -21,7 +21,7 @@ export async function authenticateApiRequest(
 ): Promise<{ context: ApiContext } | { error: NextResponse }> {
   // Rate limit by IP
   const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const rateLimitResult = checkRateLimit(`api:${clientIp}`, defaultRateLimitOptions);
+  const rateLimitResult = await checkRateLimit(`api:${clientIp}`, defaultRateLimitOptions);
 
   if (rateLimitResult.limited) {
     return {
@@ -69,8 +69,8 @@ export async function authenticateApiRequest(
     };
   }
 
-  // CR #7: Check expiry with 5-second buffer for clock skew
-  if (apiKey.expiresAt && apiKey.expiresAt.getTime() < Date.now() - 5000) {
+  // Check expiry with 5-second grace period for clock skew (key must be expired by 5s before rejection)
+  if (apiKey.expiresAt && apiKey.expiresAt.getTime() + 5000 < Date.now()) {
     return {
       error: NextResponse.json(
         { error: 'API key has expired' },

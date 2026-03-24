@@ -339,7 +339,7 @@ export async function acceptQuote(data: {
 
     // Rate limit by IP to prevent abuse on unauthenticated endpoint
     const { checkRateLimit } = await import('@/lib/rate-limit');
-    const rateLimitResult = checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
+    const rateLimitResult = await checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
     if (rateLimitResult.limited) {
       return { success: false, error: 'Too many attempts. Please try again later.' };
     }
@@ -462,26 +462,37 @@ export async function acceptQuote(data: {
       signedAt: signedAtISO,
     });
 
-    // Update quote with acceptance
-    await prisma.$transaction([
-      prisma.quote.update({
-        where: { accessToken: data.accessToken },
-        data: {
-          status: 'accepted',
-          acceptedAt: signedAt,
-          signedAt,
-          signatureData: {
-            type: 'drawn',
-            encrypted: false,
-            data: data.signatureData,
-            signerName: data.signerName,
-            signedAt: signedAtISO,
-            ipAddress,
-            userAgent,
-            documentHash,
-          },
+    // Atomic conditional update — prevents double-accept race condition
+    // Only updates if status is still 'sent' or 'viewed' (not already accepted)
+    const acceptResult = await prisma.quote.updateMany({
+      where: {
+        accessToken: data.accessToken,
+        status: { in: ['sent', 'viewed'] },
+        deletedAt: null,
+      },
+      data: {
+        status: 'accepted',
+        acceptedAt: signedAt,
+        signedAt,
+        signatureData: {
+          type: 'drawn',
+          encrypted: false,
+          data: data.signatureData,
+          signerName: data.signerName,
+          signedAt: signedAtISO,
+          ipAddress,
+          userAgent,
+          documentHash,
         },
-      }),
+      },
+    });
+
+    if (acceptResult.count === 0) {
+      return { success: false, error: 'This quote has already been accepted or is no longer available' };
+    }
+
+    // Create event and notifications (side effects — safe to run after atomic update)
+    await prisma.$transaction([
       prisma.quoteEvent.create({
         data: {
           quoteId: quote.id,
@@ -581,7 +592,7 @@ export async function declineQuote(data: {
 
     // Rate limit by IP to prevent abuse on unauthenticated endpoint
     const { checkRateLimit } = await import('@/lib/rate-limit');
-    const rateLimitResult = checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
+    const rateLimitResult = await checkRateLimit(`quote-action:${ipAddress}`, { limit: 10, windowMs: 60000 });
     if (rateLimitResult.limited) {
       return { success: false, error: 'Too many attempts. Please try again later.' };
     }

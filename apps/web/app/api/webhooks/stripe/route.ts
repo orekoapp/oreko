@@ -94,8 +94,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Error processing webhook:', error);
-    // Return 200 to prevent Stripe from retrying permanently-failed events
-    // Stripe retries 5xx responses, which creates infinite loops for non-transient errors
-    return NextResponse.json({ received: true, error: 'Processing failed — will not retry' }, { status: 200 });
+    // Permanent business logic errors (not found, invalid data) → 200 so Stripe stops retrying
+    const message = error instanceof Error ? error.message : '';
+    const isPermanent = message.includes('not found') || message.includes('invalid') || message.includes('already');
+    if (isPermanent) {
+      return NextResponse.json({ received: true, error: 'Permanent failure — will not retry' }, { status: 200 });
+    }
+    // Transient errors (DB timeout, network) → 500 so Stripe retries with exponential backoff
+    // Idempotency guard prevents duplicate processing on successful retry
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }

@@ -52,6 +52,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return apiError('Invalid JSON body', 400);
   }
 
+  // Strip potentially dangerous fields that should never be user-controlled
+  delete body.id;
+  delete body.workspaceId;
+  delete body.deletedAt;
+  delete body.createdAt;
+  delete body.updatedAt;
+
   const { name, email, phone, company, address, billingAddress, metadata } = body as {
     name?: string;
     email?: string;

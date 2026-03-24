@@ -27,7 +27,7 @@ export async function sendSigningOtp(input: {
     const ip = await getClientIp();
 
     // Rate limit: 5 OTP sends per 10 minutes per IP
-    const rateLimitResult = checkRateLimit(`otp-send:${ip}`, { limit: 5, windowMs: 10 * 60 * 1000 });
+    const rateLimitResult = await checkRateLimit(`otp-send:${ip}`, { limit: 5, windowMs: 10 * 60 * 1000 });
     if (rateLimitResult.limited) {
       return { success: false, error: 'Too many verification requests. Please wait a few minutes.' };
     }
@@ -140,7 +140,7 @@ export async function verifySigningOtpAction(input: {
     const ip = await getClientIp();
 
     // Rate limit: 10 verify attempts per 10 minutes per IP
-    const rateLimitResult = checkRateLimit(`otp-verify:${ip}`, { limit: 10, windowMs: 10 * 60 * 1000 });
+    const rateLimitResult = await checkRateLimit(`otp-verify:${ip}`, { limit: 10, windowMs: 10 * 60 * 1000 });
     if (rateLimitResult.limited) {
       return { success: false, error: 'Too many attempts. Please wait a few minutes.' };
     }

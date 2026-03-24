@@ -16,32 +16,32 @@ datasource db {
 // ============================================
 
 model User {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  passwordHash    String?   @map("password_hash")
-  name            String?
-  avatarUrl       String?   @map("avatar_url")
-  emailVerifiedAt    DateTime? @map("email_verified_at")
-  passwordChangedAt  DateTime? @map("password_changed_at")
-  locale             String    @default("en") @db.VarChar(10)
-  preferences     Json?     @db.JsonB
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String?   @map("password_hash")
+  name              String?
+  avatarUrl         String?   @map("avatar_url")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  passwordChangedAt DateTime? @map("password_changed_at")
+  locale            String    @default("en") @db.VarChar(10)
+  preferences       Json?     @db.JsonB
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
 
   // Relations
-  accounts            Account[]
-  sessions            Session[]
-  passwordResetTokens      PasswordResetToken[]
-  emailVerificationTokens  EmailVerificationToken[]
-  workspaceMembers         WorkspaceMember[]
-  ownedWorkspaces     Workspace[]           @relation("WorkspaceOwner")
-  workspaceInvites    WorkspaceInvitation[] @relation("InvitedBy")
-  quoteEvents         QuoteEvent[]
-  invoiceEvents       InvoiceEvent[]
-  creditNoteEvents    CreditNoteEvent[]
-  attachments         Attachment[]
-  notifications       Notification[]
+  accounts                Account[]
+  sessions                Session[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  workspaceMembers        WorkspaceMember[]
+  ownedWorkspaces         Workspace[]              @relation("WorkspaceOwner")
+  workspaceInvites        WorkspaceInvitation[]    @relation("InvitedBy")
+  quoteEvents             QuoteEvent[]
+  invoiceEvents           InvoiceEvent[]
+  creditNoteEvents        CreditNoteEvent[]
+  attachments             Attachment[]
+  notifications           Notification[]
 
   // Low #29: Removed redundant @@index([email]) — @unique already creates an index
   @@index([deletedAt])
@@ -137,7 +137,7 @@ model Workspace {
   deletedAt DateTime? @map("deleted_at")
 
   // Relations
-  owner              User?                 @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  owner              User?                  @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   members            WorkspaceMember[]
   invitations        WorkspaceInvitation[]
   businessProfile    BusinessProfile?
@@ -212,25 +212,25 @@ model WorkspaceInvitation {
 }
 
 model BusinessProfile {
-  workspaceId  String   @id @map("workspace_id")
-  businessName String   @map("business_name")
-  logoUrl      String?  @map("logo_url")
-  darkLogoUrl  String?  @map("dark_logo_url")
-  socialLinks  Json?    @default("[]") @map("social_links")
-  email        String?
-  phone        String?  @db.VarChar(50)
-  website      String?
-  address      Json?
-  taxId        String?  @map("tax_id") @db.VarChar(100)
-  currency     String   @default("USD") @db.VarChar(3)
-  timezone     String   @default("UTC") @db.VarChar(50)
-  locale         String   @default("en") @db.VarChar(10)
-  emailSignature String?  @map("email_signature") @db.Text
-  emailFooter    String?  @map("email_footer") @db.Text
-  clientEmail      String?  @map("client_email")
-  autoCountersign  Boolean  @default(false) @map("auto_countersign")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  workspaceId     String   @id @map("workspace_id")
+  businessName    String   @map("business_name")
+  logoUrl         String?  @map("logo_url")
+  darkLogoUrl     String?  @map("dark_logo_url")
+  socialLinks     Json?    @default("[]") @map("social_links")
+  email           String?
+  phone           String?  @db.VarChar(50)
+  website         String?
+  address         Json?
+  taxId           String?  @map("tax_id") @db.VarChar(100)
+  currency        String   @default("USD") @db.VarChar(3)
+  timezone        String   @default("UTC") @db.VarChar(50)
+  locale          String   @default("en") @db.VarChar(10)
+  emailSignature  String?  @map("email_signature") @db.Text
+  emailFooter     String?  @map("email_footer") @db.Text
+  clientEmail     String?  @map("client_email")
+  autoCountersign Boolean  @default(false) @map("auto_countersign")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -344,8 +344,8 @@ model RateCardCategory {
   workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   rateCards RateCard[]
 
-  @@index([workspaceId])
   @@unique([workspaceId, name])
+  @@index([workspaceId])
   @@map("rate_card_categories")
 }
 
@@ -485,36 +485,36 @@ model QuoteEvent {
 // ============================================
 
 model Invoice {
-  id             String    @id @default(uuid())
-  workspaceId    String    @map("workspace_id")
-  clientId       String    @map("client_id")
-  projectId      String?   @map("project_id")
-  quoteId        String?   @unique @map("quote_id")
-  invoiceNumber  String    @map("invoice_number") @db.VarChar(50)
-  status         String    @default("draft") @db.VarChar(20)
-  title          String?
-  issueDate      DateTime  @default(now()) @map("issue_date") @db.Date
-  dueDate        DateTime  @map("due_date") @db.Date
-  subtotal       Decimal   @default(0) @db.Decimal(12, 2)
-  discountType   String?   @map("discount_type") @db.VarChar(10)
-  discountValue  Decimal?  @map("discount_value") @db.Decimal(12, 2)
-  discountAmount Decimal   @default(0) @map("discount_amount") @db.Decimal(12, 2)
-  taxTotal       Decimal   @default(0) @map("tax_total") @db.Decimal(12, 2)
-  total          Decimal   @default(0) @db.Decimal(12, 2)
-  amountPaid     Decimal   @default(0) @map("amount_paid") @db.Decimal(12, 2)
-  amountDue      Decimal   @default(0) @map("amount_due") @db.Decimal(12, 2)
-  currency       String    @default("USD") @db.VarChar(3)
-  notes          String?   @db.Text
-  terms          String?   @db.Text
-  internalNotes  String?   @map("internal_notes") @db.Text
-  settings       Json      @default("{}")
-  accessToken    String    @unique @default(uuid()) @map("access_token") @db.VarChar(100)
-  viewedAt       DateTime? @map("viewed_at")
-  viewCount      Int       @default(0) @map("view_count")
-  sentAt         DateTime? @map("sent_at")
-  paidAt         DateTime? @map("paid_at")
-  voidedAt       DateTime? @map("voided_at")
-  pdfUrl         String?   @map("pdf_url")
+  id                 String    @id @default(uuid())
+  workspaceId        String    @map("workspace_id")
+  clientId           String    @map("client_id")
+  projectId          String?   @map("project_id")
+  quoteId            String?   @unique @map("quote_id")
+  invoiceNumber      String    @map("invoice_number") @db.VarChar(50)
+  status             String    @default("draft") @db.VarChar(20)
+  title              String?
+  issueDate          DateTime  @default(now()) @map("issue_date") @db.Date
+  dueDate            DateTime  @map("due_date") @db.Date
+  subtotal           Decimal   @default(0) @db.Decimal(12, 2)
+  discountType       String?   @map("discount_type") @db.VarChar(10)
+  discountValue      Decimal?  @map("discount_value") @db.Decimal(12, 2)
+  discountAmount     Decimal   @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  taxTotal           Decimal   @default(0) @map("tax_total") @db.Decimal(12, 2)
+  total              Decimal   @default(0) @db.Decimal(12, 2)
+  amountPaid         Decimal   @default(0) @map("amount_paid") @db.Decimal(12, 2)
+  amountDue          Decimal   @default(0) @map("amount_due") @db.Decimal(12, 2)
+  currency           String    @default("USD") @db.VarChar(3)
+  notes              String?   @db.Text
+  terms              String?   @db.Text
+  internalNotes      String?   @map("internal_notes") @db.Text
+  settings           Json      @default("{}")
+  accessToken        String    @unique @default(uuid()) @map("access_token") @db.VarChar(100)
+  viewedAt           DateTime? @map("viewed_at")
+  viewCount          Int       @default(0) @map("view_count")
+  sentAt             DateTime? @map("sent_at")
+  paidAt             DateTime? @map("paid_at")
+  voidedAt           DateTime? @map("voided_at")
+  pdfUrl             String?   @map("pdf_url")
   // Recurring invoice fields
   isRecurring        Boolean   @default(false) @map("is_recurring")
   recurringInterval  String?   @map("recurring_interval") @db.VarChar(20) // weekly, biweekly, monthly, quarterly, yearly
@@ -523,9 +523,9 @@ model Invoice {
   recurringAutoSend  Boolean   @default(false) @map("recurring_auto_send")
   nextRecurringDate  DateTime? @map("next_recurring_date") @db.Date
   parentInvoiceId    String?   @map("parent_invoice_id")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
 
   // Relations
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -680,36 +680,36 @@ model Contract {
 }
 
 model ContractInstance {
-  id              String    @id @default(uuid())
-  contractId      String?   @map("contract_id")
-  quoteId         String?   @map("quote_id")
-  clientId        String?   @map("client_id")
-  projectId       String?   @map("project_id")
-  workspaceId     String    @map("workspace_id")
-  content         String    @db.Text
-  status          String    @default("draft") @db.VarChar(20)
-  accessToken     String    @unique @default(uuid()) @map("access_token") @db.VarChar(100)
-  sentAt          DateTime? @map("sent_at")
-  viewedAt        DateTime? @map("viewed_at")
-  signedAt              DateTime? @map("signed_at")
-  signatureData         Json?     @map("signature_data")
-  signerIpAddress       String?   @map("signer_ip_address") @db.VarChar(45)
-  signerUserAgent       String?   @map("signer_user_agent") @db.Text
-  countersignedAt       DateTime? @map("countersigned_at")
-  countersignatureData  Json?     @map("countersignature_data")
-  countersignerName     String?   @map("countersigner_name")
-  pdfUrl                String?   @map("pdf_url")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
+  id                   String    @id @default(uuid())
+  contractId           String?   @map("contract_id")
+  quoteId              String?   @map("quote_id")
+  clientId             String?   @map("client_id")
+  projectId            String?   @map("project_id")
+  workspaceId          String    @map("workspace_id")
+  content              String    @db.Text
+  status               String    @default("draft") @db.VarChar(20)
+  accessToken          String    @unique @default(uuid()) @map("access_token") @db.VarChar(100)
+  sentAt               DateTime? @map("sent_at")
+  viewedAt             DateTime? @map("viewed_at")
+  signedAt             DateTime? @map("signed_at")
+  signatureData        Json?     @map("signature_data")
+  signerIpAddress      String?   @map("signer_ip_address") @db.VarChar(45)
+  signerUserAgent      String?   @map("signer_user_agent") @db.Text
+  countersignedAt      DateTime? @map("countersigned_at")
+  countersignatureData Json?     @map("countersignature_data")
+  countersignerName    String?   @map("countersigner_name")
+  pdfUrl               String?   @map("pdf_url")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  deletedAt            DateTime? @map("deleted_at")
 
   // Bug #24: Restrict template deletion when signed instances exist (archive templates instead)
-  contract  Contract?  @relation(fields: [contractId], references: [id], onDelete: Restrict)
-  quote     Quote?     @relation(fields: [quoteId], references: [id], onDelete: SetNull)
-  client    Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  project   Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  contract  Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  quote     Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   // Bug #9: Restrict workspace deletion when signed contracts exist (preserves audit trail)
-  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
 
   @@index([contractId])
   @@index([quoteId])
@@ -725,13 +725,13 @@ model ContractInstance {
 // ============================================
 
 model EmailTemplate {
-  id          String   @id @default(uuid())
-  workspaceId String   @map("workspace_id")
-  type        String   @db.VarChar(50)
-  name        String   @db.VarChar(100)
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  type        String    @db.VarChar(50)
+  name        String    @db.VarChar(100)
   subject     String
-  body        String   @db.Text
-  isActive    Boolean  @default(true) @map("is_active")
+  body        String    @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
   isDefault   Boolean   @default(false) @map("is_default")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -888,7 +888,7 @@ model Notification {
   message     String?
   entityType  String?   @map("entity_type") @db.VarChar(20) // quote, invoice, contract
   entityId    String?   @map("entity_id")
-  link        String?   // URL to navigate to
+  link        String? // URL to navigate to
   isRead      Boolean   @default(false) @map("is_read")
   readAt      DateTime? @map("read_at")
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -937,22 +937,22 @@ model WorkspaceSlugHistory {
 // ============================================
 
 model CreditNote {
-  id              String   @id @default(uuid())
-  workspaceId     String   @map("workspace_id")
-  invoiceId       String   @map("invoice_id")
-  creditNoteNumber String  @map("credit_note_number") @db.VarChar(50)
-  reason          String   @db.Text
-  amount          Decimal  @db.Decimal(12, 2)
-  currency        String   @default("USD") @db.VarChar(3)
-  status          String   @default("draft") @db.VarChar(20)
-  issuedAt        DateTime? @map("issued_at")
-  notes           String?  @db.Text
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
+  id               String    @id @default(uuid())
+  workspaceId      String    @map("workspace_id")
+  invoiceId        String    @map("invoice_id")
+  creditNoteNumber String    @map("credit_note_number") @db.VarChar(50)
+  reason           String    @db.Text
+  amount           Decimal   @db.Decimal(12, 2)
+  currency         String    @default("USD") @db.VarChar(3)
+  status           String    @default("draft") @db.VarChar(20)
+  issuedAt         DateTime? @map("issued_at")
+  notes            String?   @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  invoice   Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  workspace Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invoice   Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
   lineItems CreditNoteLineItem[]
   events    CreditNoteEvent[]
 
@@ -963,14 +963,14 @@ model CreditNote {
 }
 
 model CreditNoteLineItem {
-  id           String  @id @default(uuid())
-  creditNoteId String  @map("credit_note_id")
+  id           String   @id @default(uuid())
+  creditNoteId String   @map("credit_note_id")
   name         String
-  description  String? @db.Text
-  quantity     Decimal @default(1) @db.Decimal(10, 2)
-  rate         Decimal @db.Decimal(12, 2)
-  amount       Decimal @db.Decimal(12, 2)
-  sortOrder    Int     @default(0) @map("sort_order")
+  description  String?  @db.Text
+  quantity     Decimal  @default(1) @db.Decimal(10, 2)
+  rate         Decimal  @db.Decimal(12, 2)
+  amount       Decimal  @db.Decimal(12, 2)
+  sortOrder    Int      @default(0) @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at") // Low #4
 
@@ -1035,7 +1035,6 @@ model ApiKey {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
-  @@index([keyHash])
   @@map("api_keys")
 }
 

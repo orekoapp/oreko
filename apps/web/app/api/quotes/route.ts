@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
                    request.headers.get('x-real-ip') ||
                    'unknown';
-  const rateLimitResult = checkRateLimit(`quotes:${clientIp}`, defaultRateLimitOptions);
+  const rateLimitResult = await checkRateLimit(`quotes:${clientIp}`, defaultRateLimitOptions);
   const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
 
   if (rateLimitResult.limited) {

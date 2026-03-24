@@ -13,7 +13,7 @@ export async function POST() {
     }
 
     // Strict rate limit: 3 per 15 minutes
-    const rateLimitResult = checkRateLimit(`resend-verification:${session.user.id}`, {
+    const rateLimitResult = await checkRateLimit(`resend-verification:${session.user.id}`, {
       limit: 3,
       windowMs: 15 * 60 * 1000,
     });

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Rate limit: 20 uploads per minute per user
-  const rateLimitResult = checkRateLimit(`upload:${session.user.id}`, { limit: 20, windowMs: 60000 });
+  const rateLimitResult = await checkRateLimit(`upload:${session.user.id}`, { limit: 20, windowMs: 60000 });
   if (rateLimitResult.limited) {
     return NextResponse.json(
       { error: 'Too many uploads. Please try again later.' },

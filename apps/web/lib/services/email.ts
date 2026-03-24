@@ -82,7 +82,7 @@ export async function sendEmail(
 ): Promise<EmailResult> {
   // Apply rate limit if a key is provided (e.g., workspaceId)
   if (rateLimitKey) {
-    const rl = checkRateLimit(`email:${rateLimitKey}`, EMAIL_RATE_LIMIT);
+    const rl = await checkRateLimit(`email:${rateLimitKey}`, EMAIL_RATE_LIMIT);
     if (rl.limited) {
       console.warn(`Email rate limited for key ${rateLimitKey}`);
       return {

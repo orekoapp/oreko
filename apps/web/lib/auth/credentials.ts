@@ -8,7 +8,7 @@ const LOGIN_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 export async function verifyCredentials(email: string, password: string) {
   // Rate limit by email to prevent brute-force attacks
   const normalizedEmail = email.toLowerCase().trim();
-  const rateLimitResult = checkRateLimit(`login:${normalizedEmail}`, LOGIN_RATE_LIMIT);
+  const rateLimitResult = await checkRateLimit(`login:${normalizedEmail}`, LOGIN_RATE_LIMIT);
   if (rateLimitResult.limited) {
     throw new Error('Too many login attempts. Please try again in 15 minutes.');
   }
@@ -29,20 +29,20 @@ export async function verifyCredentials(email: string, password: string) {
   // Bug #84: Reject soft-deleted users — also checked in JWT callback for existing tokens
   if (!user || user.deletedAt) {
     const reason = !user ? 'user not found' : 'soft-deleted account';
-    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail} at ${new Date().toISOString()} — reason: ${reason}`);
+    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail.replace(/(.{2}).*(@.*)/, '$1***$2')} at ${new Date().toISOString()} — reason: ${reason}`);
     return null;
   }
 
   if (!user.passwordHash) {
     // User signed up with OAuth, doesn't have a password
-    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail} at ${new Date().toISOString()} — reason: OAuth-only account (no password)`);
+    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail.replace(/(.{2}).*(@.*)/, '$1***$2')} at ${new Date().toISOString()} — reason: OAuth-only account (no password)`);
     return null;
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash);
 
   if (!isValid) {
-    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail} at ${new Date().toISOString()} — reason: wrong password`);
+    console.warn(`[auth] Failed login attempt for email: ${normalizedEmail.replace(/(.{2}).*(@.*)/, '$1***$2')} at ${new Date().toISOString()} — reason: wrong password`);
     return null;
   }
 

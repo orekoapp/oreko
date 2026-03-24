@@ -30,8 +30,9 @@ export const authConfig: NextAuthConfig = {
       ];
       const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
-      // Also allow root path and static marketing pages
-      if (pathname === '/' || pathname === '/pricing' || pathname === '/features') {
+      // Allow root path and all marketing/legal pages
+      const marketingRoutes = ['/', '/pricing', '/features', '/about', '/blog', '/careers', '/changelog', '/contact', '/cookies', '/docs', '/privacy', '/terms'];
+      if (marketingRoutes.includes(pathname) || marketingRoutes.some(r => r !== '/' && pathname.startsWith(r + '/'))) {
         return true;
       }
 
@@ -91,7 +92,8 @@ export const authConfig: NextAuthConfig = {
             // Track consecutive failures — invalidate after 3 to prevent indefinite access during outages
             const failures = (typeof token.dbCheckFailures === 'number' ? token.dbCheckFailures : 0) + 1;
             token.dbCheckFailures = failures;
-            if (failures >= 3) {
+            // 5 consecutive failures × 5 min interval = 25 min sustained outage before invalidation
+            if (failures >= 5) {
               return { ...token, id: '', email: '', name: '' };
             }
           }

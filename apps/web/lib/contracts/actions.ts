@@ -697,7 +697,7 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
 export async function signContract(input: SignContractInput & { otpCode?: string }, ipAddress?: string, userAgent?: string): Promise<void> {
   // HIGH #13: Rate limit contract signing to prevent abuse
   const rateLimitKey = `sign-contract:${ipAddress || input.token}`;
-  const rateLimitResult = checkRateLimit(rateLimitKey, strictRateLimitOptions);
+  const rateLimitResult = await checkRateLimit(rateLimitKey, strictRateLimitOptions);
   if (rateLimitResult.limited) {
     throw new Error('Too many signing attempts. Please try again later.');
   }

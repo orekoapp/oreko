@@ -11,22 +11,38 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@quotecraft/ui', '@quotecraft/utils', '@quotecraft/types'],
   // Bug #23: Prevent access token leakage via referrer headers on portal pages
   async headers() {
+    // Security headers for all routes (mirrors vercel.json for Docker/self-hosted deployments)
+    const securityHeaders = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-XSS-Protection', value: '1; mode=block' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+    ];
+
     return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
       {
         source: '/q/:token*',
         headers: [
+          ...securityHeaders,
           { key: 'Referrer-Policy', value: 'no-referrer' },
         ],
       },
       {
         source: '/i/:token*',
         headers: [
+          ...securityHeaders,
           { key: 'Referrer-Policy', value: 'no-referrer' },
         ],
       },
       {
         source: '/c/:token*',
         headers: [
+          ...securityHeaders,
           { key: 'Referrer-Policy', value: 'no-referrer' },
         ],
       },

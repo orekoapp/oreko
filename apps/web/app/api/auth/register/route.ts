@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     }
 
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateLimitResult = checkRateLimit(`register:${clientIp}`, strictRateLimitOptions);
+    const rateLimitResult = await checkRateLimit(`register:${clientIp}`, strictRateLimitOptions);
     if (rateLimitResult.limited) {
       return NextResponse.json(
         { error: 'Too many registration attempts. Please try again later.' },

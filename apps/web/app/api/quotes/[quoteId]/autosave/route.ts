@@ -34,7 +34,7 @@ export async function POST(
     }
 
     // MEDIUM #3: Rate limit autosave to prevent abuse
-    const rateLimitResult = checkRateLimit(`autosave:${userId}:${quoteId}`, {
+    const rateLimitResult = await checkRateLimit(`autosave:${userId}:${quoteId}`, {
       limit: 30,
       windowMs: 60000, // 30 saves per minute per user per quote
     });

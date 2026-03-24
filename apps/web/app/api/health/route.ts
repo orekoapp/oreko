@@ -4,7 +4,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 
 // Low #13: Rate limit health endpoint to prevent abuse
 export async function GET() {
-  const rl = checkRateLimit('health', { limit: 60, windowMs: 60000 });
+  const rl = await checkRateLimit('health', { limit: 60, windowMs: 60000 });
   if (rl.limited) {
     return NextResponse.json({ status: 'rate_limited' }, { status: 429 });
   }

@@ -93,6 +93,13 @@ export async function POST(request: NextRequest) {
     return apiError('Invalid JSON body', 400);
   }
 
+  // Strip potentially dangerous fields that should never be user-controlled
+  delete body.id;
+  delete body.workspaceId;
+  delete body.deletedAt;
+  delete body.createdAt;
+  delete body.updatedAt;
+
   const { title, clientId, projectId, currency, dueDate, lineItems, notes, terms } = body as {
     title?: string;
     clientId?: string;

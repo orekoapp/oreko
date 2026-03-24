@@ -19,7 +19,7 @@ export async function POST(
 
     // Rate limit: 10 checkout attempts per minute per IP
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateLimitResult = checkRateLimit(`checkout:${clientIp}`, { limit: 10, windowMs: 60000 });
+    const rateLimitResult = await checkRateLimit(`checkout:${clientIp}`, { limit: 10, windowMs: 60000 });
     if (rateLimitResult.limited) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },

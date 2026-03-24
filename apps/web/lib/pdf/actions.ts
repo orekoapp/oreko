@@ -100,7 +100,7 @@ export async function getQuotePdfData(quoteId: string): Promise<QuotePdfData | n
 export async function getQuotePdfDataByToken(accessToken: string): Promise<QuotePdfData | null> {
   // MEDIUM #30: Rate limit public PDF endpoints to prevent abuse
   const { checkRateLimit } = await import('@/lib/rate-limit');
-  const rateLimitResult = checkRateLimit(`pdf-quote:${accessToken}`, { limit: 20, windowMs: 60000 });
+  const rateLimitResult = await checkRateLimit(`pdf-quote:${accessToken}`, { limit: 20, windowMs: 60000 });
   if (rateLimitResult.limited) {
     return null;
   }
@@ -292,7 +292,7 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
 export async function getInvoicePdfDataByToken(accessToken: string): Promise<InvoicePdfData | null> {
   // MEDIUM #30: Rate limit public PDF endpoints to prevent abuse
   const { checkRateLimit } = await import('@/lib/rate-limit');
-  const rateLimitResult = checkRateLimit(`pdf-invoice:${accessToken}`, { limit: 20, windowMs: 60000 });
+  const rateLimitResult = await checkRateLimit(`pdf-invoice:${accessToken}`, { limit: 20, windowMs: 60000 });
   if (rateLimitResult.limited) {
     return null;
   }

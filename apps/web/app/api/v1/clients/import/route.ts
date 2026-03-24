@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Batch duplicate check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    let existingEmailSet = new Set<string>();
+    const existingEmailSet = new Set<string>();
 
     if (skipDuplicates) {
       const existingClients = await prisma.client.findMany({
@@ -64,8 +64,13 @@ export async function POST(request: NextRequest) {
         },
         select: { email: true },
       });
-      existingEmailSet = new Set(existingClients.map((c) => c.email.toLowerCase()));
+      for (const c of existingClients) {
+        existingEmailSet.add(c.email.toLowerCase());
+      }
     }
+
+    // Pre-validate all rows before the transaction
+    const validRows: Array<{ index: number; row: typeof clients[number] }> = [];
 
     for (let i = 0; i < clients.length; i++) {
       const row = clients[i]!;
@@ -95,48 +100,60 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      existingEmailSet.add(row.email.toLowerCase());
+      validRows.push({ index: i, row });
+    }
+
+    // Wrap all client creations in a transaction for atomicity
+    if (validRows.length > 0) {
       try {
-        // Build address if any address fields provided
-        let address: Record<string, string | undefined> | undefined;
-        if (row.street || row.city || row.state || row.postalCode || row.country) {
-          address = {
-            street: row.street,
-            city: row.city,
-            state: row.state,
-            postalCode: row.postalCode,
-            country: row.country,
-          };
+        const createdClients = await prisma.$transaction(
+          validRows.map(({ row }) => {
+            // Build address if any address fields provided
+            let address: Record<string, string | undefined> | undefined;
+            if (row.street || row.city || row.state || row.postalCode || row.country) {
+              address = {
+                street: row.street,
+                city: row.city,
+                state: row.state,
+                postalCode: row.postalCode,
+                country: row.country,
+              };
+            }
+
+            const metadata = {
+              type: row.company ? 'company' : 'individual',
+              contacts: [],
+              tags: [],
+            };
+
+            return prisma.client.create({
+              data: {
+                workspaceId,
+                name: row.name.trim(),
+                email: row.email.trim().toLowerCase(),
+                phone: row.phone || null,
+                company: row.company || null,
+                address: (address || undefined) as any,
+                metadata: metadata as any,
+              },
+            });
+          })
+        );
+
+        for (const client of createdClients) {
+          result.success++;
+          result.created.push({ id: client.id, name: client.name, email: client.email });
         }
-
-        const metadata = {
-          type: row.company ? 'company' : 'individual',
-          contacts: [],
-          tags: [],
-        };
-
-        const client = await prisma.client.create({
-          data: {
-            workspaceId,
-            name: row.name.trim(),
-            email: row.email.trim().toLowerCase(),
-            phone: row.phone || null,
-            company: row.company || null,
-            address: (address || undefined) as any,
-            metadata: metadata as any,
-          },
-        });
-
-        result.success++;
-        result.created.push({ id: client.id, name: client.name, email: client.email });
-
-        // Add to set to prevent duplicates within the same batch
-        existingEmailSet.add(row.email.toLowerCase());
       } catch (err: any) {
-        result.failed++;
-        result.errors.push({
-          row: i + 1,
-          message: err?.code === 'P2002' ? 'Duplicate email' : 'Failed to create client',
-        });
+        // If transaction fails, all rows fail
+        for (const { index } of validRows) {
+          result.failed++;
+          result.errors.push({
+            row: index + 1,
+            message: err?.code === 'P2002' ? 'Duplicate email' : 'Failed to create client',
+          });
+        }
       }
     }
 

@@ -1,27 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { getQuoteByAccessToken, trackQuoteView, type PublicQuoteData } from '@/lib/quotes/portal-actions';
 import { QuotePortalView } from '@/components/client-portal/quote-portal-view';
 import { QuoteStatusBadge } from '@/components/client-portal/quote-portal-header';
 import { QuotePortalSkeleton } from '@/components/client-portal/quote-portal-skeleton';
 import { PortalDocumentShell } from '@/components/client-portal/portal-document-shell';
 
-interface QuotePortalPageProps {
-  params: Promise<{ token: string }>;
-}
-
-export default function QuotePortalPage({ params }: QuotePortalPageProps) {
+export default function QuotePortalPage() {
+  const { token } = useParams<{ token: string }>();
   const [quote, setQuote] = useState<PublicQuoteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadQuote() {
-      const resolvedParams = await params;
-      const token = resolvedParams.token;
-      setAccessToken(token);
+      if (!token) return;
 
       const result = await getQuoteByAccessToken(token);
 
@@ -39,7 +34,7 @@ export default function QuotePortalPage({ params }: QuotePortalPageProps) {
     }
 
     loadQuote();
-  }, [params]);
+  }, [token]);
 
   if (loading) {
     return <QuotePortalSkeleton />;
@@ -71,10 +66,10 @@ export default function QuotePortalPage({ params }: QuotePortalPageProps) {
       documentNumber={quote.quoteNumber}
       statusBadge={<QuoteStatusBadge status={quote.isExpired ? 'expired' : quote.status} />}
       onDownloadPdf={() => {
-        window.open(`/api/download/quote/${quote.id}?token=${accessToken}`, '_blank');
+        window.open(`/api/download/quote/${quote.id}?token=${token}`, '_blank');
       }}
     >
-      <QuotePortalView quote={quote} accessToken={accessToken!} />
+      <QuotePortalView quote={quote} accessToken={token!} />
     </PortalDocumentShell>
   );
 }

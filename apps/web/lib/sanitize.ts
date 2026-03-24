@@ -34,9 +34,8 @@ const ALLOWED_ATTR = [
 let purify: any = null;
 
 if (typeof window !== 'undefined') {
-  // Dynamic require only runs in the browser bundle
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  purify = require('dompurify').default ?? require('dompurify');
+  purify = require('dompurify');
 }
 
 const PURIFY_CONFIG = {

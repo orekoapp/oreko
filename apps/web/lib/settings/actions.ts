@@ -1041,7 +1041,7 @@ export async function resendInvitation(
 
   // Rate limit to prevent email spam
   const { checkRateLimit } = await import('@/lib/rate-limit');
-  const rateLimitResult = checkRateLimit(`resend-invite:${userId}`, { limit: 5, windowMs: 300000 });
+  const rateLimitResult = await checkRateLimit(`resend-invite:${userId}`, { limit: 5, windowMs: 300000 });
   if (rateLimitResult.limited) {
     return { success: false, error: 'Too many resend attempts. Please try again later.' };
   }
@@ -1105,7 +1105,7 @@ export async function acceptInvitation(
 
   // Rate limit by user ID to prevent brute-force token enumeration
   const { checkRateLimit } = await import('@/lib/rate-limit');
-  const rateLimitResult = checkRateLimit(`accept-invite:${session.user.id}`, { limit: 10, windowMs: 60000 });
+  const rateLimitResult = await checkRateLimit(`accept-invite:${session.user.id}`, { limit: 10, windowMs: 60000 });
   if (rateLimitResult.limited) {
     return { success: false, error: 'Too many attempts. Please try again later.' };
   }
