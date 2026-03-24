@@ -1,3 +1,4 @@
+import '@/lib/env'; // Trim env vars early — fixes Vercel trailing \n issue
 import NextAuth from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import type { Adapter } from 'next-auth/adapters';
