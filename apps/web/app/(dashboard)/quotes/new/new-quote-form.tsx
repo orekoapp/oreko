@@ -306,7 +306,9 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
   const discountAmount = discountType === 'percent'
     ? Math.round(subtotal * (discount / 100) * 100) / 100
     : discount;
-  const total = Math.max(0, subtotal - discountAmount);
+  const effectiveTaxRate = customTaxRate ? parseFloat(customTaxRate) : (taxRate !== 'custom' && taxRate !== '0% - Default' ? parseFloat(taxRate) : 0);
+  const taxAmount = effectiveTaxRate > 0 ? Math.round((subtotal - discountAmount) * (effectiveTaxRate / 100) * 100) / 100 : 0;
+  const total = Math.max(0, subtotal - discountAmount + taxAmount);
 
   const expirationDate = issueDate
     ? addDays(issueDate, parseInt(expirationDays) || 30)
@@ -367,7 +369,7 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
           quantity: item.quantity,
           rate: item.rate,
           unit: 'unit',
-          taxRate: customTaxRate ? parseFloat(customTaxRate) : null,
+          taxRate: customTaxRate ? parseFloat(customTaxRate) : (taxRate !== 'custom' && taxRate !== '0% - Default' ? parseFloat(taxRate) : null),
           rateCardId: null,
         },
         createdAt: new Date().toISOString(),
