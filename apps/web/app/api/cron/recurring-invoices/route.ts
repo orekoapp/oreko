@@ -31,6 +31,7 @@ export async function GET(request: Request) {
   try {
     logger.info('[Recurring Invoices] Starting recurring invoice generation...');
 
+    const now = new Date();
     const today = new Date();
     today.setHours(23, 59, 59, 999);
 
@@ -46,13 +47,36 @@ export async function GET(request: Request) {
       },
     });
 
-    logger.info({ count: dueInvoices.length }, '[Recurring Invoices] Found invoice(s) due for generation');
+    // Get workspace timezones to only process workspaces where it's midnight-1AM local time
+    const workspaceIds = [...new Set(dueInvoices.map(inv => inv.workspaceId))];
+    const workspaceTimezones = new Map<string, string>();
+    if (workspaceIds.length > 0) {
+      const profiles = await prisma.businessProfile.findMany({
+        where: { workspaceId: { in: workspaceIds } },
+        select: { workspaceId: true, timezone: true },
+      });
+      profiles.forEach(p => workspaceTimezones.set(p.workspaceId, p.timezone || 'UTC'));
+    }
+
+    // Filter: only process invoices for workspaces where local hour is 0 (midnight)
+    const eligibleInvoices = dueInvoices.filter(inv => {
+      const tz = workspaceTimezones.get(inv.workspaceId) || 'UTC';
+      try {
+        const localHour = parseInt(now.toLocaleString('en-US', { timeZone: tz, hour: 'numeric', hour12: false }));
+        return localHour === 0; // Only process at midnight local time
+      } catch {
+        // Invalid timezone — fall back to processing (don't skip)
+        return true;
+      }
+    });
+
+    logger.info({ total: dueInvoices.length, eligible: eligibleInvoices.length }, '[Recurring Invoices] Found invoice(s) due — filtered by workspace timezone');
 
     let generated = 0;
     let failed = 0;
     const errors: string[] = [];
 
-    for (const parent of dueInvoices) {
+    for (const parent of eligibleInvoices) {
       try {
         // Check if end date has passed
         if (parent.recurringEndDate && new Date() > parent.recurringEndDate) {

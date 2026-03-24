@@ -11,7 +11,7 @@
     },
     {
       "path": "/api/cron/recurring-invoices",
-      "schedule": "0 6 * * *"
+      "schedule": "0 * * * *"
     }
   ],
   "headers": [
