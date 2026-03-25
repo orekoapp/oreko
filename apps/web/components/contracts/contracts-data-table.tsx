@@ -182,7 +182,7 @@ export function ContractsDataTable({ data: initialData }: ContractsDataTableProp
 
   // Download PDF
   const handleDownload = useCallback((contract: ContractInstanceListItem) => {
-    window.open(`/api/pdf/contract/${contract.id}`, '_blank');
+    window.open(`/api/download/contract/${contract.id}`, '_blank');
   }, []);
 
   const columns = getContractColumns({
