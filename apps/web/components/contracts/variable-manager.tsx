@@ -37,6 +37,17 @@ const variableTypes = [
 export function VariableManager({ variables, onChange }: VariableManagerProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
+  // Stable IDs for React keys — survives key/label edits without remounting
+  const [stableIds] = useState<Map<number, string>>(() => new Map());
+  let nextId = 0;
+
+  const getStableId = (index: number): string => {
+    if (!stableIds.has(index)) {
+      stableIds.set(index, `var_${Date.now()}_${nextId++}`);
+    }
+    return stableIds.get(index)!;
+  };
+
   const addVariable = () => {
     const newVariable: ContractVariable = {
       key: `variable_${variables.length + 1}`,
@@ -44,6 +55,8 @@ export function VariableManager({ variables, onChange }: VariableManagerProps) {
       type: 'text',
       required: false,
     };
+    // Pre-assign stable ID for the new variable
+    stableIds.set(variables.length, `var_${Date.now()}_${variables.length}`);
     onChange([...variables, newVariable]);
     setEditingIndex(variables.length);
   };
@@ -90,7 +103,7 @@ export function VariableManager({ variables, onChange }: VariableManagerProps) {
             {/* Low #62: Use variable.key as React key instead of array index */}
             {variables.map((variable, index) => (
               <div
-                key={variable.key || index}
+                key={getStableId(index)}
                 className="flex items-start gap-2 p-3 border rounded-lg bg-muted/30"
               >
                 <div className="cursor-move text-muted-foreground pt-2">

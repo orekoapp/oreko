@@ -93,6 +93,12 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
   const [editLineItems, setEditLineItems] = useState<TemplateLineItem[]>([]);
   const [editPaymentTerms, setEditPaymentTerms] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [editNotes, setEditNotes] = useState('');
+  const [editTerms, setEditTerms] = useState('');
+  const [showDiscount, setShowDiscount] = useState(false);
+  const [showTax, setShowTax] = useState(false);
+  const [showLateFee, setShowLateFee] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
 
   const handleOpenCreate = () => {
     setIsCreating(true);
@@ -100,6 +106,12 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
     setEditName('');
     setEditPaymentTerms('net30');
     setEditLineItems([]);
+    setEditNotes('');
+    setEditTerms('');
+    setShowDiscount(false);
+    setShowTax(false);
+    setShowLateFee(false);
+    setShowNotes(false);
   };
 
   const handleOpenEdit = (template: InvoiceTemplateListItem) => {
@@ -108,6 +120,12 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
     setEditName(template.name);
     setEditPaymentTerms(template.paymentTerms);
     setEditLineItems(template.lineItems ?? []);
+    setEditNotes(template.notes || '');
+    setEditTerms(template.terms || '');
+    setShowDiscount(false);
+    setShowTax(false);
+    setShowLateFee(false);
+    setShowNotes(!!(template.notes || template.terms));
   };
 
   const handleCloseEdit = () => {
@@ -127,6 +145,8 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
           name: editName,
           paymentTerms: editPaymentTerms,
           lineItems: editLineItems,
+          notes: editNotes || undefined,
+          terms: editTerms || undefined,
         });
         if (!result.success) {
           toast.error(result.error || 'Failed to create template');
@@ -141,6 +161,8 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
           paymentTerms: editPaymentTerms,
           currency: editingTemplate.currency,
           lineItems: editLineItems,
+          notes: editNotes || undefined,
+          terms: editTerms || undefined,
           isDefault: editingTemplate.isDefault,
         });
         if (!result.success) {
@@ -431,12 +453,66 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[200px]">
-                  <DropdownMenuItem>Discount</DropdownMenuItem>
-                  <DropdownMenuItem>Tax</DropdownMenuItem>
-                  <DropdownMenuItem>Late Fee</DropdownMenuItem>
-                  <DropdownMenuItem>Notes</DropdownMenuItem>
+                  <DropdownMenuItem disabled={showDiscount} onClick={() => setShowDiscount(true)}>Discount</DropdownMenuItem>
+                  <DropdownMenuItem disabled={showTax} onClick={() => setShowTax(true)}>Tax</DropdownMenuItem>
+                  <DropdownMenuItem disabled={showLateFee} onClick={() => setShowLateFee(true)}>Late Fee</DropdownMenuItem>
+                  <DropdownMenuItem disabled={showNotes} onClick={() => setShowNotes(true)}>Notes</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Enhancement Sections */}
+              {showDiscount && (
+                <div className="space-y-2 rounded-lg border p-4 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Discount</Label>
+                    <button type="button" className="text-xs text-muted-foreground hover:text-destructive" onClick={() => setShowDiscount(false)}>Remove</button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Discounts are applied when creating individual invoices from this template.</p>
+                </div>
+              )}
+
+              {showTax && (
+                <div className="space-y-2 rounded-lg border p-4 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Tax</Label>
+                    <button type="button" className="text-xs text-muted-foreground hover:text-destructive" onClick={() => setShowTax(false)}>Remove</button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Tax rates from your settings will be applied when creating invoices. Mark line items as taxable above.</p>
+                </div>
+              )}
+
+              {showLateFee && (
+                <div className="space-y-2 rounded-lg border p-4 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Late Fee</Label>
+                    <button type="button" className="text-xs text-muted-foreground hover:text-destructive" onClick={() => setShowLateFee(false)}>Remove</button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Late fees are configured in your payment settings and applied automatically to overdue invoices.</p>
+                </div>
+              )}
+
+              {showNotes && (
+                <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Notes & Terms</Label>
+                    <button type="button" className="text-xs text-muted-foreground hover:text-destructive" onClick={() => { setShowNotes(false); setEditNotes(''); setEditTerms(''); }}>Remove</button>
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder="Notes (visible to client)"
+                      className="h-9 text-sm"
+                    />
+                    <Input
+                      value={editTerms}
+                      onChange={(e) => setEditTerms(e.target.value)}
+                      placeholder="Terms & conditions"
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Items Section */}
               <div>
