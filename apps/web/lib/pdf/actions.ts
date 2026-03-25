@@ -3,7 +3,7 @@
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { toNumber } from '@/lib/utils';
-import type { QuotePdfData, InvoicePdfData } from './types';
+import type { QuotePdfData, InvoicePdfData, ContractPdfData } from './types';
 
 /**
  * Get quote data for PDF generation (authenticated)
@@ -386,5 +386,115 @@ export async function getInvoicePdfDataByToken(accessToken: string): Promise<Inv
       paidAt: payment.processedAt?.toISOString() ?? payment.createdAt.toISOString(),
       reference: payment.referenceNumber,
     })),
+  };
+}
+
+/**
+ * Get contract data for PDF generation (authenticated)
+ */
+export async function getContractPdfData(contractInstanceId: string): Promise<ContractPdfData | null> {
+  const { workspaceId } = await getCurrentUserWorkspace();
+
+  const instance = await prisma.contractInstance.findFirst({
+    where: { id: contractInstanceId, workspaceId, deletedAt: null },
+    include: {
+      contract: { select: { name: true } },
+      client: { select: { name: true, email: true, company: true } },
+      workspace: {
+        select: {
+          businessProfile: {
+            select: { businessName: true, email: true, phone: true, logoUrl: true },
+          },
+          brandingSettings: {
+            select: { primaryColor: true, accentColor: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!instance) return null;
+
+  const profile = instance.workspace?.businessProfile;
+  const branding = instance.workspace?.brandingSettings;
+
+  return {
+    id: instance.id,
+    contractName: instance.contract?.name ?? 'Contract',
+    clientName: instance.client?.company || instance.client?.name || 'Client',
+    clientEmail: instance.client?.email || null,
+    content: instance.content,
+    status: instance.status,
+    createdAt: instance.createdAt.toISOString(),
+    sentAt: instance.sentAt?.toISOString() || null,
+    signedAt: instance.signedAt?.toISOString() || null,
+    countersignedAt: instance.countersignedAt?.toISOString() || null,
+    business: {
+      name: profile?.businessName || 'Business',
+      email: profile?.email || null,
+      phone: profile?.phone || null,
+      logoUrl: profile?.logoUrl || null,
+    },
+    branding: branding ? {
+      primaryColor: branding.primaryColor,
+      accentColor: branding.accentColor,
+    } : null,
+    signatureData: instance.signatureData as ContractPdfData['signatureData'],
+    countersignatureData: instance.countersignatureData as ContractPdfData['countersignatureData'],
+    countersignerName: instance.countersignerName,
+  };
+}
+
+/**
+ * Get contract data for PDF generation by access token (public)
+ */
+export async function getContractPdfDataByToken(accessToken: string): Promise<ContractPdfData | null> {
+  const instance = await prisma.contractInstance.findFirst({
+    where: { accessToken, deletedAt: null },
+    include: {
+      contract: { select: { name: true } },
+      client: { select: { name: true, email: true, company: true } },
+      workspace: {
+        select: {
+          businessProfile: {
+            select: { businessName: true, email: true, phone: true, logoUrl: true },
+          },
+          brandingSettings: {
+            select: { primaryColor: true, accentColor: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!instance) return null;
+
+  const profile = instance.workspace?.businessProfile;
+  const branding = instance.workspace?.brandingSettings;
+
+  return {
+    id: instance.id,
+    contractName: instance.contract?.name ?? 'Contract',
+    clientName: instance.client?.company || instance.client?.name || 'Client',
+    clientEmail: instance.client?.email || null,
+    content: instance.content,
+    status: instance.status,
+    createdAt: instance.createdAt.toISOString(),
+    sentAt: instance.sentAt?.toISOString() || null,
+    signedAt: instance.signedAt?.toISOString() || null,
+    countersignedAt: instance.countersignedAt?.toISOString() || null,
+    business: {
+      name: profile?.businessName || 'Business',
+      email: profile?.email || null,
+      phone: profile?.phone || null,
+      logoUrl: profile?.logoUrl || null,
+    },
+    branding: branding ? {
+      primaryColor: branding.primaryColor,
+      accentColor: branding.accentColor,
+    } : null,
+    signatureData: instance.signatureData as ContractPdfData['signatureData'],
+    countersignatureData: instance.countersignatureData as ContractPdfData['countersignatureData'],
+    countersignerName: instance.countersignerName,
   };
 }

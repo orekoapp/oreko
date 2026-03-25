@@ -129,6 +129,43 @@ export interface InvoicePdfData {
   }>;
 }
 
+// Contract PDF data
+export interface ContractPdfData {
+  id: string;
+  contractName: string;
+  clientName: string;
+  clientEmail: string | null;
+  content: string;
+  status: string;
+  createdAt: string;
+  sentAt: string | null;
+  signedAt: string | null;
+  countersignedAt: string | null;
+  business: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    logoUrl: string | null;
+  };
+  branding: {
+    primaryColor: string | null;
+    accentColor: string | null;
+  } | null;
+  signatureData: {
+    type: 'typed' | 'drawn';
+    value: string;
+    name: string;
+    date: string;
+  } | null;
+  countersignatureData: {
+    type: 'typed' | 'drawn';
+    value: string;
+    name: string;
+    date: string;
+  } | null;
+  countersignerName: string | null;
+}
+
 // Credit Note PDF data
 export interface CreditNotePdfData {
   id: string;

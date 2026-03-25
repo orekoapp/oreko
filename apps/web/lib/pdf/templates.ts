@@ -1,4 +1,4 @@
-import type { QuotePdfData, InvoicePdfData, CreditNotePdfData } from './types';
+import type { QuotePdfData, InvoicePdfData, CreditNotePdfData, ContractPdfData } from './types';
 
 /**
  * Escape HTML special characters to prevent XSS in PDF templates
@@ -928,6 +928,112 @@ export function generateCreditNotePdfHtml(data: CreditNotePdfData): string {
           `
               : ''
           }
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Generate contract PDF HTML
+ */
+export function generateContractPdfHtml(data: ContractPdfData): string {
+  const primaryColor = sanitizeColor(data.branding?.primaryColor || '#3B82F6');
+
+  const signatureHtml = (sig: ContractPdfData['signatureData'], label: string, signerName?: string | null) => {
+    if (!sig) {
+      return `
+        <div class="signature-box">
+          <p class="signature-label">${escapeHtml(label)}</p>
+          <div class="signature-placeholder">Awaiting signature</div>
+        </div>
+      `;
+    }
+    const sigDisplay = sig.type === 'drawn'
+      ? `<img src="${escapeHtml(sig.value)}" alt="${escapeHtml(label)}" style="max-height: 60px;" />`
+      : `<p style="font-family: 'Brush Script MT', cursive; font-size: 28px; margin: 0;">${escapeHtml(sig.value)}</p>`;
+
+    return `
+      <div class="signature-box">
+        <p class="signature-label">${escapeHtml(label)}</p>
+        ${sigDisplay}
+        <p class="signature-meta">Signed by ${escapeHtml(sig.name || signerName || '')} on ${formatDate(sig.date)}</p>
+      </div>
+    `;
+  };
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 13px; line-height: 1.6; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid ${primaryColor}; }
+          .header-left { flex: 1; }
+          .header-right { text-align: right; color: #6b7280; font-size: 12px; }
+          .business-name { font-size: 20px; font-weight: 700; color: ${primaryColor}; margin-bottom: 4px; }
+          .contract-title { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+          .meta { color: #6b7280; font-size: 12px; }
+          .parties { display: flex; gap: 40px; margin-bottom: 24px; padding: 16px; background: #f9fafb; border-radius: 6px; }
+          .party { flex: 1; }
+          .party-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.05em; margin-bottom: 4px; }
+          .party-name { font-weight: 600; font-size: 14px; }
+          .content { margin-bottom: 30px; }
+          .content h1, .content h2, .content h3 { margin-top: 16px; margin-bottom: 8px; }
+          .content h1 { font-size: 20px; }
+          .content h2 { font-size: 16px; }
+          .content h3 { font-size: 14px; }
+          .content p { margin-bottom: 8px; }
+          .content ul, .content ol { margin-left: 20px; margin-bottom: 8px; }
+          .signatures { display: flex; gap: 30px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+          .signature-box { flex: 1; padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; }
+          .signature-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.05em; margin-bottom: 8px; }
+          .signature-placeholder { height: 50px; border: 2px dashed #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px; }
+          .signature-meta { font-size: 11px; color: #6b7280; margin-top: 6px; }
+          .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+          .status-signed { background: #dcfce7; color: #166534; }
+          .status-pending { background: #fef9c3; color: #854d0e; }
+          .status-sent { background: #dbeafe; color: #1e40af; }
+          .status-draft { background: #f3f4f6; color: #4b5563; }
+          .logo { max-height: 40px; max-width: 150px; margin-bottom: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="header-left">
+            ${data.business.logoUrl && isSafeUrl(data.business.logoUrl) ? `<img src="${escapeHtml(data.business.logoUrl)}" class="logo" alt="" />` : ''}
+            <div class="business-name">${escapeHtml(data.business.name)}</div>
+            ${data.business.email ? `<div class="meta">${escapeHtml(data.business.email)}</div>` : ''}
+            ${data.business.phone ? `<div class="meta">${escapeHtml(data.business.phone)}</div>` : ''}
+          </div>
+          <div class="header-right">
+            <div class="contract-title">${escapeHtml(data.contractName)}</div>
+            <div class="meta">Created ${formatDate(data.createdAt)}</div>
+            <span class="status-badge status-${data.status}">${escapeHtml(data.status)}</span>
+          </div>
+        </div>
+
+        <div class="parties">
+          <div class="party">
+            <p class="party-label">Business</p>
+            <p class="party-name">${escapeHtml(data.business.name)}</p>
+          </div>
+          <div class="party">
+            <p class="party-label">Client</p>
+            <p class="party-name">${escapeHtml(data.clientName)}</p>
+            ${data.clientEmail ? `<p class="meta">${escapeHtml(data.clientEmail)}</p>` : ''}
+          </div>
+        </div>
+
+        <div class="content">
+          ${data.content}
+        </div>
+
+        <div class="signatures">
+          ${signatureHtml(data.signatureData, 'Client Signature')}
+          ${signatureHtml(data.countersignatureData, 'Business Signature', data.countersignerName)}
         </div>
       </body>
     </html>

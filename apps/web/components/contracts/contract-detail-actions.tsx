@@ -13,7 +13,7 @@ interface ContractDetailActionsProps {
   contractName: string;
   status: string;
   accessToken: string;
-  pdfUrl: string | null;
+  pdfUrl?: string | null;
 }
 
 export function ContractDetailActions({
@@ -21,7 +21,6 @@ export function ContractDetailActions({
   contractName,
   status,
   accessToken,
-  pdfUrl,
 }: ContractDetailActionsProps) {
   const router = useRouter();
   const [isSending, setIsSending] = useState(false);
@@ -69,14 +68,12 @@ export function ContractDetailActions({
             </a>
           </Button>
         )}
-        {pdfUrl && (
-          <Button variant="outline" asChild>
-            <a href={pdfUrl} download>
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
-            </a>
-          </Button>
-        )}
+        <Button variant="outline" asChild>
+          <a href={`/api/download/contract/${contractId}`} target="_blank" rel="noopener noreferrer">
+            <Download className="mr-2 h-4 w-4" />
+            Download PDF
+          </a>
+        </Button>
       </div>
 
       <CountersignDialog
