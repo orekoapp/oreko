@@ -301,6 +301,15 @@ export function ContractTemplateList({
 
   return (
     <>
+      <div className="flex items-center justify-between mb-4">
+        <div />
+        <Button asChild size="sm">
+          <Link href="/templates/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Template
+          </Link>
+        </Button>
+      </div>
       {selectedRows.length > 0 && (
         <div className="flex items-center gap-2 mb-4">
           <span className="text-sm text-muted-foreground">
