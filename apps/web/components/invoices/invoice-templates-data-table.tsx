@@ -302,15 +302,6 @@ export function InvoiceTemplatesDataTable({ data }: InvoiceTemplatesDataTablePro
       ),
     },
     {
-      accessorKey: 'currency',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Currency" />
-      ),
-      cell: ({ row }) => (
-        <div className="text-muted-foreground">{row.original.currency}</div>
-      ),
-    },
-    {
       accessorKey: 'usageCount',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Used" />

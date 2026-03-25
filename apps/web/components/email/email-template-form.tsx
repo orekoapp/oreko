@@ -11,7 +11,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Switch } from '@/components/ui/switch';
 import {
   Card,
@@ -213,7 +213,7 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="body">Email Body (HTML)</Label>
+              <Label htmlFor="body">Email Body</Label>
               <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
                 <DialogTrigger asChild>
                   <Button type="button" variant="outline" size="sm">
@@ -247,12 +247,10 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
                 </DialogContent>
               </Dialog>
             </div>
-            <Textarea
-              id="body"
-              {...register('body')}
-              rows={12}
-              className="font-mono text-sm"
-              placeholder="<p>Hi {{clientName}},</p>..."
+            <RichTextEditor
+              value={body}
+              onChange={(val) => setValue('body', val, { shouldValidate: true })}
+              placeholder="Hi {{clientName}}, ..."
             />
             {errors.body && (
               <p className="text-sm text-destructive">{errors.body.message}</p>
