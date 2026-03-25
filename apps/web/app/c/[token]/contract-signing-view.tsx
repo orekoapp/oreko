@@ -208,14 +208,23 @@ export function ContractSigningView({
                       <p className="text-xs font-medium text-muted-foreground mb-2">Business Signature</p>
                       {contract.countersignatureData ? (
                         <>
-                          <p
-                            className="text-2xl"
-                            style={{ fontFamily: "'Brush Script MT', cursive" }}
-                          >
-                            {contract.countersignatureData.name}
-                          </p>
+                          {contract.countersignatureData.type === 'drawn' ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={contract.countersignatureData.value}
+                              alt="Business Signature"
+                              className="max-h-16"
+                            />
+                          ) : (
+                            <p
+                              className="text-2xl"
+                              style={{ fontFamily: "'Brush Script MT', cursive" }}
+                            >
+                              {contract.countersignatureData.value}
+                            </p>
+                          )}
                           <p className="text-xs text-muted-foreground mt-2">
-                            Countersigned on{' '}
+                            Countersigned by {contract.countersignatureData.name} on{' '}
                             {formatDate(new Date(contract.countersignatureData.date))}
                           </p>
                         </>
