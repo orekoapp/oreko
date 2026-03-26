@@ -1,12 +1,12 @@
-# Dependencies
-node_modules
+# Dependencies (use ** to catch nested)
+**/node_modules
 .pnpm-store
 
 # Build outputs
-.next
-dist
-build
-out
+**/.next
+**/dist
+**/build
+**/out
 .turbo
 
 # Git
@@ -23,12 +23,15 @@ out
 .env
 .env.local
 .env.*.local
+.env.production
+.env.test.example
 
 # Testing
 coverage
 .nyc_output
 playwright-report
 test-results
+tests
 
 # Logs
 *.log
@@ -39,10 +42,16 @@ docs
 *.md
 !README.md
 
+# Images and screenshots (not needed in build)
+*.png
+*.jpg
+*.jpeg
+
 # Development files
 .eslintcache
 .prettierignore
 *.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # OS files
 .DS_Store
@@ -54,6 +63,15 @@ Dockerfile*
 docker-compose*
 .dockerignore
 
-# Research and specs (not needed in production)
+# Research, specs, and project files (not needed in production)
 research
 specs
+_project_specs
+brief
+bugs
+reports
+scripts
+.claude
+.vercel
+.husky
+.github

@@ -11,7 +11,7 @@ const secret = (process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || '')
 const { auth } = NextAuth({
   secret,
   session: { strategy: 'jwt' },
-  trustHost: process.env.NODE_ENV === 'development' || !!process.env.VERCEL,
+  trustHost: process.env.NODE_ENV === 'development' || !!process.env.VERCEL || process.env.AUTH_TRUST_HOST === 'true',
   ...authConfig,
 });
 

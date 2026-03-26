@@ -25,13 +25,14 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-quotecraft}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-quotecraft}?schema=public
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      AUTH_TRUST_HOST: "true"
     ports:
       - '3000:3000'
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/api/health']
       interval: 30s
       timeout: 10s
       retries: 3

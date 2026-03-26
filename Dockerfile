@@ -14,6 +14,9 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 FROM base AS deps
 WORKDIR /app
 
+# Use hoisted node-linker so binaries like prisma are accessible at node_modules/.bin
+RUN echo "node-linker=hoisted" > .npmrc
+
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
@@ -31,24 +34,27 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
-# Copy dependencies
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
-COPY --from=deps /app/packages/ui/node_modules ./packages/ui/node_modules
-COPY --from=deps /app/packages/utils/node_modules ./packages/utils/node_modules
-COPY --from=deps /app/packages/types/node_modules ./packages/types/node_modules
+# Copy everything from deps stage (preserves workspace structure + hoisted node_modules)
+COPY --from=deps /app ./
 
-# Copy source code
+# Copy source code on top
 COPY . .
 
+# Re-link workspace packages (symlinks don't survive Docker COPY between stages)
+RUN mkdir -p node_modules/@quotecraft && \
+    ln -sf ../../../packages/database node_modules/@quotecraft/database && \
+    ln -sf ../../../packages/ui node_modules/@quotecraft/ui && \
+    ln -sf ../../../packages/utils node_modules/@quotecraft/utils && \
+    ln -sf ../../../packages/types node_modules/@quotecraft/types
+
 # Generate Prisma client
-RUN pnpm --filter @quotecraft/database generate
+RUN ./node_modules/.bin/prisma generate --schema=packages/database/prisma/schema.prisma
 
 # Build the application
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm --filter @quotecraft/web build
+ENV DOCKER_BUILD=1
+RUN cd apps/web && ../../node_modules/.bin/next build
 
 # ============================================
 # Runner stage
@@ -70,7 +76,7 @@ COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
 # Copy Prisma schema and generated client
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Create uploads directory
 RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
