@@ -251,6 +251,7 @@ export async function processRefundWebhook(
   try {
     const payment = await prisma.payment.findFirst({
       where: { stripePaymentIntentId: paymentIntentId, status: 'completed' },
+      include: { invoice: { select: { workspaceId: true } } },
     });
 
     if (!payment) {
@@ -320,7 +321,7 @@ export async function processRefundWebhook(
     try {
       domainEvents.emit({
         type: 'payment.refunded',
-        payload: { paymentId: payment.id, amount: refundAmount },
+        payload: { paymentId: payment.id, workspaceId: payment.invoice.workspaceId, amount: refundAmount },
       });
     } catch {}
 
@@ -422,7 +423,7 @@ export async function processPaymentWebhook(
       try {
         domainEvents.emit({
           type: 'payment.received',
-          payload: { paymentId: payment.id, invoiceId: payment.invoiceId, amount: paymentAmount },
+          payload: { paymentId: payment.id, invoiceId: payment.invoiceId, workspaceId: payment.invoice.workspaceId, amount: paymentAmount },
         });
       } catch {}
 

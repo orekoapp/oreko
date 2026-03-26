@@ -504,7 +504,7 @@ async function InvoiceActivity({ invoiceId }: { invoiceId: string }) {
           </p>
         ) : (
           <div className="space-y-3">
-            {events.map((event) => (
+            {events.map((event: { id: string; eventType: string; createdAt: Date }) => (
               <div key={event.id} className="flex items-start gap-3">
                 <div className="mt-0.5">{getEventIcon(event.eventType)}</div>
                 <div className="flex-1">

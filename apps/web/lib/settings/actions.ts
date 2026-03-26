@@ -352,7 +352,10 @@ export async function getPaymentSettings(): Promise<PaymentSettingsData | null> 
 export async function updatePaymentSettings(
   input: UpdatePaymentSettingsInput
 ): Promise<void> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer' || role === 'editor') {
+    throw new Error('Only admins and owners can modify payment settings');
+  }
 
   const existing = await prisma.paymentSettings.findUnique({
     where: { workspaceId },
@@ -1604,7 +1607,7 @@ export async function getWebhooks(): Promise<WebhookData[]> {
     id: ep.id,
     name: ep.name || ep.url,
     url: ep.url,
-    secret: ep.secret,
+    secret: ep.secret ? `${'•'.repeat(20)}${ep.secret.slice(-4)}` : null,
     events: ep.events as WebhookData['events'],
     isActive: ep.isActive,
     createdAt: ep.createdAt,

@@ -345,21 +345,35 @@ export async function acceptQuote(data: {
       return { success: false, error: 'Too many attempts. Please try again later.' };
     }
 
-    // Enforce OTP verification if code is provided (client-side sends it after OTP flow)
-    if (data.otpCode) {
-      const { verifySigningOtp } = await import('@/lib/signing/otp');
-      const otpKey = `quote:${data.accessToken}`;
-      // Look up quote to get client email for OTP verification
+    // Bug #1: Fix OTP key mismatch — use quote:<quoteId> matching sendSigningOtp
+    // Also enforce that OTP was completed (not just optionally provided)
+    {
+      const { verifySigningOtp, isSigningVerified } = await import('@/lib/signing/otp');
       const quoteForOtp = await prisma.quote.findFirst({
         where: { accessToken: data.accessToken, deletedAt: null },
-        select: { client: { select: { email: true } } },
+        select: { id: true, client: { select: { email: true } }, settings: true },
       });
-      if (!quoteForOtp?.client?.email) {
-        return { success: false, error: 'Could not verify identity — client email not found' };
+      if (!quoteForOtp) {
+        return { success: false, error: 'Quote not found' };
       }
-      const otpResult = await verifySigningOtp(otpKey, data.otpCode, quoteForOtp.client.email);
-      if (!otpResult.valid) {
-        return { success: false, error: otpResult.error || 'OTP verification failed' };
+      const otpSettings = (quoteForOtp.settings as Record<string, unknown>) ?? {};
+      const requireOtp = (otpSettings.requireOtpVerification as boolean) ?? false;
+      const otpKey = `quote:${quoteForOtp.id}`;
+
+      if (data.otpCode) {
+        if (!quoteForOtp.client?.email) {
+          return { success: false, error: 'Could not verify identity — client email not found' };
+        }
+        const otpResult = await verifySigningOtp(otpKey, data.otpCode, quoteForOtp.client.email);
+        if (!otpResult.valid) {
+          return { success: false, error: otpResult.error || 'OTP verification failed' };
+        }
+      } else if (requireOtp) {
+        // OTP is required but not provided — check if already verified in a prior step
+        const alreadyVerified = await isSigningVerified(otpKey);
+        if (!alreadyVerified) {
+          return { success: false, error: 'Identity verification is required. Please complete the OTP step.' };
+        }
       }
     }
 

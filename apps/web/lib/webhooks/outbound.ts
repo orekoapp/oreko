@@ -131,22 +131,25 @@ async function deliverToEndpoint(
 
 /**
  * Handle a domain event by finding matching webhook endpoints and delivering.
- * Extracts workspaceId from the event payload when available.
+ * Bug #2: Always require workspaceId — never deliver across all tenants.
  */
 async function handleDomainEvent(event: DomainEvent): Promise<void> {
-  // Extract workspaceId from payload if available
   const payload = event.payload as Record<string, unknown>;
   const workspaceId = payload.workspaceId as string | undefined;
 
-  // Build query — if we have workspaceId, scope to that workspace
-  // Otherwise find all endpoints subscribed to this event type
-  const where = {
-    isActive: true,
-    events: { has: event.type },
-    ...(workspaceId && { workspaceId }),
-  };
+  // Critical: Never query all endpoints — skip if workspaceId is missing
+  if (!workspaceId) {
+    logger.warn({ eventType: event.type }, '[Webhooks] Skipping event delivery — no workspaceId in payload');
+    return;
+  }
 
-  const endpoints = await prisma.webhookEndpoint.findMany({ where });
+  const endpoints = await prisma.webhookEndpoint.findMany({
+    where: {
+      isActive: true,
+      events: { has: event.type },
+      workspaceId,
+    },
+  });
 
   if (endpoints.length === 0) {
     return;

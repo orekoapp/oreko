@@ -30,7 +30,6 @@ async function hashPassword(password: string): Promise<string> {
 
 async function seedProductionDemo() {
   console.log('🚀 Seeding production demo data...');
-  console.log(`📧 Demo email: ${DEMO_CONFIG.email}`);
 
   // Create demo user
   const demoPasswordHash = await hashPassword(DEMO_CONFIG.password);
@@ -514,9 +513,7 @@ async function seedProductionDemo() {
   console.log('✓ Linked invoices to projects');
 
   console.log('\n✅ Production demo data seeding completed!');
-  console.log(`\n📋 Demo Account Credentials:`);
-  console.log(`   Email: ${DEMO_CONFIG.email}`);
-  console.log(`   Password: ${DEMO_CONFIG.password}`);
+  console.log(`\n📋 Demo account created. Credentials are set via DEMO_USER_EMAIL and DEMO_USER_PASSWORD env vars.`);
 }
 
 seedProductionDemo()

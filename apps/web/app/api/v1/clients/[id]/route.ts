@@ -89,7 +89,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (company !== undefined) updateData.company = company;
   if (address !== undefined) updateData.address = address;
   if (billingAddress !== undefined) updateData.billingAddress = billingAddress;
-  if (metadata !== undefined) updateData.metadata = metadata;
+  if (metadata !== undefined) {
+    if (JSON.stringify(metadata).length > 10000) {
+      return apiError('Metadata too large (max 10KB)', 400);
+    }
+    updateData.metadata = metadata;
+  }
 
   const updated = await prisma.client.update({
     where: { id },

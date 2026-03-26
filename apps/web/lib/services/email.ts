@@ -242,6 +242,7 @@ export async function sendInvoiceSentEmail(params: {
   const safeInvoiceNumber = escapeHtml(invoiceNumber);
   const safeAmount = escapeHtml(amount);
   const safeMessage = message ? escapeHtml(message) : '';
+  const safeInvoiceUrl = validateEmailUrl(invoiceUrl);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -255,11 +256,11 @@ export async function sendInvoiceSentEmail(params: {
       </div>
       ${safeMessage ? `<p>${safeMessage}</p>` : ''}
       <p style="margin: 24px 0;">
-        <a href="${invoiceUrl}" style="background-color: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        <a href="${safeInvoiceUrl}" style="background-color: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           View & Pay Invoice
         </a>
       </p>
-      <p>Or copy this link: ${invoiceUrl}</p>
+      <p>Or copy this link: ${safeInvoiceUrl}</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
         Sent via QuoteCraft on behalf of ${safeBusinessName}
@@ -300,7 +301,7 @@ export async function sendPaymentReceivedEmail(params: {
       <p>Thank you! We have received your payment of <strong>${safeAmount}</strong> for invoice ${safeInvoiceNumber}.</p>
       ${receiptUrl ? `
         <p style="margin: 24px 0;">
-          <a href="${receiptUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          <a href="${validateEmailUrl(receiptUrl)}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             View Receipt
           </a>
         </p>
@@ -335,6 +336,7 @@ export async function sendQuoteAcceptedEmail(params: {
   const safeClientName = escapeHtml(clientName);
   const safeQuoteName = escapeHtml(quoteName);
   const safeAmount = escapeHtml(amount);
+  const safeQuoteUrl = validateEmailUrl(quoteUrl);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -345,7 +347,7 @@ export async function sendQuoteAcceptedEmail(params: {
         <p style="margin: 8px 0 0;"><strong>Amount:</strong> ${safeAmount}</p>
       </div>
       <p style="margin: 24px 0;">
-        <a href="${quoteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        <a href="${safeQuoteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           View Quote
         </a>
       </p>
@@ -383,6 +385,7 @@ export async function sendInvoiceReminderEmail(params: {
   const safeInvoiceNumber = escapeHtml(invoiceNumber);
   const safeBusinessName = escapeHtml(businessName);
   const safeAmount = escapeHtml(amount);
+  const safeInvoiceUrl = validateEmailUrl(invoiceUrl);
 
   const isOverdue = daysOverdue !== undefined && daysOverdue > 0;
   const subject = isOverdue
@@ -407,7 +410,7 @@ export async function sendInvoiceReminderEmail(params: {
         <p style="margin: 8px 0 0;"><strong>Due Date:</strong> ${dueDate.toLocaleDateString()}</p>
       </div>
       <p style="margin: 24px 0;">
-        <a href="${invoiceUrl}" style="background-color: ${isOverdue ? '#EF4444' : '#F59E0B'}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        <a href="${safeInvoiceUrl}" style="background-color: ${isOverdue ? '#EF4444' : '#F59E0B'}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           Pay Now
         </a>
       </p>
@@ -444,6 +447,7 @@ export async function sendInvitationEmail(params: {
   const safeInviterName = escapeHtml(inviterName);
   const safeWorkspaceName = escapeHtml(workspaceName);
   const safeRole = escapeHtml(role);
+  const safeInviteUrl = validateEmailUrl(inviteUrl);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -451,7 +455,7 @@ export async function sendInvitationEmail(params: {
       <p>${safeInviterName} has invited you to join <strong>${safeWorkspaceName}</strong> as a <strong>${safeRole}</strong>.</p>
       <p>QuoteCraft is a visual quote and invoice management tool that helps teams create professional quotes and invoices.</p>
       <p style="margin: 24px 0;">
-        <a href="${inviteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        <a href="${safeInviteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           Accept Invitation
         </a>
       </p>
@@ -482,6 +486,7 @@ export async function sendVerificationEmail(params: {
   const { to, name, verifyUrl } = params;
 
   const safeName = escapeHtml(name);
+  const safeVerifyUrl = validateEmailUrl(verifyUrl);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -489,7 +494,7 @@ export async function sendVerificationEmail(params: {
       <p>Hi ${safeName},</p>
       <p>Thanks for creating an account with QuoteCraft! Please click the button below to verify your email address:</p>
       <p style="margin: 24px 0;">
-        <a href="${verifyUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        <a href="${safeVerifyUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           Verify Email
         </a>
       </p>

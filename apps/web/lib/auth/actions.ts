@@ -5,6 +5,7 @@ import { hash, compare } from 'bcryptjs';
 import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 interface ActionResult {
   success: boolean;
@@ -22,6 +23,12 @@ export async function changePassword(input: ChangePasswordInput): Promise<Action
     const session = await auth();
     if (!session?.user?.id) {
       return { success: false, error: 'Unauthorized' };
+    }
+
+    // Rate limit: 5 attempts per 15 minutes per user
+    const rl = await checkRateLimit(`change-password:${session.user.id}`, { limit: 5, windowMs: 15 * 60 * 1000 });
+    if (rl.limited) {
+      return { success: false, error: 'Too many attempts. Please try again in 15 minutes.' };
     }
 
     const user = await prisma.user.findUnique({

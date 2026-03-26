@@ -852,9 +852,9 @@ export async function updateQuoteStatus(
 
   try {
     if (status === 'accepted') {
-      domainEvents.emit({ type: 'quote.accepted', payload: { quoteId } });
+      domainEvents.emit({ type: 'quote.accepted', payload: { quoteId, workspaceId: workspace.id } });
     } else if (status === 'declined') {
-      domainEvents.emit({ type: 'quote.declined', payload: { quoteId } });
+      domainEvents.emit({ type: 'quote.declined', payload: { quoteId, workspaceId: workspace.id } });
     }
   } catch {}
 
@@ -1002,7 +1002,7 @@ export async function sendQuote(quoteId: string, emailOptions?: SendEmailOptions
   revalidatePath(ROUTES.quoteDetail(quoteId));
 
   try {
-    domainEvents.emit({ type: 'quote.sent', payload: { quoteId, clientEmail: quote.client.email } });
+    domainEvents.emit({ type: 'quote.sent', payload: { quoteId, workspaceId: workspace.id, clientEmail: quote.client.email } });
   } catch {}
 
   return { success: true, recipientEmail: quote.client.email, emailSent };

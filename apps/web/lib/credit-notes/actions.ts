@@ -182,18 +182,25 @@ export async function issueCreditNote(creditNoteId: string) {
     return { success: false, error: 'Only draft credit notes can be issued' };
   }
 
-  // HIGH #14 + #17: Update invoice balance and wrap in transaction
+  // Bug #4: Use atomic conditional update to prevent double-issuance race condition
   const creditNoteTotal = Number(creditNote.amount);
 
-  await prisma.$transaction([
-    prisma.creditNote.update({
-      where: { id: creditNoteId },
+  const result = await prisma.$transaction(async (tx) => {
+    // Atomic: only update if status is still 'draft' — prevents concurrent double-issue
+    const updated = await tx.creditNote.updateMany({
+      where: { id: creditNoteId, status: 'draft' },
       data: {
         status: 'issued',
         issuedAt: new Date(),
       },
-    }),
-    prisma.creditNoteEvent.create({
+    });
+
+    if (updated.count === 0) {
+      // Another request already issued this credit note
+      return { alreadyIssued: true };
+    }
+
+    await tx.creditNoteEvent.create({
       data: {
         creditNoteId,
         eventType: 'issued',
@@ -201,21 +208,27 @@ export async function issueCreditNote(creditNoteId: string) {
         actorType: 'user',
         metadata: {},
       },
-    }),
-    // HIGH #14: Update the invoice balance to reflect the credit note
-    prisma.invoice.update({
+    });
+
+    await tx.invoice.update({
       where: { id: creditNote.invoiceId },
       data: {
         amountPaid: { increment: creditNoteTotal },
         amountDue: { decrement: creditNoteTotal },
       },
-    }),
-  ]);
+    });
+
+    return { alreadyIssued: false };
+  });
+
+  if (result.alreadyIssued) {
+    return { success: false, error: 'Credit note has already been issued' };
+  }
 
   revalidatePath(ROUTES.invoiceDetail(creditNote.invoiceId));
 
   try {
-    domainEvents.emit({ type: 'credit_note.issued', payload: { creditNoteId, invoiceId: creditNote.invoiceId } });
+    domainEvents.emit({ type: 'credit_note.issued', payload: { creditNoteId, invoiceId: creditNote.invoiceId, workspaceId: workspace.id } });
   } catch {}
 
   return { success: true };

@@ -17,6 +17,12 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 async function main() {
+  // Prevent accidental use in production
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ seed.ts is for development only. Use seed-production.ts for production.');
+    process.exit(1);
+  }
+
   console.log('Seeding database...');
 
   // Create test users with different roles

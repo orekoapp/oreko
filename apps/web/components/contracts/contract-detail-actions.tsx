@@ -12,7 +12,7 @@ interface ContractDetailActionsProps {
   contractId: string;
   contractName: string;
   status: string;
-  accessToken: string;
+  clientViewUrl: string;
   pdfUrl?: string | null;
 }
 
@@ -20,13 +20,11 @@ export function ContractDetailActions({
   contractId,
   contractName,
   status,
-  accessToken,
+  clientViewUrl,
 }: ContractDetailActionsProps) {
   const router = useRouter();
   const [isSending, setIsSending] = useState(false);
   const [countersignOpen, setCountersignOpen] = useState(false);
-
-  const clientViewUrl = `/c/${accessToken}`;
 
   const handleSend = async () => {
     setIsSending(true);

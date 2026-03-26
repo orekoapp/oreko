@@ -143,11 +143,11 @@ export async function createInvoice(data: CreateInvoiceData) {
 
   // Validate line item values
   for (const item of data.lineItems) {
-    if (item.rate < 0) {
-      return { success: false, error: 'Line item rate cannot be negative' };
+    if (!Number.isFinite(item.rate) || item.rate < 0 || item.rate > 1_000_000) {
+      return { success: false, error: 'Line item rate must be between 0 and 1,000,000' };
     }
-    if (item.quantity < 0) {
-      return { success: false, error: 'Line item quantity cannot be negative' };
+    if (!Number.isFinite(item.quantity) || item.quantity < 0 || item.quantity > 1_000_000) {
+      return { success: false, error: 'Line item quantity must be between 0 and 1,000,000' };
     }
   }
 
@@ -289,6 +289,12 @@ export async function createInvoiceFromQuote(quoteId: string, options?: { dueDay
 
   if (!quote) {
     return { success: false, error: 'Quote not found' };
+  }
+
+  // Only accepted or sent quotes can be converted to invoices
+  const convertibleStatuses = ['accepted', 'sent', 'viewed'];
+  if (!convertibleStatuses.includes(quote.status)) {
+    return { success: false, error: `Cannot convert a ${quote.status} quote to an invoice. Quote must be accepted or sent first.` };
   }
 
   // Bug #123: Validate discount values from source quote
@@ -844,9 +850,9 @@ export async function updateInvoiceStatus(
 
   try {
     if (status === 'paid') {
-      domainEvents.emit({ type: 'invoice.paid', payload: { invoiceId, amount: toNumber(invoice.total) } });
+      domainEvents.emit({ type: 'invoice.paid', payload: { invoiceId, workspaceId: workspace.id, amount: toNumber(invoice.total) } });
     } else if (status === 'voided') {
-      domainEvents.emit({ type: 'invoice.voided', payload: { invoiceId } });
+      domainEvents.emit({ type: 'invoice.voided', payload: { invoiceId, workspaceId: workspace.id } });
     }
   } catch {}
 
@@ -940,7 +946,7 @@ export async function sendInvoice(invoiceId: string, emailOptions?: SendEmailOpt
   }).catch(() => {});
 
   try {
-    domainEvents.emit({ type: 'invoice.sent', payload: { invoiceId, clientEmail: invoice.client.email } });
+    domainEvents.emit({ type: 'invoice.sent', payload: { invoiceId, workspaceId: workspace.id, clientEmail: invoice.client.email } });
   } catch {}
 
   return { success: true, emailSent: true };
@@ -1108,7 +1114,7 @@ export async function recordPayment(
   revalidatePath(ROUTES.invoices);
   revalidatePath(ROUTES.invoiceDetail(invoiceId));
 
-  domainEvents.emit({ type: 'payment.received', payload: { paymentId: result.paymentId, invoiceId, amount: data.amount } });
+  domainEvents.emit({ type: 'payment.received', payload: { paymentId: result.paymentId, invoiceId, workspaceId: workspace.id, amount: data.amount } });
 
   return { success: true };
 }
@@ -1274,6 +1280,10 @@ export async function createInvoiceTemplate(data: {
   isDefault?: boolean;
 }) {
   const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    return { success: false, error: 'Viewers cannot create invoice templates' };
+  }
 
   if (!data.name?.trim()) {
     return { success: false, error: 'Template name is required' };
@@ -1287,6 +1297,16 @@ export async function createInvoiceTemplate(data: {
     });
   }
 
+  // Validate line items structure
+  const lineItems = (data.lineItems ?? []).map(item => ({
+    id: String(item.id || ''),
+    name: String(item.name || ''),
+    description: String(item.description || ''),
+    rate: Number.isFinite(item.rate) ? item.rate : 0,
+    qty: Number.isFinite(item.qty) ? item.qty : 1,
+    taxable: Boolean(item.taxable),
+  }));
+
   const template = await prisma.invoiceTemplate.create({
     data: {
       workspaceId: workspace.id,
@@ -1294,7 +1314,7 @@ export async function createInvoiceTemplate(data: {
       description: data.description?.trim() || null,
       paymentTerms: data.paymentTerms || 'net30',
       currency: data.currency || 'USD',
-      lineItems: (data.lineItems ?? []) as unknown as any,
+      lineItems: lineItems as Prisma.InputJsonValue,
       notes: data.notes?.trim() || null,
       terms: data.terms?.trim() || null,
       isDefault: data.isDefault ?? false,
@@ -1317,6 +1337,10 @@ export async function updateInvoiceTemplate(data: {
   isDefault: boolean;
 }) {
   const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    return { success: false, error: 'Viewers cannot update invoice templates' };
+  }
 
   const template = await prisma.invoiceTemplate.findFirst({
     where: { id: data.id, workspaceId: workspace.id, deletedAt: null },
@@ -1345,7 +1369,7 @@ export async function updateInvoiceTemplate(data: {
       description: data.description?.trim() || null,
       paymentTerms: data.paymentTerms,
       currency: data.currency,
-      lineItems: (data.lineItems ?? template.lineItems) as unknown as any,
+      lineItems: (data.lineItems ?? template.lineItems) as Prisma.InputJsonValue,
       notes: data.notes?.trim() ?? template.notes,
       terms: data.terms?.trim() ?? template.terms,
       isDefault: data.isDefault,
@@ -1358,6 +1382,10 @@ export async function updateInvoiceTemplate(data: {
 
 export async function deleteInvoiceTemplate(id: string) {
   const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    return { success: false, error: 'Viewers cannot delete invoice templates' };
+  }
 
   const template = await prisma.invoiceTemplate.findFirst({
     where: { id, workspaceId: workspace.id, deletedAt: null },
@@ -1378,6 +1406,10 @@ export async function deleteInvoiceTemplate(id: string) {
 
 export async function duplicateInvoiceTemplate(id: string) {
   const { workspace } = await getActiveWorkspace();
+  const { role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    return { success: false, error: 'Viewers cannot duplicate invoice templates' };
+  }
 
   const template = await prisma.invoiceTemplate.findFirst({
     where: { id, workspaceId: workspace.id, deletedAt: null },
@@ -1394,7 +1426,7 @@ export async function duplicateInvoiceTemplate(id: string) {
       description: template.description,
       paymentTerms: template.paymentTerms,
       currency: template.currency,
-      lineItems: (template.lineItems ?? []) as unknown as any,
+      lineItems: (template.lineItems ?? []) as Prisma.InputJsonValue,
       notes: template.notes,
       terms: template.terms,
       isDefault: false,

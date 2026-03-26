@@ -31,6 +31,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       recipients?: string[];
     };
 
+    // Validate recipients
+    if (recipients) {
+      if (recipients.length > 10) return apiError('Maximum 10 recipients allowed', 400);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalid = recipients.filter(e => !emailRegex.test(e));
+      if (invalid.length > 0) return apiError(`Invalid email addresses: ${invalid.join(', ')}`, 400);
+    }
+
     // Fetch quote with client
     const quote = await prisma.quote.findFirst({
       where: { id: id, workspaceId, deletedAt: null },

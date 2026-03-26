@@ -372,33 +372,9 @@ export function WebhooksManager({ initialData }: WebhooksManagerProps) {
                         {webhook.url}
                       </p>
                       {webhook.secret && (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-muted-foreground font-mono">
-                            {showSecrets[webhook.id]
-                              ? webhook.secret
-                              : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => toggleSecretVisibility(webhook.id)}
-                          >
-                            {showSecrets[webhook.id] ? (
-                              <EyeOff className="h-3 w-3" />
-                            ) : (
-                              <Eye className="h-3 w-3" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => handleCopySecret(webhook.secret!)}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        <p className="text-xs text-muted-foreground font-mono">
+                          Secret: {webhook.secret}
+                        </p>
                       )}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {webhook.events.map((event: WebhookEvent) => (

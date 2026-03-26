@@ -119,7 +119,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
             contractId={instance.id}
             contractName={instance.contractName}
             status={instance.status}
-            accessToken={instance.accessToken}
+            clientViewUrl={`/c/${instance.accessToken}`}
             pdfUrl={instance.pdfUrl}
           />
         </div>

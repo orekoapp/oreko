@@ -12,7 +12,7 @@ export function validateRequestOrigin(request: { headers: { get(name: string): s
     process.env.NEXTAUTH_URL,
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
     process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : undefined,
-    'http://localhost:3000',
+    process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : undefined,
   ]) {
     if (envVar) {
       try { allowedHosts.add(new URL(envVar).host); } catch { /* skip invalid */ }

@@ -387,7 +387,10 @@ export async function getClientActivity(clientId: string): Promise<ClientActivit
 
 // Create client
 export async function createClient(input: CreateClientInput): Promise<{ id: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot create clients');
+  }
 
   // MEDIUM #8: Basic input validation
   if (!input.name || typeof input.name !== 'string' || !input.name.trim()) {
@@ -437,7 +440,10 @@ export async function createClient(input: CreateClientInput): Promise<{ id: stri
 
 // Update client
 export async function updateClient(input: UpdateClientInput): Promise<{ id: string }> {
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot update clients');
+  }
 
   // MEDIUM #9: Basic input validation
   if (input.name !== undefined) {
