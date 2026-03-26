@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const where: Record<string, unknown> = { workspaceId, deletedAt: null };
   const validInvoiceStatuses = ['draft', 'sent', 'viewed', 'partial', 'paid', 'overdue', 'voided'];
   if (status) {
-    if (!validInvoiceStatuses.includes(status)) return apiError(`Invalid status: ${status}`, 400);
+    if (!validInvoiceStatuses.includes(status)) return apiError('Invalid status value', 400);
     where.status = status;
   }
   if (clientId) where.clientId = clientId;

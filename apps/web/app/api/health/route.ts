@@ -30,10 +30,6 @@ export async function GET() {
       {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
-        services: {
-          database: 'disconnected',
-        },
-        error: 'Database connection failed',
       },
       { status: 503 }
     );

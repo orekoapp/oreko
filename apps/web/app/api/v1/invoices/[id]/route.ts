@@ -129,7 +129,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     };
     const allowed = validTransitions[invoice.status];
     if (!allowed || !allowed.includes(status)) {
-      return apiError(`Cannot transition from '${invoice.status}' to '${status}'`, 400);
+      return apiError('Invalid status transition', 400);
     }
     updateData.status = status;
     if ((status === 'paid' || status === 'partial') && !invoice.paidAt) updateData.paidAt = new Date();

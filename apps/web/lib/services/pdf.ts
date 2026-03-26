@@ -323,9 +323,9 @@ export async function generatePdfFromUrl(
       // Disable JavaScript to prevent script injection
       await page.setJavaScriptEnabled(false);
 
-      // Navigate to URL
+      // Navigate to URL (domcontentloaded avoids following outbound resource requests)
       await page.goto(url, {
-        waitUntil: 'networkidle0',
+        waitUntil: 'domcontentloaded',
         timeout: 30000,
       });
 

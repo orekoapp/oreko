@@ -4,7 +4,7 @@
 # ============================================
 
 # Base image with pnpm
-FROM node:20-alpine AS base
+FROM node:20.18-alpine AS base
 RUN apk add --no-cache libc6-compat
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
