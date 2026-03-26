@@ -13,7 +13,7 @@ export default function SettingsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Quotes section error:', error);
+    console.error('Settings section error:', error);
   }, [error]);
 
   return (

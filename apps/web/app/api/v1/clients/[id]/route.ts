@@ -69,6 +69,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     metadata?: Record<string, unknown>;
   };
 
+  // Validate email format if provided
+  if (email !== undefined) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return apiError('Invalid email format', 400);
+  }
+
   // Check email uniqueness if changing email
   if (email && email !== client.email) {
     const existing = await prisma.client.findFirst({

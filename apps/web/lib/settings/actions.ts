@@ -602,7 +602,12 @@ export async function updateNumberSequence(
   // Validate input with Zod
   const validated = numberSequenceSchema.parse(input);
 
-  const { workspaceId } = await getCurrentUserWorkspace();
+  const { workspaceId, role } = await getCurrentUserWorkspace();
+
+  // Bug #149: Viewers cannot change numbering settings
+  if (role === 'viewer') {
+    throw new Error('Viewers cannot update number sequences');
+  }
 
   const existing = await prisma.numberSequence.findFirst({
     where: { workspaceId, type: validated.type },

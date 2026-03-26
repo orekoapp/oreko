@@ -100,6 +100,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         return apiError('Line item quantity and rate must be valid numbers', 400);
       }
       if (item.quantity < 0) return apiError('Line item quantity cannot be negative', 400);
+      if (item.rate < 0) return apiError('Line item rate cannot be negative', 400);
+      // Bug #40: Upper bound on rate and quantity
+      if (item.quantity > 1_000_000) return apiError('Line item quantity must be at most 1,000,000', 400);
+      if (item.rate > 1_000_000) return apiError('Line item rate must be at most 1,000,000', 400);
       if (item.taxRate !== undefined && item.taxRate !== null && !Number.isFinite(item.taxRate)) {
         return apiError('Line item taxRate must be a valid number', 400);
       }

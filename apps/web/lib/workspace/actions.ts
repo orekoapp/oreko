@@ -175,7 +175,10 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Work
 
   const { name } = input;
 
-  if (!name || name.trim().length < 2) {
+  // Bug #158: Strip zero-width characters from workspace name
+  const sanitizedCreateName = name.trim().replace(/[\u200B\u200C\u200D\uFEFF\u00AD]/g, '');
+
+  if (!sanitizedCreateName || sanitizedCreateName.length < 2) {
     throw new Error('Workspace name must be at least 2 characters');
   }
 
@@ -183,7 +186,7 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Work
   const result = await prisma.$transaction(async (tx) => {
     const workspace = await tx.workspace.create({
       data: {
-        name: name.trim(),
+        name: sanitizedCreateName,
         slug: generateSlug(name),
         ownerId: userId,
         settings: {
@@ -237,9 +240,16 @@ export async function updateWorkspace(workspaceId: string, name: string): Promis
     throw new Error('Permission denied');
   }
 
+  // Bug #158: Strip zero-width characters from workspace name
+  const sanitizedName = name.trim().replace(/[\u200B\u200C\u200D\uFEFF\u00AD]/g, '');
+
+  if (!sanitizedName || sanitizedName.length < 2) {
+    throw new Error('Workspace name must be at least 2 characters');
+  }
+
   await prisma.workspace.update({
     where: { id: workspaceId },
-    data: { name: name.trim() },
+    data: { name: sanitizedName },
   });
 
   revalidatePath('/', 'layout');

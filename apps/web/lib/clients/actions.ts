@@ -635,6 +635,11 @@ export async function importClients(
 ): Promise<ClientImportResult> {
   const { workspaceId } = await getCurrentUserWorkspace();
 
+  // Bug #154: Limit array size to prevent abuse
+  if (data.length > 500) {
+    throw new Error('Maximum 500 clients per import');
+  }
+
   const result: ClientImportResult = {
     success: 0,
     failed: 0,
@@ -664,7 +669,7 @@ export async function importClients(
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!row.email || !emailRegex.test(row.email)) {
         result.failed++;
-        result.errors.push({ row: i + 1, message: `Invalid email: ${row.email || '(empty)'}` });
+        result.errors.push({ row: i + 1, message: 'Invalid email format' });
         continue;
       }
 

@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 /**
  * Vercel Cron Job — Generates recurring invoices.
  *
- * Schedule: 0 6 * * * (daily at 6 AM UTC)
+ * Schedule: 0 * * * * (hourly)
  * Configured in vercel.json
  *
  * Finds all invoices where isRecurring=true and nextRecurringDate <= today,
@@ -202,8 +202,7 @@ export async function GET(request: Request) {
         logger.info({ invoiceNumber, parentInvoiceNumber: parent.invoiceNumber }, '[Recurring Invoices] Generated invoice');
       } catch (err) {
         failed++;
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        errors.push(`${parent.invoiceNumber}: ${message}`);
+        errors.push(`${parent.invoiceNumber}: Failed to generate recurring invoice`);
         logger.error({ err, parentInvoiceNumber: parent.invoiceNumber }, '[Recurring Invoices] Failed to generate');
       }
     }

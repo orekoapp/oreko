@@ -101,7 +101,7 @@ export function NumberSequenceForm({
               type="number"
               min="0"
               value={currentValue}
-              onChange={(e) => setCurrentValue(parseInt(e.target.value) || 0)}
+              onChange={(e) => setCurrentValue(Math.max(0, parseInt(e.target.value) || 0))}
             />
             <p className="text-xs text-muted-foreground">
               The next {type} will use this + 1

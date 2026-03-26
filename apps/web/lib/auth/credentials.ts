@@ -35,21 +35,20 @@ export async function verifyCredentials(email: string, password: string) {
 
   // Bug #84: Reject soft-deleted users — also checked in JWT callback for existing tokens
   if (!user || user.deletedAt) {
-    const reason = !user ? 'user not found' : 'soft-deleted account';
-    logger.warn({ email: maskEmail(normalizedEmail), reason }, '[auth] Failed login attempt');
+    logger.warn({ email: maskEmail(normalizedEmail) }, '[auth] Authentication failed');
     return null;
   }
 
   if (!user.passwordHash) {
     // User signed up with OAuth, doesn't have a password
-    logger.warn({ email: maskEmail(normalizedEmail), reason: 'OAuth-only account (no password)' }, '[auth] Failed login attempt');
+    logger.warn({ email: maskEmail(normalizedEmail) }, '[auth] Authentication failed');
     return null;
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash);
 
   if (!isValid) {
-    logger.warn({ email: maskEmail(normalizedEmail), reason: 'wrong password' }, '[auth] Failed login attempt');
+    logger.warn({ email: maskEmail(normalizedEmail) }, '[auth] Authentication failed');
     return null;
   }
 

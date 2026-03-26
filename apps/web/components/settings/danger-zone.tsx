@@ -18,11 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { deleteWorkspace } from '@/lib/settings/actions';
 
-interface DangerZoneProps {
-  workspaceId: string;
-}
-
-export function DangerZone({ workspaceId }: DangerZoneProps) {
+export function DangerZone() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState('');

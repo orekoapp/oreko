@@ -19,6 +19,7 @@ export default function robots(): MetadataRoute.Robots {
           '/onboarding/',
           '/q/',
           '/i/',
+          '/c/',
         ],
       },
     ],

@@ -159,7 +159,11 @@ export function RegisterForm() {
               disabled={isLoading}
               checked={watch('termsAccepted')}
               onCheckedChange={(checked) => {
-                if (checked === true) setValue('termsAccepted', true, { shouldValidate: true });
+                if (checked === true) {
+                  setValue('termsAccepted', true, { shouldValidate: true });
+                } else {
+                  setValue('termsAccepted', undefined as unknown as true, { shouldValidate: true });
+                }
               }}
             />
             <div className="grid gap-1.5 leading-none">

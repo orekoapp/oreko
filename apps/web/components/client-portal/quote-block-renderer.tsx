@@ -222,8 +222,17 @@ export function QuoteBlockRenderer({ block: rawBlock, quote }: QuoteBlockRendere
       return <div style={{ height: spacerHeights[block.content.height as keyof typeof spacerHeights] }} />;
     }
 
-    case 'image':
+    case 'image': {
       if (!block.content.src) {
+        return null;
+      }
+      // Bug #123: Validate image src protocol at render time
+      const imgSrc = (block.content.src as string).trim().toLowerCase();
+      const isAllowedImgSrc =
+        imgSrc.startsWith('http://') ||
+        imgSrc.startsWith('https://') ||
+        (imgSrc.startsWith('data:image/') && !imgSrc.startsWith('data:image/svg'));
+      if (!isAllowedImgSrc) {
         return null;
       }
       return (
@@ -244,6 +253,7 @@ export function QuoteBlockRenderer({ block: rawBlock, quote }: QuoteBlockRendere
           />
         </div>
       );
+    }
 
     case 'signature':
       if (block.content.signatureData) {

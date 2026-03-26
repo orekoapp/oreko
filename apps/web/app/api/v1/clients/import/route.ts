@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
       if (!row.email || !emailRegex.test(row.email)) {
         result.failed++;
-        result.errors.push({ row: i + 1, message: `Invalid email: ${row.email || '(empty)'}` });
+        result.errors.push({ row: i + 1, message: 'Invalid email format' });
         continue;
       }
 

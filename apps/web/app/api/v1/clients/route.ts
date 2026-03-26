@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { prisma } from '@quotecraft/database';
+import { prisma, Prisma } from '@quotecraft/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 
 // GET /api/v1/clients — List clients
@@ -106,9 +106,9 @@ export async function POST(request: NextRequest) {
       email,
       phone: phone || null,
       company: company || null,
-      address: (address || undefined) as any,
-      billingAddress: (billingAddress || undefined) as any,
-      metadata: (metadata || {}) as any,
+      address: (address || undefined) as Prisma.InputJsonValue,
+      billingAddress: (billingAddress || undefined) as Prisma.InputJsonValue,
+      metadata: (metadata || {}) as Prisma.InputJsonValue,
     },
   });
 

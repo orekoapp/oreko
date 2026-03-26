@@ -449,6 +449,13 @@ export async function getContractPdfData(contractInstanceId: string): Promise<Co
  * Get contract data for PDF generation by access token (public)
  */
 export async function getContractPdfDataByToken(accessToken: string): Promise<ContractPdfData | null> {
+  // Bug #140: Rate limit public PDF endpoints to prevent abuse
+  const { checkRateLimit } = await import('@/lib/rate-limit');
+  const rateLimitResult = await checkRateLimit(`pdf-contract:${accessToken}`, { limit: 20, windowMs: 60000 });
+  if (rateLimitResult.limited) {
+    return null;
+  }
+
   const instance = await prisma.contractInstance.findFirst({
     where: { accessToken, deletedAt: null },
     include: {

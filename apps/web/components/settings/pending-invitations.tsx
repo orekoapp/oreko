@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Loader2, Mail, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { cancelInvitation, resendInvitation } from '@/lib/settings/actions';
 import type { PendingInvitation } from '@/lib/settings/actions';
 
@@ -30,7 +31,12 @@ export function PendingInvitations({ invitations: initialInvitations }: PendingI
   const handleResend = (id: string) => {
     setActionId(id);
     startTransition(async () => {
-      await resendInvitation(id);
+      const result = await resendInvitation(id);
+      if (result.success) {
+        toast.success('Invitation resent successfully');
+      } else {
+        toast.error(result.error || 'Failed to resend invitation');
+      }
       setActionId(null);
     });
   };

@@ -80,6 +80,18 @@ export function ImageBlockContent({ block }: ImageBlockContentProps) {
     );
   }
 
+  // Bug #122: Validate image src protocol at render time
+  const isAllowedSrc = (src: string) => {
+    const s = src.trim().toLowerCase();
+    if (s.startsWith('http://') || s.startsWith('https://')) return true;
+    if (s.startsWith('data:image/') && !s.startsWith('data:image/svg')) return true;
+    return false;
+  };
+
+  if (!isAllowedSrc(block.content.src)) {
+    return null;
+  }
+
   return (
     <div className={cn('flex', alignmentClass)}>
       <figure style={widthStyle}>

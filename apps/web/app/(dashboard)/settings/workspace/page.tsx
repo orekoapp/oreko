@@ -34,7 +34,7 @@ export default async function WorkspaceSettingsPage() {
         </CardContent>
       </Card>
 
-      <DangerZone workspaceId={workspace?.id || ''} />
+      <DangerZone />
     </div>
   );
 }

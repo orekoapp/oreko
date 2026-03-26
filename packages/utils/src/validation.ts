@@ -8,16 +8,13 @@ export const emailSchema = z.string().email('Invalid email address').min(1, 'Ema
 /**
  * Password validation schema with requirements
  */
-// MEDIUM #41: Special character requirement intentionally omitted here.
-// Auth actions (register, reset-password) enforce additional strength checks
-// including special characters. This base schema is used for general validation
-// where we only require minimum complexity.
 export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/[0-9]/, 'Password must contain at least one number');
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
 
 /**
  * Phone number validation (flexible)

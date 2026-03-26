@@ -128,7 +128,7 @@ export function CreateContractForm({
         router.push(`/contracts/${instance.id}`);
         router.refresh();
       } catch (error) {
-        console.error('Failed to create contract:', error);
+        toast.error('Failed to create contract. Please try again.');
       }
     });
   };
