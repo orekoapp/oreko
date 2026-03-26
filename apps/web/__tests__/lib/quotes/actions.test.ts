@@ -222,7 +222,7 @@ describe('Quote Actions', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('rate must be a valid number');
+      expect(result.error).toContain('rate must be between 0 and 1,000,000');
     });
   });
 

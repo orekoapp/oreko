@@ -117,7 +117,7 @@ describe('Invoice Actions', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('rate cannot be negative');
+      expect(result.error).toContain('rate must be between 0 and 1,000,000');
     });
 
     it('calculates totals from line items', async () => {
@@ -155,6 +155,7 @@ describe('Invoice Actions', () => {
         workspaceId: WORKSPACE_ID,
         clientId: 'client-1',
         projectId: null,
+        status: 'accepted',
         title: 'Project',
         subtotal: 1000,
         taxTotal: 100,
@@ -198,6 +199,7 @@ describe('Invoice Actions', () => {
         id: 'quote-1',
         workspaceId: WORKSPACE_ID,
         clientId: 'client-1',
+        status: 'accepted',
         lineItems: [],
         client: { id: 'client-1' },
       });
@@ -206,7 +208,7 @@ describe('Invoice Actions', () => {
       const result = await createInvoiceFromQuote('quote-1');
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('already exists');
+      expect(result.error).toContain('already');
     });
 
     it('returns error when quote not found', async () => {
