@@ -781,6 +781,7 @@ export async function signContract(input: SignContractInput & { otpCode?: string
 
   const autoCountersign = profile?.autoCountersign ?? false;
 
+  // Bug #84: Use atomic updateMany with status guard to prevent double-signing race condition
   if (autoCountersign) {
     // Auto-countersign: go straight to 'signed'
     const businessName = profile?.businessName || 'Business';
@@ -792,8 +793,8 @@ export async function signContract(input: SignContractInput & { otpCode?: string
       signedAt: counterSignedAt.toISOString(),
     });
 
-    await prisma.contractInstance.update({
-      where: { id: instance.id },
+    const result = await prisma.contractInstance.updateMany({
+      where: { id: instance.id, status: { in: ['sent', 'viewed'] } },
       data: {
         status: 'signed',
         signedAt,
@@ -811,10 +812,13 @@ export async function signContract(input: SignContractInput & { otpCode?: string
         countersignerName: businessName,
       },
     });
+    if (result.count === 0) {
+      throw new Error('Contract was already signed by another request');
+    }
   } else {
     // Manual countersign: go to 'pending'
-    await prisma.contractInstance.update({
-      where: { id: instance.id },
+    const result = await prisma.contractInstance.updateMany({
+      where: { id: instance.id, status: { in: ['sent', 'viewed'] } },
       data: {
         status: 'pending',
         signedAt,
@@ -823,6 +827,9 @@ export async function signContract(input: SignContractInput & { otpCode?: string
         signerUserAgent: userAgent || null,
       },
     });
+    if (result.count === 0) {
+      throw new Error('Contract was already signed by another request');
+    }
   }
 
   // Notify workspace members

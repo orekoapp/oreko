@@ -138,8 +138,14 @@ export async function POST(request: Request) {
       const verifyUrl = `${baseUrl}/verify-email/confirm?token=${rawToken}`; // Email gets raw token
       await sendVerificationEmail({ to: email, name, verifyUrl });
     } catch (emailError) {
-      // Don't fail registration if verification email fails
-      logger.error({ err: emailError }, 'Failed to send verification email');
+      // Bug #48: If verification email fails, auto-verify the user so they aren't
+      // stuck unable to log in with no way to get a verification link.
+      // They can still use the app; the email wasn't critical for security at signup.
+      logger.error({ err: emailError }, 'Failed to send verification email — auto-verifying user');
+      await prisma.user.update({
+        where: { id: result.id },
+        data: { emailVerifiedAt: new Date() },
+      });
     }
 
     // Bug #72: Audit log for new account creation

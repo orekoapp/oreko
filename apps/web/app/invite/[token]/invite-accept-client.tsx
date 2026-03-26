@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { acceptInvitation } from '@/lib/settings/actions';
 
 interface InviteAcceptClientProps {
-  token: string;
+  tokenHash: string;
   workspaceName: string;
 }
 
-export function InviteAcceptClient({ token, workspaceName }: InviteAcceptClientProps) {
+// Bug #89: Accept tokenHash instead of raw token — no sensitive data in client props
+export function InviteAcceptClient({ tokenHash, workspaceName }: InviteAcceptClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [accepted, setAccepted] = useState(false);
@@ -19,7 +20,7 @@ export function InviteAcceptClient({ token, workspaceName }: InviteAcceptClientP
 
   const handleAccept = () => {
     startTransition(async () => {
-      const result = await acceptInvitation(token);
+      const result = await acceptInvitation(tokenHash, { isHashed: true });
       if (result.success) {
         setAccepted(true);
         setTimeout(() => router.push('/dashboard'), 2000);

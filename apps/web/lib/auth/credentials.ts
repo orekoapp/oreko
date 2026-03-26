@@ -6,6 +6,12 @@ import { logger, maskEmail } from '@/lib/logger';
 /** Rate limit: 5 login attempts per email per 15 minutes */
 const LOGIN_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 
+// Bug #44: Ideally we'd also rate limit by IP to prevent credential stuffing across
+// multiple email addresses. However, the credentials provider authorize() callback
+// does not receive the raw request object, so we can't extract the client IP here.
+// IP-based rate limiting for login should be added at the middleware layer or in a
+// custom signIn handler if next-auth is upgraded to a version that exposes the request.
+
 export async function verifyCredentials(email: string, password: string) {
   // Rate limit by email to prevent brute-force attacks
   const normalizedEmail = email.toLowerCase().trim();

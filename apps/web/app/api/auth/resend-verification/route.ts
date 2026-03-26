@@ -2,7 +2,6 @@ import { getBaseUrl } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { prisma } from '@quotecraft/database';
-import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
 import { validateRequestOrigin } from '@/lib/csrf';
@@ -14,13 +13,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
     }
 
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Bug #46: Accept email in body so unverified users (who can't get a session) can resend
+    const body = await request.json().catch(() => ({}));
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : null;
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Strict rate limit: 3 per 15 minutes
-    const rateLimitResult = await checkRateLimit(`resend-verification:${session.user.id}`, {
+    // Rate limit by email to prevent abuse
+    const rateLimitResult = await checkRateLimit(`resend-verification:${email}`, {
       limit: 3,
       windowMs: 15 * 60 * 1000,
     });
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { email },
       select: { id: true, email: true, name: true, emailVerifiedAt: true },
     });
 

@@ -305,7 +305,7 @@ export function AppHeader({ user, unreadCount = 0, notifications = [] }: AppHead
                           if (!notification.isRead) {
                             markNotificationRead(notification.id);
                           }
-                          if (notification.link) {
+                          if (notification.link && notification.link.startsWith('/')) {
                             window.location.href = notification.link;
                           }
                         }}

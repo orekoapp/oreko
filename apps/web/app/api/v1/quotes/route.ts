@@ -125,12 +125,14 @@ export async function POST(request: NextRequest) {
     if (!project) return apiError('Project not found', 404);
   }
 
-  // Generate quote number
-  const seq = await prisma.numberSequence.upsert({
-    where: { workspaceId_type: { workspaceId, type: 'quote' } },
-    update: { currentValue: { increment: 1 } },
-    create: { workspaceId, type: 'quote', prefix: 'Q-', currentValue: 1, padding: 4 },
-  });
+  // Generate quote number in a serializable transaction to prevent duplicates
+  const seq = await prisma.$transaction(async (tx) => {
+    return tx.numberSequence.upsert({
+      where: { workspaceId_type: { workspaceId, type: 'quote' } },
+      update: { currentValue: { increment: 1 } },
+      create: { workspaceId, type: 'quote', prefix: 'Q-', currentValue: 1, padding: 4 },
+    });
+  }, { isolationLevel: 'Serializable' });
   const quoteNumber = `${seq.prefix || 'Q-'}${String(seq.currentValue).padStart(seq.padding, '0')}`;
 
   // CR #5: Validate line item values — reject Infinity/NaN

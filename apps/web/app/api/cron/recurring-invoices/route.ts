@@ -35,21 +35,34 @@ export async function GET(request: Request) {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
 
-    // Find all recurring invoices due for generation
-    const dueInvoices = await prisma.invoice.findMany({
-      where: {
-        isRecurring: true,
-        nextRecurringDate: { lte: today },
-        deletedAt: null,
-      },
-      include: {
-        lineItems: { orderBy: { sortOrder: 'asc' } },
-      },
-    });
+    // Find recurring invoices due for generation in batches to avoid memory issues
+    const BATCH_SIZE = 50;
+    let offset = 0;
+    let eligibleInvoices: Awaited<ReturnType<typeof prisma.invoice.findMany>> = [];
+    let totalFound = 0;
 
-    const eligibleInvoices = dueInvoices;
+    // Paginate through all due invoices in batches of 50
+    while (true) {
+      const batch = await prisma.invoice.findMany({
+        where: {
+          isRecurring: true,
+          nextRecurringDate: { lte: today },
+          deletedAt: null,
+        },
+        include: {
+          lineItems: { orderBy: { sortOrder: 'asc' } },
+        },
+        take: BATCH_SIZE,
+        skip: offset,
+        orderBy: { createdAt: 'asc' },
+      });
+      eligibleInvoices.push(...batch);
+      totalFound += batch.length;
+      if (batch.length < BATCH_SIZE) break;
+      offset += BATCH_SIZE;
+    }
 
-    logger.info({ total: dueInvoices.length }, '[Recurring Invoices] Found invoice(s) due');
+    logger.info({ total: totalFound }, '[Recurring Invoices] Found invoice(s) due');
 
     let generated = 0;
     let failed = 0;
@@ -201,7 +214,7 @@ export async function GET(request: Request) {
       success: true,
       generated,
       failed,
-      total: dueInvoices.length,
+      total: totalFound,
       errors: errors.length > 0 ? errors : undefined,
       timestamp: new Date().toISOString(),
     });

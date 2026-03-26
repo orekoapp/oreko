@@ -111,9 +111,17 @@ export async function createCreditNote(
   }
 
   // Validate credit note amount doesn't exceed remaining amountDue
+  // Bug #81: Include pending DRAFT credit note amounts to prevent concurrent drafts exceeding the invoice
+  const existingDraftCreditNotes = await prisma.creditNote.findMany({
+    where: { invoiceId, status: 'draft', deletedAt: null },
+    select: { amount: true },
+  });
+  const pendingDraftTotal = existingDraftCreditNotes.reduce((sum, cn) => sum + Number(cn.amount), 0);
+
   const invoiceAmountDue = Number(invoice.amountDue);
-  if (totalAmount > invoiceAmountDue) {
-    return { success: false, error: `Credit note amount ($${totalAmount.toFixed(2)}) cannot exceed remaining amount due ($${invoiceAmountDue.toFixed(2)})` };
+  const effectiveAmountDue = invoiceAmountDue - pendingDraftTotal;
+  if (totalAmount > effectiveAmountDue) {
+    return { success: false, error: `Credit note amount ($${totalAmount.toFixed(2)}) cannot exceed remaining amount due ($${effectiveAmountDue.toFixed(2)}) after accounting for pending draft credit notes` };
   }
 
   const creditNoteNumber = await generateCreditNoteNumber(workspace.id);

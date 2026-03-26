@@ -84,7 +84,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
   if (!session?.user?.id) {
     // Redirect to login with callback — use encoded callbackUrl to avoid
     // leaking raw token in login page server logs and browser history
-    redirect(`/login?callbackUrl=${encodeURIComponent(`/invite/${token}`)}`);
+    // Bug #88: Don't include raw token in callbackUrl — redirect to dashboard after login
+    redirect(`/login?callbackUrl=${encodeURIComponent('/dashboard')}`);
   }
 
   // Check email match
@@ -110,7 +111,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
             </p>
           </div>
         ) : (
-          <InviteAcceptClient token={token} workspaceName={invitation.workspace.name} />
+          // Bug #89: Pass tokenHash instead of raw token — server action receives the hash
+          <InviteAcceptClient tokenHash={tokenHash} workspaceName={invitation.workspace.name} />
         )}
       </div>
     </div>

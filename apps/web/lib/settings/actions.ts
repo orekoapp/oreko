@@ -427,24 +427,27 @@ export async function createTaxRate(input: CreateTaxRateInput): Promise<{ id: st
     throw new Error('Tax rate must be between 0 and 100');
   }
 
-  // If setting as default, unset other defaults
-  if (input.isDefault) {
-    await prisma.taxRate.updateMany({
-      where: { workspaceId, isDefault: true },
-      data: { isDefault: false },
-    });
-  }
+  // Bug #87: Wrap default swap + create in a transaction to prevent race conditions
+  const taxRate = await prisma.$transaction(async (tx) => {
+    // If setting as default, unset other defaults
+    if (input.isDefault) {
+      await tx.taxRate.updateMany({
+        where: { workspaceId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
 
-  const taxRate = await prisma.taxRate.create({
-    data: {
-      workspaceId,
-      name: input.name,
-      rate: input.rate,
-      description: input.description || null,
-      isInclusive: input.isInclusive ?? false,
-      isDefault: input.isDefault ?? false,
-      isActive: input.isActive ?? true,
-    },
+    return tx.taxRate.create({
+      data: {
+        workspaceId,
+        name: input.name,
+        rate: input.rate,
+        description: input.description || null,
+        isInclusive: input.isInclusive ?? false,
+        isDefault: input.isDefault ?? false,
+        isActive: input.isActive ?? true,
+      },
+    });
   });
 
   revalidatePath(ROUTES.settings);
@@ -1090,8 +1093,10 @@ export async function resendInvitation(
 }
 
 // Accept an invitation by token (called from the invite page)
+// Bug #88-89: Support receiving a pre-hashed token to avoid exposing raw tokens in client props
 export async function acceptInvitation(
-  token: string
+  token: string,
+  options?: { isHashed?: boolean }
 ): Promise<{ success: boolean; error?: string; workspaceId?: string }> {
   const { auth } = await import('@/lib/auth');
   const session = await auth();
@@ -1107,8 +1112,8 @@ export async function acceptInvitation(
     return { success: false, error: 'Too many attempts. Please try again later.' };
   }
 
-  // Hash the incoming token to look up (tokens are stored as hashes)
-  const tokenHash = createHash('sha256').update(token).digest('hex');
+  // If already hashed (from server component), use directly; otherwise hash it
+  const tokenHash = options?.isHashed ? token : createHash('sha256').update(token).digest('hex');
 
   const invitation = await prisma.workspaceInvitation.findUnique({
     where: { token: tokenHash },

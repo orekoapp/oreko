@@ -32,12 +32,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!original) return apiError('Quote not found', 404);
 
-    // Generate new quote number
-    const seq = await prisma.numberSequence.upsert({
-      where: { workspaceId_type: { workspaceId, type: 'quote' } },
-      update: { currentValue: { increment: 1 } },
-      create: { workspaceId, type: 'quote', prefix: 'Q-', currentValue: 1, padding: 4 },
-    });
+    // Generate new quote number in a serializable transaction to prevent duplicates
+    const seq = await prisma.$transaction(async (tx) => {
+      return tx.numberSequence.upsert({
+        where: { workspaceId_type: { workspaceId, type: 'quote' } },
+        update: { currentValue: { increment: 1 } },
+        create: { workspaceId, type: 'quote', prefix: 'Q-', currentValue: 1, padding: 4 },
+      });
+    }, { isolationLevel: 'Serializable' });
     const quoteNumber = `${seq.prefix || 'Q-'}${String(seq.currentValue).padStart(seq.padding, '0')}`;
 
     // Create duplicate
