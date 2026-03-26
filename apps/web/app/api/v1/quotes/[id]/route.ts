@@ -71,11 +71,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { workspaceId } = auth.context;
   const { id } = await params;
 
-  const quote = await prisma.quote.findFirst({
-    where: { id, workspaceId, deletedAt: null },
-  });
-  if (!quote) return apiError('Quote not found', 404);
-
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -98,30 +93,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     lineItems?: Array<{ name: string; description?: string; quantity: number; rate: number; taxRate?: number }>;
   };
 
-  const updateData: Record<string, unknown> = {};
-  if (title !== undefined) updateData.title = title;
-  if (notes !== undefined) updateData.notes = notes;
-  if (terms !== undefined) updateData.terms = terms;
-  if (status !== undefined) {
-    const validTransitions: Record<string, string[]> = {
-      draft: ['sent'],
-      sent: ['viewed', 'accepted', 'declined', 'expired'],
-      viewed: ['accepted', 'declined', 'expired'],
-      accepted: [],
-      declined: ['draft'],
-      expired: ['draft'],
-    };
-    const allowed = validTransitions[quote.status];
-    if (!allowed || !allowed.includes(status)) {
-      return apiError(`Cannot transition from '${quote.status}' to '${status}'`, 400);
-    }
-    updateData.status = status;
-    if (status === 'accepted') updateData.acceptedAt = new Date();
-    if (status === 'declined') updateData.declinedAt = new Date();
-    if (status === 'sent') updateData.sentAt = new Date();
-  }
-
-  // If line items provided, validate and recalculate totals
+  // Validate line items early (before transaction) to fail fast
   if (lineItems) {
     for (const item of lineItems) {
       if (!Number.isFinite(item.quantity) || !Number.isFinite(item.rate)) {
@@ -132,74 +104,99 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         return apiError('Line item taxRate must be a valid number', 400);
       }
     }
-
-    // Block financial changes on accepted quotes
-    if (quote.status === 'accepted') {
-      return apiError('Cannot modify line items on an accepted quote', 400);
-    }
-
-    let subtotal = 0;
-    let taxTotal = 0;
-    const processed = lineItems.map((item, i) => {
-      const amount = Math.round(item.quantity * item.rate * 100) / 100;
-      const taxAmount = item.taxRate ? Math.round(amount * (item.taxRate / 100) * 100) / 100 : 0;
-      subtotal += amount;
-      taxTotal += taxAmount;
-      return {
-        quoteId: id,
-        name: item.name,
-        description: item.description || null,
-        quantity: item.quantity,
-        rate: item.rate,
-        amount,
-        taxRate: item.taxRate != null ? item.taxRate : null,
-        taxAmount,
-        sortOrder: i,
-      };
-    });
-
-    // Recalculate with existing discount fields
-    let discountAmount = 0;
-    const discountType = quote.discountType as string | null;
-    const discountValue = quote.discountValue ? toNumber(quote.discountValue) : 0;
-    if (discountType === 'percentage' && discountValue > 0) {
-      discountAmount = Math.round(subtotal * (discountValue / 100) * 100) / 100;
-    } else if (discountType === 'fixed' && discountValue > 0) {
-      discountAmount = Math.min(discountValue, subtotal);
-    }
-
-    updateData.subtotal = subtotal;
-    updateData.taxTotal = taxTotal;
-    updateData.discountAmount = discountAmount;
-    updateData.total = subtotal - discountAmount + taxTotal;
-
-    // Include line item replacement inside the same transaction as totals update
-    const updated = await prisma.$transaction(async (tx) => {
-      await tx.quoteLineItem.deleteMany({ where: { quoteId: id } });
-      await tx.quoteLineItem.createMany({ data: processed });
-      return tx.quote.update({
-        where: { id },
-        data: updateData,
-        include: {
-          client: { select: { id: true, name: true, email: true, company: true } },
-          lineItems: { orderBy: { sortOrder: 'asc' } },
-        },
-      });
-    });
-
-    return apiSuccess(formatQuote(updated));
   }
 
-  const updated = await prisma.quote.update({
-    where: { id },
-    data: updateData,
-    include: {
-      client: { select: { id: true, name: true, email: true, company: true } },
-      lineItems: { orderBy: { sortOrder: 'asc' } },
-    },
+  // Bug #37: Wrap status check + update in a single transaction to prevent TOCTOU race
+  const result = await prisma.$transaction(async (tx) => {
+    const quote = await tx.quote.findFirst({
+      where: { id, workspaceId, deletedAt: null },
+    });
+    if (!quote) return { error: 'Quote not found', status: 404 } as const;
+
+    const updateData: Record<string, unknown> = {};
+    if (title !== undefined) updateData.title = title;
+    if (notes !== undefined) updateData.notes = notes;
+    if (terms !== undefined) updateData.terms = terms;
+    if (status !== undefined) {
+      const validTransitions: Record<string, string[]> = {
+        draft: ['sent'],
+        sent: ['viewed', 'accepted', 'declined', 'expired'],
+        viewed: ['accepted', 'declined', 'expired'],
+        accepted: [],
+        declined: ['draft'],
+        expired: ['draft'],
+      };
+      const allowed = validTransitions[quote.status];
+      if (!allowed || !allowed.includes(status)) {
+        return { error: `Cannot transition from '${quote.status}' to '${status}'`, status: 400 } as const;
+      }
+      updateData.status = status;
+      if (status === 'accepted') updateData.acceptedAt = new Date();
+      if (status === 'declined') updateData.declinedAt = new Date();
+      if (status === 'sent') updateData.sentAt = new Date();
+    }
+
+    // If line items provided, recalculate totals
+    if (lineItems) {
+      // Block financial changes on accepted quotes (checked atomically inside transaction)
+      if (quote.status === 'accepted') {
+        return { error: 'Cannot modify line items on an accepted quote', status: 400 } as const;
+      }
+
+      let subtotal = 0;
+      let taxTotal = 0;
+      const processed = lineItems.map((item, i) => {
+        const amount = Math.round(item.quantity * item.rate * 100) / 100;
+        const taxAmount = item.taxRate ? Math.round(amount * (item.taxRate / 100) * 100) / 100 : 0;
+        subtotal += amount;
+        taxTotal += taxAmount;
+        return {
+          quoteId: id,
+          name: item.name,
+          description: item.description || null,
+          quantity: item.quantity,
+          rate: item.rate,
+          amount,
+          taxRate: item.taxRate != null ? item.taxRate : null,
+          taxAmount,
+          sortOrder: i,
+        };
+      });
+
+      // Recalculate with existing discount fields
+      let discountAmount = 0;
+      const discountType = quote.discountType as string | null;
+      const discountValue = quote.discountValue ? toNumber(quote.discountValue) : 0;
+      if (discountType === 'percentage' && discountValue > 0) {
+        discountAmount = Math.round(subtotal * (discountValue / 100) * 100) / 100;
+      } else if (discountType === 'fixed' && discountValue > 0) {
+        discountAmount = Math.min(discountValue, subtotal);
+      }
+
+      updateData.subtotal = subtotal;
+      updateData.taxTotal = taxTotal;
+      updateData.discountAmount = discountAmount;
+      updateData.total = subtotal - discountAmount + taxTotal;
+
+      await tx.quoteLineItem.deleteMany({ where: { quoteId: id } });
+      await tx.quoteLineItem.createMany({ data: processed });
+    }
+
+    const updated = await tx.quote.update({
+      where: { id },
+      data: updateData,
+      include: {
+        client: { select: { id: true, name: true, email: true, company: true } },
+        lineItems: { orderBy: { sortOrder: 'asc' } },
+      },
+    });
+
+    return { data: updated } as const;
   });
 
-  return apiSuccess(formatQuote(updated));
+  if ('error' in result && result.error) return apiError(result.error, result.status ?? 400);
+  if (!('data' in result)) return apiError('Unexpected error', 500);
+  return apiSuccess(formatQuote(result.data));
 }
 
 // DELETE /api/v1/quotes/:id

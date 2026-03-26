@@ -32,6 +32,26 @@ const defaultOptions: PdfOptions = {
   displayHeaderFooter: false,
 };
 
+// Bug #77: Concurrency limiter to prevent OOM from too many simultaneous PDF generations
+let activePdfCount = 0;
+const MAX_CONCURRENT_PDFS = 3;
+const PDF_SLOT_TIMEOUT = 30000; // 30s max wait for a slot
+
+async function acquirePdfSlot(): Promise<void> {
+  const start = Date.now();
+  while (activePdfCount >= MAX_CONCURRENT_PDFS) {
+    if (Date.now() - start > PDF_SLOT_TIMEOUT) {
+      throw new Error('PDF generation service is busy. Please try again later.');
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  activePdfCount++;
+}
+
+function releasePdfSlot(): void {
+  activePdfCount--;
+}
+
 // Browser pool for reuse
 let browserInstance: Browser | null = null;
 
@@ -142,73 +162,139 @@ export async function generatePdfFromHtml(
     throw new Error('PDF content too large to generate');
   }
 
-  const browser = await getBrowser();
-  let page: Page | null = null;
+  // Bug #77: Limit concurrent PDF generations to prevent OOM
+  await acquirePdfSlot();
 
   try {
-    page = await browser.newPage();
+    const browser = await getBrowser();
+    let page: Page | null = null;
 
-    // HIGH #28: Disable JS before rendering to prevent script injection from user content
-    await page.setJavaScriptEnabled(false);
+    try {
+      page = await browser.newPage();
 
-    // Bug #147: Use domcontentloaded instead of networkidle0 to prevent
-    // outbound requests from user content (SSRF via crafted image URLs).
-    // Since we removed external Google Fonts import, no external requests needed.
-    await page.setContent(html, {
-      waitUntil: 'domcontentloaded',
-      timeout: 15000,
-    });
+      // HIGH #28: Disable JS before rendering to prevent script injection from user content
+      await page.setJavaScriptEnabled(false);
 
-    // Wait for fonts to load (with timeout fallback)
-    await page.evaluateHandle('document.fonts.ready').catch(() => {
-      // Fonts may not be available in serverless - continue anyway
-    });
+      // Bug #147: Use domcontentloaded instead of networkidle0 to prevent
+      // outbound requests from user content (SSRF via crafted image URLs).
+      // Since we removed external Google Fonts import, no external requests needed.
+      await page.setContent(html, {
+        waitUntil: 'domcontentloaded',
+        timeout: 15000,
+      });
 
-    const mergedOptions = { ...defaultOptions, ...options };
+      // Wait for fonts to load (with timeout fallback)
+      await page.evaluateHandle('document.fonts.ready').catch(() => {
+        // Fonts may not be available in serverless - continue anyway
+      });
 
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: mergedOptions.format,
-      landscape: mergedOptions.landscape,
-      margin: mergedOptions.margin,
-      scale: mergedOptions.scale,
-      printBackground: mergedOptions.printBackground,
-      displayHeaderFooter: mergedOptions.displayHeaderFooter,
-      headerTemplate: mergedOptions.headerTemplate,
-      footerTemplate: mergedOptions.footerTemplate,
-    });
+      const mergedOptions = { ...defaultOptions, ...options };
 
-    return Buffer.from(pdfBuffer);
-  } finally {
-    if (page) {
-      await page.close();
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: mergedOptions.format,
+        landscape: mergedOptions.landscape,
+        margin: mergedOptions.margin,
+        scale: mergedOptions.scale,
+        printBackground: mergedOptions.printBackground,
+        displayHeaderFooter: mergedOptions.displayHeaderFooter,
+        headerTemplate: mergedOptions.headerTemplate,
+        footerTemplate: mergedOptions.footerTemplate,
+      });
+
+      return Buffer.from(pdfBuffer);
+    } finally {
+      if (page) {
+        await page.close();
+      }
     }
+  } finally {
+    releasePdfSlot();
   }
 }
 
-// Validate URL is safe for PDF generation (prevent SSRF)
+// Bug #75: Comprehensive private IP detection (covers IPv4, IPv6-mapped, octal, decimal formats)
+function isPrivateIp(hostname: string): boolean {
+  // Strip IPv6 brackets
+  let ip = hostname.replace(/^\[|\]$/g, '');
+
+  // Handle IPv6-mapped IPv4 (e.g., ::ffff:127.0.0.1)
+  const v4MappedMatch = ip.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i);
+  if (v4MappedMatch && v4MappedMatch[1]) {
+    ip = v4MappedMatch[1];
+  }
+
+  // IPv6 loopback
+  if (ip === '::1') return true;
+
+  // Handle decimal IP format (e.g., 2130706433 = 127.0.0.1)
+  if (/^\d+$/.test(ip)) {
+    const num = parseInt(ip, 10);
+    if (num >= 0 && num <= 0xFFFFFFFF) {
+      ip = [
+        (num >>> 24) & 0xFF,
+        (num >>> 16) & 0xFF,
+        (num >>> 8) & 0xFF,
+        num & 0xFF,
+      ].join('.');
+    }
+  }
+
+  // Handle octal IP format (e.g., 0177.0.0.1 = 127.0.0.1)
+  if (/^0\d/.test(ip) || ip.includes('.0') && /\.\d/.test(ip)) {
+    const parts = ip.split('.');
+    if (parts.length === 4 && parts.every(p => /^0?\d+$/.test(p))) {
+      const decoded = parts.map(p => p.startsWith('0') && p.length > 1 ? parseInt(p, 8) : parseInt(p, 10));
+      if (decoded.every(n => !isNaN(n) && n >= 0 && n <= 255)) {
+        ip = decoded.join('.');
+      }
+    }
+  }
+
+  // Standard IPv4 dotted-decimal checks
+  const ipParts = ip.split('.');
+  if (ipParts.length === 4 && ipParts.every(p => /^\d{1,3}$/.test(p))) {
+    const octets = ipParts.map(Number);
+    if (octets.some(o => o < 0 || o > 255)) return false;
+
+    const a = octets[0]!;
+    const b = octets[1]!;
+    // 127.0.0.0/8 (loopback)
+    if (a === 127) return true;
+    // 10.0.0.0/8
+    if (a === 10) return true;
+    // 172.16.0.0/12 (172.16.x.x - 172.31.x.x)
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    // 192.168.0.0/16
+    if (a === 192 && b === 168) return true;
+    // 169.254.0.0/16 (link-local, including AWS metadata 169.254.169.254)
+    if (a === 169 && b === 254) return true;
+    // 0.0.0.0
+    if (octets.every(o => o === 0)) return true;
+  }
+
+  return false;
+}
+
+// Bug #75 + #76: Validate URL is safe for PDF generation (prevent SSRF)
 function validatePdfUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     // Only allow http/https protocols
     if (!['http:', 'https:'].includes(parsed.protocol)) return false;
-    // Block private/internal IPs
+
     const hostname = parsed.hostname;
-    if (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '0.0.0.0' ||
-      hostname.startsWith('10.') ||
-      hostname.startsWith('172.') ||
-      hostname.startsWith('192.168.') ||
-      hostname === '169.254.169.254' ||
-      hostname.endsWith('.internal') ||
-      hostname === '[::1]'
-    ) {
-      // Allow localhost only if it matches our own app URL
-      const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || '';
-      if (!baseUrl.includes(hostname)) return false;
+
+    // Block 'localhost' and known internal hostnames
+    if (hostname === 'localhost' || hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+      return false;
     }
+
+    // Block private/internal IPs (comprehensive check)
+    if (isPrivateIp(hostname)) {
+      return false;
+    }
+
     return true;
   } catch {
     return false;
@@ -224,45 +310,52 @@ export async function generatePdfFromUrl(
     throw new Error('Invalid URL for PDF generation');
   }
 
-  const browser = await getBrowser();
-  let page: Page | null = null;
+  // Bug #77: Limit concurrent PDF generations to prevent OOM
+  await acquirePdfSlot();
 
   try {
-    page = await browser.newPage();
+    const browser = await getBrowser();
+    let page: Page | null = null;
 
-    // Disable JavaScript to prevent script injection
-    await page.setJavaScriptEnabled(false);
+    try {
+      page = await browser.newPage();
 
-    // Navigate to URL
-    await page.goto(url, {
-      waitUntil: 'networkidle0',
-      timeout: 30000,
-    });
+      // Disable JavaScript to prevent script injection
+      await page.setJavaScriptEnabled(false);
 
-    // Wait for fonts to load
-    await page.evaluateHandle('document.fonts.ready').catch(() => {
-      // Fonts may not be available in serverless - continue anyway
-    });
+      // Navigate to URL
+      await page.goto(url, {
+        waitUntil: 'networkidle0',
+        timeout: 30000,
+      });
 
-    const mergedOptions = { ...defaultOptions, ...options };
+      // Wait for fonts to load
+      await page.evaluateHandle('document.fonts.ready').catch(() => {
+        // Fonts may not be available in serverless - continue anyway
+      });
 
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: mergedOptions.format,
-      landscape: mergedOptions.landscape,
-      margin: mergedOptions.margin,
-      scale: mergedOptions.scale,
-      printBackground: mergedOptions.printBackground,
-      displayHeaderFooter: mergedOptions.displayHeaderFooter,
-      headerTemplate: mergedOptions.headerTemplate,
-      footerTemplate: mergedOptions.footerTemplate,
-    });
+      const mergedOptions = { ...defaultOptions, ...options };
 
-    return Buffer.from(pdfBuffer);
-  } finally {
-    if (page) {
-      await page.close();
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: mergedOptions.format,
+        landscape: mergedOptions.landscape,
+        margin: mergedOptions.margin,
+        scale: mergedOptions.scale,
+        printBackground: mergedOptions.printBackground,
+        displayHeaderFooter: mergedOptions.displayHeaderFooter,
+        headerTemplate: mergedOptions.headerTemplate,
+        footerTemplate: mergedOptions.footerTemplate,
+      });
+
+      return Buffer.from(pdfBuffer);
+    } finally {
+      if (page) {
+        await page.close();
+      }
     }
+  } finally {
+    releasePdfSlot();
   }
 }
 
