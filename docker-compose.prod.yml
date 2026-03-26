@@ -26,6 +26,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.quotecraft.rule=Host(`${DOMAIN}`)'
@@ -50,6 +55,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   # Traefik Reverse Proxy
   traefik:

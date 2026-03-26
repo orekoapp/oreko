@@ -648,8 +648,7 @@ export async function getQuotes(options?: {
   ]);
 
   return {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    quotes: quotes.map((quote: any) => ({
+    quotes: quotes.map((quote) => ({
       id: quote.id,
       quoteNumber: quote.quoteNumber,
       title: quote.title,

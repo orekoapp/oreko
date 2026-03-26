@@ -200,6 +200,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   if ('error' in result && result.error) return apiError(result.error, result.status ?? 400);
   if (!('data' in result)) return apiError('Unexpected error', 500);
+
+  // Bug #187: Create audit event for v1 API updates
+  await prisma.quoteEvent.create({
+    data: { quoteId: id, eventType: 'updated', actorType: 'system', metadata: { via: 'api' } }
+  }).catch(() => {});
+
   return apiSuccess(formatQuote(result.data));
 }
 

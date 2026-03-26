@@ -83,6 +83,9 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    // Bug #196: Next.js API routes default to 1mb body size limit.
+    // This is sufficient for our use case (JSON payloads for quotes/invoices).
+    // Server actions have a higher limit (10mb) for file uploads.
   },
   webpack: (config, { isServer }) => {
     if (isServer) {

@@ -91,6 +91,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   delete body.deletedAt;
   delete body.createdAt;
   delete body.updatedAt;
+  // Bug #173: invoiceNumber and amountPaid are system-controlled
+  delete body.invoiceNumber;
+  delete body.amountPaid;
 
   const { title, notes, terms, dueDate, status, lineItems } = body as {
     title?: string;
@@ -219,6 +222,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       });
     });
 
+    // Bug #188: Create audit event for v1 API updates
+    await prisma.invoiceEvent.create({
+      data: { invoiceId: id, eventType: 'updated', actorType: 'system', metadata: { via: 'api' } }
+    }).catch(() => {});
+
     return apiSuccess(formatInvoice(updated));
   }
 
@@ -230,6 +238,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       lineItems: { orderBy: { sortOrder: 'asc' } },
     },
   });
+
+  // Bug #188: Create audit event for v1 API updates
+  await prisma.invoiceEvent.create({
+    data: { invoiceId: id, eventType: 'updated', actorType: 'system', metadata: { via: 'api' } }
+  }).catch(() => {});
 
   return apiSuccess(formatInvoice(updated));
 }
