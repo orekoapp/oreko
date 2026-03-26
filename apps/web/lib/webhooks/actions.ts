@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { DomainEventType } from '@/lib/events/types';
+import { encrypt } from '@/lib/encryption';
 
 /** All valid event types for webhook subscriptions */
 const VALID_EVENT_TYPES: DomainEventType[] = [
@@ -63,7 +64,7 @@ export async function createWebhookEndpoint(data: {
     data: {
       workspaceId,
       url: data.url,
-      secret,
+      secret: encrypt(secret),
       events: validEvents,
       isActive: true,
     },
@@ -71,6 +72,7 @@ export async function createWebhookEndpoint(data: {
 
   revalidatePath('/settings/webhooks');
 
+  // Return plaintext secret ONCE at creation — never stored or returned again
   return { success: true, endpoint: { ...endpoint, secret } };
 }
 

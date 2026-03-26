@@ -25,9 +25,6 @@ async function getUserProfile() {
       name: true,
       email: true,
       avatarUrl: true,
-      // Bug #188: Don't select the full hash — just check existence via raw query approach
-      // Selecting the hash is safe (never sent to client) but unnecessary; keeping for hasPassword check
-      passwordHash: true, // TODO: Replace with raw SQL `SELECT password_hash IS NOT NULL` when possible
       accounts: {
         select: {
           provider: true,
@@ -40,12 +37,17 @@ async function getUserProfile() {
     redirect('/login');
   }
 
+  // Bug #90: Check password existence without fetching the full hash into memory
+  const [{ has_password }] = await prisma.$queryRaw<[{ has_password: boolean }]>`
+    SELECT password_hash IS NOT NULL AS has_password FROM "User" WHERE id = ${session.user.id}
+  `;
+
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     avatarUrl: user.avatarUrl,
-    hasPassword: !!user.passwordHash,
+    hasPassword: has_password,
     oauthProviders: user.accounts.map((a) => a.provider),
   };
 }

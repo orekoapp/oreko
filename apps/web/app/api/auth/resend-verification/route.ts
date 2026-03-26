@@ -5,9 +5,15 @@ import { prisma } from '@quotecraft/database';
 import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
+import { validateRequestOrigin } from '@/lib/csrf';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    // Bug #50: CSRF origin validation
+    if (!validateRequestOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

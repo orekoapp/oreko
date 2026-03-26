@@ -66,16 +66,16 @@ export async function POST(request: Request) {
       where: { email },
     });
 
-    // MEDIUM #2: Use generic error to prevent user enumeration
+    // Bug #47: Always hash password to prevent timing-based email enumeration
+    // bcrypt runs regardless of whether user exists, normalizing response time
+    const passwordHash = await hashPassword(password);
+
     if (existingUser) {
       return NextResponse.json(
         { error: 'Unable to create account. Please try again.' },
         { status: 400 }
       );
     }
-
-    // Hash password
-    const passwordHash = await hashPassword(password);
 
     // Create user with workspace in a transaction
     const result = await prisma.$transaction(async (tx) => {

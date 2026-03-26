@@ -873,7 +873,7 @@ export async function sendInvoice(invoiceId: string, emailOptions?: SendEmailOpt
   // Fetch invoice with client for email first
   const { workspace } = await getActiveWorkspace();
   const invoice = await prisma.invoice.findFirst({
-    where: { id: invoiceId, workspaceId: workspace.id },
+    where: { id: invoiceId, workspaceId: workspace.id, deletedAt: null },
     include: { client: true },
   });
 

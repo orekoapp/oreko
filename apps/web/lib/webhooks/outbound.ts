@@ -3,6 +3,7 @@ import { prisma } from '@quotecraft/database';
 import { domainEvents } from '@/lib/events/emitter';
 import type { DomainEvent, DomainEventType } from '@/lib/events/types';
 import { logger } from '@/lib/logger';
+import { decrypt } from '@/lib/encryption';
 
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAYS = [1000, 4000, 16000]; // Exponential backoff in ms
@@ -158,7 +159,7 @@ async function handleDomainEvent(event: DomainEvent): Promise<void> {
   // Deliver in parallel, don't let one failure block others
   await Promise.allSettled(
     endpoints.map((endpoint) =>
-      deliverToEndpoint(endpoint.id, endpoint.url, endpoint.secret, event)
+      deliverToEndpoint(endpoint.id, endpoint.url, decrypt(endpoint.secret), event)
     )
   );
 }

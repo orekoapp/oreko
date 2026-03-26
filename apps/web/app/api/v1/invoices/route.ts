@@ -131,6 +131,12 @@ export async function POST(request: NextRequest) {
   });
   if (!client) return apiError('Client not found', 404);
 
+  // Bug #34: Validate projectId belongs to workspace
+  if (projectId) {
+    const project = await prisma.project.findFirst({ where: { id: projectId, workspaceId, deletedAt: null } });
+    if (!project) return apiError('Project not found', 404);
+  }
+
   // Generate invoice number in a serializable transaction to prevent duplicates
   const seq = await prisma.$transaction(async (tx) => {
     return tx.numberSequence.upsert({
@@ -143,13 +149,23 @@ export async function POST(request: NextRequest) {
 
   const items = lineItems || [];
 
+  // Bug #36: Limit line item count
+  if (items.length > 100) return apiError('Maximum 100 line items allowed', 400);
+
   // Validate line item values
   for (const item of items) {
+    // Bug #41: Validate line item name is non-empty
+    if (!item.name || typeof item.name !== 'string' || !item.name.trim()) {
+      return apiError('Line item name is required', 400);
+    }
     if (!Number.isFinite(item.quantity) || !Number.isFinite(item.rate)) {
       return apiError('Line item quantity and rate must be valid numbers', 400);
     }
     if (item.quantity < 0) return apiError('Line item quantity cannot be negative', 400);
     if (item.rate < 0) return apiError('Line item rate cannot be negative', 400);
+    // Bug #40: Upper bound on rate and quantity
+    if (item.quantity > 1_000_000) return apiError('Line item quantity must be at most 1,000,000', 400);
+    if (item.rate > 1_000_000) return apiError('Line item rate must be at most 1,000,000', 400);
     if (item.taxRate !== undefined && item.taxRate !== null && !Number.isFinite(item.taxRate)) {
       return apiError('Line item taxRate must be a valid number', 400);
     }

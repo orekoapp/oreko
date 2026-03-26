@@ -35,6 +35,10 @@ export function ImageBlockContent({ block }: ImageBlockContentProps) {
     if (trimmedUrl && !trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://') && !trimmedUrl.startsWith('data:image/')) {
       return; // Reject invalid URLs silently
     }
+    // Bug #62: Block SVG data URIs to prevent XSS (SVG can contain JavaScript)
+    if (trimmedUrl.toLowerCase().startsWith('data:image/svg')) {
+      return; // Reject SVG data URIs silently
+    }
     updateBlock(block.id, { src: trimmedUrl });
   };
 

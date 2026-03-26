@@ -225,8 +225,8 @@ export async function createQuote(data: {
     }));
 
   // Calculate totals
-  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const taxTotal = lineItems.reduce((sum, item) => sum + item.taxAmount, 0);
+  const subtotal = Math.round(lineItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
+  const taxTotal = Math.round(lineItems.reduce((sum, item) => sum + item.taxAmount, 0) * 100) / 100;
   const total = subtotal + taxTotal;
 
   const quote = await prisma.quote.create({
@@ -367,11 +367,11 @@ export async function updateQuote(
   // Validate line item values
   if (serviceBlocks) {
     for (const block of serviceBlocks) {
-      if (!Number.isFinite(block.content.rate) || block.content.rate < 0 || block.content.rate > 999999999) {
-        return { success: false as const, error: 'Line item rate must be a valid number between 0 and 999,999,999' };
+      if (!Number.isFinite(block.content.rate) || block.content.rate < 0 || block.content.rate > 1_000_000) {
+        return { success: false as const, error: 'Line item rate must be between 0 and 1,000,000' };
       }
-      if (!Number.isFinite(block.content.quantity) || block.content.quantity < 0 || block.content.quantity > 999999) {
-        return { success: false as const, error: 'Line item quantity must be a valid number between 0 and 999,999' };
+      if (!Number.isFinite(block.content.quantity) || block.content.quantity < 0 || block.content.quantity > 1_000_000) {
+        return { success: false as const, error: 'Line item quantity must be between 0 and 1,000,000' };
       }
     }
   }
@@ -390,8 +390,8 @@ export async function updateQuote(
   }));
 
   // Calculate totals
-  const subtotal = lineItems?.reduce((sum, item) => sum + item.amount, 0) || 0;
-  const taxTotal = lineItems?.reduce((sum, item) => sum + item.taxAmount, 0) || 0;
+  const subtotal = Math.round((lineItems?.reduce((sum, item) => sum + item.amount, 0) || 0) * 100) / 100;
+  const taxTotal = Math.round((lineItems?.reduce((sum, item) => sum + item.taxAmount, 0) || 0) * 100) / 100;
 
   // Bug #123: Validate discount values server-side
   const mergedSettings = { ...(existingQuote.settings as Record<string, unknown>), ...data.settings };

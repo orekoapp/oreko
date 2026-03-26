@@ -29,6 +29,7 @@ import type {
 } from './types';
 import { ROUTES } from '@/lib/routes';
 import { toNumber, getBaseUrl } from '@/lib/utils';
+import { encrypt, decrypt } from '@/lib/encryption';
 
 // ============================================
 // WORKSPACE ACTIONS
@@ -1607,7 +1608,7 @@ export async function getWebhooks(): Promise<WebhookData[]> {
     id: ep.id,
     name: ep.name || ep.url,
     url: ep.url,
-    secret: ep.secret ? `${'•'.repeat(20)}${ep.secret.slice(-4)}` : null,
+    secret: ep.secret ? `${'•'.repeat(20)}${decrypt(ep.secret).slice(-4)}` : null,
     events: ep.events as WebhookData['events'],
     isActive: ep.isActive,
     createdAt: ep.createdAt,
@@ -1627,6 +1628,17 @@ export async function createWebhook(input: {
     throw new Error('Viewers cannot create webhooks');
   }
 
+  // Bug #91: Validate URL scheme is http: or https: only
+  try {
+    const parsed = new URL(input.url.trim());
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Webhook URL must use http or https protocol');
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('protocol')) throw e;
+    throw new Error('Webhook URL must be a valid http or https URL');
+  }
+
   // Generate a signing secret if none provided
   const secret = input.secret || `whsec_${randomBytes(24).toString('hex')}`;
 
@@ -1636,7 +1648,7 @@ export async function createWebhook(input: {
       name: input.name.trim(),
       url: input.url.trim(),
       events: input.events,
-      secret,
+      secret: encrypt(secret),
       isActive: true,
     },
   });
@@ -1668,11 +1680,24 @@ export async function updateWebhook(input: {
     throw new Error('Webhook not found');
   }
 
+  // Bug #91: Validate URL scheme on update too
+  if (input.url !== undefined) {
+    try {
+      const parsed = new URL(input.url.trim());
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        throw new Error('Webhook URL must use http or https protocol');
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('protocol')) throw e;
+      throw new Error('Webhook URL must be a valid http or https URL');
+    }
+  }
+
   const data: Record<string, unknown> = {};
   if (input.name !== undefined) data.name = input.name.trim();
   if (input.url !== undefined) data.url = input.url.trim();
   if (input.events !== undefined) data.events = input.events;
-  if (input.secret !== undefined) data.secret = input.secret;
+  if (input.secret !== undefined) data.secret = encrypt(input.secret);
   if (input.isActive !== undefined) data.isActive = input.isActive;
 
   await prisma.webhookEndpoint.update({

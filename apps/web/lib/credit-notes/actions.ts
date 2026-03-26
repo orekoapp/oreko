@@ -171,6 +171,7 @@ export async function issueCreditNote(creditNoteId: string) {
     where: {
       id: creditNoteId,
       workspaceId: workspace.id,
+      deletedAt: null,
     },
   });
 

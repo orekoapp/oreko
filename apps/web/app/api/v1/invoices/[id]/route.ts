@@ -105,7 +105,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (title !== undefined) updateData.title = title;
   if (notes !== undefined) updateData.notes = notes;
   if (terms !== undefined) updateData.terms = terms;
-  if (dueDate !== undefined) updateData.dueDate = new Date(dueDate);
+  if (dueDate !== undefined) {
+    if (isNaN(new Date(dueDate).getTime())) return apiError('Invalid due date', 400);
+    updateData.dueDate = new Date(dueDate);
+  }
+
+  // Bug #30: Paid/voided invoices should not allow ANY changes (except status transitions)
+  const immutableStatuses = ['paid', 'voided'];
+  const hasNonStatusChanges = title !== undefined || notes !== undefined || terms !== undefined || dueDate !== undefined || lineItems !== undefined;
+  if (immutableStatuses.includes(invoice.status) && hasNonStatusChanges) {
+    return apiError('Cannot modify a paid or voided invoice', 400);
+  }
+
   if (status !== undefined) {
     const validTransitions: Record<string, string[]> = {
       draft: ['sent'],
@@ -132,11 +143,23 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return apiError(`Cannot modify line items on a ${invoice.status} invoice`, 400);
     }
 
+    // Bug #36: Limit line item count
+    if (lineItems.length > 100) {
+      return apiError('Maximum 100 line items allowed', 400);
+    }
+
     for (const item of lineItems) {
+      // Bug #41: Validate line item name is non-empty
+      if (!item.name || typeof item.name !== 'string' || !item.name.trim()) {
+        return apiError('Line item name is required', 400);
+      }
       if (!Number.isFinite(item.quantity) || !Number.isFinite(item.rate)) {
         return apiError('Line item quantity and rate must be valid numbers', 400);
       }
       if (item.quantity < 0) return apiError('Line item quantity cannot be negative', 400);
+      // Bug #40: Upper bound on rate and quantity
+      if (item.quantity > 1_000_000) return apiError('Line item quantity must be at most 1,000,000', 400);
+      if (item.rate > 1_000_000) return apiError('Line item rate must be at most 1,000,000', 400);
       if (item.taxRate !== undefined && item.taxRate !== null && !Number.isFinite(item.taxRate)) {
         return apiError('Line item taxRate must be a valid number', 400);
       }

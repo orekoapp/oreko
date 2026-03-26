@@ -617,6 +617,18 @@ export async function sendContractInstance(id: string, emailOptions?: SendEmailO
     throw new Error(`Cannot send a contract that is already ${instance.status}`);
   }
 
+  // Bug #85: Validate recipients if custom ones provided
+  if (emailOptions?.recipients?.length) {
+    if (emailOptions.recipients.length > 10) {
+      throw new Error('Maximum 10 recipients allowed');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = emailOptions.recipients.filter(e => !emailRegex.test(e));
+    if (invalidEmails.length > 0) {
+      throw new Error(`Invalid email addresses: ${invalidEmails.join(', ')}`);
+    }
+  }
+
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
   });

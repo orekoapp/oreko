@@ -4,6 +4,7 @@ import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { prisma } from '@quotecraft/database';
+import { randomBytes } from 'crypto';
 import { auth } from '@/lib/auth';
 
 const ACTIVE_WORKSPACE_COOKIE = 'active-workspace-id';
@@ -35,7 +36,7 @@ function generateSlug(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  const randomSuffix = randomBytes(4).toString('hex').substring(0, 6);
   return `${baseSlug}-${randomSuffix}`;
 }
 
