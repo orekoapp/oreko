@@ -60,7 +60,7 @@ export async function updateUserPreferences(
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        preferences: { ...existing, ...sanitized },
+        preferences: { ...existing, ...sanitized } as any,
       },
     });
 

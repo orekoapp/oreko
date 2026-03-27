@@ -34,9 +34,9 @@ export default async function NewContractPage({ searchParams }: PageProps) {
         email: c.email,
         company: c.company,
       }))}
-      quotes={quotesResult.quotes.map((q: { id: string; title: string }) => ({
+      quotes={quotesResult.quotes.map((q: { id: string; title: string | null }) => ({
         id: q.id,
-        title: q.title,
+        title: q.title ?? '',
       }))}
       preselectedTemplateId={params.templateId}
       preselectedClientId={params.clientId}

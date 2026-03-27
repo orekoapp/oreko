@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { prisma, Prisma } from '@quotecraft/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
-import type { QuoteDocument, QuoteBlock, ServiceItemBlock } from './types';
+import type { QuoteDocument, QuoteBlock, ServiceItemBlock, QuoteStatus, QuoteListItem } from './types';
 import { sendTemplatedEmail } from '@/lib/email/actions';
 import { createNotification } from '@/lib/notifications/internal';
 import { ROUTES } from '@/lib/routes';
@@ -648,14 +648,14 @@ export async function getQuotes(options?: {
   ]);
 
   return {
-    quotes: quotes.map((quote) => ({
+    quotes: quotes.map((quote): QuoteListItem => ({
       id: quote.id,
       quoteNumber: quote.quoteNumber,
-      title: quote.title,
-      status: quote.status,
+      title: quote.title ?? '',
+      status: quote.status as QuoteStatus,
       total: toNumber(quote.total),
       currency: quote.currency,
-      issueDate: quote.issueDate.toISOString().split('T')[0],
+      issueDate: (quote.issueDate ?? new Date()).toISOString().split('T')[0]!,
       expirationDate: quote.expirationDate?.toISOString().split('T')[0] || null,
       client: quote.client ? {
         id: quote.client.id,

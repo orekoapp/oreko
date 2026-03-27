@@ -63,7 +63,9 @@ export function decrypt(value: string): string {
     return value;
   }
 
-  const [ivB64, tagB64, dataB64] = parts;
+  const ivB64 = parts[0]!;
+  const tagB64 = parts[1]!;
+  const dataB64 = parts[2]!;
   const iv = Buffer.from(ivB64, 'base64');
   const tag = Buffer.from(tagB64, 'base64');
   const encrypted = Buffer.from(dataB64, 'base64');

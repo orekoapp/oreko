@@ -36,7 +36,8 @@ export const encryptedAdapter: Adapter = {
 
   linkAccount: async (account) => {
     const encrypted = encryptTokens(account as unknown as Record<string, unknown>);
-    return baseAdapter.linkAccount!(encrypted as Parameters<NonNullable<Adapter['linkAccount']>>[0]);
+    const result = await baseAdapter.linkAccount!(encrypted as Parameters<NonNullable<Adapter['linkAccount']>>[0]);
+    return result ?? undefined;
   },
 
   // Prisma adapter doesn't expose getAccount directly, but NextAuth
