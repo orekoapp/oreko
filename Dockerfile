@@ -1,5 +1,5 @@
 # ============================================
-# QuoteCraft Production Dockerfile
+# Oreko Production Dockerfile
 # Multi-stage build for optimal image size
 # ============================================
 

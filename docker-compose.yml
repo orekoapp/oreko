@@ -4,19 +4,19 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: quotecraft-postgres
+    container_name: oreko-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-quotecraft}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quotecraft_dev_only}
-      POSTGRES_DB: ${POSTGRES_DB:-quotecraft}
+      POSTGRES_USER: ${POSTGRES_USER:-oreko}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oreko_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-oreko}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       # Bug #158: Bind to localhost only to prevent network exposure
       - '127.0.0.1:5432:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U quotecraft']
+      test: ['CMD-SHELL', 'pg_isready -U oreko']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,7 +25,7 @@ services:
   # NOTE: Dev-only — do NOT use in production. Insecure auth is enabled for local testing.
   mailpit:
     image: axllent/mailpit:latest
-    container_name: quotecraft-mailpit
+    container_name: oreko-mailpit
     restart: unless-stopped
     ports:
       - '8025:8025' # Web UI
@@ -39,4 +39,4 @@ volumes:
 
 networks:
   default:
-    name: quotecraft-network
+    name: oreko-network

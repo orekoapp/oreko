@@ -1,5 +1,5 @@
 # ===========================================
-# QuoteCraft — Simple Production Deployment
+# Oreko — Simple Production Deployment
 # ===========================================
 # 2 services only: web + postgres
 # No reverse proxy — use your own nginx/Caddy/cloudflare or access directly on port 3000
@@ -11,18 +11,18 @@
 version: '3.8'
 
 services:
-  # QuoteCraft Web Application
+  # Oreko Web Application
   web:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         - NODE_ENV=production
-    container_name: quotecraft-web
+    container_name: oreko-web
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-quotecraft}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-quotecraft}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-oreko}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-oreko}?schema=public
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       AUTH_TRUST_HOST: "true"
@@ -46,16 +46,16 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: quotecraft-postgres
+    container_name: oreko-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-quotecraft}
+      POSTGRES_USER: ${POSTGRES_USER:-oreko}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-quotecraft}
+      POSTGRES_DB: ${POSTGRES_DB:-oreko}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-quotecraft}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-oreko}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -70,4 +70,4 @@ volumes:
 
 networks:
   default:
-    name: quotecraft-network
+    name: oreko-network

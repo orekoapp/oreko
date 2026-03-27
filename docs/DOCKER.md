@@ -1,6 +1,6 @@
 # Docker Deployment Guide
 
-Self-host QuoteCraft using Docker. Two deployment options are available:
+Self-host Oreko using Docker. Two deployment options are available:
 
 | Option | File | What you get |
 |--------|------|-------------|
@@ -48,7 +48,7 @@ Best for: local testing, small teams behind a VPN, or when you already have a re
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/oreko/oreko.git  # Update this URL once the repo is created
+git clone https://github.com/orekoapp/oreko.git
 cd oreko
 ```
 
@@ -69,8 +69,8 @@ POSTGRES_PASSWORD=your-strong-password-here
 NEXTAUTH_SECRET=your-random-secret-here
 
 # Optional (defaults shown)
-POSTGRES_USER=quotecraft
-POSTGRES_DB=quotecraft
+POSTGRES_USER=oreko
+POSTGRES_DB=oreko
 NEXTAUTH_URL=http://localhost:3000
 ```
 
@@ -89,7 +89,7 @@ docker compose -f docker-compose.simple.yml up -d
 ```
 
 This will:
-- Build the QuoteCraft image (~2-3 minutes on first run)
+- Build the Oreko image (~2-3 minutes on first run)
 - Start PostgreSQL 16
 - Wait for the database to be healthy
 - Start the web application on port 3000
@@ -100,9 +100,9 @@ After the containers are running, apply the database schema:
 
 ```bash
 docker run --rm \
-  --network quotecraft-network \
+  --network oreko-network \
   -v ./packages/database/prisma:/prisma \
-  -e DATABASE_URL="postgresql://quotecraft:YOUR_PASSWORD@postgres:5432/quotecraft?schema=public" \
+  -e DATABASE_URL="postgresql://oreko:YOUR_PASSWORD@postgres:5432/oreko?schema=public" \
   node:20-alpine \
   sh -c "npx prisma@6.19.2 migrate deploy --schema=/prisma/schema.prisma"
 ```
@@ -119,9 +119,9 @@ If you want sample clients, quotes, and invoices to explore:
 
 ```bash
 docker run --rm \
-  --network quotecraft-network \
+  --network oreko-network \
   -v ./packages/database:/database \
-  -e DATABASE_URL="postgresql://quotecraft:YOUR_PASSWORD@postgres:5432/quotecraft?schema=public" \
+  -e DATABASE_URL="postgresql://oreko:YOUR_PASSWORD@postgres:5432/oreko?schema=public" \
   node:20-alpine \
   sh -c "cd /database && npx tsx prisma/seed.ts"
 ```
@@ -135,7 +135,7 @@ For a production deployment with automatic HTTPS via Traefik.
 ### 1. Clone the repository on your server
 
 ```bash
-git clone https://github.com/oreko/oreko.git  # Update this URL once the repo is created
+git clone https://github.com/orekoapp/oreko.git
 cd oreko
 ```
 
@@ -185,7 +185,7 @@ sudo firewall-cmd --reload
 POSTGRES_PASSWORD=your-strong-password-here
 NEXTAUTH_SECRET=your-random-secret-here
 NEXTAUTH_URL=https://yourdomain.com
-DATABASE_URL=postgresql://quotecraft:YOUR_PASSWORD@postgres:5432/quotecraft?schema=public
+DATABASE_URL=postgresql://oreko:YOUR_PASSWORD@postgres:5432/oreko?schema=public
 
 # Domain & SSL
 DOMAIN=yourdomain.com
@@ -220,7 +220,7 @@ curl -I https://yourdomain.com
 If SSL isn't working, check Traefik logs:
 
 ```bash
-docker logs quotecraft-traefik 2>&1 | grep -i "acme\|error\|challenge"
+docker logs oreko-traefik 2>&1 | grep -i "acme\|error\|challenge"
 ```
 
 Common causes: DNS not propagated yet, port 80 blocked by firewall, domain doesn't resolve to this server.
@@ -257,8 +257,8 @@ The production compose file includes a Traefik admin dashboard at `https://traef
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `POSTGRES_PASSWORD` | Yes | — | Database password |
-| `POSTGRES_USER` | No | `quotecraft` | Database user |
-| `POSTGRES_DB` | No | `quotecraft` | Database name |
+| `POSTGRES_USER` | No | `oreko` | Database user |
+| `POSTGRES_DB` | No | `oreko` | Database name |
 | `NEXTAUTH_SECRET` | Yes | — | Auth encryption key — **must be at least 32 characters**. Generate with `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | No | `http://localhost:3000` | Public URL of your instance |
 | `AUTH_TRUST_HOST` | No | `true` (set in compose) | Trust the host header for auth |
@@ -315,7 +315,7 @@ curl http://localhost:3000/api/health
 If you get an unhealthy response, check:
 
 1. Is PostgreSQL running? `docker ps | grep postgres`
-2. Can the web container reach it? `docker logs quotecraft-web 2>&1 | tail -20`
+2. Can the web container reach it? `docker logs oreko-web 2>&1 | tail -20`
 3. Is the `DATABASE_URL` correct in the web container environment?
 
 ---
@@ -324,7 +324,7 @@ If you get an unhealthy response, check:
 
 ### Basic: health check script
 
-Create a script that alerts you if the app goes down. Save as `/opt/quotecraft/healthcheck.sh`:
+Create a script that alerts you if the app goes down. Save as `/opt/oreko/healthcheck.sh`:
 
 ```bash
 #!/bin/bash
@@ -334,8 +334,8 @@ ALERT_EMAIL="you@example.com"
 response=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" --max-time 10)
 
 if [ "$response" != "200" ]; then
-  echo "QuoteCraft is DOWN (HTTP $response) at $(date)" | \
-    mail -s "ALERT: QuoteCraft Down" "$ALERT_EMAIL"
+  echo "Oreko is DOWN (HTTP $response) at $(date)" | \
+    mail -s "ALERT: Oreko Down" "$ALERT_EMAIL"
 fi
 ```
 
@@ -344,7 +344,7 @@ Run it every 2 minutes via cron:
 ```bash
 crontab -e
 # Add:
-*/2 * * * * /opt/quotecraft/healthcheck.sh
+*/2 * * * * /opt/oreko/healthcheck.sh
 ```
 
 ### Docker restart policy
@@ -353,10 +353,10 @@ The compose files already use `restart: unless-stopped`, so Docker will automati
 
 ```bash
 # Check restart count
-docker inspect quotecraft-web --format='{{.RestartCount}}'
+docker inspect oreko-web --format='{{.RestartCount}}'
 
 # If restart count is climbing, check logs for the crash reason
-docker logs quotecraft-web --tail 50
+docker logs oreko-web --tail 50
 ```
 
 ### Log rotation
@@ -393,23 +393,23 @@ docker compose -f docker-compose.simple.yml up -d
 ### Create a manual backup
 
 ```bash
-docker exec quotecraft-postgres pg_dump -U quotecraft quotecraft > backup_$(date +%Y%m%d_%H%M%S).sql
+docker exec oreko-postgres pg_dump -U oreko oreko > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ### Automated daily backups
 
-Create a backup script at `/opt/quotecraft/backup.sh`:
+Create a backup script at `/opt/oreko/backup.sh`:
 
 ```bash
 #!/bin/bash
-BACKUP_DIR="/opt/quotecraft/backups"
+BACKUP_DIR="/opt/oreko/backups"
 RETENTION_DAYS=30
 
 mkdir -p "$BACKUP_DIR"
 
 # Create compressed backup
-docker exec quotecraft-postgres pg_dump -U quotecraft quotecraft | \
-  gzip > "$BACKUP_DIR/quotecraft_$(date +%Y%m%d_%H%M%S).sql.gz"
+docker exec oreko-postgres pg_dump -U oreko oreko | \
+  gzip > "$BACKUP_DIR/oreko_$(date +%Y%m%d_%H%M%S).sql.gz"
 
 # Delete backups older than retention period
 find "$BACKUP_DIR" -name "*.sql.gz" -mtime +$RETENTION_DAYS -delete
@@ -420,10 +420,10 @@ echo "Backup complete: $(ls -lh $BACKUP_DIR/*.sql.gz | tail -1)"
 Schedule it to run daily at 2 AM:
 
 ```bash
-chmod +x /opt/quotecraft/backup.sh
+chmod +x /opt/oreko/backup.sh
 crontab -e
 # Add:
-0 2 * * * /opt/quotecraft/backup.sh >> /var/log/quotecraft-backup.log 2>&1
+0 2 * * * /opt/oreko/backup.sh >> /var/log/oreko-backup.log 2>&1
 ```
 
 ### Off-server backup storage
@@ -432,13 +432,13 @@ Local backups are useless if the server dies. Copy backups to an external locati
 
 ```bash
 # Option 1: rsync to another server
-rsync -az /opt/quotecraft/backups/ user@backup-server:/backups/quotecraft/
+rsync -az /opt/oreko/backups/ user@backup-server:/backups/oreko/
 
 # Option 2: Upload to S3 (or any S3-compatible storage like Backblaze B2)
-aws s3 sync /opt/quotecraft/backups/ s3://your-bucket/quotecraft-backups/
+aws s3 sync /opt/oreko/backups/ s3://your-bucket/oreko-backups/
 
 # Option 3: Upload to Google Cloud Storage
-gsutil -m rsync -r /opt/quotecraft/backups/ gs://your-bucket/quotecraft-backups/
+gsutil -m rsync -r /opt/oreko/backups/ gs://your-bucket/oreko-backups/
 ```
 
 Add one of these to your cron job after the backup command.
@@ -449,26 +449,26 @@ Add one of these to your cron job after the backup command.
 
 ```bash
 # 1. Stop the web container
-docker stop quotecraft-web
+docker stop oreko-web
 
 # 2. Drop and recreate the database
-docker exec quotecraft-postgres psql -U quotecraft -d postgres -c "DROP DATABASE quotecraft;"
-docker exec quotecraft-postgres psql -U quotecraft -d postgres -c "CREATE DATABASE quotecraft;"
+docker exec oreko-postgres psql -U oreko -d postgres -c "DROP DATABASE oreko;"
+docker exec oreko-postgres psql -U oreko -d postgres -c "CREATE DATABASE oreko;"
 
 # 3. Restore the backup
 # From a .sql file:
-cat backup_20260326.sql | docker exec -i quotecraft-postgres psql -U quotecraft quotecraft
+cat backup_20260326.sql | docker exec -i oreko-postgres psql -U oreko oreko
 
 # From a .sql.gz file:
-gunzip -c quotecraft_20260326_020000.sql.gz | docker exec -i quotecraft-postgres psql -U quotecraft quotecraft
+gunzip -c oreko_20260326_020000.sql.gz | docker exec -i oreko-postgres psql -U oreko oreko
 
 # 4. Start the web container
-docker start quotecraft-web
+docker start oreko-web
 ```
 
 ---
 
-## Updating QuoteCraft
+## Updating Oreko
 
 When a new version is released, follow these steps to update your instance.
 
@@ -477,7 +477,7 @@ When a new version is released, follow these steps to update your instance.
 Always create a backup before updating (see Backups section above):
 
 ```bash
-docker exec quotecraft-postgres pg_dump -U quotecraft quotecraft | \
+docker exec oreko-postgres pg_dump -U oreko oreko | \
   gzip > pre-update-backup_$(date +%Y%m%d).sql.gz
 ```
 
@@ -504,9 +504,9 @@ If the update includes database changes:
 
 ```bash
 docker run --rm \
-  --network quotecraft-network \
+  --network oreko-network \
   -v ./packages/database/prisma:/prisma \
-  -e DATABASE_URL="postgresql://quotecraft:YOUR_PASSWORD@postgres:5432/quotecraft?schema=public" \
+  -e DATABASE_URL="postgresql://oreko:YOUR_PASSWORD@postgres:5432/oreko?schema=public" \
   node:20-alpine \
   sh -c "npx prisma@6.19.2 migrate deploy --schema=/prisma/schema.prisma"
 ```
@@ -567,8 +567,8 @@ docker compose -f docker-compose.simple.yml down
 docker compose -f docker-compose.simple.yml down -v
 
 # View live logs
-docker logs quotecraft-web -f
-docker logs quotecraft-postgres -f
+docker logs oreko-web -f
+docker logs oreko-postgres -f
 
 # Rebuild after code changes
 docker compose -f docker-compose.simple.yml build
@@ -581,10 +581,10 @@ docker ps
 curl http://localhost:3000/api/health
 
 # Open a shell in the web container
-docker exec -it quotecraft-web sh
+docker exec -it oreko-web sh
 
 # Access the database directly
-docker exec -it quotecraft-postgres psql -U quotecraft -d quotecraft
+docker exec -it oreko-postgres psql -U oreko -d oreko
 ```
 
 ---
@@ -631,7 +631,7 @@ The web container waits for PostgreSQL to be healthy before starting. If you see
 ```bash
 # Check postgres is running
 docker ps
-docker logs quotecraft-postgres
+docker logs oreko-postgres
 ```
 
 ### Migrations fail with "prisma@7.x" errors
@@ -650,7 +650,7 @@ npx prisma@6.19.2 migrate deploy --schema=/prisma/schema.prisma
 
 1. Verify DNS has propagated: `dig +short yourdomain.com` should return your server IP
 2. Verify port 80 is open: `curl http://yourdomain.com` should respond (Traefik needs port 80 for the ACME HTTP challenge)
-3. Check Traefik logs: `docker logs quotecraft-traefik 2>&1 | grep -i acme`
+3. Check Traefik logs: `docker logs oreko-traefik 2>&1 | grep -i acme`
 4. If you just set up DNS, wait 10-30 minutes and try again
 
 ### Container won't start on Windows (WSL errors)

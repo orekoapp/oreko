@@ -1,14 +1,14 @@
 version: '3.8'
 
 services:
-  # QuoteCraft Web Application
+  # Oreko Web Application
   web:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         - NODE_ENV=production
-    container_name: quotecraft-web
+    container_name: oreko-web
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -33,25 +33,25 @@ services:
           cpus: '1.0'
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.quotecraft.rule=Host(`${DOMAIN}`)'
-      - 'traefik.http.routers.quotecraft.entrypoints=websecure'
-      - 'traefik.http.routers.quotecraft.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.quotecraft.loadbalancer.server.port=3000'
+      - 'traefik.http.routers.oreko.rule=Host(`${DOMAIN}`)'
+      - 'traefik.http.routers.oreko.entrypoints=websecure'
+      - 'traefik.http.routers.oreko.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.oreko.loadbalancer.server.port=3000'
 
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: quotecraft-postgres
+    container_name: oreko-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-quotecraft}
+      POSTGRES_USER: ${POSTGRES_USER:-oreko}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-quotecraft}
+      POSTGRES_DB: ${POSTGRES_DB:-oreko}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-quotecraft}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-oreko}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -64,7 +64,7 @@ services:
   # Traefik Reverse Proxy
   traefik:
     image: traefik:v3.0
-    container_name: quotecraft-traefik
+    container_name: oreko-traefik
     restart: unless-stopped
     command:
       - '--api.dashboard=true'
@@ -97,4 +97,4 @@ volumes:
 
 networks:
   default:
-    name: quotecraft-network
+    name: oreko-network
