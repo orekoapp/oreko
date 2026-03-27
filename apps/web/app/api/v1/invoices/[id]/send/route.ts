@@ -81,7 +81,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         clientName: invoice.client!.name,
         invoiceNumber: invoice.invoiceNumber,
         invoiceUrl,
-        businessName: workspace?.name || 'QuoteCraft',
+        businessName: workspace?.name || 'Oreko',
         amount: formatCurrency(toNumber(invoice.total)),
         dueDate: invoice.dueDate,
         message: message || undefined,

@@ -14,8 +14,8 @@ import '@/styles/globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
-    template: '%s | QuoteCraft',
+    default: 'Oreko - Beautiful Invoices. No Expensive Subscription.',
+    template: '%s | Oreko',
   },
   description:
     'The open-source alternative to Bloom and Bonsai. Create stunning quotes, get them signed, convert to invoices with one click. Self-hosted free or cloud from $9/mo.',
@@ -33,9 +33,9 @@ export const metadata: Metadata = {
     'e-signature invoices',
     'invoice software for contractors',
   ],
-  authors: [{ name: 'QuoteCraft' }],
-  creator: 'QuoteCraft',
-  publisher: 'QuoteCraft',
+  authors: [{ name: 'Oreko' }],
+  creator: 'Oreko',
+  publisher: 'Oreko',
   metadataBase: new URL(getBaseUrl()),
   alternates: {
     canonical: '/',
@@ -44,8 +44,8 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: '/',
-    siteName: 'QuoteCraft',
-    title: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
+    siteName: 'Oreko',
+    title: 'Oreko - Beautiful Invoices. No Expensive Subscription.',
     description:
       'The open-source alternative to Bloom and Bonsai. Visual quote builder, e-signatures, one-click invoice conversion. Free self-hosted or $9/mo cloud.',
     // Bug #395: OG image auto-discovered from opengraph-image.tsx (PNG)
@@ -54,18 +54,18 @@ export const metadata: Metadata = {
         url: '/opengraph-image',
         width: 1200,
         height: 630,
-        alt: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
+        alt: 'Oreko - Beautiful Invoices. No Expensive Subscription.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.',
+    title: 'Oreko - Beautiful Invoices. No Expensive Subscription.',
     description:
       'The open-source alternative to Bloom and Bonsai. Create stunning quotes and invoices for free.',
     // Bug #396: Twitter image auto-discovered from twitter-image.tsx (PNG)
     images: ['/twitter-image'],
-    creator: '@quotecraft',
+    creator: '@oreko',
   },
   robots: {
     index: true,
@@ -95,7 +95,7 @@ export const viewport: Viewport = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'QuoteCraft',
+  name: 'Oreko',
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web, Docker',
   description:
@@ -127,7 +127,7 @@ const jsonLd = {
   ],
   author: {
     '@type': 'Organization',
-    name: 'QuoteCraft',
+    name: 'Oreko',
     url: getBaseUrl(),
   },
 };

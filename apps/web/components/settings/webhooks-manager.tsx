@@ -266,7 +266,7 @@ export function WebhooksManager({ initialData }: WebhooksManagerProps) {
                     placeholder="Optional secret for verifying webhook signatures"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Used to sign webhook payloads so you can verify they came from QuoteCraft.
+                    Used to sign webhook payloads so you can verify they came from Oreko.
                   </p>
                 </div>
 

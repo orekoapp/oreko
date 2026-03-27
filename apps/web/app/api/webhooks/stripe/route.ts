@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         if (paymentIntentId) {
           await processRefundWebhook(paymentIntentId, charge.amount_refunded);
         } else {
-          logger.warn({ eventId: event.id }, '[stripe-webhook] Orphaned refund event: charge.payment_intent is null. Refund processed by Stripe but no matching payment in QuoteCraft.');
+          logger.warn({ eventId: event.id }, '[stripe-webhook] Orphaned refund event: charge.payment_intent is null. Refund processed by Stripe but no matching payment in Oreko.');
         }
         break;
       }

@@ -40,7 +40,7 @@ const helpTopics = [
   {
     icon: Lightbulb,
     title: 'Tips & Tricks',
-    description: 'Get the most out of QuoteCraft',
+    description: 'Get the most out of Oreko',
     href: '/help#tips',
   },
 ];
@@ -58,7 +58,7 @@ const supportOptions = [
     title: 'Email Support',
     description: 'We\'ll respond within 24 hours',
     action: 'Send Email',
-    href: 'mailto:support@quotecraft.app',
+    href: 'mailto:support@oreko.app',
     available: true,
   },
   {
@@ -66,7 +66,7 @@ const supportOptions = [
     title: 'Report a Bug',
     description: 'Found an issue? Let us know',
     action: 'Report Bug',
-    href: 'mailto:support@quotecraft.app?subject=Bug%20Report',
+    href: 'mailto:support@oreko.app?subject=Bug%20Report',
     available: true,
   },
 ];

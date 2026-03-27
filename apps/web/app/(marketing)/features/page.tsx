@@ -53,7 +53,7 @@ const features = [
       'Client approval workflow',
     ],
     screenshot: '/screenshots/quote-detail.png',
-    screenshotAlt: 'QuoteCraft quote builder with live preview panel',
+    screenshotAlt: 'Oreko quote builder with live preview panel',
   },
   {
     id: 'invoicing',
@@ -70,7 +70,7 @@ const features = [
       'Stripe payment integration',
     ],
     screenshot: '/screenshots/invoice-detail.png',
-    screenshotAlt: 'QuoteCraft invoice with line items and payment tracking',
+    screenshotAlt: 'Oreko invoice with line items and payment tracking',
   },
   {
     id: 'contracts',
@@ -87,7 +87,7 @@ const features = [
       'PDF export and download',
     ],
     screenshot: '/screenshots/contracts.png',
-    screenshotAlt: 'QuoteCraft contracts management with status tracking',
+    screenshotAlt: 'Oreko contracts management with status tracking',
   },
   {
     id: 'analytics',
@@ -104,7 +104,7 @@ const features = [
       'Customizable date ranges',
     ],
     screenshot: '/screenshots/analytics.png',
-    screenshotAlt: 'QuoteCraft analytics dashboard with revenue and client data',
+    screenshotAlt: 'Oreko analytics dashboard with revenue and client data',
   },
 ];
 
@@ -123,7 +123,7 @@ export default function FeaturesPage() {
             Everything you need to get paid
           </h1>
           <p className="mt-4 text-lg text-muted-foreground leading-relaxed">
-            From quote creation to payment collection, QuoteCraft handles your
+            From quote creation to payment collection, Oreko handles your
             entire billing workflow.
           </p>
         </motion.div>
@@ -225,7 +225,7 @@ export default function FeaturesPage() {
               Ready to get started?
             </h2>
             <p className="mt-3 text-muted-foreground leading-relaxed">
-              Try QuoteCraft free for 14 days. No credit card required.
+              Try Oreko free for 14 days. No credit card required.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
@@ -235,7 +235,7 @@ export default function FeaturesPage() {
                 Start free trial
               </Link>
               <Link
-                href="https://github.com/quotecraft/quotecraft"
+                href="https://github.com/orekoapp/oreko"
                 className="group inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Self-host for free

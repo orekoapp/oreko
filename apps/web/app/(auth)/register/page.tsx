@@ -4,7 +4,7 @@ import { RegisterForm } from './register-form';
 
 export const metadata: Metadata = {
   title: 'Register',
-  description: 'Create a QuoteCraft account',
+  description: 'Create a Oreko account',
 };
 
 export default function RegisterPage() {

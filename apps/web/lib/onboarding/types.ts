@@ -28,7 +28,7 @@ export interface OnboardingStepInfo {
 export const ONBOARDING_STEPS: OnboardingStepInfo[] = [
   {
     id: 'welcome',
-    title: 'Welcome to QuoteCraft',
+    title: 'Welcome to Oreko',
     description: 'Let\'s get your account set up',
     isRequired: true,
   },

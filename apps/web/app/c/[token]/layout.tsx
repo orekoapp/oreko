@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Sign Contract - QuoteCraft',
+  title: 'Sign Contract - Oreko',
   description: 'View and sign your contract',
   robots: { index: false, follow: false },
 };

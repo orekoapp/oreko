@@ -91,7 +91,7 @@ export function DashboardNav() {
       <div className="flex h-16 items-center border-b px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
           <FileText className="h-6 w-6" />
-          {!collapsed && <span className="text-lg font-bold">QuoteCraft</span>}
+          {!collapsed && <span className="text-lg font-bold">Oreko</span>}
         </Link>
       </div>
 

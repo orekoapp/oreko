@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Code, Key, FileJson, Webhook } from 'lucide-react';
 
 export const metadata = {
-  title: 'API Reference | QuoteCraft',
-  description: 'Integrate QuoteCraft with your existing tools using our REST API.',
+  title: 'API Reference | Oreko',
+  description: 'Integrate Oreko with your existing tools using our REST API.',
 };
 
 export default function ApiDocsPage() {
@@ -16,9 +16,9 @@ export default function ApiDocsPage() {
             <Code className="h-4 w-4" />
             API Reference
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-4">QuoteCraft API</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-4">Oreko API</h1>
           <p className="text-xl text-muted-foreground">
-            Integrate QuoteCraft with your existing tools and workflows.
+            Integrate Oreko with your existing tools and workflows.
           </p>
         </div>
 
@@ -90,7 +90,7 @@ export default function ApiDocsPage() {
             </Button>
             <Button asChild>
               <a
-                href="https://github.com/quotecraft/quotecraft"
+                href="https://github.com/orekoapp/oreko"
                 target="_blank"
                 rel="noopener noreferrer"
               >

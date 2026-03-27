@@ -109,7 +109,7 @@ export function ApiKeysManager({ keys }: ApiKeysManagerProps) {
           <div>
             <CardTitle>API Keys</CardTitle>
             <CardDescription>
-              Use API keys to authenticate requests to the QuoteCraft REST API.
+              Use API keys to authenticate requests to the Oreko REST API.
             </CardDescription>
           </div>
           <Button onClick={() => setCreateOpen(true)} size="sm">

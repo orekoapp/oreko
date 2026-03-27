@@ -15,28 +15,28 @@ const tabs = [
     label: 'Invoices',
     icon: ArrowRightLeft,
     screenshot: '/screenshots/invoices-list.png',
-    alt: 'QuoteCraft invoices list with status tracking',
+    alt: 'Oreko invoices list with status tracking',
   },
   {
     id: 'quotes',
     label: 'Quotes',
     icon: FileText,
     screenshot: '/screenshots/quote-detail.png',
-    alt: 'QuoteCraft quote builder with live preview',
+    alt: 'Oreko quote builder with live preview',
   },
   {
     id: 'contracts',
     label: 'Contracts',
     icon: ScrollText,
     screenshot: '/screenshots/contracts.png',
-    alt: 'QuoteCraft contracts management',
+    alt: 'Oreko contracts management',
   },
   {
     id: 'analytics',
     label: 'Analytics',
     icon: BarChart3,
     screenshot: '/screenshots/dashboard.png',
-    alt: 'QuoteCraft analytics dashboard',
+    alt: 'Oreko analytics dashboard',
   },
 ];
 
@@ -132,7 +132,7 @@ export function AnimatedDemo() {
           </div>
           <div className="flex-1 flex justify-center">
             <div className="px-4 py-1 rounded-md bg-background border border-border text-xs text-muted-foreground min-w-[220px] text-center font-mono">
-              app.quotecraft.io/{activeTab?.id}
+              app.oreko.app/{activeTab?.id}
             </div>
           </div>
           <div className="w-[52px]" />

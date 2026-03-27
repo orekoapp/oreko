@@ -14,7 +14,7 @@ const features = [
     description:
       'Build branded quotes with our visual editor. Add line items, apply discounts, set payment terms, and send to clients for review and approval.',
     screenshot: '/screenshots/quote-detail.png',
-    screenshotAlt: 'QuoteCraft quote builder with live preview panel',
+    screenshotAlt: 'Oreko quote builder with live preview panel',
     link: '/features#quotes',
   },
   {
@@ -24,7 +24,7 @@ const features = [
     description:
       'Create invoices from scratch or convert accepted quotes with one click. Track payment status, send reminders, and let clients pay online.',
     screenshot: '/screenshots/invoice-detail.png',
-    screenshotAlt: 'QuoteCraft invoice popup with line items, totals, and download option',
+    screenshotAlt: 'Oreko invoice popup with line items, totals, and download option',
     link: '/features#invoicing',
   },
   {
@@ -34,7 +34,7 @@ const features = [
     description:
       'Send contracts for review, track signature status, and keep everything organized. From draft to signed — all in one place.',
     screenshot: '/screenshots/contracts.png',
-    screenshotAlt: 'QuoteCraft contracts management with status tracking',
+    screenshotAlt: 'Oreko contracts management with status tracking',
     link: '/features#contracts',
   },
   {
@@ -44,7 +44,7 @@ const features = [
     description:
       'Track revenue trends, quote conversion rates, and client insights. See what is working and where you can improve.',
     screenshot: '/screenshots/analytics.png',
-    screenshotAlt: 'QuoteCraft analytics dashboard with revenue and client data',
+    screenshotAlt: 'Oreko analytics dashboard with revenue and client data',
     link: '/features#analytics',
   },
 ];

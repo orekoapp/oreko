@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Features | QuoteCraft',
+  title: 'Features | Oreko',
   description:
     'Everything you need to create quotes, send invoices, and get paid.',
 };

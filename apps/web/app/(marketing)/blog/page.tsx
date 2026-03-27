@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
-  title: 'Blog | QuoteCraft',
-  description: 'Tips, tutorials, and updates from the QuoteCraft team.',
+  title: 'Blog | Oreko',
+  description: 'Tips, tutorials, and updates from the Oreko team.',
 };
 
 export default function BlogPage() {
@@ -12,7 +12,7 @@ export default function BlogPage() {
       <div className="mx-auto max-w-4xl text-center">
         <h1 className="text-4xl font-bold tracking-tight mb-4">Blog</h1>
         <p className="text-xl text-muted-foreground mb-8">
-          Tips, tutorials, and updates from the QuoteCraft team.
+          Tips, tutorials, and updates from the Oreko team.
         </p>
 
         <div className="rounded-lg border border-dashed p-12">

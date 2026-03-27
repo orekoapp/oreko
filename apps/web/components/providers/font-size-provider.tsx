@@ -36,8 +36,8 @@ export const SIDEBAR_STYLE_OPTIONS: SidebarStyleOption[] = [
   { key: 'elevated', label: 'Elevated', description: 'Gray canvas with cards and content on white' },
 ];
 
-const FONT_SIZE_STORAGE_KEY = 'quotecraft-font-size';
-const SIDEBAR_STYLE_STORAGE_KEY = 'quotecraft-sidebar-style';
+const FONT_SIZE_STORAGE_KEY = 'oreko-font-size';
+const SIDEBAR_STYLE_STORAGE_KEY = 'oreko-sidebar-style';
 
 interface AppearanceContextValue {
   fontSize: FontSizeKey;

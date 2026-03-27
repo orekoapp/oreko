@@ -42,7 +42,7 @@ export function MarketingHeader() {
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">Q</span>
           </div>
-          <span className="font-display font-medium text-lg text-foreground">QuoteCraft</span>
+          <span className="font-display font-medium text-lg text-foreground">Oreko</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-8">

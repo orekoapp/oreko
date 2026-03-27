@@ -1,6 +1,6 @@
 {
-  "name": "QuoteCraft",
-  "short_name": "QuoteCraft",
+  "name": "Oreko",
+  "short_name": "Oreko",
   "description": "Beautiful invoices. No expensive subscription. The open-source quote and invoice builder.",
   "start_url": "/",
   "display": "standalone",

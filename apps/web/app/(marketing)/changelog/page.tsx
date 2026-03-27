@@ -1,8 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 
 export const metadata = {
-  title: 'Changelog | QuoteCraft',
-  description: 'See what\'s new in QuoteCraft. Latest updates and improvements.',
+  title: 'Changelog | Oreko',
+  description: 'See what\'s new in Oreko. Latest updates and improvements.',
 };
 
 const releases = [
@@ -56,7 +56,7 @@ export default function ChangelogPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight mb-4">Changelog</h1>
           <p className="text-xl text-muted-foreground">
-            See what&apos;s new in QuoteCraft. We ship updates regularly.
+            See what&apos;s new in Oreko. We ship updates regularly.
           </p>
         </div>
 
@@ -90,7 +90,7 @@ export default function ChangelogPage() {
           <p className="text-muted-foreground">
             Want to stay updated?{' '}
             <a
-              href="https://github.com/quotecraft/quotecraft"
+              href="https://github.com/oreko/oreko"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"

@@ -316,7 +316,7 @@ export default function ThemeShowcasePage({ params }: { params: Promise<{ theme:
                   <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${theme.logoGradient} flex items-center justify-center shadow-sm`}>
                     <FileText className="h-5 w-5 text-white" />
                   </div>
-                  <span className="text-xl font-bold text-foreground">QuoteCraft</span>
+                  <span className="text-xl font-bold text-foreground">Oreko</span>
                 </Link>
                 <nav className="hidden md:flex items-center gap-1">
                   <span className="px-3 py-2 text-sm font-medium text-primary bg-primary/10 rounded-md">Dashboard</span>
@@ -551,7 +551,7 @@ export default function ThemeShowcasePage({ params }: { params: Promise<{ theme:
                 <div className={`w-7 h-7 rounded-md bg-gradient-to-br ${theme.logoGradient} flex items-center justify-center`}>
                   <FileText className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-semibold text-foreground">QuoteCraft</span>
+                <span className="font-semibold text-foreground">Oreko</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Theme showcase for stakeholder review

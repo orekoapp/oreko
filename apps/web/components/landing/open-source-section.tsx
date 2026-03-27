@@ -70,7 +70,7 @@ export function OpenSourceSection() {
               <span className="text-primary">Host it yourself.</span>
             </h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              QuoteCraft is open source under the MIT license. Deploy on your own
+              Oreko is open source under the MIT license. Deploy on your own
               server, keep client data private, and customize it however you need.
             </p>
           </motion.div>
@@ -82,14 +82,14 @@ export function OpenSourceSection() {
             transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
           >
             <Link
-              href="https://github.com/quotecraft/quotecraft"
+              href="https://github.com/orekoapp/oreko"
               className="group inline-flex items-center gap-2 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 px-5 py-2.5 rounded-md transition-all hover:shadow-lg"
             >
               <Github className="h-4 w-4 transition-transform group-hover:scale-110" />
               Star on GitHub
             </Link>
             <Link
-              href="https://github.com/quotecraft/quotecraft/fork"
+              href="https://github.com/orekoapp/oreko/fork"
               className="group inline-flex items-center gap-2 text-sm font-medium border border-border text-foreground hover:bg-accent px-5 py-2.5 rounded-md transition-all"
             >
               <GitFork className="h-4 w-4 transition-transform group-hover:-rotate-12" />

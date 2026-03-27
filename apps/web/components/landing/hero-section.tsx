@@ -13,7 +13,7 @@ export function HeroSection() {
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         {/* Badge with spinning border */}
         <motion.a
-          href="https://github.com/quotecraft/quotecraft"
+          href="https://github.com/orekoapp/oreko"
           target="_blank"
           rel="noopener noreferrer"
           className="group relative inline-flex items-center gap-2 rounded-full border border-border bg-background/80 backdrop-blur-sm px-3.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-8 overflow-hidden"
@@ -96,7 +96,7 @@ export function HeroSection() {
         >
           <Image
             src="/screenshots/dashboard.png"
-            alt="QuoteCraft dashboard"
+            alt="Oreko dashboard"
             width={1280}
             height={800}
             className="w-full h-auto"

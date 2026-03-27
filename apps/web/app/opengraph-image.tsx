@@ -2,7 +2,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'QuoteCraft - Beautiful Invoices. No Expensive Subscription.';
+export const alt = 'Oreko - Beautiful Invoices. No Expensive Subscription.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -78,7 +78,7 @@ export default function OgImage() {
               letterSpacing: -1,
             }}
           >
-            QuoteCraft
+            Oreko
           </div>
         </div>
 
@@ -143,7 +143,7 @@ export default function OgImage() {
             color: 'rgba(255,255,255,0.6)',
           }}
         >
-          <span>github.com/WisdmLabs/quote-software</span>
+          <span>github.com/orekoapp/oreko</span>
           <span>Open Source &amp; Self-Hosted</span>
         </div>
       </div>

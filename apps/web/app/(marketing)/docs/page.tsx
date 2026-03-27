@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Book, FileText, Code, Terminal, Rocket, HelpCircle } from 'lucide-react';
 
 export const metadata = {
-  title: 'Documentation | QuoteCraft',
-  description: 'Learn how to use QuoteCraft to create beautiful quotes and invoices.',
+  title: 'Documentation | Oreko',
+  description: 'Learn how to use Oreko to create beautiful quotes and invoices.',
 };
 
 const docSections = [
   {
     title: 'Getting Started',
-    description: 'Learn the basics of QuoteCraft and create your first quote.',
+    description: 'Learn the basics of Oreko and create your first quote.',
     icon: Rocket,
     href: '#getting-started',
   },
@@ -28,13 +28,13 @@ const docSections = [
   },
   {
     title: 'API Reference',
-    description: 'Integrate QuoteCraft with your existing tools and workflows.',
+    description: 'Integrate Oreko with your existing tools and workflows.',
     icon: Code,
     href: '/docs/api',
   },
   {
     title: 'Self-Hosting',
-    description: 'Deploy QuoteCraft on your own infrastructure with Docker.',
+    description: 'Deploy Oreko on your own infrastructure with Docker.',
     icon: Terminal,
     href: '#self-hosting',
   },
@@ -53,7 +53,7 @@ export default function DocsPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight mb-4">Documentation</h1>
           <p className="text-xl text-muted-foreground">
-            Everything you need to know to get started with QuoteCraft.
+            Everything you need to know to get started with Oreko.
           </p>
         </div>
 
@@ -82,9 +82,9 @@ export default function DocsPage() {
             <p>
               Sign up for a free account at{' '}
               <Link href="/register" className="text-primary hover:underline">
-                quotecraft.app/register
+                oreko.app/register
               </Link>
-              . You can also self-host QuoteCraft using Docker.
+              . You can also self-host Oreko using Docker.
             </p>
 
             <h3>2. Set Up Your Business Profile</h3>
@@ -110,21 +110,21 @@ export default function DocsPage() {
         <section id="self-hosting" className="mt-16">
           <h2 className="text-2xl font-bold mb-6">Self-Hosting with Docker</h2>
           <div className="prose prose-neutral dark:prose-invert max-w-none">
-            <p>QuoteCraft can be self-hosted on your own infrastructure using Docker.</p>
+            <p>Oreko can be self-hosted on your own infrastructure using Docker.</p>
             <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
               <code>{`# Clone the repository
-git clone https://github.com/quotecraft/quotecraft.git
-cd quotecraft
+git clone https://github.com/orekoapp/oreko.git
+cd oreko
 
 # Start with Docker Compose
 docker compose up -d
 
-# QuoteCraft is now running at http://localhost:3000`}</code>
+# Oreko is now running at http://localhost:3000`}</code>
             </pre>
             <p>
               For detailed installation instructions, see our{' '}
               <a
-                href="https://github.com/quotecraft/quotecraft"
+                href="https://github.com/orekoapp/oreko"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"

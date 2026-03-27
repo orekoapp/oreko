@@ -75,7 +75,7 @@ export function OnboardingWizard({ initialProgress, stripeEnabled }: OnboardingW
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center pb-2">
-          <CardTitle className="text-2xl">Welcome to QuoteCraft</CardTitle>
+          <CardTitle className="text-2xl">Welcome to Oreko</CardTitle>
           <CardDescription>
             Let&apos;s set up your account in just a few steps
           </CardDescription>

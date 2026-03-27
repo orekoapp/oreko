@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Privacy Policy | QuoteCraft',
-  description: 'Learn how QuoteCraft handles your data and protects your privacy.',
+  title: 'Privacy Policy | Oreko',
+  description: 'Learn how Oreko handles your data and protects your privacy.',
 };
 
 export default function PrivacyPage() {
@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         <div className="prose prose-neutral dark:prose-invert max-w-none">
           <h2>Introduction</h2>
           <p>
-            QuoteCraft (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to
+            Oreko (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to
             protecting your privacy. This Privacy Policy explains how we collect, use, and share
             information about you when you use our services.
           </p>
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
           <h2>How We Use Your Information</h2>
           <p>We use the information we collect to:</p>
           <ul>
-            <li>Provide and maintain the QuoteCraft service</li>
+            <li>Provide and maintain the Oreko service</li>
             <li>Process transactions and send related information</li>
             <li>Send you technical notices and support messages</li>
             <li>Respond to your comments, questions, and requests</li>
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
 
           <h2>Self-Hosted Instances</h2>
           <p>
-            If you self-host QuoteCraft, we do not have access to any of your data. All
+            If you self-host Oreko, we do not have access to any of your data. All
             information is stored on your own servers and is entirely under your control.
           </p>
 
@@ -81,8 +81,8 @@ export default function PrivacyPage() {
           <h2>Contact Us</h2>
           <p>
             If you have questions about this Privacy Policy, please contact us at{' '}
-            <a href="mailto:privacy@quotecraft.app" className="text-primary hover:underline">
-              privacy@quotecraft.app
+            <a href="mailto:privacy@oreko.app" className="text-primary hover:underline">
+              privacy@oreko.app
             </a>
             .
           </p>

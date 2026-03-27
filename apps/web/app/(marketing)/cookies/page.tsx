@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Cookie Policy | QuoteCraft',
-  description: 'Learn how QuoteCraft uses cookies and similar technologies.',
+  title: 'Cookie Policy | Oreko',
+  description: 'Learn how Oreko uses cookies and similar technologies.',
 };
 
 export default function CookiesPage() {
@@ -18,7 +18,7 @@ export default function CookiesPage() {
           </p>
 
           <h2>How We Use Cookies</h2>
-          <p>QuoteCraft uses cookies for the following purposes:</p>
+          <p>Oreko uses cookies for the following purposes:</p>
 
           <h3>Essential Cookies</h3>
           <p>
@@ -79,7 +79,7 @@ export default function CookiesPage() {
 
           <h2>Self-Hosted Instances</h2>
           <p>
-            If you self-host QuoteCraft, you have complete control over cookie usage. No
+            If you self-host Oreko, you have complete control over cookie usage. No
             third-party analytics cookies are included by default in self-hosted installations.
           </p>
 
@@ -92,8 +92,8 @@ export default function CookiesPage() {
           <h2>Contact Us</h2>
           <p>
             If you have questions about our use of cookies, please contact us at{' '}
-            <a href="mailto:privacy@quotecraft.app" className="text-primary hover:underline">
-              privacy@quotecraft.app
+            <a href="mailto:privacy@oreko.app" className="text-primary hover:underline">
+              privacy@oreko.app
             </a>
             .
           </p>

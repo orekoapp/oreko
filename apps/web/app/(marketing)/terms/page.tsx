@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Terms of Service | QuoteCraft',
-  description: 'Terms and conditions for using QuoteCraft.',
+  title: 'Terms of Service | Oreko',
+  description: 'Terms and conditions for using Oreko.',
 };
 
 export default function TermsPage() {
@@ -13,13 +13,13 @@ export default function TermsPage() {
         <div className="prose prose-neutral dark:prose-invert max-w-none">
           <h2>1. Acceptance of Terms</h2>
           <p>
-            By accessing or using QuoteCraft, you agree to be bound by these Terms of Service. If
+            By accessing or using Oreko, you agree to be bound by these Terms of Service. If
             you do not agree to these terms, please do not use our services.
           </p>
 
           <h2>2. Description of Service</h2>
           <p>
-            QuoteCraft is an open-source quote and invoice management platform. We provide both a
+            Oreko is an open-source quote and invoice management platform. We provide both a
             cloud-hosted version and a self-hosted option.
           </p>
 
@@ -43,7 +43,7 @@ export default function TermsPage() {
 
           <h2>5. Intellectual Property</h2>
           <p>
-            QuoteCraft is open-source software licensed under the MIT License. You are free to
+            Oreko is open-source software licensed under the MIT License. You are free to
             use, modify, and distribute the software in accordance with the license terms.
           </p>
 
@@ -56,7 +56,7 @@ export default function TermsPage() {
           <h2>7. Data Ownership</h2>
           <p>
             You retain all rights to your data. We do not claim ownership of any content you
-            create or upload to QuoteCraft.
+            create or upload to Oreko.
           </p>
 
           <h2>8. Service Availability</h2>
@@ -67,7 +67,7 @@ export default function TermsPage() {
 
           <h2>9. Limitation of Liability</h2>
           <p>
-            To the maximum extent permitted by law, QuoteCraft shall not be liable for any
+            To the maximum extent permitted by law, Oreko shall not be liable for any
             indirect, incidental, special, consequential, or punitive damages resulting from your
             use of the service.
           </p>
@@ -87,8 +87,8 @@ export default function TermsPage() {
           <h2>12. Contact</h2>
           <p>
             If you have questions about these Terms of Service, please contact us at{' '}
-            <a href="mailto:legal@quotecraft.app" className="text-primary hover:underline">
-              legal@quotecraft.app
+            <a href="mailto:legal@oreko.app" className="text-primary hover:underline">
+              legal@oreko.app
             </a>
             .
           </p>

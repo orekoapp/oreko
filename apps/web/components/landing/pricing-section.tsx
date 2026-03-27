@@ -12,7 +12,7 @@ const plans = [
     period: 'forever',
     description: 'Host on your own server. Full control over your data.',
     cta: 'Deploy now',
-    ctaHref: 'https://github.com/quotecraft/quotecraft',
+    ctaHref: 'https://github.com/orekoapp/oreko',
     highlighted: false,
     features: [
       'Unlimited quotes & invoices',

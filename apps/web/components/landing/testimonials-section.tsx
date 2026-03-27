@@ -8,13 +8,13 @@ import { SpotlightCard } from '@/components/ui/spotlight-card';
 const testimonials = [
   {
     quote:
-      'QuoteCraft replaced three different tools for us. We create quotes, convert to invoices, and track payments all in one place. Our cash flow improved within the first month.',
+      'Oreko replaced three different tools for us. We create quotes, convert to invoices, and track payments all in one place. Our cash flow improved within the first month.',
     name: 'Sarah Chen',
     role: 'Founder, Brightpath Design',
   },
   {
     quote:
-      'The self-hosted option was the deciding factor. We needed client data on our own servers for compliance, and QuoteCraft made that straightforward.',
+      'The self-hosted option was the deciding factor. We needed client data on our own servers for compliance, and Oreko made that straightforward.',
     name: 'Marcus Rivera',
     role: 'Director of Operations, Nexus Consulting',
   },
@@ -32,7 +32,7 @@ const testimonials = [
   },
   {
     quote:
-      'We tried everything from FreshBooks to HoneyBook. QuoteCraft is the only one that lets us own our data while still having a beautiful interface.',
+      'We tried everything from FreshBooks to HoneyBook. Oreko is the only one that lets us own our data while still having a beautiful interface.',
     name: 'Lisa Nguyen',
     role: 'Co-founder, Springboard Agency',
   },
@@ -90,7 +90,7 @@ export function TestimonialsSection() {
             Trusted by businesses everywhere
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed">
-            Freelancers, agencies, and small teams use QuoteCraft to manage their
+            Freelancers, agencies, and small teams use Oreko to manage their
             quoting and invoicing.
           </p>
         </motion.div>

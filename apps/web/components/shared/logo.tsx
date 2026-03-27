@@ -46,7 +46,7 @@ export function Logo({ href, showText = true, className, size = 'md' }: LogoProp
             sizes.text
           )}
         >
-          QuoteCraft
+          Oreko
         </span>
       )}
     </div>

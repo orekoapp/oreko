@@ -192,8 +192,8 @@ const INVOICE_TEMPLATES: Record<string, InvoiceTemplate> = {
     amountSize: 'text-2xl',
     buttonColor: 'bg-blue-700 hover:bg-blue-800 text-white',
   },
-  quotecraft: {
-    label: 'QuoteCraft',
+  oreko: {
+    label: 'Oreko',
     style: 'clean',
     accent: '#3786b3',
     accentBg: 'bg-primary-50/60',
@@ -348,7 +348,7 @@ export function EditInvoiceForm({
   // UI State
   const [previewTab, setPreviewTab] = useState<PreviewTab>('payment');
   const [showPreviewDetails, setShowPreviewDetails] = useState(true);
-  const [templateName, setTemplateName] = useState<TemplateName>('quotecraft');
+  const [templateName, setTemplateName] = useState<TemplateName>('oreko');
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
   // Refs
@@ -1668,7 +1668,7 @@ export function EditInvoiceForm({
                   <div className="flex items-center gap-2 justify-center">
                     <div className="h-px flex-1 bg-border/40" />
                     <p className="text-[10px] text-muted-foreground/50 whitespace-nowrap">
-                      Powered by QuoteCraft
+                      Powered by Oreko
                     </p>
                     <div className="h-px flex-1 bg-border/40" />
                   </div>

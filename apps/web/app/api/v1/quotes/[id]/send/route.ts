@@ -83,7 +83,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         clientName: quote.client!.name,
         quoteName: quote.title || quote.quoteNumber,
         quoteUrl,
-        businessName: workspace?.name || 'QuoteCraft',
+        businessName: workspace?.name || 'Oreko',
         validUntil: quote.expirationDate || undefined,
         message: message || undefined,
         rateLimitKey: workspaceId,

@@ -192,8 +192,8 @@ const QUOTE_TEMPLATES: Record<string, QuoteTemplate> = {
     amountSize: 'text-2xl',
     buttonColor: 'bg-blue-700 hover:bg-blue-800 text-white',
   },
-  quotecraft: {
-    label: 'QuoteCraft',
+  oreko: {
+    label: 'Oreko',
     style: 'clean',
     accent: '#3786b3',
     accentBg: 'bg-primary-50/60',
@@ -274,7 +274,7 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
   // UI State
   const [previewTab, setPreviewTab] = useState<PreviewTab>('quote');
   const [showPreviewDetails, setShowPreviewDetails] = useState(true);
-  const [templateName, setTemplateName] = useState<TemplateName>('quotecraft');
+  const [templateName, setTemplateName] = useState<TemplateName>('oreko');
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [savedItems, setSavedItems] = useState<SavedLineItemData[]>([]);
@@ -1489,7 +1489,7 @@ export default function NewQuoteForm({ defaultCurrency = 'USD' }: NewQuoteFormPr
                   <div className="flex items-center gap-2 justify-center">
                     <div className="h-px flex-1 bg-border/40" />
                     <p className="text-[10px] text-muted-foreground/50 whitespace-nowrap">
-                      Powered by QuoteCraft
+                      Powered by Oreko
                     </p>
                     <div className="h-px flex-1 bg-border/40" />
                   </div>

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Dashboard',
-  description: 'Your QuoteCraft dashboard',
+  description: 'Your Oreko dashboard',
 };
 
 function getGreeting() {

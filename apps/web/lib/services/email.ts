@@ -66,7 +66,7 @@ function getEmailClient(): Resend | null {
 // Get default config
 function getDefaultConfig(): EmailConfig {
   return {
-    from: process.env.EMAIL_FROM || 'QuoteCraft <noreply@quotecraft.app>',
+    from: process.env.EMAIL_FROM || 'Oreko <noreply@quotecraft.app>',
     replyTo: process.env.EMAIL_REPLY_TO,
   };
 }
@@ -209,7 +209,7 @@ export async function sendQuoteSentEmail(params: {
       <p>Or copy this link: ${safeQuoteUrl}</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${safeBusinessName}
+        Sent via Oreko on behalf of ${safeBusinessName}
       </p>
     </div>
   `;
@@ -263,7 +263,7 @@ export async function sendInvoiceSentEmail(params: {
       <p>Or copy this link: ${safeInvoiceUrl}</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${safeBusinessName}
+        Sent via Oreko on behalf of ${safeBusinessName}
       </p>
     </div>
   `;
@@ -308,7 +308,7 @@ export async function sendPaymentReceivedEmail(params: {
       ` : ''}
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${safeBusinessName}
+        Sent via Oreko on behalf of ${safeBusinessName}
       </p>
     </div>
   `;
@@ -353,7 +353,7 @@ export async function sendQuoteAcceptedEmail(params: {
       </p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft
+        Sent via Oreko
       </p>
     </div>
   `;
@@ -416,7 +416,7 @@ export async function sendInvoiceReminderEmail(params: {
       </p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${safeBusinessName}
+        Sent via Oreko on behalf of ${safeBusinessName}
       </p>
     </div>
   `;
@@ -453,7 +453,7 @@ export async function sendInvitationEmail(params: {
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #3B82F6;">You've been invited!</h2>
       <p>${safeInviterName} has invited you to join <strong>${safeWorkspaceName}</strong> as a <strong>${safeRole}</strong>.</p>
-      <p>QuoteCraft is a visual quote and invoice management tool that helps teams create professional quotes and invoices.</p>
+      <p>Oreko is a visual quote and invoice management tool that helps teams create professional quotes and invoices.</p>
       <p style="margin: 24px 0;">
         <a href="${safeInviteUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           Accept Invitation
@@ -462,14 +462,14 @@ export async function sendInvitationEmail(params: {
       <p style="color: #666; font-size: 14px;">This invitation expires in 7 days. If you don't have an account yet, you'll be able to create one.</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft
+        Sent via Oreko
       </p>
     </div>
   `;
 
   return sendEmail({
     to,
-    subject: `You've been invited to ${workspaceName} - QuoteCraft`,
+    subject: `You've been invited to ${workspaceName} - Oreko`,
     html,
     tags: [{ name: 'type', value: 'workspace_invitation' }],
   }, rateLimitKey);
@@ -492,7 +492,7 @@ export async function sendVerificationEmail(params: {
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #3B82F6;">Verify your email</h2>
       <p>Hi ${safeName},</p>
-      <p>Thanks for creating an account with QuoteCraft! Please click the button below to verify your email address:</p>
+      <p>Thanks for creating an account with Oreko! Please click the button below to verify your email address:</p>
       <p style="margin: 24px 0;">
         <a href="${safeVerifyUrl}" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
           Verify Email
@@ -501,14 +501,14 @@ export async function sendVerificationEmail(params: {
       <p style="color: #666; font-size: 14px;">This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.</p>
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft
+        Sent via Oreko
       </p>
     </div>
   `;
 
   return sendEmail({
     to,
-    subject: 'Verify your email - QuoteCraft',
+    subject: 'Verify your email - Oreko',
     html,
     tags: [{ name: 'type', value: 'email_verification' }],
   });

@@ -470,7 +470,7 @@ export function QuotesDataTable({ data: initialData }: QuotesDataTableProps) {
                     <div className="flex items-center gap-2 justify-center">
                       <div className="h-px flex-1 bg-border/40" />
                       <p className="text-[10px] text-muted-foreground/50 whitespace-nowrap">
-                        Powered by QuoteCraft
+                        Powered by Oreko
                       </p>
                       <div className="h-px flex-1 bg-border/40" />
                     </div>

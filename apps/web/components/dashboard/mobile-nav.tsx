@@ -43,7 +43,7 @@ export function MobileNav() {
         <SheetHeader className="border-b px-4 py-4">
           <SheetTitle className="flex items-center gap-2">
             <FileText className="h-6 w-6" />
-            <span>QuoteCraft</span>
+            <span>Oreko</span>
           </SheetTitle>
         </SheetHeader>
         <nav className="flex-1 space-y-1 p-2">

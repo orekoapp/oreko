@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Mail, MessageSquare, Github, Twitter } from 'lucide-react';
 
 export const metadata = {
-  title: 'Contact | QuoteCraft',
-  description: 'Get in touch with the QuoteCraft team.',
+  title: 'Contact | Oreko',
+  description: 'Get in touch with the Oreko team.',
 };
 
 const contactMethods = [
@@ -12,28 +12,28 @@ const contactMethods = [
     icon: MessageSquare,
     title: 'Discord Community',
     description: 'Join our Discord server for real-time help and discussions.',
-    href: 'https://discord.gg/quotecraft',
+    href: 'https://discord.gg/oreko',
     label: 'Join Discord',
   },
   {
     icon: Github,
     title: 'GitHub Issues',
     description: 'Report bugs or request features on our GitHub repository.',
-    href: 'https://github.com/quotecraft/quotecraft/issues',
+    href: 'https://github.com/oreko/oreko/issues',
     label: 'Open Issue',
   },
   {
     icon: Mail,
     title: 'Email Support',
     description: 'For general inquiries and support questions.',
-    href: 'mailto:support@quotecraft.app',
+    href: 'mailto:support@oreko.app',
     label: 'Send Email',
   },
   {
     icon: Twitter,
     title: 'Twitter',
     description: 'Follow us for updates and announcements.',
-    href: 'https://twitter.com/quotecraft',
+    href: 'https://twitter.com/oreko',
     label: 'Follow Us',
   },
 ];

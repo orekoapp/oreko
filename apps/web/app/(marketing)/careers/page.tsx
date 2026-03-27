@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Heart, Code, Coffee } from 'lucide-react';
 
 export const metadata = {
-  title: 'Careers | QuoteCraft',
-  description: 'Join the QuoteCraft team and help build the future of open-source invoicing.',
+  title: 'Careers | Oreko',
+  description: 'Join the Oreko team and help build the future of open-source invoicing.',
 };
 
 export default function CareersPage() {
@@ -26,7 +26,7 @@ export default function CareersPage() {
           </div>
           <h2 className="text-2xl font-bold mb-4">We&apos;re Open Source!</h2>
           <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-            QuoteCraft is an open-source project maintained by a community of contributors. While
+            Oreko is an open-source project maintained by a community of contributors. While
             we don&apos;t have traditional job openings, there are many ways to get involved.
           </p>
         </div>
@@ -45,7 +45,7 @@ export default function CareersPage() {
             </p>
             <Button asChild variant="outline" size="sm">
               <a
-                href="https://github.com/quotecraft/quotecraft/blob/main/CONTRIBUTING.md"
+                href="https://github.com/oreko/oreko/blob/main/CONTRIBUTING.md"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -63,11 +63,11 @@ export default function CareersPage() {
             </div>
             <p className="text-muted-foreground mb-4">
               Connect with other contributors and users on Discord. Share ideas, ask questions,
-              and help shape the future of QuoteCraft.
+              and help shape the future of Oreko.
             </p>
             <Button asChild variant="outline" size="sm">
               <a
-                href="https://discord.gg/quotecraft"
+                href="https://discord.gg/oreko"
                 target="_blank"
                 rel="noopener noreferrer"
               >

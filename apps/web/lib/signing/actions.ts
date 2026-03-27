@@ -97,7 +97,7 @@ export async function sendSigningOtp(input: {
     const emailResult = await sendEmail({
       to: clientEmail,
       // Low #33: Don't expose OTP code in subject line (visible in notifications/previews)
-      subject: 'Your QuoteCraft verification code',
+      subject: 'Your Oreko verification code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Verify your identity</h2>
@@ -111,7 +111,7 @@ export async function sendSigningOtp(input: {
           </div>
           <p style="color: #666; font-size: 14px;">This code expires in 10 minutes. If you did not request this, you can safely ignore this email.</p>
           <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
-          <p style="color: #666; font-size: 12px;">Sent via QuoteCraft</p>
+          <p style="color: #666; font-size: 12px;">Sent via Oreko</p>
         </div>
       `,
       tags: [{ name: 'type', value: 'signing_otp' }],

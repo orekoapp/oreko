@@ -99,7 +99,7 @@ export function useAutoSave(quoteId: string | null, debounceMs = 2000) {
         // Also backup to sessionStorage as a fallback
         try {
           sessionStorage.setItem(
-            `quotecraft:autosave:${quoteId}`,
+            `oreko:autosave:${quoteId}`,
             JSON.stringify({
               title: document.title,
               blocks: document.blocks,

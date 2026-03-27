@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Heart, Users, Code, Globe } from 'lucide-react';
 
 export const metadata = {
-  title: 'About | QuoteCraft',
-  description: 'Learn about QuoteCraft and our mission to make invoicing beautiful and accessible.',
+  title: 'About | Oreko',
+  description: 'Learn about Oreko and our mission to make invoicing beautiful and accessible.',
 };
 
 const values = [
@@ -12,13 +12,13 @@ const values = [
     icon: Heart,
     title: 'Open Source First',
     description:
-      'We believe in transparency and community. QuoteCraft is MIT licensed and will always be free to self-host.',
+      'We believe in transparency and community. Oreko is MIT licensed and will always be free to self-host.',
   },
   {
     icon: Users,
     title: 'Built for Freelancers',
     description:
-      'We understand the challenges of running a small business. QuoteCraft is designed by freelancers, for freelancers.',
+      'We understand the challenges of running a small business. Oreko is designed by freelancers, for freelancers.',
   },
   {
     icon: Code,
@@ -39,7 +39,7 @@ export default function AboutPage() {
     <div className="container py-16 md:py-24">
       <div className="mx-auto max-w-4xl">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">About QuoteCraft</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-4">About Oreko</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             We&apos;re building the open-source alternative to expensive invoicing tools. Beautiful
             quotes and invoices should be accessible to everyone.
@@ -49,7 +49,7 @@ export default function AboutPage() {
         <div className="prose prose-neutral dark:prose-invert max-w-none mb-16">
           <h2>Our Story</h2>
           <p>
-            QuoteCraft was born out of frustration. As freelancers and agency owners ourselves, we
+            Oreko was born out of frustration. As freelancers and agency owners ourselves, we
             were tired of choosing between ugly spreadsheet-based invoices and expensive SaaS tools
             that charged $20-50/month just to send a quote.
           </p>
@@ -84,7 +84,7 @@ export default function AboutPage() {
         <div className="rounded-lg border bg-muted/50 p-8 text-center">
           <h2 className="text-2xl font-bold mb-4">Join the Community</h2>
           <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-            QuoteCraft is built by a community of developers and freelancers. Join us and help shape
+            Oreko is built by a community of developers and freelancers. Join us and help shape
             the future of open-source invoicing.
           </p>
           <div className="flex justify-center gap-4">

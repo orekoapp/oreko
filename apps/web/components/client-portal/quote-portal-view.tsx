@@ -311,7 +311,7 @@ export function QuotePortalView({ quote, accessToken }: QuotePortalViewProps) {
         <div className="flex items-center justify-center gap-2">
           <div className="h-px flex-1 bg-border/40" />
           <p className="whitespace-nowrap text-[10px] text-muted-foreground/50">
-            Powered by QuoteCraft
+            Powered by Oreko
           </p>
           <div className="h-px flex-1 bg-border/40" />
         </div>

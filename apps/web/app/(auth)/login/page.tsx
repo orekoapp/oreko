@@ -8,7 +8,7 @@ import { LoginForm } from './login-form';
 
 export const metadata: Metadata = {
   title: 'Login',
-  description: 'Login to your QuoteCraft account',
+  description: 'Login to your Oreko account',
 };
 
 function LoginFormFallback() {

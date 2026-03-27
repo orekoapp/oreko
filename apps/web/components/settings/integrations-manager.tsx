@@ -61,7 +61,7 @@ export function IntegrationsManager({ initialData }: IntegrationsManagerProps) {
         <CardHeader>
           <CardTitle>Automation Tools</CardTitle>
           <CardDescription>
-            Connect QuoteCraft to thousands of apps using these automation platforms.
+            Connect Oreko to thousands of apps using these automation platforms.
             All of them work through webhooks — configure a webhook first, then use
             the webhook URL as a trigger in your automation tool.
           </CardDescription>

@@ -628,13 +628,13 @@ export function SendEmailDialog({
                 {/* Legal Footer */}
                 <div className="px-6 py-4 bg-muted/30 border-t">
                   <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    This email was sent by {businessName} via QuoteCraft. If you have questions
+                    This email was sent by {businessName} via Oreko. If you have questions
                     about this {type}, please contact {businessName} directly.
                   </p>
                   <div className="flex items-center gap-2 justify-center mt-3">
                     <div className="h-px flex-1 bg-border/40" />
                     <p className="text-[10px] text-muted-foreground/50 whitespace-nowrap">
-                      Powered by QuoteCraft
+                      Powered by Oreko
                     </p>
                     <div className="h-px flex-1 bg-border/40" />
                   </div>

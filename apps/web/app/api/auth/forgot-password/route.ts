@@ -120,14 +120,14 @@ export async function POST(request: NextRequest) {
         </p>
         <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
         <p style="color: #666; font-size: 12px;">
-          Sent by QuoteCraft
+          Sent by Oreko
         </p>
       </div>
     `;
 
     await sendEmail({
       to: user.email,
-      subject: 'Reset your password - QuoteCraft',
+      subject: 'Reset your password - Oreko',
       html,
       tags: [{ name: 'type', value: 'password_reset' }],
     });

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Check } from 'lucide-react';
 
 export const metadata = {
-  title: 'Pricing | QuoteCraft',
+  title: 'Pricing | Oreko',
   description: 'Simple, transparent pricing. Free forever with self-hosting.',
 };
 
@@ -13,7 +13,7 @@ const plans = [
     period: 'forever',
     description: 'Deploy on your own infrastructure. Full control.',
     cta: 'Deploy now',
-    ctaHref: 'https://github.com/quotecraft/quotecraft',
+    ctaHref: 'https://github.com/orekoapp/oreko',
     highlighted: false,
     features: [
       'Unlimited quotes & invoices',

@@ -322,7 +322,7 @@ export async function sendTemplatedEmail(params: {
       ${processedBody}
       <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
       <p style="color: #666; font-size: 14px;">
-        Sent via QuoteCraft on behalf of ${escapeHtml(String(variables.businessName || ''))}
+        Sent via Oreko on behalf of ${escapeHtml(String(variables.businessName || ''))}
       </p>
     </div>
   `;
