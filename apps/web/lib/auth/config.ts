@@ -32,9 +32,8 @@ export const authConfig: NextAuthConfig = {
       ];
       const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
-      // Allow root path and all marketing/legal pages
-      const marketingRoutes = ['/', '/pricing', '/features', '/about', '/blog', '/careers', '/changelog', '/contact', '/cookies', '/docs', '/privacy', '/terms'];
-      if (marketingRoutes.includes(pathname) || marketingRoutes.some(r => r !== '/' && pathname.startsWith(r + '/'))) {
+      // Allow root path
+      if (pathname === '/') {
         return true;
       }
 
