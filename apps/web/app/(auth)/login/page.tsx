@@ -9,6 +9,7 @@ import { LoginForm } from './login-form';
 export const metadata: Metadata = {
   title: 'Login',
   description: 'Login to your Oreko account',
+  robots: { index: false, follow: false },
 };
 
 function LoginFormFallback() {

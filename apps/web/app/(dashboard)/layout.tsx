@@ -82,11 +82,9 @@ function HeaderFallback() {
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // Middleware already protects this route — auth() is only needed for session data.
   const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect('/login');
-  }
+  if (!session?.user?.id) redirect('/login');
 
   // Only block on onboarding check — this is needed for the redirect
   const requiresOnboarding = await needsOnboarding();
