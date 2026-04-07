@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Header with logo linking to homepage */}
       <header className="w-full py-6">
         <div className="container mx-auto px-4">
-          <Logo href="/" />
+          <Logo />
         </div>
       </header>
 
