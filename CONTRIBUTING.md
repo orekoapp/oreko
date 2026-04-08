@@ -142,9 +142,9 @@ pnpm install
 
 ```bash
 # Copy the example environment file
-cp .env.example .env
+cp apps/web/.env.example apps/web/.env.local
 
-# Edit .env with your local configuration
+# Edit .env.local with your local configuration
 # Required variables:
 # - DATABASE_URL
 # - REDIS_URL
