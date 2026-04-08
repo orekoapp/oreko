@@ -5,6 +5,11 @@ Last updated: April 1, 2026
 By submitting a contribution to Oreko (oreko.app), you agree to the following
 terms. Please read carefully before submitting your first Pull Request.
 
+**Legal entity:** Infinite Wisdm FZ LLC, S24W1215, Shed No.24, Al Hulaila FZ,
+Al Hulaila Industrial Free Zone, RAK, United Arab Emirates (operating as
+"WisdmLabs"). All references to "WisdmLabs" in this agreement refer to
+Infinite Wisdm FZ LLC.
+
 ## 1. Who This Covers
 
 This agreement applies to any individual or organization ("Contributor") that
