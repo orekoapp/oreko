@@ -17,7 +17,7 @@
 
 <p align="center">
   <a href="https://oreko.app">
-    <img src="docs/images/dashboard.png" alt="Oreko Dashboard" />
+    <img src="docs/images/quote-builder.png" alt="Oreko Visual Quote Builder" />
   </a>
 </p>
 
@@ -49,7 +49,7 @@
 Build branded quotes in your visual editor. Add line items, apply discounts, set payment terms, and send to clients for review.
 
 <p align="center">
-  <img src="docs/images/quote-builder.png" alt="Visual Quote Builder" />
+  <img src="docs/images/dashboard.png" alt="Oreko Dashboard" />
 </p>
 
 ### Invoicing with one-click conversion
