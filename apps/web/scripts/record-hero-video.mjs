@@ -38,8 +38,8 @@ async function main() {
 
   // Set elevated theme + 103% font before navigating
   await page.addInitScript(() => {
-    localStorage.setItem('quotecraft-sidebar-style', 'elevated');
-    localStorage.setItem('quotecraft-font-size', 'md');
+    localStorage.setItem('oreko-sidebar-style', 'elevated');
+    localStorage.setItem('oreko-font-size', 'md');
   });
 
   // ── Scene 1: Invoices list ──────────────────────────────

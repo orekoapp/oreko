@@ -24,7 +24,7 @@
 ## 1. Entity Relationship Diagram
 
 ```
-                                    QUOTECRAFT DATABASE SCHEMA
+                                    OREKO DATABASE SCHEMA
     ============================================================================================================
 
                                          AUTHENTICATION & USERS

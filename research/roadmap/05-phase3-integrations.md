@@ -886,7 +886,7 @@ function onGmailMessageOpen(e: GoogleAppsScript.Gmail.Schema.Message) {
               text: "Create Client",
               onClick: {
                 openLink: {
-                  url: `${QUOTECRAFT_URL}/clients/new?email=${senderEmail}`
+                  url: `${OREKO_URL}/clients/new?email=${senderEmail}`
                 }
               }
             }]
@@ -927,7 +927,7 @@ function onGmailMessageOpen(e: GoogleAppsScript.Gmail.Schema.Message) {
                 text: "New Quote",
                 onClick: {
                   openLink: {
-                    url: `${QUOTECRAFT_URL}/quotes/new?client=${client.id}`
+                    url: `${OREKO_URL}/quotes/new?client=${client.id}`
                   }
                 }
               },
@@ -935,7 +935,7 @@ function onGmailMessageOpen(e: GoogleAppsScript.Gmail.Schema.Message) {
                 text: "View Client",
                 onClick: {
                   openLink: {
-                    url: `${QUOTECRAFT_URL}/clients/${client.id}`
+                    url: `${OREKO_URL}/clients/${client.id}`
                   }
                 }
               }
@@ -988,7 +988,7 @@ function onCalendarEventOpen(e: GoogleAppsScript.Calendar.Schema.Event) {
               text: "Create Quote",
               onClick: {
                 openLink: {
-                  url: `${QUOTECRAFT_URL}/quotes/new?client=${client.id}&title=${encodeURIComponent(event.summary)}`
+                  url: `${OREKO_URL}/quotes/new?client=${client.id}&title=${encodeURIComponent(event.summary)}`
                 }
               }
             }

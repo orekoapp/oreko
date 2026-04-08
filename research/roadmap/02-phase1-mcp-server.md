@@ -972,11 +972,11 @@ export class ApiClient {
 
 import { OrekoMCPServer } from "./server";
 
-const apiKey = process.env.QUOTECRAFT_API_KEY;
-const baseUrl = process.env.QUOTECRAFT_API_URL || "https://app.oreko.io";
+const apiKey = process.env.OREKO_API_KEY;
+const baseUrl = process.env.OREKO_API_URL || "https://app.oreko.io";
 
 if (!apiKey) {
-  console.error("QUOTECRAFT_API_KEY environment variable required");
+  console.error("OREKO_API_KEY environment variable required");
   process.exit(1);
 }
 
@@ -998,8 +998,8 @@ server.run().catch(console.error);
       "command": "npx",
       "args": ["-y", "@oreko/mcp-server"],
       "env": {
-        "QUOTECRAFT_API_KEY": "qc_live_xxxxxxxxxxxx",
-        "QUOTECRAFT_API_URL": "https://app.oreko.io"
+        "OREKO_API_KEY": "qc_live_xxxxxxxxxxxx",
+        "OREKO_API_URL": "https://app.oreko.io"
       }
     }
   }
@@ -1015,8 +1015,8 @@ server.run().catch(console.error);
       "command": "npx",
       "args": ["-y", "@oreko/mcp-server"],
       "env": {
-        "QUOTECRAFT_API_KEY": "qc_live_xxxxxxxxxxxx",
-        "QUOTECRAFT_API_URL": "http://localhost:3000"
+        "OREKO_API_KEY": "qc_live_xxxxxxxxxxxx",
+        "OREKO_API_URL": "http://localhost:3000"
       }
     }
   }

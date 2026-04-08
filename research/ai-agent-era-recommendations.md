@@ -98,7 +98,7 @@ POST /api/v1/invoices/chase
 
 ```typescript
 // packages/mcp-server/src/tools.ts
-export const quoteCraftTools = {
+export const orekoTools = {
   create_quote: {
     description: "Create a professional quote for a client",
     parameters: {

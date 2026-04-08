@@ -1492,7 +1492,7 @@ services:
   # ============================================
   worker:
     image: ghcr.io/yourorg/oreko:latest
-    container_name: quote-worker
+    container_name: oreko-worker
     restart: unless-stopped
     command: ["node", "apps/web/worker.js"]
     depends_on:
@@ -3492,7 +3492,7 @@ chmod +x /opt/oreko/scripts/backup.sh
 docker compose stop app worker
 
 # Restore database
-gunzip -c backups/db_20260130_020000.sql.gz | docker compose exec -T postgres psql -U quote quote
+gunzip -c backups/db_20260130_020000.sql.gz | docker compose exec -T postgres psql -U oreko oreko
 
 # Restore files
 tar -xzf backups/files_20260130_020000.tar.gz -C /var/lib/docker/volumes/oreko_app_data/_data
