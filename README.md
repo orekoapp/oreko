@@ -17,7 +17,7 @@
 
 <p align="center">
   <a href="https://oreko.app">
-    <img src="docs/images/quote-builder.png" alt="Oreko Visual Quote Builder" />
+    <img src="docs/images/hero.png" alt="Oreko — Visual Invoice Builder" />
   </a>
 </p>
 
