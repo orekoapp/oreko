@@ -1,0 +1,79 @@
+name: Bug Report
+description: Report a bug in Oreko
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the details below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain the problem.
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment Type
+      options:
+        - Self-hosted (Docker)
+        - Self-hosted (Manual)
+        - Oreko Cloud
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Oreko Version
+      placeholder: e.g., v1.0.0 or commit hash
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      placeholder: e.g., Chrome 120, Firefox 121
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context, error logs, or console output.

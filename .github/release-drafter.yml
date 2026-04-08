@@ -1,0 +1,44 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+categories:
+  - title: "New Features"
+    labels:
+      - "enhancement"
+      - "feature"
+  - title: "Bug Fixes"
+    labels:
+      - "bug"
+      - "fix"
+  - title: "Documentation"
+    labels:
+      - "docs"
+      - "documentation"
+  - title: "Dependencies"
+    labels:
+      - "dependencies"
+  - title: "Other Changes"
+    labels:
+      - "*"
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+change-title-escapes: '\<*_&'
+version-resolver:
+  major:
+    labels:
+      - "major"
+      - "breaking"
+  minor:
+    labels:
+      - "enhancement"
+      - "feature"
+  patch:
+    labels:
+      - "bug"
+      - "fix"
+      - "dependencies"
+  default: patch
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/orekoapp/oreko/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
