@@ -35,7 +35,7 @@ This document provides detailed specifications for recreating the premium Shadcn
 │                              │                                           │
 │ ┌─────────────────────────┐ │                                           │
 │ │ 🟣 John Doe        [⬍]  │ │                                           │
-│ │   john@quotecraft.com   │ │                                           │
+│ │   john@oreko.com   │ │                                           │
 │ └─────────────────────────┘ │                                           │
 └─────────────────────────────┴───────────────────────────────────────────┘
 ```

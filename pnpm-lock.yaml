@@ -54,16 +54,16 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.0
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
-      '@quotecraft/database':
+      '@oreko/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@quotecraft/types':
+      '@oreko/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@quotecraft/ui':
+      '@oreko/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@quotecraft/utils':
+      '@oreko/utils':
         specifier: workspace:*
         version: link:../../packages/utils
       '@radix-ui/react-accordion':

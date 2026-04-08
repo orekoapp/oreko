@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { DEMO_CONFIG } from '@/lib/demo/constants';

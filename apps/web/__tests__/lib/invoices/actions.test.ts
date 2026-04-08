@@ -29,7 +29,7 @@ vi.mock('@/lib/routes', () => ({ ROUTES: { quotes: '/quotes', invoices: '/invoic
 vi.mock('@/lib/events/emitter', () => ({ domainEvents: { emit: vi.fn() } }));
 vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
 vi.mock('@/lib/invoices/internal', () => ({ generateInvoiceNumber: vi.fn().mockResolvedValue('INV-0001') }));
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: mockPrisma,
   Prisma: { InputJsonValue: {}, TransactionClient: {} },
 }));

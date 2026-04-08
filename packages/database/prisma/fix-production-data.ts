@@ -10,8 +10,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Starting production data cleanup...\n');
 
-  // 1. Fix corrupted user name for test@quotecraft.dev
-  const testUser = await prisma.user.findUnique({ where: { email: 'test@quotecraft.dev' } });
+  // 1. Fix corrupted user name for test@oreko.dev
+  const testUser = await prisma.user.findUnique({ where: { email: 'test@oreko.dev' } });
   if (testUser) {
     if (testUser.name !== 'Test User') {
       await prisma.user.update({
@@ -163,7 +163,7 @@ async function main() {
   }
 
   // 6. Fix demo user name
-  const demoUser = await prisma.user.findUnique({ where: { email: 'demo@quotecraft.demo' } });
+  const demoUser = await prisma.user.findUnique({ where: { email: 'demo@oreko.demo' } });
   if (demoUser && demoUser.name !== 'Demo User') {
     await prisma.user.update({
       where: { id: demoUser.id },

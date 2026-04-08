@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma, type Prisma } from '@quotecraft/database';
+import { prisma, type Prisma } from '@oreko/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { generateCreditNoteNumber } from '@/lib/invoices/internal';
 import { ROUTES } from '@/lib/routes';

@@ -1,4 +1,4 @@
-import type { Contract, ContractInstance, Client, Quote } from '@quotecraft/database';
+import type { Contract, ContractInstance, Client, Quote } from '@oreko/database';
 
 // Contract template with relations
 export type ContractWithRelations = Contract & {

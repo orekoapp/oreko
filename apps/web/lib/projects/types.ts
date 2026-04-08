@@ -1,4 +1,4 @@
-import type { Project, Client, Quote, Invoice } from '@quotecraft/database';
+import type { Project, Client, Quote, Invoice } from '@oreko/database';
 
 export type ProjectWithClient = Project & {
   client: Pick<Client, 'id' | 'name' | 'company' | 'email'>;

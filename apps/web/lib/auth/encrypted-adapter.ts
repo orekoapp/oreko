@@ -5,7 +5,7 @@
  */
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import type { Adapter, AdapterAccount } from 'next-auth/adapters';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { encrypt, decrypt, isEncryptionEnabled } from '@/lib/encryption';
 
 const baseAdapter = PrismaAdapter(prisma) as Adapter;

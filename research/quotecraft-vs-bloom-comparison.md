@@ -1,4 +1,4 @@
-# QuoteCraft vs Bloom: Comprehensive Comparison
+# Oreko vs Bloom: Comprehensive Comparison
 
 *Analysis Date: January 2026*
 
@@ -6,9 +6,9 @@
 
 ## Executive Summary
 
-This document provides a detailed comparison between **QuoteCraft** (open-source quote/invoice software) and **Bloom** (established SaaS CRM for creative professionals). The analysis covers UI/UX design, functionality, pricing, and market positioning.
+This document provides a detailed comparison between **Oreko** (open-source quote/invoice software) and **Bloom** (established SaaS CRM for creative professionals). The analysis covers UI/UX design, functionality, pricing, and market positioning.
 
-**Key Finding:** QuoteCraft successfully matches Bloom's core invoicing functionality with a cleaner, more focused UI, while offering significant cost advantages through open-source licensing and self-hosting options. However, Bloom offers a broader feature set for comprehensive business management.
+**Key Finding:** Oreko successfully matches Bloom's core invoicing functionality with a cleaner, more focused UI, while offering significant cost advantages through open-source licensing and self-hosting options. However, Bloom offers a broader feature set for comprehensive business management.
 
 ---
 
@@ -16,7 +16,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 ### 1.1 Landing Page Design
 
-| Aspect | Bloom | QuoteCraft |
+| Aspect | Bloom | Oreko |
 |--------|-------|------------|
 | **Visual Style** | Playful, colorful, personality-driven | Clean, professional, tech-forward |
 | **Color Palette** | Multi-color gradients, pink/purple accents | Blue/violet gradient, minimalist |
@@ -32,7 +32,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 - Emphasizes personality and brand building
 - Can feel cluttered with many elements competing for attention
 
-**QuoteCraft's Approach:**
+**Oreko's Approach:**
 - Targets technical/professional users with a clean, business-focused design
 - Shows the actual product (screenshot) prominently in hero
 - Uses the "open source" badge as key differentiator
@@ -40,13 +40,13 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 **Winner: Context-dependent**
 - For photographers/creative freelancers: Bloom's approach resonates better
-- For developers/agencies/technical freelancers: QuoteCraft's clean approach wins
+- For developers/agencies/technical freelancers: Oreko's clean approach wins
 
 ---
 
 ### 1.2 Navigation & Information Architecture
 
-| Element | Bloom | QuoteCraft |
+| Element | Bloom | Oreko |
 |---------|-------|------------|
 | **Main Nav Items** | Features, About, Pricing, Blog, Login | Features, Pricing, Docs, GitHub |
 | **CTA Button** | "Start a Free Trial" | "Get Started" |
@@ -61,19 +61,19 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 - Multiple CTAs scattered throughout page
 - Can feel overwhelming with the amount of information
 
-**QuoteCraft:**
+**Oreko:**
 - Cleaner navigation with direct links
 - Features presented in digestible alternating sections
 - Clear visual hierarchy guiding eye down the page
 - GitHub link prominently shown (targets developer audience)
 
-**Winner: QuoteCraft** - Better information hierarchy and scannability
+**Winner: Oreko** - Better information hierarchy and scannability
 
 ---
 
 ### 1.3 Feature Presentation
 
-| Aspect | Bloom | QuoteCraft |
+| Aspect | Bloom | Oreko |
 |--------|-------|------------|
 | **Feature Count Shown** | 13+ major feature categories | 6 core features |
 | **Visual Style** | Product screenshots, animated elements | Clean screenshots with glow effects |
@@ -88,19 +88,19 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 - Features organized by professional service type
 - Heavy use of checkmarks and feature matrices
 
-**QuoteCraft:**
+**Oreko:**
 - Focused on 6 core capabilities
 - Each feature clearly explained with screenshot
 - "Problem-Solution" framing in the opening section
 - Clear workflow visualization ("4 Steps")
 
-**Winner: QuoteCraft** - Better focus and clarity for the target use case
+**Winner: Oreko** - Better focus and clarity for the target use case
 
 ---
 
 ### 1.4 Mobile Responsiveness
 
-| Aspect | Bloom | QuoteCraft |
+| Aspect | Bloom | Oreko |
 |--------|-------|------------|
 | **Mobile Navigation** | Hamburger menu | Hamburger menu |
 | **Content Scaling** | Good but dense | Clean and readable |
@@ -113,7 +113,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 ### 1.5 Trust & Credibility Signals
 
-| Signal | Bloom | QuoteCraft |
+| Signal | Bloom | Oreko |
 |--------|-------|------------|
 | **Testimonials** | 15+ with photos, names, titles | 4 testimonials |
 | **Brand Logos** | Dribbble, RedBull, Girlboss, etc. | None |
@@ -128,7 +128,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 - Long track record and established brand
 - "Trusted by professionals worldwide" messaging
 
-**QuoteCraft** builds trust through:
+**Oreko** builds trust through:
 - Open source transparency (code inspection)
 - MIT license (no vendor lock-in)
 - Developer community signals
@@ -136,7 +136,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 **Winner: Context-dependent**
 - For non-technical users: Bloom's testimonials are more compelling
-- For technical users: QuoteCraft's transparency wins
+- For technical users: Oreko's transparency wins
 
 ---
 
@@ -144,7 +144,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 ### 2.1 Core Features Matrix
 
-| Feature | Bloom | QuoteCraft |
+| Feature | Bloom | Oreko |
 |---------|-------|------------|
 | **Invoicing** | Yes | Yes |
 | **Quote Creation** | Yes (via packages) | Yes (visual builder) |
@@ -157,7 +157,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 ### 2.2 Extended Features
 
-| Feature | Bloom | QuoteCraft |
+| Feature | Bloom | Oreko |
 |---------|-------|------------|
 | **CRM/Lead Management** | Yes (comprehensive) | Basic (client list) |
 | **Workflow Management** | Yes (task tracking) | No |
@@ -172,7 +172,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 ### 2.3 Pricing Comparison
 
-| Plan | Bloom | QuoteCraft |
+| Plan | Bloom | Oreko |
 |------|-------|------------|
 | **Free Tier** | No (7-day trial only) | Yes (self-hosted, unlimited) |
 | **Entry Level** | $7/mo (Starter, limited) | $9/mo (Cloud Starter) |
@@ -183,7 +183,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 ### 2.4 Technical Comparison
 
-| Aspect | Bloom | QuoteCraft |
+| Aspect | Bloom | Oreko |
 |--------|-------|------------|
 | **Architecture** | Proprietary SaaS | Open-source (MIT) |
 | **Self-Hosting** | No | Yes (Docker) |
@@ -211,7 +211,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 4. **Overwhelming** - Feature bloat for users who just need invoicing
 5. **Transaction fees** - 1% on Starter plan
 
-### QuoteCraft Strengths
+### Oreko Strengths
 1. **Truly free** - Open source with unlimited self-hosting
 2. **Clean, focused UI** - Does invoicing well without bloat
 3. **Visual quote builder** - Unique drag-and-drop approach
@@ -220,7 +220,7 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 6. **No transaction fees** - Only pay Stripe's base rate
 7. **Developer-friendly** - API access, customization, MIT license
 
-### QuoteCraft Weaknesses
+### Oreko Weaknesses
 1. **Limited feature set** - No scheduling, galleries, live chat
 2. **No mobile app** - Web-only (though responsive)
 3. **Newer/less established** - Less social proof
@@ -232,11 +232,11 @@ This document provides a detailed comparison between **QuoteCraft** (open-source
 
 ## Conclusion
 
-**QuoteCraft successfully achieves its goal** of being "the open-source alternative to Bloom" for users who primarily need quote and invoice functionality. It offers a cleaner, more focused experience for its core use case.
+**Oreko successfully achieves its goal** of being "the open-source alternative to Bloom" for users who primarily need quote and invoice functionality. It offers a cleaner, more focused experience for its core use case.
 
 **However, the comparison reveals different target markets:**
 
 - **Bloom** = Comprehensive business management for creative professionals who want everything in one place
-- **QuoteCraft** = Focused invoicing tool for cost-conscious freelancers and technically-savvy users
+- **Oreko** = Focused invoicing tool for cost-conscious freelancers and technically-savvy users
 
-For users comparing purely on invoicing capability, QuoteCraft offers comparable functionality at a fraction of the cost (or free). For users needing scheduling, galleries, and full CRM, Bloom remains the more complete solution.
+For users comparing purely on invoicing capability, Oreko offers comparable functionality at a fraction of the cost (or free). For users needing scheduling, galleries, and full CRM, Bloom remains the more complete solution.

@@ -9,7 +9,7 @@
  * can try the app. The demo workspace data resets daily via cron, so exposure is by design.
  */
 
-export const DEMO_USER_EMAIL = (process.env.DEMO_USER_EMAIL || 'demo@quotecraft.demo').trim();
+export const DEMO_USER_EMAIL = (process.env.DEMO_USER_EMAIL || 'demo@oreko.demo').trim();
 export const DEMO_USER_PASSWORD = 'DemoPassword123!';
 export const DEMO_WORKSPACE_SLUG = 'demo-workspace';
 

@@ -133,7 +133,7 @@
 
 **Existing Code:**
 - File: `/apps/web/components/dashboard/app-sidebar.tsx`
-- Current: "QuoteCraft / Business Suite" branding in header
+- Current: "Oreko / Business Suite" branding in header
 - Available: `Select` component for dropdown
 - Existing: `Workspace` model in Prisma schema
 

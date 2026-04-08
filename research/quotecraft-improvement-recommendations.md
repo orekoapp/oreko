@@ -1,4 +1,4 @@
-# QuoteCraft Improvement Recommendations
+# Oreko Improvement Recommendations
 
 *Based on competitive analysis with Bloom - January 2026*
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-After thorough analysis of Bloom and QuoteCraft, this document provides prioritized recommendations for improving QuoteCraft to better compete in the quote/invoice software market while maintaining its core value propositions: simplicity, open-source, and cost-effectiveness.
+After thorough analysis of Bloom and Oreko, this document provides prioritized recommendations for improving Oreko to better compete in the quote/invoice software market while maintaining its core value propositions: simplicity, open-source, and cost-effectiveness.
 
 ---
 
@@ -230,7 +230,7 @@ After thorough analysis of Bloom and QuoteCraft, this document provides prioriti
 
 3. **Add Comparison Table**
    - Bloom has "Bloom vs Others" comparison
-   - Create "QuoteCraft vs Bloom vs Bonsai" table
+   - Create "Oreko vs Bloom vs Bonsai" table
    - Highlight self-hosting and free tier advantages
 
 4. **Strengthen the "Problem" Section**
@@ -312,6 +312,6 @@ After thorough analysis of Bloom and QuoteCraft, this document provides prioriti
 
 ## Conclusion
 
-QuoteCraft has successfully positioned itself as a focused, cost-effective alternative to Bloom. The recommendations above aim to close feature gaps that matter most to users while avoiding the trap of becoming another bloated all-in-one platform.
+Oreko has successfully positioned itself as a focused, cost-effective alternative to Bloom. The recommendations above aim to close feature gaps that matter most to users while avoiding the trap of becoming another bloated all-in-one platform.
 
 **The key strategic insight:** Don't try to out-Bloom Bloom. Instead, be the best open-source invoicing tool that respects users' time, money, and data ownership.

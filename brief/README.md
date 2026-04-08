@@ -1,8 +1,8 @@
-# QuoteCraft UI Enhancement Brief
+# Oreko UI Enhancement Brief
 
 ## Overview
 
-This brief contains specifications for enhancing the QuoteCraft application UI/UX based on stakeholder feedback. The goal is to implement a professional, polished application shell with comprehensive analytics and streamlined workflows.
+This brief contains specifications for enhancing the Oreko application UI/UX based on stakeholder feedback. The goal is to implement a professional, polished application shell with comprehensive analytics and streamlined workflows.
 
 ## Brief Contents
 

@@ -1,4 +1,4 @@
-import type { RateCard, RateCardCategory, TaxRate } from '@quotecraft/database';
+import type { RateCard, RateCardCategory, TaxRate } from '@oreko/database';
 
 // Rate card with relations
 export type RateCardWithRelations = RateCard & {

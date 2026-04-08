@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { z } from 'zod';
 import { toNumber } from '@/lib/utils';

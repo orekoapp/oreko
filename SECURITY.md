@@ -10,11 +10,11 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in QuoteCraft, please report it responsibly.
+If you discover a security vulnerability in Oreko, please report it responsibly.
 
 **Do NOT open a public GitHub issue for security vulnerabilities.**
 
-Instead, please email us at **security@quotecraft.dev** with:
+Instead, please email us at **security@oreko.app** with:
 
 1. A description of the vulnerability
 2. Steps to reproduce the issue
@@ -50,7 +50,7 @@ The following are in scope for security reports:
 
 ## Security Best Practices for Self-Hosting
 
-When deploying QuoteCraft, ensure:
+When deploying Oreko, ensure:
 
 1. **HTTPS:** Always use HTTPS in production.
 2. **Environment Variables:** Never commit `.env` files. Use secrets management.

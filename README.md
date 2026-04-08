@@ -1,16 +1,26 @@
-# QuoteCraft
+# Oreko
 
-**The open-source alternative to Bloom and Bonsai**
+**The open-source quote and invoice tool for freelancers and small businesses.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/WisdmLabs/quote-software/releases)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/WisdmLabs/quote-software/actions)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black.svg)](https://nextjs.org/)
 
-QuoteCraft is an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies. It provides a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
+Oreko is an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies. It provides a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
 
-**[Live Demo](https://quote-software-gamma.vercel.app)** — Try QuoteCraft instantly with the demo account.
+---
+
+## Screenshots
+
+> Add 3-4 screenshots to a `docs/images/` folder in the repo, then reference them here.
+
+![Dashboard](docs/images/dashboard.png)
+
+![Visual Quote Builder](docs/images/quote-builder.png)
+
+![Client Portal](docs/images/client-portal.png)
+
+![Invoice PDF](docs/images/invoice-pdf.png)
 
 ---
 
@@ -35,61 +45,57 @@ QuoteCraft is an open-source, self-hosted visual quote and invoice management to
 
 Create stunning, professional quotes with a drag-and-drop block-based editor. No more spreadsheet-like interfaces.
 
-
 ### One-Click Quote-to-Invoice Conversion
 
 Convert accepted quotes to invoices instantly with zero data re-entry. All line items, pricing, and client information transfer automatically.
-
 
 ### Client Portal
 
 Beautiful, mobile-responsive client-facing pages for viewing, signing, and paying quotes and invoices. No account required for clients.
 
-
 ### Rate Card System
 
 Advanced rate card management for quick quote creation with predefined services and pricing tiers. A key differentiator from competitors.
 
-
 ### Additional Features
 
-| Feature | Description |
-|---------|-------------|
-| **Project Management** | Organize quotes, invoices, and contracts by client projects |
-| **E-Signature Capture** | Legally compliant electronic signatures (E-SIGN, UETA) |
-| **Stripe Payment Integration** | Accept credit cards and ACH payments via Stripe Connect |
-| **PDF Generation** | Professional PDF exports for quotes and invoices |
-| **Email Notifications** | Automated email workflows for quotes, invoices, and reminders |
-| **Dashboard Analytics** | Key metrics including revenue, outstanding invoices, and conversion rates |
-| **Client Management** | Centralized client database with full history and lifetime value tracking |
-| **Contract Templates** | Attach contracts with merge fields to quotes |
-| **Milestone Payments** | Support for deposits, milestones, and recurring payments |
-| **Modular Workspace** | Enable only the modules you need (Quotes, Invoices, Contracts, Rate Cards) |
-| **Self-Hosted** | Full control over your data with Docker deployment |
+| Feature                        | Description                                                                |
+| ------------------------------ | -------------------------------------------------------------------------- |
+| **Project Management**         | Organize quotes, invoices, and contracts by client projects                |
+| **E-Signature Capture**        | Legally compliant electronic signatures (E-SIGN, UETA)                     |
+| **Stripe Payment Integration** | Accept credit cards and ACH payments via Stripe Connect                    |
+| **PDF Generation**             | Professional PDF exports for quotes and invoices                           |
+| **Email Notifications**        | Automated email workflows for quotes, invoices, and reminders              |
+| **Dashboard Analytics**        | Key metrics including revenue, outstanding invoices, and conversion rates  |
+| **Client Management**          | Centralized client database with full history and lifetime value tracking  |
+| **Contract Templates**         | Attach contracts with merge fields to quotes                               |
+| **Milestone Payments**         | Support for deposits, milestones, and recurring payments                   |
+| **Modular Workspace**          | Enable only the modules you need (Quotes, Invoices, Contracts, Rate Cards) |
+| **Self-Hosted**                | Full control over your data with Docker deployment                         |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| **Framework** | Next.js 14+ (App Router) |
-| **Language** | TypeScript 5.x |
-| **UI Library** | Shadcn UI |
-| **CSS** | Tailwind CSS 3.4+ |
-| **Database** | PostgreSQL 15+ |
-| **ORM** | Prisma 5.x |
-| **Cache/Queue** | Redis + BullMQ |
-| **Authentication** | NextAuth.js 5.x |
-| **Payments** | Stripe Connect |
-| **Rich Text** | Tiptap |
-| **Drag & Drop** | dnd-kit |
-| **PDF Generation** | Puppeteer / react-pdf |
-| **Testing** | Vitest (unit), Playwright (E2E) |
-| **Package Manager** | pnpm 8+ |
-| **Monorepo** | Turborepo |
-| **Containerization** | Docker + Docker Compose |
-| **Reverse Proxy** | Traefik v3 |
+| Layer                | Technology                      |
+| -------------------- | ------------------------------- |
+| **Framework**        | Next.js 14+ (App Router)        |
+| **Language**         | TypeScript 5.x                  |
+| **UI Library**       | Shadcn UI                       |
+| **CSS**              | Tailwind CSS 3.4+               |
+| **Database**         | PostgreSQL 15+                  |
+| **ORM**              | Prisma 5.x                      |
+| **Cache/Queue**      | Redis + BullMQ                  |
+| **Authentication**   | NextAuth.js 5.x                 |
+| **Payments**         | Stripe Connect                  |
+| **Rich Text**        | Tiptap                          |
+| **Drag & Drop**      | dnd-kit                         |
+| **PDF Generation**   | Puppeteer / react-pdf           |
+| **Testing**          | Vitest (unit), Playwright (E2E) |
+| **Package Manager**  | pnpm 8+                         |
+| **Monorepo**         | Turborepo                       |
+| **Containerization** | Docker + Docker Compose         |
+| **Reverse Proxy**    | Traefik v3                      |
 
 ---
 
@@ -97,9 +103,10 @@ Advanced rate card management for quick quote creation with predefined services 
 
 ### Docker (Recommended)
 
-The fastest way to get QuoteCraft running is with Docker Compose.
+The fastest way to get Oreko running is with Docker Compose.
 
 **Prerequisites:**
+
 - Docker 20.10+
 - Docker Compose 2.0+
 
@@ -108,8 +115,8 @@ The fastest way to get QuoteCraft running is with Docker Compose.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/WisdmLabs/quote-software.git
-cd quote-software
+git clone https://github.com/orekoapp/oreko.git
+cd oreko
 ```
 
 2. Copy the environment file and configure it:
@@ -154,6 +161,7 @@ docker-compose restart web    # Restart the web service
 For development or custom deployment scenarios.
 
 **Prerequisites:**
+
 - Node.js 18 LTS or later
 - pnpm 8+
 - PostgreSQL 15+
@@ -164,8 +172,8 @@ For development or custom deployment scenarios.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/WisdmLabs/quote-software.git
-cd quote-software
+git clone https://github.com/orekoapp/oreko.git
+cd oreko
 ```
 
 2. Install dependencies:
@@ -208,20 +216,20 @@ pnpm dev
 
 Create a `.env` file in the root directory with the following variables:
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/quotecraft` |
-| `REDIS_URL` | Yes | Redis connection string | `redis://localhost:6379` |
-| `NEXTAUTH_SECRET` | Yes | Secret for NextAuth.js session encryption | `your-secret-key-here` |
-| `NEXTAUTH_URL` | Yes | Application URL | `http://localhost:3000` |
-| `STRIPE_SECRET_KEY` | Yes | Stripe API secret key | `sk_test_...` |
-| `STRIPE_PUBLISHABLE_KEY` | Yes | Stripe publishable key | `pk_test_...` |
-| `STRIPE_WEBHOOK_SECRET` | Yes | Stripe webhook signing secret | `whsec_...` |
-| `SMTP_HOST` | No | SMTP server host | `smtp.sendgrid.net` |
-| `SMTP_PORT` | No | SMTP server port | `587` |
-| `SMTP_USER` | No | SMTP username | `apikey` |
-| `SMTP_PASS` | No | SMTP password | `your-smtp-password` |
-| `SMTP_FROM` | No | Default sender email | `noreply@yourdomain.com` |
+| Variable                 | Required | Description                               | Example                                       |
+| ------------------------ | -------- | ----------------------------------------- | --------------------------------------------- |
+| `DATABASE_URL`           | Yes      | PostgreSQL connection string              | `postgresql://user:pass@localhost:5432/oreko` |
+| `REDIS_URL`              | Yes      | Redis connection string                   | `redis://localhost:6379`                      |
+| `NEXTAUTH_SECRET`        | Yes      | Secret for NextAuth.js session encryption | `your-secret-key-here`                        |
+| `NEXTAUTH_URL`           | Yes      | Application URL                           | `http://localhost:3000`                       |
+| `STRIPE_SECRET_KEY`      | Yes      | Stripe API secret key                     | `sk_test_...`                                 |
+| `STRIPE_PUBLISHABLE_KEY` | Yes      | Stripe publishable key                    | `pk_test_...`                                 |
+| `STRIPE_WEBHOOK_SECRET`  | Yes      | Stripe webhook signing secret             | `whsec_...`                                   |
+| `SMTP_HOST`              | No       | SMTP server host                          | `smtp.sendgrid.net`                           |
+| `SMTP_PORT`              | No       | SMTP server port                          | `587`                                         |
+| `SMTP_USER`              | No       | SMTP username                             | `apikey`                                      |
+| `SMTP_PASS`              | No       | SMTP password                             | `your-smtp-password`                          |
+| `SMTP_FROM`              | No       | Default sender email                      | `noreply@yourdomain.com`                      |
 
 See `.env.example` for a complete template with all available options.
 
@@ -230,7 +238,7 @@ See `.env.example` for a complete template with all available options.
 ## Project Structure
 
 ```
-quote-software/
+oreko/
 ├── apps/
 │   └── web/                     # Next.js application
 │       ├── app/                 # App Router pages
@@ -268,16 +276,16 @@ quote-software/
 
 ### Key Directories
 
-| Directory | Purpose |
-|-----------|---------|
-| `apps/web/app` | Next.js 14 App Router pages and layouts |
-| `apps/web/components` | 55+ domain components + 43 Shadcn UI components |
+| Directory                      | Purpose                                           |
+| ------------------------------ | ------------------------------------------------- |
+| `apps/web/app`                 | Next.js 14 App Router pages and layouts           |
+| `apps/web/components`          | 55+ domain components + 43 Shadcn UI components   |
 | `apps/web/components/projects` | Project management (list, detail, form, selector) |
-| `apps/web/lib` | 85+ server actions, hooks, and utilities |
-| `apps/web/lib/projects` | Project server actions and types |
-| `packages/database` | Prisma schema with 18 models |
-| `packages/types` | Shared TypeScript type definitions |
-| `packages/utils` | Shared utility functions |
+| `apps/web/lib`                 | 85+ server actions, hooks, and utilities          |
+| `apps/web/lib/projects`        | Project server actions and types                  |
+| `packages/database`            | Prisma schema with 18 models                      |
+| `packages/types`               | Shared TypeScript type definitions                |
+| `packages/utils`               | Shared utility functions                          |
 
 ---
 
@@ -365,52 +373,27 @@ We welcome contributions from the community! Please read our [Contributing Guide
 
 ## Known Limitations
 
-| Area | Detail |
-|------|--------|
-| **Database CHECK constraints** | Prisma ORM does not support native CHECK constraints. All monetary and quantity validations are enforced at the application level. |
-| **Data retention** | No automated archiving or purging of old records. Soft-deleted data accumulates. For large deployments, implement a periodic cleanup cron job against the `deletedAt IS NOT NULL` records. |
-| **Signature encryption** | E-signature images are stored as base64 in the database without at-rest encryption. Database-level access controls apply. For sensitive deployments, consider server-side encryption or encrypted object storage. |
-| **Cloud storage** | S3 and Cloudflare R2 providers are stubbed but not implemented. Local file storage is the default. |
-| **next-auth** | Uses NextAuth.js v5 beta. Pin the exact version in `package.json` and test before upgrading. |
+| Area                           | Detail                                                                                                                                                                                                            |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Database CHECK constraints** | Prisma ORM does not support native CHECK constraints. All monetary and quantity validations are enforced at the application level.                                                                                |
+| **Data retention**             | No automated archiving or purging of old records. Soft-deleted data accumulates. For large deployments, implement a periodic cleanup cron job against the `deletedAt IS NOT NULL` records.                        |
+| **Signature encryption**       | E-signature images are stored as base64 in the database without at-rest encryption. Database-level access controls apply. For sensitive deployments, consider server-side encryption or encrypted object storage. |
+| **Cloud storage**              | S3 and Cloudflare R2 providers are stubbed but not implemented. Local file storage is the default.                                                                                                                |
+| **next-auth**                  | Uses NextAuth.js v5 beta. Pin the exact version in `package.json` and test before upgrading.                                                                                                                      |
 
 ---
 
 ## License
 
-QuoteCraft is open-source software licensed under the [MIT License](LICENSE).
-
-```
-MIT License
-
-Copyright (c) 2026 QuoteCraft Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+Oreko is open-source software licensed under the [GNU Affero General Public License v3.0](LICENSE).
 
 ---
 
 ## Support
 
 - **Documentation:** [docs/](docs/)
-- **Issues:** [GitHub Issues](https://github.com/WisdmLabs/quote-software/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/WisdmLabs/quote-software/discussions)
+- **Issues:** [GitHub Issues](https://github.com/orekoapp/oreko/issues)
 
 ---
 
-Built with care by the QuoteCraft community.
+Built with care by the Oreko community.

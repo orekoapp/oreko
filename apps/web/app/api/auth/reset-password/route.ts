@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { hash } from 'bcryptjs';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';
 import { passwordSchema } from '@/lib/validations/auth';

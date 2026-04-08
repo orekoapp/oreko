@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { hash, compare } from 'bcryptjs';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { checkRateLimit } from '@/lib/rate-limit';

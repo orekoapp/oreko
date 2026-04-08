@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { randomBytes } from 'crypto';
-import { prisma, Prisma } from '@quotecraft/database';
+import { prisma, Prisma } from '@oreko/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 import { toNumber } from '@/lib/utils';
 import { logger } from '@/lib/logger';

@@ -1,4 +1,4 @@
-# QuoteCraft UI/UX Component Recommendations
+# Oreko UI/UX Component Recommendations
 
 **Date:** February 2026
 **Author:** Frontend Architecture Review
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-QuoteCraft currently suffers from **inconsistent UI patterns** across different pages. This document provides actionable recommendations to create a polished, uniform experience using the shadcn/ui ecosystem and shadcnstudio blocks.
+Oreko currently suffers from **inconsistent UI patterns** across different pages. This document provides actionable recommendations to create a polished, uniform experience using the shadcn/ui ecosystem and shadcnstudio blocks.
 
 ### Key Changes Required:
 1. Adopt **Application Shell 10** as the base layout
@@ -721,4 +721,4 @@ apps/web/components/quotes/quote-builder/  # Archive, don't delete yet
 
 ---
 
-*Document prepared for QuoteCraft development team. February 2026.*
+*Document prepared for Oreko development team. February 2026.*

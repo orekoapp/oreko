@@ -1,7 +1,7 @@
 'use server';
 
 import { headers } from 'next/headers';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { sendEmail } from '@/lib/services/email';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { generateSigningOtp, verifySigningOtp, isSigningVerified } from './otp';

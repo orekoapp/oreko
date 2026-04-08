@@ -1,4 +1,4 @@
-# QuoteCraft Technical Analysis
+# Oreko Technical Analysis
 
 ## 1. Data Model Analysis
 
@@ -741,8 +741,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=quotecraft
-      - POSTGRES_USER=quotecraft
+      - POSTGRES_DB=oreko
+      - POSTGRES_USER=oreko
       - POSTGRES_PASSWORD=${DB_PASSWORD}
 
   redis:

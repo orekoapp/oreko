@@ -2,7 +2,7 @@
 
 ## Overview
 
-**MCP (Model Context Protocol)** enables AI assistants like Claude to directly interact with QuoteCraft. This document specifies the MCP server implementation that allows AI agents to create quotes, manage invoices, and handle client relationships.
+**MCP (Model Context Protocol)** enables AI assistants like Claude to directly interact with Oreko. This document specifies the MCP server implementation that allows AI agents to create quotes, manage invoices, and handle client relationships.
 
 ---
 
@@ -15,7 +15,7 @@
                               │ MCP Protocol
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   QuoteCraft MCP Server                      │
+│                   Oreko MCP Server                      │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │   Tools     │  │  Resources  │  │     Prompts         │  │
 │  │ (Actions)   │  │ (Read-only) │  │ (Templates)         │  │
@@ -30,7 +30,7 @@
                            │ REST API
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    QuoteCraft API Server                     │
+│                    Oreko API Server                     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -600,7 +600,7 @@ export const analyticsTools = {
 
 ## 4. Resource Definitions
 
-Resources provide read-only access to QuoteCraft data.
+Resources provide read-only access to Oreko data.
 
 ```typescript
 // resources/index.ts
@@ -738,7 +738,7 @@ import { resources } from "./resources";
 import { prompts } from "./prompts";
 import { ApiClient } from "./api/client";
 
-export class QuoteCraftMCPServer {
+export class OrekoMCPServer {
   private server: Server;
   private apiClient: ApiClient;
 
@@ -747,7 +747,7 @@ export class QuoteCraftMCPServer {
 
     this.server = new Server(
       {
-        name: "quotecraft-mcp",
+        name: "oreko-mcp",
         version: "1.0.0"
       },
       {
@@ -970,17 +970,17 @@ export class ApiClient {
 ```typescript
 // src/index.ts
 
-import { QuoteCraftMCPServer } from "./server";
+import { OrekoMCPServer } from "./server";
 
 const apiKey = process.env.QUOTECRAFT_API_KEY;
-const baseUrl = process.env.QUOTECRAFT_API_URL || "https://app.quotecraft.io";
+const baseUrl = process.env.QUOTECRAFT_API_URL || "https://app.oreko.io";
 
 if (!apiKey) {
   console.error("QUOTECRAFT_API_KEY environment variable required");
   process.exit(1);
 }
 
-const server = new QuoteCraftMCPServer(apiKey, baseUrl);
+const server = new OrekoMCPServer(apiKey, baseUrl);
 server.run().catch(console.error);
 ```
 
@@ -994,12 +994,12 @@ server.run().catch(console.error);
 // claude_desktop_config.json
 {
   "mcpServers": {
-    "quotecraft": {
+    "oreko": {
       "command": "npx",
-      "args": ["-y", "@quotecraft/mcp-server"],
+      "args": ["-y", "@oreko/mcp-server"],
       "env": {
         "QUOTECRAFT_API_KEY": "qc_live_xxxxxxxxxxxx",
-        "QUOTECRAFT_API_URL": "https://app.quotecraft.io"
+        "QUOTECRAFT_API_URL": "https://app.oreko.io"
       }
     }
   }
@@ -1011,9 +1011,9 @@ server.run().catch(console.error);
 ```json
 {
   "mcpServers": {
-    "quotecraft": {
+    "oreko": {
       "command": "npx",
-      "args": ["-y", "@quotecraft/mcp-server"],
+      "args": ["-y", "@oreko/mcp-server"],
       "env": {
         "QUOTECRAFT_API_KEY": "qc_live_xxxxxxxxxxxx",
         "QUOTECRAFT_API_URL": "http://localhost:3000"
@@ -1079,13 +1079,13 @@ Done. I've sent:
 // tests/tools.test.ts
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { QuoteCraftMCPServer } from "../src/server";
+import { OrekoMCPServer } from "../src/server";
 
 describe("Quote Tools", () => {
-  let server: QuoteCraftMCPServer;
+  let server: OrekoMCPServer;
 
   beforeAll(() => {
-    server = new QuoteCraftMCPServer(
+    server = new OrekoMCPServer(
       process.env.TEST_API_KEY!,
       process.env.TEST_API_URL!
     );

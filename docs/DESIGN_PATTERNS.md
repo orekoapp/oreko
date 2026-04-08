@@ -1,4 +1,4 @@
-# QuoteCraft - Design Patterns
+# Oreko - Design Patterns
 
 > Recovered from codebase analysis (Phase 2.5 Fit-Quality Assessment)
 > Date: 2026-02-24

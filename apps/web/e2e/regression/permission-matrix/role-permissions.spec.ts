@@ -23,7 +23,7 @@ async function ensureLoggedIn(page: import('@playwright/test').Page) {
 
   // If redirected to login, use test user
   if (page.url().includes('/login')) {
-    await page.getByRole('textbox', { name: /email/i }).fill('test@quotecraft.dev');
+    await page.getByRole('textbox', { name: /email/i }).fill('test@oreko.dev');
     await page.getByRole('textbox', { name: /password/i }).fill('TestPass123!');
     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL(/\/(dashboard|quotes|invoices|onboarding)?$/, { timeout: 30000 });

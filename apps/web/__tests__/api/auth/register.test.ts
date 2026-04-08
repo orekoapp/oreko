@@ -7,7 +7,7 @@ const mockCreate = vi.fn();
 const mockHashPassword = vi.fn().mockResolvedValue('hashed_password_123');
 
 // Mock Prisma
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: {
     user: {
       findUnique: mockFindUnique,

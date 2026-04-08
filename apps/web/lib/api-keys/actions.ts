@@ -1,7 +1,7 @@
 'use server';
 
 import { randomBytes, createHash } from 'crypto';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 

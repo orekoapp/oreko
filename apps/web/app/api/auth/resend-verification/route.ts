@@ -1,7 +1,7 @@
 import { getBaseUrl } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
 import { validateRequestOrigin } from '@/lib/csrf';

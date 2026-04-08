@@ -1,4 +1,4 @@
-# QuoteCraft Bug Fixes Tracker
+# Oreko Bug Fixes Tracker
 
 **Source:** Fixes.pdf (February 2026 User Testing)
 **Status:** ✅ ALL BUGS VERIFIED FIXED
@@ -9,7 +9,7 @@
 ## Critical (P0) - Block Release
 
 ### BUG-001: New Invoice Page 404 ✅ VERIFIED FIXED
-- **URL:** https://quote-software-gamma.vercel.app/invoices/new
+- **URL:** https://oreko-gamma.vercel.app/invoices/new
 - **Expected:** Invoice creation form
 - **Actual:** ~~"Page not found" error~~ **Full invoice creation form with split-view preview**
 - **Verification:** Browser test confirmed form loads with all fields and live preview
@@ -34,7 +34,7 @@
 - **Note:** Cannot fully test with demo user (saves blocked), but implementation exists
 
 ### BUG-004: Premade Quotes 404 ✅ VERIFIED FIXED
-- **URL:** https://quote-software-gamma.vercel.app/quotes/1
+- **URL:** https://oreko-gamma.vercel.app/quotes/1
 - **Expected:** View existing quote
 - **Actual:** ~~"Page not found" error~~ **Quote detail page loads with actions menu**
 - **Verification:** Browser test at `/quotes/demo-quote-1` shows full quote details

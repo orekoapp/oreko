@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { randomBytes } from 'crypto';
 import { logger } from '@/lib/logger';
 

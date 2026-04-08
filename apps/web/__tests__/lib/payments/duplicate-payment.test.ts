@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@quotecraft/database', () => {
+vi.mock('@oreko/database', () => {
   const mockPrisma = {
     payment: {
       findFirst: vi.fn(),
@@ -39,7 +39,7 @@ vi.mock('@/lib/utils', () => ({
   getBaseUrl: () => 'http://localhost:3000',
 }));
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { processPaymentWebhook } from '@/lib/payments/internal';
 
 const mockPrisma = prisma as unknown as {

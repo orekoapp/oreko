@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { randomBytes, createHash } from 'crypto';
 import { z } from 'zod';
-import { prisma, Prisma } from '@quotecraft/database';
+import { prisma, Prisma } from '@oreko/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { logger } from '@/lib/logger';
 import type {

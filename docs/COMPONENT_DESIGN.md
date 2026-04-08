@@ -1,4 +1,4 @@
-# QuoteCraft Component Design
+# Oreko Component Design
 
 ## 1. Component Architecture Overview
 

@@ -31,7 +31,7 @@ Shows the application sidebar in its fully expanded state.
 3. **User Profile Section**
    - Avatar: Circular image with purple overlay
    - Name: "John Doe"
-   - Email: "john@quotecraft.com"
+   - Email: "john@oreko.com"
    - Dropdown chevron
 
 ### Design Notes

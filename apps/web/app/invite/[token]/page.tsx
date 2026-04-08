@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createHash } from 'crypto';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { auth } from '@/lib/auth';
 import { InviteAcceptClient } from './invite-accept-client';
 

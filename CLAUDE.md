@@ -1,8 +1,8 @@
-# QuoteCraft - AI Development Guidelines
+# Oreko - AI Development Guidelines
 
 ## Project Overview
 
-**QuoteCraft** is an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies. It provides a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
+**Oreko** is an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies. It provides a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
 
 **Tagline:** "The open-source alternative to Bloom and Bonsai"
 
@@ -31,7 +31,7 @@
 ## Project Structure
 
 ```
-quote-software/
+oreko/
 ├── apps/
 │   └── web/                     # Next.js application
 │       ├── app/                 # App Router pages

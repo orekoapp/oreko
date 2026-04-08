@@ -1,4 +1,4 @@
-# QuoteCraft Test Coverage Analysis
+# Oreko Test Coverage Analysis
 
 **Generated:** January 30, 2026
 **Updated:** January 30, 2026

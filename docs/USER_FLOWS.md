@@ -1,4 +1,4 @@
-# QuoteCraft - User Flows Document
+# Oreko - User Flows Document
 
 **Version:** 1.0.0
 **Created:** January 30, 2026
@@ -187,7 +187,7 @@
      |
      v
 [Onboarding Welcome Screen]
-     |-- "Welcome to QuoteCraft!"
+     |-- "Welcome to Oreko!"
      |-- Brief value proposition
      |-- "Let's get started" button
      |
@@ -1614,4 +1614,4 @@
 
 ---
 
-*This User Flows document serves as a comprehensive reference for all user interactions in QuoteCraft. Implementation should follow these flows to ensure consistent user experience.*
+*This User Flows document serves as a comprehensive reference for all user interactions in Oreko. Implementation should follow these flows to ensure consistent user experience.*

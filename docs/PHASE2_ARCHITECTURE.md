@@ -1,4 +1,4 @@
-# QuoteCraft Phase 2 Architecture Design
+# Oreko Phase 2 Architecture Design
 
 ## Document Information
 
@@ -29,7 +29,7 @@
 
 ### 1.1 Phase 2 Scope Overview
 
-Phase 2 introduces significant architectural enhancements to QuoteCraft:
+Phase 2 introduces significant architectural enhancements to Oreko:
 
 | Category | Key Changes |
 |----------|-------------|
@@ -1160,7 +1160,7 @@ interface AnalyticsDateRangeContextValue {
 
 const AnalyticsDateRangeContext = createContext<AnalyticsDateRangeContextValue | null>(null);
 
-const STORAGE_KEY = 'quotecraft-analytics-date-range';
+const STORAGE_KEY = 'oreko-analytics-date-range';
 
 export function AnalyticsDateRangeProvider({ children }: { children: React.ReactNode }) {
   const [preset, setPresetState] = useState<DateRangePreset>('last-30-days');
@@ -1267,7 +1267,7 @@ export function useAnalyticsDateRange() {
 
 import { useState, useEffect, useCallback } from 'react';
 
-const SIDEBAR_STORAGE_KEY = 'quotecraft-sidebar-state';
+const SIDEBAR_STORAGE_KEY = 'oreko-sidebar-state';
 
 interface SidebarPersistedState {
   isCollapsed: boolean;

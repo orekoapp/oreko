@@ -1,4 +1,4 @@
-# QuoteCraft Architecture Design
+# Oreko Architecture Design
 
 ## 1. High-Level Architecture
 
@@ -93,7 +93,7 @@
 ## 2. Monorepo Structure
 
 ```
-quote-software/
+oreko/
 ├── apps/
 │   └── web/                          # Next.js 14 Application
 │       ├── app/                      # App Router
@@ -386,7 +386,7 @@ Client clicks "Pay Invoice"
 ```typescript
 // lib/services/quote.service.ts
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { QuoteCreateInput, QuoteUpdateInput } from '../validations/quote';
 import { generateQuoteNumber } from '../utils/sequences';
 import { queueEmail } from '../queue/email';
@@ -839,7 +839,7 @@ import NextAuth from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { compare } from 'bcryptjs';
 
 export const {
@@ -1179,7 +1179,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Generate Prisma client
-RUN pnpm --filter @quotecraft/database db:generate
+RUN pnpm --filter @oreko/database db:generate
 
 # Build application
 RUN pnpm build
@@ -1228,7 +1228,7 @@ services:
       dockerfile: docker/production/Dockerfile
     restart: always
     environment:
-      - DATABASE_URL=postgresql://quotecraft:${DB_PASSWORD}@postgres:5432/quotecraft
+      - DATABASE_URL=postgresql://oreko:${DB_PASSWORD}@postgres:5432/oreko
       - REDIS_URL=redis://redis:6379
       - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
@@ -1253,11 +1253,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
     environment:
-      - POSTGRES_DB=quotecraft
-      - POSTGRES_USER=quotecraft
+      - POSTGRES_DB=oreko
+      - POSTGRES_USER=oreko
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U quotecraft"]
+      test: ["CMD-SHELL", "pg_isready -U oreko"]
       interval: 10s
       timeout: 5s
       retries: 5

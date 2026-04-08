@@ -12,7 +12,7 @@
 | Attribute | Value |
 |-----------|-------|
 | **Document ID** | SPEC-P2-001 |
-| **Project** | QuoteCraft - Phase 2 |
+| **Project** | Oreko - Phase 2 |
 | **Based On** | REQUIREMENTS.md, ACCEPTANCE_CRITERIA.md |
 | **Clarifications** | PHASE2_CLARIFICATIONS.md |
 | **Estimation** | PHASE2_ESTIMATION.md |

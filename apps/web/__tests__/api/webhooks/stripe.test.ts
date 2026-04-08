@@ -28,7 +28,7 @@ const mockPrisma = {
   $transaction: vi.fn((fn) => fn(mockPrisma)),
 };
 
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: mockPrisma,
 }));
 

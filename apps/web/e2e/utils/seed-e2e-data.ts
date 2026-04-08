@@ -15,17 +15,17 @@ const prisma = new PrismaClient();
 
 // Must match global-setup.ts and auth.fixture.ts
 const E2E_TEST_USER = {
-  email: process.env.E2E_TEST_USER_EMAIL || 'e2e-test@quotecraft.dev',
+  email: process.env.E2E_TEST_USER_EMAIL || 'e2e-test@oreko.dev',
   password: process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!',
   name: process.env.E2E_TEST_USER_NAME || 'E2E Test User',
 };
 
 // Must match role-permissions.spec.ts
 const ROLE_TEST_USERS = [
-  { email: 'owner@quotecraft.dev', password: 'OwnerPass123!', name: 'Owner User', role: 'owner' },
-  { email: 'admin@quotecraft.dev', password: 'AdminPass123!', name: 'Admin User', role: 'admin' },
-  { email: 'member@quotecraft.dev', password: 'MemberPass123!', name: 'Member User', role: 'member' },
-  { email: 'viewer@quotecraft.dev', password: 'ViewerPass123!', name: 'Viewer User', role: 'viewer' },
+  { email: 'owner@oreko.dev', password: 'OwnerPass123!', name: 'Owner User', role: 'owner' },
+  { email: 'admin@oreko.dev', password: 'AdminPass123!', name: 'Admin User', role: 'admin' },
+  { email: 'member@oreko.dev', password: 'MemberPass123!', name: 'Member User', role: 'member' },
+  { email: 'viewer@oreko.dev', password: 'ViewerPass123!', name: 'Viewer User', role: 'viewer' },
 ];
 
 async function hashPassword(password: string): Promise<string> {

@@ -12,7 +12,7 @@
 | Attribute | Value |
 |-----------|-------|
 | **Document ID** | TC-P2-001 |
-| **Project** | QuoteCraft - Phase 2 |
+| **Project** | Oreko - Phase 2 |
 | **Based On** | PHASE2_SPECIFICATION.md, PHASE2_UI_DESIGN.md, PHASE2_ARCHITECTURE.md, REQ_SPEC_VALIDATION.md |
 | **Test Categories** | Functional, Security, Performance, Accessibility, Edge Cases |
 
@@ -47,8 +47,8 @@
    - At least 1 workspace, 3 clients, 5 quotes (various statuses), 5 invoices (various statuses)
 
 3. **Test Accounts**
-   - Admin user: `admin@quotecraft.test` / `TestPassword123!`
-   - Standard user: `user@quotecraft.test` / `TestPassword123!`
+   - Admin user: `admin@oreko.test` / `TestPassword123!`
+   - Standard user: `user@oreko.test` / `TestPassword123!`
    - Guest access (unauthenticated)
 
 4. **Browser Requirements**

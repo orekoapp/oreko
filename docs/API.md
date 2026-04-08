@@ -1,4 +1,4 @@
-# QuoteCraft API Reference
+# Oreko API Reference
 
 **Version:** 1.0.0
 **Last Updated:** January 2026
@@ -21,7 +21,7 @@
 
 ## Overview
 
-QuoteCraft provides two primary interfaces for interacting with the application:
+Oreko provides two primary interfaces for interacting with the application:
 
 1. **REST API Routes** - Traditional HTTP endpoints for specific operations (authentication, payments, PDF generation, webhooks)
 2. **Server Actions** - Next.js Server Actions for secure, type-safe mutations (quotes, invoices, clients, settings)
@@ -65,7 +65,7 @@ All authenticated endpoints require a valid session obtained through NextAuth.js
 
 ## Authentication
 
-QuoteCraft uses [NextAuth.js v5](https://authjs.dev/) for authentication with JWT session strategy.
+Oreko uses [NextAuth.js v5](https://authjs.dev/) for authentication with JWT session strategy.
 
 ### Authentication Providers
 
@@ -1349,7 +1349,7 @@ Request body failed Zod schema validation.
 
 ## Rate Limiting
 
-QuoteCraft currently does not implement application-level rate limiting. It is recommended to configure rate limiting at the reverse proxy level (Traefik or Nginx).
+Oreko currently does not implement application-level rate limiting. It is recommended to configure rate limiting at the reverse proxy level (Traefik or Nginx).
 
 ### Recommended Limits
 
@@ -1377,7 +1377,7 @@ http:
 
 ## SDK / Client Libraries
 
-QuoteCraft does not currently provide official SDK libraries. However, since all Server Actions are type-safe TypeScript functions, you can:
+Oreko does not currently provide official SDK libraries. However, since all Server Actions are type-safe TypeScript functions, you can:
 
 1. **Use directly in React components:**
    ```tsx

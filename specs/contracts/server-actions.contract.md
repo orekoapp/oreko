@@ -1,4 +1,4 @@
-# QuoteCraft - Server Actions Contract
+# Oreko - Server Actions Contract
 
 **Generated:** 2026-02-24
 **Source:** `apps/web/lib/*/actions.ts` (16 modules)
@@ -32,7 +32,7 @@
 
 ## Overview
 
-QuoteCraft uses Next.js Server Actions as the primary API layer. All 16 modules follow consistent patterns for authentication, workspace isolation, soft deletes, and cache invalidation.
+Oreko uses Next.js Server Actions as the primary API layer. All 16 modules follow consistent patterns for authentication, workspace isolation, soft deletes, and cache invalidation.
 
 ### Key Conventions
 

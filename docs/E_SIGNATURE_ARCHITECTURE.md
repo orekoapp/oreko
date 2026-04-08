@@ -100,7 +100,7 @@ This approach satisfies **ESIGN Act** (US) and **eIDAS simple electronic signatu
 | Identity of signer | Email OTP verification + IP + user agent |
 | Integrity of record | SHA-256 hash proves document unchanged post-signature |
 
-**Disclaimer:** QuoteCraft's e-signatures comply with the intent of ESIGN Act and eIDAS simple electronic signatures. For regulated industries requiring advanced/qualified electronic signatures, integrate a certified provider.
+**Disclaimer:** Oreko's e-signatures comply with the intent of ESIGN Act and eIDAS simple electronic signatures. For regulated industries requiring advanced/qualified electronic signatures, integrate a certified provider.
 
 ---
 

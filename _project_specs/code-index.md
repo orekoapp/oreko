@@ -1,4 +1,4 @@
-# QuoteCraft Code Capability Index
+# Oreko Code Capability Index
 
 > Auto-generated: 2026-02-13
 > Total Files: 414 TypeScript/TSX | LOC: ~72,125 | React Components: 228

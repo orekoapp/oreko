@@ -2,7 +2,7 @@ import { getBaseUrl } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { z } from 'zod';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { hashPassword } from '@/lib/auth/credentials';
 import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
 import { passwordSchema } from '@/lib/validations/auth';

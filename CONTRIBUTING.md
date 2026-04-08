@@ -1,8 +1,8 @@
-# Contributing to QuoteCraft
+# Contributing to Oreko
 
-Welcome to QuoteCraft! We're thrilled that you're interested in contributing to the open-source alternative to Bloom and Bonsai. Whether you're fixing bugs, adding features, improving documentation, or helping with translations, every contribution makes a difference.
+Welcome to Oreko! We're thrilled that you're interested in contributing to the open-source alternative to Bloom and Bonsai. Whether you're fixing bugs, adding features, improving documentation, or helping with translations, every contribution makes a difference.
 
-QuoteCraft is an open-source, self-hosted visual quote and invoice management tool designed for small businesses, freelancers, and agencies. Our goal is to provide a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
+Oreko is an open-source, self-hosted visual quote and invoice management tool designed for small businesses, freelancers, and agencies. Our goal is to provide a beautiful, block-based visual builder for creating professional quotes that convert to invoices with zero data re-entry.
 
 ## Table of Contents
 
@@ -30,7 +30,7 @@ Key principles:
 
 ## How to Report Bugs
 
-Found a bug? Help us improve QuoteCraft by reporting it! Before creating an issue, please:
+Found a bug? Help us improve Oreko by reporting it! Before creating an issue, please:
 
 1. **Search existing issues** to avoid duplicates
 2. **Test on the latest version** to ensure the bug hasn't been fixed
@@ -64,7 +64,7 @@ If applicable, add screenshots to help explain the problem.
 - Browser: [e.g., Chrome 120, Firefox 121]
 - Node.js version: [e.g., 20.10.0]
 - pnpm version: [e.g., 8.12.0]
-- QuoteCraft version/commit: [e.g., v1.0.0 or commit hash]
+- Oreko version/commit: [e.g., v1.0.0 or commit hash]
 
 ## Additional Context
 Add any other context about the problem here, including error logs from the console or server.
@@ -76,7 +76,7 @@ Have an idea for a new feature? We'd love to hear it! Before suggesting a featur
 
 1. **Check the roadmap** in `specs/PRODUCT_SPEC.md` to see if it's already planned
 2. **Search existing issues** for similar suggestions
-3. **Consider the scope** - does it align with QuoteCraft's mission?
+3. **Consider the scope** - does it align with Oreko's mission?
 
 ### Feature Request Template
 
@@ -124,11 +124,11 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 # Fork the repository on GitHub, then clone your fork
-git clone https://github.com/YOUR_USERNAME/quote-software.git
-cd quote-software
+git clone https://github.com/YOUR_USERNAME/oreko.git
+cd oreko
 
 # Add the upstream remote
-git remote add upstream https://github.com/ORIGINAL_OWNER/quote-software.git
+git remote add upstream https://github.com/orekoapp/oreko.git
 ```
 
 #### 2. Install Dependencies
@@ -515,31 +515,18 @@ Reviewers will evaluate:
 
 ## Getting Help
 
-### Community Channels
-
-- **GitHub Discussions** - For questions, ideas, and community support
-  - [Q&A](../../discussions/categories/q-a) - Ask questions
-  - [Ideas](../../discussions/categories/ideas) - Share feature ideas
-  - [Show and Tell](../../discussions/categories/show-and-tell) - Share what you've built
+- **GitHub Issues** — For bug reports and feature requests
+- **Email** — support@oreko.app for general questions
 
 ### When to Use Each Channel
 
-| Need | Channel |
-|------|---------|
-| Bug reports | GitHub Issues |
-| Feature requests | GitHub Issues |
-| Quick questions | GitHub Discussions |
-| Code review help | Pull Request comments |
-| General discussion | GitHub Discussions |
-| Security issues | Email maintainers directly (see SECURITY.md) |
-
-### Tips for Getting Help
-
-1. Search existing issues and discussions first
-2. Provide context and details
-3. Include error messages and logs
-4. Share relevant code snippets
-5. Be patient and respectful
+| Need              | Channel                                    |
+| ----------------- | ------------------------------------------ |
+| Bug reports       | GitHub Issues                              |
+| Feature requests  | GitHub Issues                              |
+| General questions | Email support@oreko.app                    |
+| Code review help  | Pull Request comments                      |
+| Security issues   | Email security@oreko.app (see SECURITY.md) |
 
 ## Recognition
 
@@ -595,4 +582,5 @@ pnpm db:studio    # Open Prisma Studio
 
 ---
 
-Thank you for contributing to QuoteCraft! Your efforts help make quote and invoice management better for small businesses everywhere.
+Thank you for contributing to Oreko! Your efforts help make quote and invoice management better for small businesses everywhere.
+

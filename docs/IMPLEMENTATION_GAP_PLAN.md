@@ -1,4 +1,4 @@
-# QuoteCraft - Implementation Gap Bridging Plan
+# Oreko - Implementation Gap Bridging Plan
 
 **Created:** January 30, 2026
 **Based on:** Spec Verification Analysis

@@ -1,5 +1,5 @@
 {
-  "name": "@quotecraft/database",
+  "name": "@oreko/database",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { subDays, subMonths, startOfDay, format } from 'date-fns';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type {

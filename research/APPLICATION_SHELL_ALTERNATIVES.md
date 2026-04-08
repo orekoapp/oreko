@@ -126,7 +126,7 @@ npx shadcn@latest add https://shadcn-ui-sidebar.salimi.my/registry/shadcn-sideba
 - Tailwind CSS v4
 - shadcn/ui v3
 
-**Verdict:** Best choice if you need a complete dashboard template, not just sidebar. Overkill for QuoteCraft since we already have app structure.
+**Verdict:** Best choice if you need a complete dashboard template, not just sidebar. Overkill for Oreko since we already have app structure.
 
 ---
 
@@ -181,7 +181,7 @@ Copy-paste directly into your project. No CLI needed.
 
 ---
 
-## Recommendation for QuoteCraft
+## Recommendation for Oreko
 
 ### Best Approach: Hybrid Solution (Cost: $0)
 
@@ -199,7 +199,7 @@ Copy-paste directly into your project. No CLI needed.
 
 ### Implementation Steps
 
-Since QuoteCraft already has `apps/web/components/ui/sidebar.tsx` installed:
+Since Oreko already has `apps/web/components/ui/sidebar.tsx` installed:
 
 1. **Refactor `dashboard/nav.tsx`** to use existing sidebar primitives
 2. **Add sidebar-07's collapse-to-icons pattern**
@@ -290,7 +290,7 @@ Legend: ✅ Included | ➖ Add yourself | ❌ Not available
 
 ...provides equivalent functionality at **$0 cost**.
 
-### Action Items for QuoteCraft
+### Action Items for Oreko
 
 1. ❌ Do NOT purchase shadcnstudio subscription
 2. ✅ Use existing `sidebar.tsx` primitives

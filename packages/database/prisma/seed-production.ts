@@ -18,7 +18,7 @@ const prisma = new PrismaClient();
 
 // Demo account configuration - should match apps/web/lib/demo/constants.ts
 const DEMO_CONFIG = {
-  email: process.env.DEMO_USER_EMAIL || 'demo@quotecraft.demo',
+  email: process.env.DEMO_USER_EMAIL || 'demo@oreko.demo',
   password: process.env.DEMO_USER_PASSWORD || 'DemoPassword123!',
   displayName: 'Demo User',
   workspaceSlug: 'demo-workspace',

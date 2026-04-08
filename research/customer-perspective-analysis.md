@@ -1,4 +1,4 @@
-# Customer Perspective Analysis: QuoteCraft vs Bloom
+# Customer Perspective Analysis: Oreko vs Bloom
 
 *How potential customers perceive and evaluate both products*
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document analyzes how different customer segments would perceive QuoteCraft and Bloom when evaluating quote/invoice software. Understanding these perspectives helps identify marketing opportunities and product improvements.
+This document analyzes how different customer segments would perceive Oreko and Bloom when evaluating quote/invoice software. Understanding these perspectives helps identify marketing opportunities and product improvements.
 
 ---
 
@@ -44,7 +44,7 @@ This document analyzes how different customer segments would perceive QuoteCraft
 
 ---
 
-#### How They Perceive QuoteCraft:
+#### How They Perceive Oreko:
 
 **First Impression:** "This looks professional but... is it for developers?"
 - Sees GitHub link prominently
@@ -101,7 +101,7 @@ This document analyzes how different customer segments would perceive QuoteCraft
 
 ---
 
-#### How They Perceive QuoteCraft:
+#### How They Perceive Oreko:
 
 **First Impression:** "Finally, an open-source option!"
 - GitHub link immediately clicked
@@ -157,7 +157,7 @@ This document analyzes how different customer segments would perceive QuoteCraft
 
 ---
 
-#### How They Perceive QuoteCraft:
+#### How They Perceive Oreko:
 
 **First Impression:** "Looks clean but is it enterprise-ready?"
 - Limited team features concern them
@@ -212,7 +212,7 @@ This document analyzes how different customer segments would perceive QuoteCraft
 
 ---
 
-#### How They Perceive QuoteCraft:
+#### How They Perceive Oreko:
 
 **First Impression:** "Wait... it's actually FREE?"
 - "Open Source" and "FREE forever" catches eye
@@ -237,7 +237,7 @@ This document analyzes how different customer segments would perceive QuoteCraft
 
 ## Perception Summary Matrix
 
-| Aspect | Bloom Perception | QuoteCraft Perception |
+| Aspect | Bloom Perception | Oreko Perception |
 |--------|------------------|----------------------|
 | **Professionalism** | "Established, trusted" | "Clean, modern" |
 | **Target Audience** | "Made for creatives" | "Made for technical people" |
@@ -249,7 +249,7 @@ This document analyzes how different customer segments would perceive QuoteCraft
 
 ---
 
-## Key Perception Gaps for QuoteCraft
+## Key Perception Gaps for Oreko
 
 ### 1. "Is This for Developers Only?"
 **Problem:** Open source positioning may alienate non-technical users
@@ -285,7 +285,7 @@ This document analyzes how different customer segments would perceive QuoteCraft
 
 ---
 
-## Perception Advantages for QuoteCraft
+## Perception Advantages for Oreko
 
 ### 1. "Finally, Something That's Actually Free"
 - Open source model is genuinely differentiated
@@ -319,7 +319,7 @@ This document analyzes how different customer segments would perceive QuoteCraft
 5. Chooses based on specific feature need (galleries, scheduling)
 6. Commits to monthly subscription
 
-### QuoteCraft Customer Journey:
+### Oreko Customer Journey:
 1. Discovers via GitHub, Hacker News, or Google search
 2. Intrigued by open-source and free pricing
 3. Technical users: Clone and self-host
@@ -356,9 +356,9 @@ This document analyzes how different customer segments would perceive QuoteCraft
 
 **Bloom** wins perception with non-technical creative professionals due to comprehensive features, influencer trust, and polished brand identity.
 
-**QuoteCraft** wins perception with cost-conscious users, technical freelancers, and privacy-focused customers due to open-source model, focused features, and data ownership.
+**Oreko** wins perception with cost-conscious users, technical freelancers, and privacy-focused customers due to open-source model, focused features, and data ownership.
 
-**The opportunity for QuoteCraft:** Bridge the perception gap with non-technical users without losing the core appeal to technical users. This requires:
+**The opportunity for Oreko:** Bridge the perception gap with non-technical users without losing the core appeal to technical users. This requires:
 1. Dual positioning (technical vs. non-technical landing pages)
 2. Stronger social proof
 3. Clearer "it just works" messaging for cloud version

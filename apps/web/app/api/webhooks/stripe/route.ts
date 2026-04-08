@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { constructWebhookEvent, isStripeEnabled } from '@/lib/services/stripe';
 import { processPaymentWebhook, processAccountUpdate, processRefundWebhook } from '@/lib/payments/internal';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import type Stripe from 'stripe';
 import { logger } from '@/lib/logger';
 

@@ -1,4 +1,4 @@
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 
 // Create a notification (used internally when events happen)
 // NOT a server action — must not be callable from the client

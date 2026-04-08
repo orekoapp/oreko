@@ -1,8 +1,8 @@
 # Bug Report - Production Testing (Feb 17, 2026)
 
 **Tested by:** Automated human-tester mindset session
-**Environment:** https://quote-software-gamma.vercel.app
-**User:** Demo User (demo@quotecraft.demo) in Demo Workspace
+**Environment:** https://oreko-gamma.vercel.app
+**User:** Demo User (demo@oreko.demo) in Demo Workspace
 **Theme tested:** Dark mode + Light mode
 **Screenshots:** Saved in `bugs/` directory
 
@@ -96,11 +96,11 @@
 - **Actual:** Preview area shows **"$17700.00"** (no thousand separator comma), while sidebar shows **"$17,700.00"** (with comma). Two different formatters are being used on the same page.
 - **Screenshot:** `bugs/03-quote-detail.png`
 
-### BUG-10: Analytics Page Title Has Duplicate "QuoteCraft"
+### BUG-10: Analytics Page Title Has Duplicate "Oreko"
 - **Page:** Analytics (`/analytics`)
 - **Steps:** Check the browser tab title
-- **Expected:** "Analytics | QuoteCraft"
-- **Actual:** "Analytics | QuoteCraft **| QuoteCraft**" - the app name is duplicated in the title
+- **Expected:** "Analytics | Oreko"
+- **Actual:** "Analytics | Oreko **| Oreko**" - the app name is duplicated in the title
 - **Impact:** Minor but unprofessional, indicates template/layout metadata issue
 
 ### BUG-11: Dashboard "View All" Analytics Link Goes to Wrong URL
@@ -189,10 +189,10 @@
 
 ### BUG-21: Cannot Test Data Isolation - Logout Broken
 - **Page:** Login/Logout flow
-- **Steps:** Attempted to log out and log in as test@quotecraft.dev
+- **Steps:** Attempted to log out and log in as test@oreko.dev
 - **Expected:** Should be able to log out and test with different user accounts
 - **Actual:** Logout does not work (see BUG-01). The demo mode appears to auto-authenticate the demo user, making it impossible to:
-  1. Test with other user accounts (test@quotecraft.dev, owner@quotecraft.dev)
+  1. Test with other user accounts (test@oreko.dev, owner@oreko.dev)
   2. Verify data isolation between workspaces
   3. Test the login page functionality
   4. Test "forgot password" flow

@@ -1,4 +1,4 @@
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 
 async function deleteUser(email: string) {
   try {

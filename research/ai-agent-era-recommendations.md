@@ -1,18 +1,18 @@
-# QuoteCraft Strategic Recommendations for the AI Agent Era
+# Oreko Strategic Recommendations for the AI Agent Era
 
 ## Executive Summary
 
-Based on analysis of "The Death of Software 2.0" thesis, QuoteCraft faces both existential risk and significant opportunity. The article argues that AI agents will fundamentally restructure software value creation, with UI-centric horizontal SaaS tools being most vulnerable while data infrastructure and API-first systems become more valuable.
+Based on analysis of "The Death of Software 2.0" thesis, Oreko faces both existential risk and significant opportunity. The article argues that AI agents will fundamentally restructure software value creation, with UI-centric horizontal SaaS tools being most vulnerable while data infrastructure and API-first systems become more valuable.
 
-**Key Insight:** QuoteCraft must evolve from a "human-oriented consumption application" to a **persistent data layer and system of record** that AI agents can consume and manipulate.
+**Key Insight:** Oreko must evolve from a "human-oriented consumption application" to a **persistent data layer and system of record** that AI agents can consume and manipulate.
 
 ---
 
 ## Current Vulnerability Assessment
 
-### Why QuoteCraft Is At Risk
+### Why Oreko Is At Risk
 
-According to the article's framework, QuoteCraft exhibits several vulnerable characteristics:
+According to the article's framework, Oreko exhibits several vulnerable characteristics:
 
 | Risk Factor | Current State | Threat Level |
 |-------------|---------------|--------------|
@@ -30,7 +30,7 @@ An AI agent (like Claude Code or future successors) could theoretically:
 - Produce PDFs on-demand without a dedicated UI
 - Integrate directly with accounting/payment systems
 
-**If an AI can do this without QuoteCraft, what value remains?**
+**If an AI can do this without Oreko, what value remains?**
 
 ---
 
@@ -55,7 +55,7 @@ An AI agent (like Claude Code or future successors) could theoretically:
   - GDPR/data residency controls
   - Backup and disaster recovery guarantees
 
-**Why This Works:** AI agents need a reliable place to store and retrieve structured commercial data. QuoteCraft becomes infrastructure, not just an app.
+**Why This Works:** AI agents need a reliable place to store and retrieve structured commercial data. Oreko becomes infrastructure, not just an app.
 
 ---
 
@@ -120,7 +120,7 @@ export const quoteCraftTools = {
 };
 ```
 
-**Why This Works:** When AI agents need quote/invoice capabilities, they'll reach for QuoteCraft's API rather than generating documents from scratch.
+**Why This Works:** When AI agents need quote/invoice capabilities, they'll reach for Oreko's API rather than generating documents from scratch.
 
 ---
 
@@ -135,7 +135,7 @@ export const quoteCraftTools = {
    User: "Create a quote for Acme Corp for a 3-month website redesign
           project, use our standard rates"
 
-   QuoteCraft AI: [Generates complete quote with line items from rate cards]
+   Oreko AI: [Generates complete quote with line items from rate cards]
    ```
 
 2. **Intelligent Automation**
@@ -153,7 +153,7 @@ export const quoteCraftTools = {
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                  QuoteCraft                      │
+│                  Oreko                      │
 ├─────────────────────────────────────────────────┤
 │  ┌──────────┐  ┌──────────┐  ┌──────────────┐  │
 │  │ Web UI   │  │ API      │  │ AI Agent     │  │
@@ -242,13 +242,13 @@ Current (Vulnerable):          Future (Defensible):
 #### Bi-Directional Sync:
 
 ```
-CRM creates deal → QuoteCraft generates quote →
+CRM creates deal → Oreko generates quote →
 Client accepts → Invoice created →
 Payment received → CRM deal closed →
 Accounting updated
 ```
 
-**Why This Works:** Integration depth creates switching costs and positions QuoteCraft as essential infrastructure.
+**Why This Works:** Integration depth creates switching costs and positions Oreko as essential infrastructure.
 
 ---
 
@@ -321,13 +321,13 @@ Accounting updated
 
 ## Conclusion
 
-The "death of software 2.0" presents QuoteCraft with a strategic choice:
+The "death of software 2.0" presents Oreko with a strategic choice:
 
 **Option A (Risky):** Continue as a UI-centric quote builder and compete with AI-generated alternatives on features and price.
 
 **Option B (Recommended):** Evolve into the authoritative data layer for client commercial relationships, with AI-first interfaces and deep ecosystem integration.
 
-The window for this pivot is 3-5 years according to the article's timeline. Starting now positions QuoteCraft to ride the wave rather than be swept away by it.
+The window for this pivot is 3-5 years according to the article's timeline. Starting now positions Oreko to ride the wave rather than be swept away by it.
 
 ---
 

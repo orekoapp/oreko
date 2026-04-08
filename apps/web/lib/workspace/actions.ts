@@ -3,7 +3,7 @@
 import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { randomBytes } from 'crypto';
 import { auth } from '@/lib/auth';
 

@@ -28,7 +28,7 @@ const mockPrisma = {
   },
 };
 
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: mockPrisma,
 }));
 

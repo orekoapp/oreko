@@ -2,7 +2,7 @@
 
 import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { DomainEventType } from '@/lib/events/types';
 import { encrypt } from '@/lib/encryption';

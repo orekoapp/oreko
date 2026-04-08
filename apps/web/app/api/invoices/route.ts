@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { auth } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders, defaultRateLimitOptions } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';

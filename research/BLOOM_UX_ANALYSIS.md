@@ -1,17 +1,17 @@
-# Bloom Invoice Creation Flow Analysis & QuoteCraft Suggestions
+# Bloom Invoice Creation Flow Analysis & Oreko Suggestions
 
 **Date:** February 2026
 **Analyst:** UI/UX Research
-**Objective:** Study Bloom's invoice creation flow and compare with actual QuoteCraft implementation
-**Method:** Hands-on testing of both Bloom (app.bloom.io) and QuoteCraft (quote-software-gamma.vercel.app)
+**Objective:** Study Bloom's invoice creation flow and compare with actual Oreko implementation
+**Method:** Hands-on testing of both Bloom (app.bloom.io) and Oreko (oreko-gamma.vercel.app)
 
 ---
 
 ## 1. Executive Summary
 
-This document analyzes Bloom's invoice creation workflow and compares it with QuoteCraft's **actual implementation** (not just specs). Both applications were tested hands-on to provide accurate comparisons.
+This document analyzes Bloom's invoice creation workflow and compares it with Oreko's **actual implementation** (not just specs). Both applications were tested hands-on to provide accurate comparisons.
 
-**Key Finding:** QuoteCraft has already implemented several patterns similar to Bloom (client selection before editor, rate card integration) while maintaining its visual block builder advantage. The main gap is the lack of split-view preview - QuoteCraft uses toggle-based preview rather than always-visible preview.
+**Key Finding:** Oreko has already implemented several patterns similar to Bloom (client selection before editor, rate card integration) while maintaining its visual block builder advantage. The main gap is the lack of split-view preview - Oreko uses toggle-based preview rather than always-visible preview.
 
 ---
 
@@ -120,9 +120,9 @@ Bloom provides three preview modes:
 
 ---
 
-## 3. Actual QuoteCraft UI Analysis (Hands-On Testing)
+## 3. Actual Oreko UI Analysis (Hands-On Testing)
 
-**Tested URL:** https://quote-software-gamma.vercel.app/login
+**Tested URL:** https://oreko-gamma.vercel.app/login
 **Login Method:** Demo login (no sign-up required)
 
 ### 3.1 Quote Creation Flow
@@ -236,7 +236,7 @@ When a block is selected, shows context-sensitive settings:
 - Heading Level dropdown (H1 Large, H2, H3...)
 - Alignment buttons (Left, Center, Right)
 
-### 3.8 What QuoteCraft Does Well
+### 3.8 What Oreko Does Well
 
 1. ✅ **Client selection before editor** - Similar to Bloom's project pattern
 2. ✅ **Rate Cards integration** - Better organized than Bloom's templates
@@ -255,11 +255,11 @@ When a block is selected, shows context-sensitive settings:
 
 ---
 
-## 4. Updated Comparison: Bloom vs. QuoteCraft (Actual)
+## 4. Updated Comparison: Bloom vs. Oreko (Actual)
 
 ### 4.1 Architecture Comparison
 
-| Aspect | Bloom | QuoteCraft (Actual) |
+| Aspect | Bloom | Oreko (Actual) |
 |--------|-------|---------------------|
 | **Editor Type** | Form-based split view | Visual block builder (multi-panel) |
 | **Document Model** | Project-centric | Client-centric (selection required) |
@@ -270,7 +270,7 @@ When a block is selected, shows context-sensitive settings:
 | **E-Signature** | Available | Built-in Signature block |
 | **Rate Card UX** | Flat dropdown list | Categorized panel with search |
 
-### 4.2 QuoteCraft Strengths (Confirmed)
+### 4.2 Oreko Strengths (Confirmed)
 
 1. **Visual Block Builder** ✅
    - More creative freedom than Bloom's form
@@ -291,31 +291,31 @@ When a block is selected, shows context-sensitive settings:
    - Can show/hide Blocks, Rate Cards, Properties panels
    - Adapts to user preference
 
-### 4.3 Bloom Strengths QuoteCraft Should Adopt
+### 4.3 Bloom Strengths Oreko Should Adopt
 
 1. **Always-Visible Preview (Split-View)**
    - Bloom: Preview always shown alongside form
-   - QuoteCraft: Toggle between Edit/Preview modes
+   - Oreko: Toggle between Edit/Preview modes
    - **Recommendation:** Add optional split-view mode
 
 2. **Real-Time Preview Updates**
    - Bloom: Changes reflect instantly in preview panel
-   - QuoteCraft: Must click Preview button to see result
+   - Oreko: Must click Preview button to see result
    - **Recommendation:** Real-time preview in split mode
 
 3. **Preview Format Options**
    - Bloom: Can preview as Payment Page, Email, PDF
-   - QuoteCraft: Single preview view
+   - Oreko: Single preview view
    - **Recommendation:** Add format toggle
 
 4. **Recently Used Rate Cards**
    - Bloom: N/A (flat list)
-   - QuoteCraft: Has categories but no "Recent" section
+   - Oreko: Has categories but no "Recent" section
    - **Recommendation:** Add "Recently Used" section at top of Rate Cards panel
 
 ---
 
-## 5. Updated Recommendations for QuoteCraft
+## 5. Updated Recommendations for Oreko
 
 Based on hands-on testing of both applications, here are prioritized recommendations:
 
@@ -414,7 +414,7 @@ Feb 15 Payment received ($810)
 
 #### 5.2.3 Dark Mode Toggle
 
-QuoteCraft has theme toggle in header (observed during testing). Ensure:
+Oreko has theme toggle in header (observed during testing). Ensure:
 - System preference detection
 - Persists across sessions
 - Apply to both app UI and document preview
@@ -444,7 +444,7 @@ Allow users to message clients within the quote/invoice context:
 
 ### 6.1 Creation Flow Analysis
 
-**QuoteCraft Actual Flow (Good!):**
+**Oreko Actual Flow (Good!):**
 ```
 Dashboard → Click "New Quote" → Client Selection Modal → Visual Builder
 ```
@@ -476,7 +476,7 @@ Dashboard → Click "New Quote" → Quick Setup Modal → Pre-filled Editor
 
 ### 6.2 Tax Configuration UX
 
-Bloom's approach is clean - QuoteCraft should adopt similar:
+Bloom's approach is clean - Oreko should adopt similar:
 
 ```
 Tax Rate
@@ -493,7 +493,7 @@ Tax Rate
 
 ### 6.3 Draft vs Published States
 
-QuoteCraft shows "(unsaved)" / "Quote #DRAFT" - could be clearer:
+Oreko shows "(unsaved)" / "Quote #DRAFT" - could be clearer:
 
 ```
 DRAFT STATE:                    READY TO SEND:
@@ -507,7 +507,7 @@ DRAFT STATE:                    READY TO SEND:
 
 ### 6.4 Empty State (Observed)
 
-QuoteCraft pre-fills template content, which is good. For completely empty quotes, consider:
+Oreko pre-fills template content, which is good. For completely empty quotes, consider:
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -573,7 +573,7 @@ interface InvoiceDefaults {
 
 ## 8. Summary: What to Adopt vs. What to Keep Unique
 
-### Already Implemented (QuoteCraft) ✅
+### Already Implemented (Oreko) ✅
 | Feature | Status |
 |---------|--------|
 | Visual block builder | ✅ Working well |
@@ -584,7 +584,7 @@ interface InvoiceDefaults {
 | Drag-and-drop blocks | ✅ Core functionality |
 
 ### Adopt from Bloom (Priority):
-| Feature | Adaptation for QuoteCraft | Priority |
+| Feature | Adaptation for Oreko | Priority |
 |---------|--------------------------|----------|
 | Split-view preview | Add as optional mode | High |
 | Real-time preview | Auto-update in split mode | High |
@@ -592,7 +592,7 @@ interface InvoiceDefaults {
 | Recently Used section | Add to Rate Cards panel | Medium |
 | Fix click-to-add | Debug rate card click | High (Bug) |
 
-### Keep QuoteCraft Unique:
+### Keep Oreko Unique:
 | Feature | Why It Matters |
 |---------|---------------|
 | Visual block builder | Core differentiator, more flexible than Bloom |
@@ -604,9 +604,9 @@ interface InvoiceDefaults {
 ### Don't Adopt:
 | Bloom Feature | Why Not |
 |--------------|---------|
-| Mandatory projects | QuoteCraft's client selection is sufficient |
+| Mandatory projects | Oreko's client selection is sufficient |
 | Fixed form layout | Would lose visual builder advantage |
-| Dark-only theme | QuoteCraft already has theme toggle |
+| Dark-only theme | Oreko already has theme toggle |
 
 ---
 
@@ -640,9 +640,9 @@ Due to dark theme rendering, visual screenshots were not captured clearly. Key U
 
 ---
 
-## Appendix B: QuoteCraft UI Testing Notes
+## Appendix B: Oreko UI Testing Notes
 
-**Testing URL:** https://quote-software-gamma.vercel.app/login
+**Testing URL:** https://oreko-gamma.vercel.app/login
 **Login Method:** Demo button (no sign-up required)
 **Testing Date:** February 2026
 
@@ -671,5 +671,5 @@ Due to dark theme rendering, visual screenshots were not captured clearly. Key U
 
 ---
 
-*Document prepared for QuoteCraft product team. February 2026.*
-*Updated with hands-on testing of both Bloom and QuoteCraft.*
+*Document prepared for Oreko product team. February 2026.*
+*Updated with hands-on testing of both Bloom and Oreko.*

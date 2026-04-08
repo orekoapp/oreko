@@ -1,7 +1,7 @@
 import { test, expect, BrowserContext } from '@playwright/test';
 
 const TEST_USER = {
-  email: process.env.E2E_TEST_USER_EMAIL || 'test@quotecraft.dev',
+  email: process.env.E2E_TEST_USER_EMAIL || 'test@oreko.dev',
   password: process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!',
 };
 
