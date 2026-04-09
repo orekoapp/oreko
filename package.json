@@ -38,9 +38,9 @@
     "husky": "^9.1.0",
     "lint-staged": "^15.2.0",
     "prettier": "^3.4.0",
-    "prettier-plugin-tailwindcss": "^0.6.0",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "tsx": "^4.19.0",
-    "turbo": "^2.3.0",
+    "turbo": "^2.9.5",
     "typescript": "^5.7.0"
   },
   "lint-staged": {
@@ -53,6 +53,6 @@
     ]
   },
   "dependencies": {
-    "isomorphic-dompurify": "^3.0.0"
+    "isomorphic-dompurify": "^3.8.0"
   }
 }
