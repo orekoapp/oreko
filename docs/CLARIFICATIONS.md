@@ -1,4 +1,4 @@
-# QuoteCraft Specification Clarifications
+# Oreko Specification Clarifications
 
 ## Document Purpose
 

@@ -101,7 +101,7 @@ const jsonLd = {
   description:
     'Open-source visual quote and invoice builder for freelancers and small businesses',
   url: getBaseUrl(),
-  downloadUrl: process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/WisdmLabs/quote-software',
+  downloadUrl: process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/orekoapp/oreko',
   offers: [
     {
       '@type': 'Offer',

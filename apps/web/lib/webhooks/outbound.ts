@@ -1,5 +1,5 @@
 import { createHmac } from 'crypto';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { domainEvents } from '@/lib/events/emitter';
 import type { DomainEvent, DomainEventType } from '@/lib/events/types';
 import { logger } from '@/lib/logger';

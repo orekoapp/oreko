@@ -1,14 +1,14 @@
-# QuoteCraft Code Discovery Report
+# Oreko Code Discovery Report
 
 > Generated: 2026-02-13
 >
-> This report provides a human-readable summary of the QuoteCraft codebase capabilities.
+> This report provides a human-readable summary of the Oreko codebase capabilities.
 
 ---
 
 ## Executive Summary
 
-QuoteCraft is a full-featured visual quote and invoice management application built with Next.js 14 App Router, TypeScript, Prisma, and Shadcn UI. The codebase follows a well-organized monorepo structure using Turborepo with pnpm workspaces.
+Oreko is a full-featured visual quote and invoice management application built with Next.js 14 App Router, TypeScript, Prisma, and Shadcn UI. The codebase follows a well-organized monorepo structure using Turborepo with pnpm workspaces.
 
 ### Key Statistics
 
@@ -29,7 +29,7 @@ QuoteCraft is a full-featured visual quote and invoice management application bu
 ## Project Structure Overview
 
 ```
-quote-software/
+oreko/
 +-- apps/
 |   +-- web/                    # Next.js 14 application
 |       +-- app/                # App Router pages (50+ routes)
@@ -366,7 +366,7 @@ Workspace (1)
 
 ## Summary
 
-QuoteCraft is a mature, well-structured codebase with:
+Oreko is a mature, well-structured codebase with:
 
 - **Complete MVP features**: All P0 features are implemented
 - **Extensible architecture**: Clear patterns for adding new features

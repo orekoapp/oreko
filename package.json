@@ -1,13 +1,13 @@
 {
-  "name": "quotecraft",
+  "name": "oreko",
   "version": "0.1.0",
   "private": true,
-  "description": "Visual quote and invoice management software",
+  "description": "Open-source quote and invoice tool for freelancers and small businesses",
   "repository": {
     "type": "git",
-    "url": "https://github.com/quotecraft/quotecraft.git"
+    "url": "https://github.com/orekoapp/oreko.git"
   },
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=20.0.0",
@@ -25,11 +25,11 @@
     "test": "turbo test",
     "test:coverage": "turbo test:coverage",
     "test:e2e": "turbo test:e2e",
-    "db:generate": "pnpm --filter @quotecraft/database generate",
-    "db:push": "pnpm --filter @quotecraft/database push",
-    "db:migrate": "pnpm --filter @quotecraft/database migrate",
-    "db:studio": "pnpm --filter @quotecraft/database studio",
-    "db:seed": "pnpm --filter @quotecraft/database seed",
+    "db:generate": "pnpm --filter @oreko/database generate",
+    "db:push": "pnpm --filter @oreko/database push",
+    "db:migrate": "pnpm --filter @oreko/database migrate",
+    "db:studio": "pnpm --filter @oreko/database studio",
+    "db:seed": "pnpm --filter @oreko/database seed",
     "clean": "turbo clean && rm -rf node_modules",
     "prepare": "husky"
   },

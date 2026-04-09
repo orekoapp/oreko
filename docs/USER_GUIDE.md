@@ -1,6 +1,6 @@
-# QuoteCraft User Guide
+# Oreko User Guide
 
-QuoteCraft is an open-source, self-hosted visual quote and invoice management tool built for freelancers, agencies, and small businesses. It lets you create stunning, block-based visual quotes, get them signed electronically, convert accepted quotes to invoices with one click, and collect payments through Stripe -- all without expensive subscriptions or vendor lock-in.
+Oreko is an open-source, self-hosted visual quote and invoice management tool built for freelancers, agencies, and small businesses. It lets you create stunning, block-based visual quotes, get them signed electronically, convert accepted quotes to invoices with one click, and collect payments through Stripe -- all without expensive subscriptions or vendor lock-in.
 
 This guide walks you through every feature in the application.
 
@@ -25,9 +25,9 @@ This guide walks you through every feature in the application.
 
 ## Getting Started
 
-### What is QuoteCraft?
+### What is Oreko?
 
-QuoteCraft replaces the patchwork of spreadsheets, PDF editors, and invoicing tools that many freelancers and agencies rely on. The core workflow is simple:
+Oreko replaces the patchwork of spreadsheets, PDF editors, and invoicing tools that many freelancers and agencies rely on. The core workflow is simple:
 
 1. **Create a beautiful quote** using the visual drag-and-drop builder.
 2. **Send it for e-signature** -- your client receives a portal link by email.
@@ -38,7 +38,7 @@ All of your data stays in one place, with full audit trails, PDF downloads, anal
 
 ### Creating Your Account
 
-1. Navigate to the QuoteCraft landing page and click **Get Started Free**.
+1. Navigate to the Oreko landing page and click **Get Started Free**.
 2. Fill in your name, email address, and a password on the registration page. Alternatively, sign in with Google or GitHub using the OAuth buttons.
 3. After registration you will be redirected to the onboarding wizard.
 
@@ -56,7 +56,7 @@ Choose your primary, secondary, and accent colors. Upload your logo. Select a fo
 Connect your Stripe account using Stripe Connect to accept online payments directly from invoices. This step is optional and can be configured later.
 
 **Step 4 -- Complete**
-Review your setup and click **Go to Dashboard** to start using QuoteCraft.
+Review your setup and click **Go to Dashboard** to start using Oreko.
 
 ---
 
@@ -164,7 +164,7 @@ To bulk-import clients:
 
 1. Navigate to the Clients page.
 2. Use the import function to upload a CSV file.
-3. QuoteCraft will detect duplicate emails and skip already-existing records.
+3. Oreko will detect duplicate emails and skip already-existing records.
 4. Review the import results and confirm.
 
 ### Bulk Operations
@@ -175,7 +175,7 @@ Select multiple clients using the checkboxes in the data table to perform bulk d
 
 ## Creating Quotes
 
-QuoteCraft offers two ways to create quotes: the **Quote Editor** (form-based, split-view) and the **Visual Builder** (block-based, drag-and-drop).
+Oreko offers two ways to create quotes: the **Quote Editor** (form-based, split-view) and the **Visual Builder** (block-based, drag-and-drop).
 
 ### Starting a New Quote
 
@@ -249,7 +249,7 @@ To add a block, drag it from the blocks panel onto the canvas, or click the "+" 
 ### Saving and Sending
 
 - **Save Draft** -- Click the save button to save your work. Quotes start in "draft" status and can be edited freely.
-- **Send Quote** -- When you are ready, click **Send** on the quote detail page. QuoteCraft will email the client a link to the client portal where they can view, accept or decline, and sign the quote. The status changes to "sent."
+- **Send Quote** -- When you are ready, click **Send** on the quote detail page. Oreko will email the client a link to the client portal where they can view, accept or decline, and sign the quote. The status changes to "sent."
 
 ### Quote Status Lifecycle
 
@@ -306,7 +306,7 @@ Default notes and terms are pre-filled from your invoice settings.
 
 ### Converting a Quote to an Invoice
 
-This is one of QuoteCraft's core features -- zero data re-entry:
+This is one of Oreko's core features -- zero data re-entry:
 
 1. Navigate to an accepted quote's detail page.
 2. Click **Convert to Invoice**.
@@ -629,7 +629,7 @@ Visual customization for client-facing documents:
 
 **Path:** Settings > Appearance
 
-Control how QuoteCraft looks for you:
+Control how Oreko looks for you:
 
 - **Theme** -- Switch between light mode, dark mode, or system default.
 - **Font Size** -- Adjust the base font size for the application interface.
@@ -688,7 +688,7 @@ Configure invoice numbering and defaults:
 
 **Path:** Settings > Emails
 
-Customize the emails QuoteCraft sends to your clients:
+Customize the emails Oreko sends to your clients:
 
 - **Template Types** -- Quote sent, invoice sent, payment received, quote accepted, invoice reminder, and others.
 - **Subject** -- The email subject line.
@@ -718,7 +718,7 @@ Configuration options:
 
 **Path:** Settings > Billing
 
-Manage your QuoteCraft plan and payment methods (applicable for hosted/cloud deployments).
+Manage your Oreko plan and payment methods (applicable for hosted/cloud deployments).
 
 ---
 
@@ -754,7 +754,7 @@ Use the activity timelines on quote and invoice detail pages to see exactly when
 
 ### Record All Payments
 
-Even if you are not using Stripe, record manual payments (checks, bank transfers, cash) in QuoteCraft. This keeps your outstanding balance and revenue metrics accurate.
+Even if you are not using Stripe, record manual payments (checks, bank transfers, cash) in Oreko. This keeps your outstanding balance and revenue metrics accurate.
 
 ### Review Analytics Regularly
 
@@ -770,7 +770,7 @@ Use the search functionality (accessible from the header) to quickly find quotes
 
 ### Back Up Your Data (Self-Hosted)
 
-If you are running a self-hosted deployment, set up regular PostgreSQL database backups. QuoteCraft uses soft deletes for important records, but a database backup is still essential for disaster recovery.
+If you are running a self-hosted deployment, set up regular PostgreSQL database backups. Oreko uses soft deletes for important records, but a database backup is still essential for disaster recovery.
 
 ---
 
@@ -795,4 +795,4 @@ If you need assistance:
 
 ---
 
-*QuoteCraft is open source. Contributions, bug reports, and feature requests are welcome on GitHub.*
+*Oreko is open source. Contributions, bug reports, and feature requests are welcome on GitHub.*

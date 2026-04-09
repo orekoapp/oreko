@@ -1,4 +1,4 @@
-# QuoteCraft Execution Plan: Critical & High Priority Items
+# Oreko Execution Plan: Critical & High Priority Items
 
 > From `docs/ARCHITECTURE_ANALYSIS.md` — 7 work streams, ordered by dependency chain.
 > **Status: PLAN ONLY — not yet executed.**
@@ -250,8 +250,8 @@ This is dramatically simpler than the Traefik labels-based config while providin
     image: prodrigestivill/postgres-backup-local:16
     environment:
       POSTGRES_HOST: postgres
-      POSTGRES_DB: quotecraft
-      POSTGRES_USER: quotecraft
+      POSTGRES_DB: oreko
+      POSTGRES_USER: oreko
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       SCHEDULE: "@daily"
       BACKUP_KEEP_DAYS: 7
@@ -281,7 +281,7 @@ This is dramatically simpler than the Traefik labels-based config while providin
 - `.github/workflows/docker-publish.yml` — New workflow
 
 **Trigger:** On release tag (`v*`)
-**Action:** Build multi-arch image (amd64 + arm64), push to `ghcr.io/quotecraft/quotecraft:latest` and `:v1.x.x`
+**Action:** Build multi-arch image (amd64 + arm64), push to `ghcr.io/oreko/oreko:latest` and `:v1.x.x`
 
 ### Verification
 

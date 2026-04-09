@@ -4,7 +4,7 @@ import type {
   PaymentSettings,
   TaxRate,
   NumberSequence,
-} from '@quotecraft/database';
+} from '@oreko/database';
 
 // Business profile type
 export interface BusinessProfileData {

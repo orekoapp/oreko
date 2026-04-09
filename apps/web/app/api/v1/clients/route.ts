@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { prisma, Prisma } from '@quotecraft/database';
+import { prisma, Prisma } from '@oreko/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 
 // GET /api/v1/clients — List clients

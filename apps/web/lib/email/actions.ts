@@ -1,7 +1,7 @@
 'use server';
 
 import { getBaseUrl } from '@/lib/utils';
-import { prisma, Prisma } from '@quotecraft/database';
+import { prisma, Prisma } from '@oreko/database';
 import { revalidatePath } from 'next/cache';
 import { sendEmail, sendQuoteSentEmail, sendInvoiceSentEmail } from '@/lib/services/email';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';

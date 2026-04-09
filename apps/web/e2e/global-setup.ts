@@ -4,7 +4,7 @@ import fs from 'fs';
 
 // Test user credentials - can be overridden with environment variables
 const TEST_USER = {
-  email: process.env.E2E_TEST_USER_EMAIL || 'test@quotecraft.dev',
+  email: process.env.E2E_TEST_USER_EMAIL || 'test@oreko.dev',
   password: process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!',
   name: process.env.E2E_TEST_USER_NAME || 'Test User',
 };
@@ -12,7 +12,7 @@ const TEST_USER = {
 // Onboarding test user - generate a unique email for each test run to ensure fresh user
 const timestamp = Date.now();
 const ONBOARDING_USER = {
-  email: process.env.E2E_ONBOARDING_USER_EMAIL || `onboarding-${timestamp}@quotecraft.dev`,
+  email: process.env.E2E_ONBOARDING_USER_EMAIL || `onboarding-${timestamp}@oreko.dev`,
   password: process.env.E2E_ONBOARDING_USER_PASSWORD || 'OnboardingTest123!',
   name: process.env.E2E_ONBOARDING_USER_NAME || 'Onboarding Test User',
 };
@@ -162,7 +162,7 @@ async function globalSetup(config: FullConfig) {
 
       // Check if we're on onboarding by looking at the page content
       const isOnOnboarding = page.url().includes('/onboarding') ||
-        await page.getByText('Welcome to QuoteCraft').isVisible().catch(() => false) ||
+        await page.getByText('Welcome to Oreko').isVisible().catch(() => false) ||
         await page.getByText('set up your account').isVisible().catch(() => false);
 
       if (isOnOnboarding) {
@@ -176,7 +176,7 @@ async function globalSetup(config: FullConfig) {
 
       // Check again if we got redirected to onboarding
       const stillOnOnboarding = page.url().includes('/onboarding') ||
-        await page.getByText('Welcome to QuoteCraft').isVisible().catch(() => false);
+        await page.getByText('Welcome to Oreko').isVisible().catch(() => false);
 
       if (stillOnOnboarding) {
         console.log('📝 Still on onboarding after navigation, completing...');
@@ -187,7 +187,7 @@ async function globalSetup(config: FullConfig) {
 
         // Final check
         const finalCheck = page.url().includes('/onboarding') ||
-          await page.getByText('Welcome to QuoteCraft').isVisible().catch(() => false);
+          await page.getByText('Welcome to Oreko').isVisible().catch(() => false);
 
         if (finalCheck) {
           console.log('⚠ Could not complete onboarding, taking screenshot...');

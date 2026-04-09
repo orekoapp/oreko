@@ -24,7 +24,7 @@
 ## 1. Entity Relationship Diagram
 
 ```
-                                    QUOTECRAFT DATABASE SCHEMA
+                                    OREKO DATABASE SCHEMA
     ============================================================================================================
 
                                          AUTHENTICATION & USERS
@@ -1936,10 +1936,10 @@ async function main() {
   const passwordHash = await hash('password123', 12);
 
   const user = await prisma.user.upsert({
-    where: { email: 'demo@quotecraft.dev' },
+    where: { email: 'demo@oreko.dev' },
     update: {},
     create: {
-      email: 'demo@quotecraft.dev',
+      email: 'demo@oreko.dev',
       passwordHash,
       name: 'Demo User',
       emailVerifiedAt: new Date(),
@@ -2230,7 +2230,7 @@ async function main() {
   });
 
   console.log('Seed data created successfully!');
-  console.log('Demo user: demo@quotecraft.dev / password123');
+  console.log('Demo user: demo@oreko.dev / password123');
 }
 
 main()

@@ -66,7 +66,7 @@ function getEmailClient(): Resend | null {
 // Get default config
 function getDefaultConfig(): EmailConfig {
   return {
-    from: process.env.EMAIL_FROM || 'Oreko <noreply@quotecraft.app>',
+    from: process.env.EMAIL_FROM || 'Oreko <noreply@oreko.app>',
     replyTo: process.env.EMAIL_REPLY_TO,
   };
 }

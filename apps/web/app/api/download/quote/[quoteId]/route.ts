@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { getQuotePdfData, getQuotePdfDataByToken } from '@/lib/pdf/actions';
 import { generateQuotePdfHtml } from '@/lib/pdf/templates';
 import { generatePdfFromHtml } from '@/lib/services/pdf';

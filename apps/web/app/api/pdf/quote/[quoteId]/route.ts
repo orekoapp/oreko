@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getQuotePdfData, getQuotePdfDataByToken } from '@/lib/pdf/actions';
 import { generateQuotePdfHtml } from '@/lib/pdf/templates';
 import { auth } from '@/lib/auth';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { logger } from '@/lib/logger';
 
 /**

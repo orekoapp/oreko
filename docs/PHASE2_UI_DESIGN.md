@@ -12,7 +12,7 @@
 | Attribute | Value |
 |-----------|-------|
 | **Document ID** | UI-P2-001 |
-| **Project** | QuoteCraft - Phase 2 |
+| **Project** | Oreko - Phase 2 |
 | **Based On** | UI_REFERENCES.md, IMAGE_ANNOTATIONS.md, DESIGN_DISCOVERY.md, PHASE2_SPECIFICATION.md |
 | **Design System** | Shadcn UI + Custom Extensions |
 | **Approvers** | TBD |

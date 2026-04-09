@@ -1,4 +1,4 @@
-# QuoteCraft Product Specification
+# Oreko Product Specification
 
 **Version:** 1.0.0
 **Status:** Production-Ready for Development
@@ -33,7 +33,7 @@
 
 ### Product Overview
 
-**Name:** QuoteCraft (working title)
+**Name:** Oreko (working title)
 **Type:** Open-source, self-hosted visual quote and invoice management tool
 **Target Market:** Small business owners, freelancers, solopreneurs, small agencies
 **Positioning:** "The open-source alternative to Bloom and Bonsai"
@@ -52,7 +52,7 @@ Service professionals face a fragmented toolchain for managing quotes, contracts
 
 ### The Solution
 
-QuoteCraft delivers a unified visual quote-to-payment workflow:
+Oreko delivers a unified visual quote-to-payment workflow:
 
 - **Visual Quote Builder:** Block-based, drag-and-drop editor (NOT spreadsheet-like)
 - **One-Click Conversion:** Quote to invoice with zero data re-entry
@@ -1185,7 +1185,7 @@ Users
 
 ## Appendix B: Competitive Feature Comparison
 
-| Feature | QuoteCraft | Bloom | Bonsai | FreshBooks | Wave |
+| Feature | Oreko | Bloom | Bonsai | FreshBooks | Wave |
 |---------|------------|-------|--------|------------|------|
 | Visual Quote Builder | Yes | Yes | Partial | No | No |
 | Self-Hosted Option | **Yes** | No | No | No | No |

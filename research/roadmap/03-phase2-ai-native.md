@@ -3,7 +3,7 @@
 ## Overview
 
 **Duration:** Months 4-8
-**Goal:** Embed AI capabilities directly into QuoteCraft
+**Goal:** Embed AI capabilities directly into Oreko
 **Dependencies:** Phase 1 API complete
 
 ---

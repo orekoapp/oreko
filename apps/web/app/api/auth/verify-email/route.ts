@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { checkRateLimit, getRateLimitHeaders, strictRateLimitOptions } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';
 import { logger } from '@/lib/logger';

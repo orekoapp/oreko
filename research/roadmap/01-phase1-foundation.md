@@ -592,7 +592,7 @@ POST /api/v1/webhooks/:id/deliveries/:deliveryId/retry
 
 ```typescript
 // Signature verification
-// Header: X-QuoteCraft-Signature: t=1706745600,v1=sha256_hash
+// Header: X-Oreko-Signature: t=1706745600,v1=sha256_hash
 
 function verifyWebhookSignature(
   payload: string,

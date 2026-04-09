@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 import { toNumber, formatCurrency, getBaseUrl } from '@/lib/utils';
 import { sendInvoiceSentEmail } from '@/lib/services/email';

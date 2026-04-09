@@ -1,4 +1,4 @@
-# QuoteCraft - Recovered Functional Specification
+# Oreko - Recovered Functional Specification
 
 **Recovered from codebase:** 2026-02-24
 **Source:** Server actions, API routes, database schema, and component analysis
@@ -8,7 +8,7 @@
 
 ## 1. Product Overview
 
-**QuoteCraft** is a self-hosted, multi-tenant SaaS application for visual quote and invoice management. It targets freelancers, agencies, and small businesses who need to create professional quotes, convert them to invoices, collect payments, and manage client relationships -- all from a single platform.
+**Oreko** is a self-hosted, multi-tenant SaaS application for visual quote and invoice management. It targets freelancers, agencies, and small businesses who need to create professional quotes, convert them to invoices, collect payments, and manage client relationships -- all from a single platform.
 
 **Key Value Proposition:** A block-based visual quote builder with seamless quote-to-invoice conversion, client portals for acceptance/payment, e-signature contracts, and analytics dashboards. Positioned as the open-source alternative to Bloom and Bonsai.
 
@@ -911,7 +911,7 @@
 - All pages tested in both modes.
 
 #### NFR-10: Auto-deploy from Main Branch
-- Production URL: `https://quote-software-gamma.vercel.app`
+- Production URL: `https://oreko-gamma.vercel.app`
 - Vercel auto-deploys on push to `main`.
 - `vercel.json` buildCommand includes `npx prisma db push --accept-data-loss` for schema sync.
 - Deployment takes approximately 2 minutes.

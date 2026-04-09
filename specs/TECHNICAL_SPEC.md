@@ -183,7 +183,7 @@ User Request Flow:
 ### 3.1 Monorepo Structure
 
 ```
-quote-software/
+oreko/
 ├── apps/
 │   └── web/                          # Next.js application
 │       ├── app/                      # App Router pages
@@ -1440,7 +1440,7 @@ services:
   # Application
   # ============================================
   app:
-    image: ghcr.io/yourorg/quote-software:latest
+    image: ghcr.io/yourorg/oreko:latest
     build:
       context: .
       dockerfile: docker/Dockerfile
@@ -1491,8 +1491,8 @@ services:
   # Background Worker
   # ============================================
   worker:
-    image: ghcr.io/yourorg/quote-software:latest
-    container_name: quote-worker
+    image: ghcr.io/yourorg/oreko:latest
+    container_name: oreko-worker
     restart: unless-stopped
     command: ["node", "apps/web/worker.js"]
     depends_on:
@@ -2373,7 +2373,7 @@ import {
   InvoiceSentEmail,
   PaymentReceivedEmail,
   PaymentReminderEmail,
-} from '@quote-software/email-templates';
+} from '@oreko/email-templates';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -2940,7 +2940,7 @@ export const logger = pino({
   // Add request ID for tracing
   mixin() {
     return {
-      service: 'quote-software',
+      service: 'oreko',
       version: process.env.npm_package_version,
     };
   },
@@ -3192,8 +3192,8 @@ export async function GET() {
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourorg/quote-software.git
-cd quote-software
+git clone https://github.com/yourorg/oreko.git
+cd oreko
 
 # 2. Install dependencies
 pnpm install
@@ -3280,16 +3280,16 @@ ENABLE_DEMO_MODE=true
     "test:watch": "turbo test -- --watch",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "db:generate": "pnpm --filter @quote-software/database db:generate",
-    "db:migrate:dev": "pnpm --filter @quote-software/database db:migrate:dev",
-    "db:migrate:deploy": "pnpm --filter @quote-software/database db:migrate:deploy",
-    "db:push": "pnpm --filter @quote-software/database db:push",
-    "db:seed": "pnpm --filter @quote-software/database db:seed",
-    "db:reset": "pnpm --filter @quote-software/database db:reset",
-    "db:studio": "pnpm --filter @quote-software/database db:studio",
+    "db:generate": "pnpm --filter @oreko/database db:generate",
+    "db:migrate:dev": "pnpm --filter @oreko/database db:migrate:dev",
+    "db:migrate:deploy": "pnpm --filter @oreko/database db:migrate:deploy",
+    "db:push": "pnpm --filter @oreko/database db:push",
+    "db:seed": "pnpm --filter @oreko/database db:seed",
+    "db:reset": "pnpm --filter @oreko/database db:reset",
+    "db:studio": "pnpm --filter @oreko/database db:studio",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
     "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
-    "docker:build": "docker build -f docker/Dockerfile -t quote-software .",
+    "docker:build": "docker build -f docker/Dockerfile -t oreko .",
     "docker:run": "docker-compose up -d",
     "prepare": "husky install"
   }
@@ -3329,16 +3329,16 @@ sudo apt install docker-compose-plugin -y
 sudo usermod -aG docker $USER
 
 # Create application directory
-sudo mkdir -p /opt/quote-software
-sudo chown $USER:$USER /opt/quote-software
-cd /opt/quote-software
+sudo mkdir -p /opt/oreko
+sudo chown $USER:$USER /opt/oreko
+cd /opt/oreko
 ```
 
 #### Step 3: Configure Environment
 
 ```bash
 # Download docker-compose.yml
-curl -O https://raw.githubusercontent.com/yourorg/quote-software/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/yourorg/oreko/main/docker-compose.yml
 
 # Create environment file
 cat > .env << 'EOF'
@@ -3460,9 +3460,9 @@ Backups are stored in the `backup_data` volume.
 
 ```bash
 # Create backup script
-cat > /opt/quote-software/scripts/backup.sh << 'EOF'
+cat > /opt/oreko/scripts/backup.sh << 'EOF'
 #!/bin/bash
-BACKUP_DIR="/opt/quote-software/backups"
+BACKUP_DIR="/opt/oreko/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
@@ -3471,7 +3471,7 @@ mkdir -p $BACKUP_DIR
 docker compose exec -T postgres pg_dump -U quote quote | gzip > "$BACKUP_DIR/db_$TIMESTAMP.sql.gz"
 
 # File storage backup
-tar -czf "$BACKUP_DIR/files_$TIMESTAMP.tar.gz" -C /var/lib/docker/volumes/quote-software_app_data/_data .
+tar -czf "$BACKUP_DIR/files_$TIMESTAMP.tar.gz" -C /var/lib/docker/volumes/oreko_app_data/_data .
 
 # Keep only last 7 days
 find $BACKUP_DIR -type f -mtime +7 -delete
@@ -3479,10 +3479,10 @@ find $BACKUP_DIR -type f -mtime +7 -delete
 echo "Backup completed: $TIMESTAMP"
 EOF
 
-chmod +x /opt/quote-software/scripts/backup.sh
+chmod +x /opt/oreko/scripts/backup.sh
 
 # Add to crontab
-(crontab -l 2>/dev/null; echo "0 2 * * * /opt/quote-software/scripts/backup.sh") | crontab -
+(crontab -l 2>/dev/null; echo "0 2 * * * /opt/oreko/scripts/backup.sh") | crontab -
 ```
 
 #### Restore from Backup
@@ -3492,10 +3492,10 @@ chmod +x /opt/quote-software/scripts/backup.sh
 docker compose stop app worker
 
 # Restore database
-gunzip -c backups/db_20260130_020000.sql.gz | docker compose exec -T postgres psql -U quote quote
+gunzip -c backups/db_20260130_020000.sql.gz | docker compose exec -T postgres psql -U oreko oreko
 
 # Restore files
-tar -xzf backups/files_20260130_020000.tar.gz -C /var/lib/docker/volumes/quote-software_app_data/_data
+tar -xzf backups/files_20260130_020000.tar.gz -C /var/lib/docker/volumes/oreko_app_data/_data
 
 # Start application
 docker compose start app worker
@@ -3507,7 +3507,7 @@ docker compose exec app pnpm db:migrate:deploy
 ### 11.4 Upgrading
 
 ```bash
-cd /opt/quote-software
+cd /opt/oreko
 
 # Pull latest images
 docker compose pull

@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The QuoteCraft project has **comprehensive existing documentation**. No recovery of documentation from code analysis is required as all major documentation categories are well-covered.
+The Oreko project has **comprehensive existing documentation**. No recovery of documentation from code analysis is required as all major documentation categories are well-covered.
 
 ### Documentation Status: ✅ COMPLETE
 

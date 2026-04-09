@@ -2,7 +2,7 @@
 
 import { cache } from 'react';
 import { cookies } from 'next/headers';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 

@@ -111,7 +111,7 @@ describe('PDF Generation Integration', () => {
       const branding = {
         logo: 'https://example.com/logo.png',
         primaryColor: '#3B82F6',
-        companyName: 'QuoteCraft',
+        companyName: 'Oreko',
         companyAddress: '123 Business St, City, ST 12345',
       };
 

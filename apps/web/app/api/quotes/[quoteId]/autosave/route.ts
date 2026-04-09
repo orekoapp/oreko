@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { validateRequestOrigin } from '@/lib/csrf';

@@ -1,4 +1,4 @@
-# QuoteCraft Architecture Analysis
+# Oreko Architecture Analysis
 
 > Evaluated against business-driven architectural requirements for an open-source invoice/billing system.
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-QuoteCraft is a **modular monolith** built on Next.js 15 with a Turborepo workspace structure. It gets several things right — workspace-based multi-tenancy, audit trails, lean deployment via Docker Compose, and clean separation of concerns. However, there are significant gaps in **plugin/extensibility**, **multi-currency support**, **financial record immutability**, **internationalization**, and **deployment simplicity** that would limit its viability as a widely-adopted open-source billing tool.
+Oreko is a **modular monolith** built on Next.js 15 with a Turborepo workspace structure. It gets several things right — workspace-based multi-tenancy, audit trails, lean deployment via Docker Compose, and clean separation of concerns. However, there are significant gaps in **plugin/extensibility**, **multi-currency support**, **financial record immutability**, **internationalization**, and **deployment simplicity** that would limit its viability as a widely-adopted open-source billing tool.
 
 ### Scorecard
 
@@ -27,7 +27,7 @@ QuoteCraft is a **modular monolith** built on Next.js 15 with a Turborepo worksp
 
 ## 1. Community as Your "Scale Unknown"
 
-### What QuoteCraft Does Well
+### What Oreko Does Well
 
 - **Modular monolith** — single Next.js deployment, no distributed systems overhead. Easy to clone, build, and contribute to.
 - **Turborepo workspaces** separate `database`, `ui`, `types`, and `web` packages cleanly.
@@ -65,7 +65,7 @@ Action: Make Redis optional. Add a quick-start docker-compose
 | Puppeteer/Chromium | ~512MB (peak) | For PDF generation |
 | **Total** | **~1-1.5GB** | |
 
-A $5/month VPS typically has 1GB RAM. QuoteCraft cannot run on it. A $10/month VPS (2GB) would be tight, especially during PDF generation when Puppeteer spawns a headless Chrome instance consuming ~512MB.
+A $5/month VPS typically has 1GB RAM. Oreko cannot run on it. A $10/month VPS (2GB) would be tight, especially during PDF generation when Puppeteer spawns a headless Chrome instance consuming ~512MB.
 
 ### Dependency Weight Analysis
 
@@ -93,7 +93,7 @@ Action: Drop Redis requirement. Replace Puppeteer with a lighter
 
 ### Current State: PROBLEMATIC
 
-**QuoteCraft uses soft deletes on financial records.** This is architecturally wrong for a billing system.
+**Oreko uses soft deletes on financial records.** This is architecturally wrong for a billing system.
 
 ```prisma
 // Current schema — invoices can be soft-deleted
@@ -109,11 +109,11 @@ model Invoice {
 
 2. **Quote-to-invoice conversion is mutable.** The system allows modifying invoices after creation. Financial records should be append-only: create, then create adjustments/credits — never modify the original.
 
-3. **No credit note system.** When an invoice needs correction, the standard pattern is: void original → issue credit note → issue corrected invoice. QuoteCraft has no credit note model.
+3. **No credit note system.** When an invoice needs correction, the standard pattern is: void original → issue credit note → issue corrected invoice. Oreko has no credit note model.
 
 4. **No sequential numbering guarantee.** While `invoiceNumber` is unique per workspace, there's no guarantee of sequential, gap-free numbering — a legal requirement in many jurisdictions (EU VAT Directive, Indian GST).
 
-### What QuoteCraft Does Right
+### What Oreko Does Right
 
 - **Event audit trail tables** (`QuoteEvent`, `InvoiceEvent`) capture state changes with actor, IP, user agent, and metadata. This is a solid foundation.
 - **E-signature audit data** stored with IP, user agent, timestamp, and document hash (SHA-256).
@@ -194,7 +194,7 @@ Action:
 
 ### Current State: NON-EXISTENT
 
-**This is the most critical architectural gap.** The analysis requirement states: *"This is your most important architectural decision"* — and QuoteCraft has no extension mechanism whatsoever.
+**This is the most critical architectural gap.** The analysis requirement states: *"This is your most important architectural decision"* — and Oreko has no extension mechanism whatsoever.
 
 #### What's Missing
 
@@ -303,10 +303,10 @@ Action:
 
 ### Current: Modular Monolith ✅
 
-QuoteCraft correctly chose a modular monolith pattern. This is the right call for an open-source billing tool.
+Oreko correctly chose a modular monolith pattern. This is the right call for an open-source billing tool.
 
 ```
-quote-software/
+oreko/
 ├── apps/web/                    # Single deployable unit
 │   ├── app/                     # Next.js App Router (pages + API)
 │   ├── components/              # React components
@@ -441,10 +441,10 @@ services:
 # Proposed: 2 services minimum
 services:
   web:
-    image: quotecraft/quotecraft:latest
+    image: oreko/oreko:latest
     ports: ["3000:3000"]
     environment:
-      DATABASE_URL: postgresql://quotecraft:password@postgres:5432/quotecraft
+      DATABASE_URL: postgresql://oreko:password@postgres:5432/oreko
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
     depends_on:
       postgres:
@@ -454,11 +454,11 @@ services:
     image: postgres:16-alpine
     volumes: ["pgdata:/var/lib/postgresql/data"]
     environment:
-      POSTGRES_DB: quotecraft
-      POSTGRES_USER: quotecraft
+      POSTGRES_DB: oreko
+      POSTGRES_USER: oreko
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U quotecraft"]
+      test: ["CMD-SHELL", "pg_isready -U oreko"]
 
 volumes:
   pgdata:
@@ -560,9 +560,9 @@ Action:
 
 ## Conclusion
 
-QuoteCraft has a **solid architectural foundation** — the modular monolith pattern, PostgreSQL-first design, workspace-based multi-tenancy, and audit trail system are all correct choices. The codebase is well-organized and the deployment story (Docker Compose + Vercel) covers both self-hosted and managed scenarios.
+Oreko has a **solid architectural foundation** — the modular monolith pattern, PostgreSQL-first design, workspace-based multi-tenancy, and audit trail system are all correct choices. The codebase is well-organized and the deployment story (Docker Compose + Vercel) covers both self-hosted and managed scenarios.
 
-However, it currently operates as a **closed application rather than an open platform.** The three critical gaps — financial record immutability, extensibility, and multi-currency support — must be addressed before QuoteCraft can credibly serve as an open-source alternative to commercial billing tools. The good news is that the existing architecture doesn't fight against these changes — the monolith can evolve incrementally without a rewrite.
+However, it currently operates as a **closed application rather than an open platform.** The three critical gaps — financial record immutability, extensibility, and multi-currency support — must be addressed before Oreko can credibly serve as an open-source alternative to commercial billing tools. The good news is that the existing architecture doesn't fight against these changes — the monolith can evolve incrementally without a rewrite.
 
 The recommended path is:
 1. Fix the data model (immutability, currencies, minor units)

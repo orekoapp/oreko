@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { Suspense } from 'react';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { ChangePasswordForm } from './change-password-form';
 import { ProfileForm } from './profile-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

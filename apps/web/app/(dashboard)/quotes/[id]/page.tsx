@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { FileText, Edit, Download, Trash2, ExternalLink, Receipt, ArrowRight, Clock, CheckCircle, XCircle, Eye, Mail, PenLine } from 'lucide-react';
 import { getQuote } from '@/lib/quotes/actions';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';

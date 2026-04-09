@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { randomBytes } from 'crypto';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { authenticateApiRequest, apiSuccess, apiError } from '@/lib/api/auth';
 import { toNumber, getBaseUrl } from '@/lib/utils';
 import { sendQuoteSentEmail } from '@/lib/services/email';

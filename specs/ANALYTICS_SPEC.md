@@ -1,4 +1,4 @@
-# QuoteCraft Analytics Dashboard Specification
+# Oreko Analytics Dashboard Specification
 
 **Version:** 1.0.0
 **Status:** Development Ready
@@ -25,7 +25,7 @@
 
 ### Purpose
 
-Add a comprehensive analytics dashboard to QuoteCraft that provides business owners with actionable insights into their quoting, invoicing, and payment performance. The analytics suite bridges the gap between the original spec design (analysis.png) and the current implementation.
+Add a comprehensive analytics dashboard to Oreko that provides business owners with actionable insights into their quoting, invoicing, and payment performance. The analytics suite bridges the gap between the original spec design (analysis.png) and the current implementation.
 
 ### Goals
 

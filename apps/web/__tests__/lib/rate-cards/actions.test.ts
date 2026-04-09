@@ -25,7 +25,7 @@ const { mockPrisma, mockGetCurrentUserWorkspace } = vi.hoisted(() => {
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: mockPrisma,
   Prisma: {
     InputJsonValue: {},

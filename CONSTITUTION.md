@@ -1,8 +1,8 @@
-# QuoteCraft Development Constitution
+# Oreko Development Constitution
 
 ## Purpose
 
-This constitution establishes the inviolable principles, boundaries, and guardrails for the QuoteCraft development project. All development decisions, implementations, and architectural choices must comply with these rules.
+This constitution establishes the inviolable principles, boundaries, and guardrails for the Oreko development project. All development decisions, implementations, and architectural choices must comply with these rules.
 
 ---
 
@@ -10,14 +10,14 @@ This constitution establishes the inviolable principles, boundaries, and guardra
 
 ### 1.1 Product Definition
 
-QuoteCraft is **exclusively** a visual quote and invoice management tool. It is:
+Oreko is **exclusively** a visual quote and invoice management tool. It is:
 - An open-source, self-hosted solution
 - A SaaS option for cloud deployment
 - A tool for freelancers, small businesses, and agencies
 
 ### 1.2 Product Scope Boundaries
 
-**QuoteCraft SHALL:**
+**Oreko SHALL:**
 - Create, manage, and send professional quotes
 - Convert quotes to invoices seamlessly
 - Handle e-signatures and contract attachments
@@ -26,7 +26,7 @@ QuoteCraft is **exclusively** a visual quote and invoice management tool. It is:
 - Offer rate card management for quick quoting
 - Generate professional PDFs
 
-**QuoteCraft SHALL NOT:**
+**Oreko SHALL NOT:**
 - Become a full accounting system
 - Include CRM/lead management features
 - Add project management capabilities
@@ -352,4 +352,4 @@ Temporary exceptions may be granted:
 
 ---
 
-*This constitution was established on January 30, 2026 and governs all development activities for the QuoteCraft project.*
+*This constitution was established on January 30, 2026 and governs all development activities for the Oreko project.*

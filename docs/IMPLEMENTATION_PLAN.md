@@ -1,4 +1,4 @@
-# QuoteCraft - Implementation Plan
+# Oreko - Implementation Plan
 
 **Created:** January 30, 2026
 **Based on:** PROJECT_STATUS.md analysis
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This plan outlines the remaining implementation work for QuoteCraft MVP. The foundation and Quote Builder are complete. Focus is on completing P0 (Critical) features first, followed by P1 (Important) features.
+This plan outlines the remaining implementation work for Oreko MVP. The foundation and Quote Builder are complete. Focus is on completing P0 (Critical) features first, followed by P1 (Important) features.
 
 ---
 

@@ -41,11 +41,11 @@ COPY --from=deps /app ./
 COPY . .
 
 # Re-link workspace packages (symlinks don't survive Docker COPY between stages)
-RUN mkdir -p node_modules/@quotecraft && \
-    ln -sf ../../../packages/database node_modules/@quotecraft/database && \
-    ln -sf ../../../packages/ui node_modules/@quotecraft/ui && \
-    ln -sf ../../../packages/utils node_modules/@quotecraft/utils && \
-    ln -sf ../../../packages/types node_modules/@quotecraft/types
+RUN mkdir -p node_modules/@oreko && \
+    ln -sf ../../../packages/database node_modules/@oreko/database && \
+    ln -sf ../../../packages/ui node_modules/@oreko/ui && \
+    ln -sf ../../../packages/utils node_modules/@oreko/utils && \
+    ln -sf ../../../packages/types node_modules/@oreko/types
 
 # Generate Prisma client
 RUN ./node_modules/.bin/prisma generate --schema=packages/database/prisma/schema.prisma

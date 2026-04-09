@@ -1,7 +1,7 @@
 'use server';
 
 import { cache } from 'react';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import type { OnboardingProgress, OnboardingStep } from './types';

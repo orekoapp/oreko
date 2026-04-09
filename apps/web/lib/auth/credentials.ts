@@ -1,4 +1,4 @@
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import bcrypt from 'bcryptjs';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logger, maskEmail } from '@/lib/logger';

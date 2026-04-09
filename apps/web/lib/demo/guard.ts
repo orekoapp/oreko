@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { DEMO_CONFIG } from './constants';
 
 /**

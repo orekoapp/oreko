@@ -1,4 +1,4 @@
-# QuoteCraft - Manual Test Cases
+# Oreko - Manual Test Cases
 
 **Version:** 1.0.0
 **Created:** January 30, 2026

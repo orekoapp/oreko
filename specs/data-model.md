@@ -1,4 +1,4 @@
-# QuoteCraft Data Model
+# Oreko Data Model
 
 **Source:** `packages/database/prisma/schema.prisma`
 **Database:** PostgreSQL (Neon Serverless)

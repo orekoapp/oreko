@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { headers } from 'next/headers';
 import type { QuoteBlock } from './types';
 import { toNumber } from '@/lib/utils';

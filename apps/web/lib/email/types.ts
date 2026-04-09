@@ -1,4 +1,4 @@
-import type { EmailTemplate, ScheduledEmail } from '@quotecraft/database';
+import type { EmailTemplate, ScheduledEmail } from '@oreko/database';
 
 // Email template types
 export const EMAIL_TEMPLATE_TYPES = [

@@ -5,7 +5,7 @@ test.describe('Public Navigation', () => {
     await page.goto('/login');
 
     // Page should have proper title
-    await expect(page).toHaveTitle(/quotecraft/i);
+    await expect(page).toHaveTitle(/oreko/i);
   });
 
   test('should have proper page structure on login', async ({ page }) => {

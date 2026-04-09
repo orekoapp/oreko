@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { revalidatePath } from 'next/cache';
 import {
   stripe,

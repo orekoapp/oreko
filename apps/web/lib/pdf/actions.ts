@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { toNumber } from '@/lib/utils';
 import type { QuotePdfData, InvoicePdfData, ContractPdfData } from './types';

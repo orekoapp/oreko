@@ -111,11 +111,11 @@ CI=true pnpm test:e2e regression/
 ## Test Prerequisites
 
 1. **Test Users**: The following test users must exist in the database:
-   - `test@quotecraft.dev` (standard user)
-   - `owner@quotecraft.dev` (owner role)
-   - `admin@quotecraft.dev` (admin role)
-   - `member@quotecraft.dev` (member role)
-   - `viewer@quotecraft.dev` (viewer role)
+   - `test@oreko.dev` (standard user)
+   - `owner@oreko.dev` (owner role)
+   - `admin@oreko.dev` (admin role)
+   - `member@oreko.dev` (member role)
+   - `viewer@oreko.dev` (viewer role)
 
 2. **Test Data**: Some tests require pre-existing data:
    - At least one client

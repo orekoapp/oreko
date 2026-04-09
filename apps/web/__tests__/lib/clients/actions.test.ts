@@ -22,7 +22,7 @@ vi.mock('@/lib/api/errors', () => ({
 }));
 vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
 vi.mock('nanoid', () => ({ nanoid: vi.fn(() => 'mock-nanoid-id') }));
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: mockPrisma,
   Prisma: { InputJsonValue: {}, ClientWhereInput: {}, JsonNull: null },
 }));

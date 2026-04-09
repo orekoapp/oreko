@@ -1,4 +1,4 @@
-import type { Client, Quote, Invoice } from '@quotecraft/database';
+import type { Client, Quote, Invoice } from '@oreko/database';
 
 // Serialized versions with number instead of Decimal (for client components)
 type SerializedQuote = Omit<Quote, 'subtotal' | 'discountValue' | 'discountAmount' | 'taxTotal' | 'total'> & {

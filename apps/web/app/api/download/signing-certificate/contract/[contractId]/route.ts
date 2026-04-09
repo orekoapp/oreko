@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { generateSigningCertificateHtml } from '@/lib/signing/certificate-template';
 import { generatePdfFromHtml } from '@/lib/services/pdf';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';

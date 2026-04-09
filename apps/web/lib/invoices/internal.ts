@@ -4,7 +4,7 @@
  */
 
 import { randomBytes } from 'crypto';
-import { prisma, type Prisma } from '@quotecraft/database';
+import { prisma, type Prisma } from '@oreko/database';
 
 /** Generate a cryptographically secure access token */
 function generateAccessToken(): string {

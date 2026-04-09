@@ -126,7 +126,7 @@
   <!-- Bottom bar -->
   <rect x="0" y="590" width="1200" height="40" fill="black" opacity="0.15"/>
   <text x="105" y="616" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="white" opacity="0.6" font-weight="400">
-    github.com/WisdmLabs/quote-software
+    github.com/orekoapp/oreko
   </text>
   <text x="1095" y="616" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="white" opacity="0.6" font-weight="400" text-anchor="end">
     Open Source &amp; Self-Hosted

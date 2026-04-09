@@ -5,7 +5,7 @@
  * These functions are called from webhook handlers and API routes only.
  */
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import {
   stripe,
   isStripeEnabled,

@@ -2,7 +2,7 @@ import '@/lib/env'; // Trim env vars early — fixes Vercel trailing \n issue
 import NextAuth from 'next-auth';
 import type { Session } from 'next-auth';
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { authConfig } from './config';
 import { encryptedAdapter } from './encrypted-adapter';
 

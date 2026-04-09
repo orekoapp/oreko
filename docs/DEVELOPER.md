@@ -1,6 +1,6 @@
-# QuoteCraft Developer Guide
+# Oreko Developer Guide
 
-This guide provides comprehensive documentation for developers working on QuoteCraft, an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies.
+This guide provides comprehensive documentation for developers working on Oreko, an open-source, self-hosted visual quote and invoice management tool for small businesses, freelancers, and agencies.
 
 ---
 
@@ -38,8 +38,8 @@ Ensure you have the following installed:
 **Step 1: Clone the Repository**
 
 ```bash
-git clone https://github.com/quotecraft/quotecraft.git
-cd quote-software
+git clone https://github.com/oreko/oreko.git
+cd oreko
 ```
 
 **Step 2: Install Dependencies**
@@ -69,7 +69,7 @@ NODE_ENV=development
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Database
-DATABASE_URL="postgresql://quotecraft:quotecraft@localhost:5432/quotecraft?schema=public"
+DATABASE_URL="postgresql://oreko:oreko@localhost:5432/oreko?schema=public"
 
 # Redis
 REDIS_URL="redis://localhost:6379"
@@ -140,10 +140,10 @@ The application will be available at `http://localhost:3000`.
 
 ### 2.1 Monorepo Structure
 
-QuoteCraft uses a Turborepo-powered monorepo with pnpm workspaces:
+Oreko uses a Turborepo-powered monorepo with pnpm workspaces:
 
 ```
-quote-software/
+oreko/
 ├── apps/
 │   └── web/                     # Next.js 14+ application
 │       ├── app/                 # App Router pages
@@ -173,10 +173,10 @@ quote-software/
 
 | Package | Purpose | Path |
 |---------|---------|------|
-| `@quotecraft/database` | Prisma schema, client, migrations, seeds | `packages/database/` |
-| `@quotecraft/types` | Shared TypeScript type definitions | `packages/types/` |
-| `@quotecraft/utils` | Shared utility functions (formatting, validation) | `packages/utils/` |
-| `@quotecraft/email-templates` | React Email templates | `packages/email-templates/` |
+| `@oreko/database` | Prisma schema, client, migrations, seeds | `packages/database/` |
+| `@oreko/types` | Shared TypeScript type definitions | `packages/types/` |
+| `@oreko/utils` | Shared utility functions (formatting, validation) | `packages/utils/` |
+| `@oreko/email-templates` | React Email templates | `packages/email-templates/` |
 
 ### 2.3 Application Architecture
 
@@ -279,7 +279,7 @@ Default to React Server Components. Use `'use client'` only when needed:
 
 ```typescript
 // Server Component (default) - no directive needed
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 
 export async function QuoteList() {
   const quotes = await prisma.quote.findMany();
@@ -477,10 +477,10 @@ const prisma = new PrismaClient();
 async function main() {
   // Create test user
   const user = await prisma.user.upsert({
-    where: { email: 'demo@quotecraft.app' },
+    where: { email: 'demo@oreko.app' },
     update: {},
     create: {
-      email: 'demo@quotecraft.app',
+      email: 'demo@oreko.app',
       name: 'Demo User',
       passwordHash: await hash('demo123', 12),
     },
@@ -517,7 +517,7 @@ main()
 // lib/quotes/actions.ts
 'use server';
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 
 export async function getQuotes(filter: QuoteFilter) {
   const quotes = await prisma.quote.findMany({
@@ -597,7 +597,7 @@ const quotes = await prisma.quote.findMany({
 
 ## 5. Server Actions Pattern
 
-Server Actions are the primary way to handle mutations in QuoteCraft.
+Server Actions are the primary way to handle mutations in Oreko.
 
 ### 5.1 Creating a New Server Action
 
@@ -608,7 +608,7 @@ Server Actions are the primary way to handle mutations in QuoteCraft.
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { auth } from '@/lib/auth';
 import { createQuoteSchema } from './schemas';
 
@@ -752,7 +752,7 @@ API routes are used for webhooks, PDF generation, and public endpoints.
 // app/api/quotes/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 
 export async function GET(
   request: NextRequest,
@@ -1084,7 +1084,7 @@ const mockPrisma = {
   },
 };
 
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: mockPrisma,
 }));
 
@@ -1340,7 +1340,7 @@ Use browser DevTools Network tab to inspect API calls.
 pnpm db:generate
 ```
 
-**Issue: "Cannot find module '@quotecraft/database'"**
+**Issue: "Cannot find module '@oreko/database'"**
 
 ```bash
 # Rebuild packages

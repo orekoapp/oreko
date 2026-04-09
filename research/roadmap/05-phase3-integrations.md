@@ -14,7 +14,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    QuoteCraft Core                           │
+│                    Oreko Core                           │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │               Integration Manager                    │    │
 │  │  ┌───────────┐ ┌───────────┐ ┌───────────────────┐  │    │
@@ -64,8 +64,8 @@ interface IntegrationConnector {
   getLastSyncTime(): Promise<Date | null>;
 
   // Entity mappings
-  mapToExternal<T>(entity: QuoteCraftEntity, type: string): T;
-  mapFromExternal<T>(data: T, type: string): QuoteCraftEntity;
+  mapToExternal<T>(entity: OrekoEntity, type: string): T;
+  mapFromExternal<T>(data: T, type: string): OrekoEntity;
 }
 
 type IntegrationCapability =
@@ -175,7 +175,7 @@ export class QuickBooksConnector implements IntegrationConnector {
 
   async syncClients(direction: "push" | "pull" | "bidirectional") {
     if (direction === "push" || direction === "bidirectional") {
-      // Push QuoteCraft clients to QuickBooks
+      // Push Oreko clients to QuickBooks
       const clients = await getClientsToSync("quickbooks");
       for (const client of clients) {
         if (client.external_ids?.quickbooks) {
@@ -188,7 +188,7 @@ export class QuickBooksConnector implements IntegrationConnector {
     }
 
     if (direction === "pull" || direction === "bidirectional") {
-      // Pull QuickBooks customers to QuoteCraft
+      // Pull QuickBooks customers to Oreko
       const customers = await this.getCustomers({ since: this.lastSyncTime });
       for (const customer of customers) {
         const existing = await findClientByExternalId("quickbooks", customer.Id);
@@ -360,7 +360,7 @@ interface AccountingSyncConfig {
   sync_direction: "push" | "pull" | "bidirectional";
 
   // Conflict resolution
-  conflict_resolution: "quotecraft_wins" | "external_wins" | "newest_wins";
+  conflict_resolution: "oreko_wins" | "external_wins" | "newest_wins";
 
   // Automation
   auto_sync_enabled: boolean;
@@ -499,7 +499,7 @@ export class HubSpotConnector implements IntegrationConnector {
       phone: client.phone,
       company: client.company,
       // Custom properties
-      quotecraft_client_id: client.id,
+      oreko_client_id: client.id,
       total_quoted: client.stats.total_quoted,
       total_invoiced: client.stats.total_invoiced
     };
@@ -789,7 +789,7 @@ export class SlackConnector implements IntegrationConnector {
     }
   }
 
-  // Slash command handler: /quotecraft
+  // Slash command handler: /oreko
   async handleSlashCommand(command: SlackSlashCommand) {
     const [action, ...args] = command.text.split(" ");
 
@@ -801,7 +801,7 @@ export class SlackConnector implements IntegrationConnector {
         return this.getOverdueInvoices();
 
       case "quote":
-        // /quotecraft quote "Client Name" "Project Title"
+        // /oreko quote "Client Name" "Project Title"
         return this.quickQuoteFlow(args, command);
 
       default:
@@ -820,7 +820,7 @@ export class SlackConnector implements IntegrationConnector {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "*📊 QuoteCraft Status (Last 7 Days)*"
+            text: "*📊 Oreko Status (Last 7 Days)*"
           }
         },
         {
@@ -864,17 +864,17 @@ const ADDON_CONFIG = {
   }
 };
 
-// When opening an email, show relevant QuoteCraft data
+// When opening an email, show relevant Oreko data
 function onGmailMessageOpen(e: GoogleAppsScript.Gmail.Schema.Message) {
   const email = e.gmail.messageMetadata.message;
   const senderEmail = extractEmail(email.from);
 
-  // Look up client in QuoteCraft
-  const client = callQuoteCraftAPI(`/clients?email=${senderEmail}`);
+  // Look up client in Oreko
+  const client = callOrekoAPI(`/clients?email=${senderEmail}`);
 
   if (!client) {
     return createCard({
-      header: "QuoteCraft",
+      header: "Oreko",
       sections: [{
         widgets: [{
           textParagraph: {
@@ -886,7 +886,7 @@ function onGmailMessageOpen(e: GoogleAppsScript.Gmail.Schema.Message) {
               text: "Create Client",
               onClick: {
                 openLink: {
-                  url: `${QUOTECRAFT_URL}/clients/new?email=${senderEmail}`
+                  url: `${OREKO_URL}/clients/new?email=${senderEmail}`
                 }
               }
             }]
@@ -897,11 +897,11 @@ function onGmailMessageOpen(e: GoogleAppsScript.Gmail.Schema.Message) {
   }
 
   // Show client info and recent activity
-  const quotes = callQuoteCraftAPI(`/clients/${client.id}/quotes?limit=3`);
-  const invoices = callQuoteCraftAPI(`/clients/${client.id}/invoices?limit=3`);
+  const quotes = callOrekoAPI(`/clients/${client.id}/quotes?limit=3`);
+  const invoices = callOrekoAPI(`/clients/${client.id}/invoices?limit=3`);
 
   return createCard({
-    header: `QuoteCraft: ${client.name}`,
+    header: `Oreko: ${client.name}`,
     sections: [
       {
         header: "Client Overview",
@@ -927,7 +927,7 @@ function onGmailMessageOpen(e: GoogleAppsScript.Gmail.Schema.Message) {
                 text: "New Quote",
                 onClick: {
                   openLink: {
-                    url: `${QUOTECRAFT_URL}/quotes/new?client=${client.id}`
+                    url: `${OREKO_URL}/quotes/new?client=${client.id}`
                   }
                 }
               },
@@ -935,7 +935,7 @@ function onGmailMessageOpen(e: GoogleAppsScript.Gmail.Schema.Message) {
                 text: "View Client",
                 onClick: {
                   openLink: {
-                    url: `${QUOTECRAFT_URL}/clients/${client.id}`
+                    url: `${OREKO_URL}/clients/${client.id}`
                   }
                 }
               }
@@ -954,7 +954,7 @@ function onCalendarEventOpen(e: GoogleAppsScript.Calendar.Schema.Event) {
 
   // Find matching clients
   const clients = attendees
-    .map(email => callQuoteCraftAPI(`/clients?email=${email}`))
+    .map(email => callOrekoAPI(`/clients?email=${email}`))
     .filter(Boolean);
 
   if (clients.length === 0) {
@@ -962,7 +962,7 @@ function onCalendarEventOpen(e: GoogleAppsScript.Calendar.Schema.Event) {
       sections: [{
         widgets: [{
           textParagraph: {
-            text: "No QuoteCraft clients found among attendees."
+            text: "No Oreko clients found among attendees."
           }
         }]
       }]
@@ -988,7 +988,7 @@ function onCalendarEventOpen(e: GoogleAppsScript.Calendar.Schema.Event) {
               text: "Create Quote",
               onClick: {
                 openLink: {
-                  url: `${QUOTECRAFT_URL}/quotes/new?client=${client.id}&title=${encodeURIComponent(event.summary)}`
+                  url: `${OREKO_URL}/quotes/new?client=${client.id}&title=${encodeURIComponent(event.summary)}`
                 }
               }
             }
@@ -1109,7 +1109,7 @@ export function IntegrationHub() {
       <div>
         <h1 className="text-2xl font-bold">Integrations</h1>
         <p className="text-muted-foreground">
-          Connect QuoteCraft with your favorite tools
+          Connect Oreko with your favorite tools
         </p>
       </div>
 

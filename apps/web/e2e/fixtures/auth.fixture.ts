@@ -2,14 +2,14 @@ import { test as base, expect } from '@playwright/test';
 
 // Test user credentials for E2E tests
 export const TEST_USER = {
-  email: process.env.E2E_TEST_USER_EMAIL || 'e2e-test@quotecraft.dev',
+  email: process.env.E2E_TEST_USER_EMAIL || 'e2e-test@oreko.dev',
   password: process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!',
   name: process.env.E2E_TEST_USER_NAME || 'E2E Test User',
 };
 
 // Admin user for elevated permissions tests
 export const ADMIN_USER = {
-  email: 'admin@quotecraft.dev',
+  email: 'admin@oreko.dev',
   password: 'AdminPassword123!',
   name: 'Admin User',
 };

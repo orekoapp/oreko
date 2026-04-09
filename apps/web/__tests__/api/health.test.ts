@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 const mockQueryRaw = vi.fn();
 
 // Mock Prisma
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: {
     $queryRaw: mockQueryRaw,
   },

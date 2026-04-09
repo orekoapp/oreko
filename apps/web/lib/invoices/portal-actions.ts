@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@quotecraft/database';
+import { prisma } from '@oreko/database';
 import { headers } from 'next/headers';
 import type { InvoiceLineItem } from './types';
 import { toNumber } from '@/lib/utils';

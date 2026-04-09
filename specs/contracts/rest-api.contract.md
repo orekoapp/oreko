@@ -1,9 +1,9 @@
-# QuoteCraft REST API Contract Specification
+# Oreko REST API Contract Specification
 
 **Generated:** 2026-02-24
 **Source:** Recovered from production codebase via `/fit-quality`
 **Framework:** Next.js 15 App Router (Route Handlers)
-**Base URL:** `https://quote-software-gamma.vercel.app`
+**Base URL:** `https://oreko-gamma.vercel.app`
 
 ---
 
@@ -30,7 +30,7 @@
 
 ## 1. Overview
 
-QuoteCraft exposes 18 REST API route handlers organized across authentication, CRUD operations, file management, payments, webhooks, and infrastructure. The primary data mutation API is through Next.js Server Actions (see `server-actions.contract.md`); these REST routes serve as supplementary endpoints for external integrations, PDF generation, Stripe webhooks, and specific use cases where REST semantics are preferred.
+Oreko exposes 18 REST API route handlers organized across authentication, CRUD operations, file management, payments, webhooks, and infrastructure. The primary data mutation API is through Next.js Server Actions (see `server-actions.contract.md`); these REST routes serve as supplementary endpoints for external integrations, PDF generation, Stripe webhooks, and specific use cases where REST semantics are preferred.
 
 ### Route Summary
 

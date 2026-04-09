@@ -2,7 +2,7 @@
 
 import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
-import { prisma, type Prisma } from '@quotecraft/database';
+import { prisma, type Prisma } from '@oreko/database';
 import { getCurrentUserWorkspace } from '@/lib/workspace/get-current-workspace';
 import { generateInvoiceNumber } from './internal';
 import { ROUTES } from '@/lib/routes';

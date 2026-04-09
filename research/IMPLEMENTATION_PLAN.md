@@ -1,4 +1,4 @@
-# QuoteCraft UI Implementation Plan
+# Oreko UI Implementation Plan
 
 **Date:** February 2026
 **Status:** ✅ COMPLETE
@@ -30,7 +30,7 @@ This plan addresses the implementation of UI recommendations while resolving con
 
 | Source | Recommendation |
 |--------|----------------|
-| BLOOM_UX_ANALYSIS.md | Keep visual block builder as QuoteCraft's differentiator |
+| BLOOM_UX_ANALYSIS.md | Keep visual block builder as Oreko's differentiator |
 | Fixes.pdf | "It should feel like data entry to them" (Bloom-style form) |
 | UI_COMPONENT_RECOMMENDATIONS.md | Recommends form-based split-view like Bloom |
 
@@ -298,7 +298,7 @@ interface QuoteEditorState {
 **Implementation:**
 ```typescript
 // hooks/useAutosave.ts
-const AUTOSAVE_KEY = 'quotecraft_draft_quote';
+const AUTOSAVE_KEY = 'oreko_draft_quote';
 const DEBOUNCE_MS = 1000;
 
 export function useAutosave(quoteData: QuoteData) {

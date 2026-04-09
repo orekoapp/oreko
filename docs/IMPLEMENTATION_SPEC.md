@@ -1,4 +1,4 @@
-# QuoteCraft Implementation Specification
+# Oreko Implementation Specification
 
 ## 1. Implementation Phases
 

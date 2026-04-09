@@ -728,17 +728,17 @@ function TemplateCard({ template, onPreview, onInstall }: TemplateCardProps) {
 ```typescript
 // packages/sdk-js/src/index.ts
 
-import { QuoteCraftClient } from "./client";
+import { OrekoClient } from "./client";
 
-export { QuoteCraftClient };
+export { OrekoClient };
 
 // Usage example:
 /*
-import { QuoteCraftClient } from "@quotecraft/sdk";
+import { OrekoClient } from "@oreko/sdk";
 
-const client = new QuoteCraftClient({
+const client = new OrekoClient({
   apiKey: "qc_live_xxxx",
-  baseUrl: "https://api.quotecraft.io"  // or self-hosted URL
+  baseUrl: "https://api.oreko.io"  // or self-hosted URL
 });
 
 // Create a quote
@@ -769,7 +769,7 @@ client.webhooks.on("quote.accepted", async (event) => {
 });
 */
 
-export class QuoteCraftClient {
+export class OrekoClient {
   private apiKey: string;
   private baseUrl: string;
 
@@ -783,7 +783,7 @@ export class QuoteCraftClient {
 
   constructor(config: ClientConfig) {
     this.apiKey = config.apiKey;
-    this.baseUrl = config.baseUrl || "https://api.quotecraft.io";
+    this.baseUrl = config.baseUrl || "https://api.oreko.io";
 
     const httpClient = new HttpClient(this.apiKey, this.baseUrl);
 
@@ -857,19 +857,19 @@ class QuotesResource {
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { QuoteCraftClient } from "@quotecraft/sdk";
+import { OrekoClient } from "@oreko/sdk";
 
 const program = new Command();
 
 program
-  .name("quotecraft")
-  .description("QuoteCraft CLI")
+  .name("oreko")
+  .description("Oreko CLI")
   .version("1.0.0");
 
 // Authentication
 program
   .command("login")
-  .description("Authenticate with QuoteCraft")
+  .description("Authenticate with Oreko")
   .action(async () => {
     const apiKey = await promptForApiKey();
     await saveCredentials(apiKey);
@@ -992,7 +992,7 @@ interface WidgetConfig {
   onError?: (error: Error) => void;
 }
 
-class QuoteCraftWidget {
+class OrekoWidget {
   private config: WidgetConfig;
   private iframe: HTMLIFrameElement;
 
@@ -1031,11 +1031,11 @@ class QuoteCraftWidget {
       ...(this.config.services && { services: this.config.services.join(",") })
     });
 
-    return `https://embed.quotecraft.io/request-quote?${params}`;
+    return `https://embed.oreko.io/request-quote?${params}`;
   }
 
   private handleMessage(event: MessageEvent) {
-    if (event.origin !== "https://embed.quotecraft.io") return;
+    if (event.origin !== "https://embed.oreko.io") return;
 
     switch (event.data.type) {
       case "quote_submitted":
@@ -1059,9 +1059,9 @@ class QuoteCraftWidget {
 // Usage:
 /*
 <div id="quote-widget"></div>
-<script src="https://embed.quotecraft.io/widget.js"></script>
+<script src="https://embed.oreko.io/widget.js"></script>
 <script>
-  new QuoteCraftWidget({
+  new OrekoWidget({
     organizationId: "org_xxx",
     containerId: "quote-widget",
     theme: "light",

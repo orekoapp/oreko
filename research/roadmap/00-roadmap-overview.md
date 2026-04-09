@@ -1,8 +1,8 @@
-# QuoteCraft AI-Era Transformation Roadmap
+# Oreko AI-Era Transformation Roadmap
 
 ## Overview
 
-This roadmap details the transformation of QuoteCraft from a UI-centric quote builder to an AI-native data platform. The implementation spans 12-18 months across four phases.
+This roadmap details the transformation of Oreko from a UI-centric quote builder to an AI-native data platform. The implementation spans 12-18 months across four phases.
 
 ## Document Index
 
@@ -55,7 +55,7 @@ Month:  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
 
 ## Phase 2: AI Native (Months 4-8)
 
-**Goal:** Embed AI capabilities directly into QuoteCraft
+**Goal:** Embed AI capabilities directly into Oreko
 
 ### Deliverables
 

@@ -1,7 +1,7 @@
-# QuoteCraft Bug Report - Feb 17, 2026
+# Oreko Bug Report - Feb 17, 2026
 
 **Tester:** Automated Code Audit (adopting human tester mindset from Fixes16feb.pdf)
-**Scope:** Demo user (demo@quotecraft.demo) + Test user (test@quotecraft.dev) - Full application
+**Scope:** Demo user (demo@oreko.demo) + Test user (test@oreko.dev) - Full application
 **Method:** Deep code analysis of every page, component, server action, and API route
 **Total Bugs Found:** 73
 

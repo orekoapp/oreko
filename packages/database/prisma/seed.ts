@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 // Demo account configuration (must match apps/web/lib/demo/constants.ts)
 const DEMO_CONFIG = {
-  email: process.env.DEMO_USER_EMAIL || 'demo@quotecraft.demo',
+  email: process.env.DEMO_USER_EMAIL || 'demo@oreko.demo',
   password: 'DemoPassword123!',
   displayName: 'Demo User',
   workspaceSlug: 'demo-workspace',
@@ -27,11 +27,11 @@ async function main() {
 
   // Create test users with different roles
   const testUsers = [
-    { email: 'test@quotecraft.dev', password: 'TestPassword123!', name: 'Test User' },
-    { email: 'owner@quotecraft.dev', password: 'OwnerPass123!', name: 'Owner User' },
-    { email: 'admin@quotecraft.dev', password: 'AdminPass123!', name: 'Admin User' },
-    { email: 'member@quotecraft.dev', password: 'MemberPass123!', name: 'Member User' },
-    { email: 'viewer@quotecraft.dev', password: 'ViewerPass123!', name: 'Viewer User' },
+    { email: 'test@oreko.dev', password: 'TestPassword123!', name: 'Test User' },
+    { email: 'owner@oreko.dev', password: 'OwnerPass123!', name: 'Owner User' },
+    { email: 'admin@oreko.dev', password: 'AdminPass123!', name: 'Admin User' },
+    { email: 'member@oreko.dev', password: 'MemberPass123!', name: 'Member User' },
+    { email: 'viewer@oreko.dev', password: 'ViewerPass123!', name: 'Viewer User' },
   ];
 
   const users: Record<string, { id: string }> = {};
@@ -59,7 +59,7 @@ async function main() {
     create: {
       name: 'Acme Digital Studio',
       slug: 'test-workspace',
-      ownerId: users['owner@quotecraft.dev']!.id,
+      ownerId: users['owner@oreko.dev']!.id,
       settings: {},
     },
   });
@@ -78,11 +78,11 @@ async function main() {
 
   // Add workspace members with different roles
   const memberRoles = [
-    { email: 'owner@quotecraft.dev', role: 'owner' },
-    { email: 'admin@quotecraft.dev', role: 'admin' },
-    { email: 'member@quotecraft.dev', role: 'member' },
-    { email: 'viewer@quotecraft.dev', role: 'viewer' },
-    { email: 'test@quotecraft.dev', role: 'member' },
+    { email: 'owner@oreko.dev', role: 'owner' },
+    { email: 'admin@oreko.dev', role: 'admin' },
+    { email: 'member@oreko.dev', role: 'member' },
+    { email: 'viewer@oreko.dev', role: 'viewer' },
+    { email: 'test@oreko.dev', role: 'member' },
   ];
 
   for (const member of memberRoles) {
@@ -661,7 +661,7 @@ async function main() {
         data: {
           invoiceId: invoice.id,
           eventType: evt.eventType,
-          actorId: users['test@quotecraft.dev']!.id,
+          actorId: users['test@oreko.dev']!.id,
           actorType: 'user',
           metadata: {},
           createdAt: evt.createdAt,
@@ -690,7 +690,7 @@ async function main() {
         data: {
           invoiceId: cInvoice.id,
           eventType: evt.eventType,
-          actorId: users['test@quotecraft.dev']!.id,
+          actorId: users['test@oreko.dev']!.id,
           actorType: 'user',
           metadata: {},
           createdAt: evt.createdAt,
@@ -717,7 +717,7 @@ async function main() {
         data: {
           quoteId: quote.id,
           eventType: evt.eventType,
-          actorId: users['test@quotecraft.dev']!.id,
+          actorId: users['test@oreko.dev']!.id,
           actorType: 'user',
           metadata: {},
           createdAt: evt.createdAt,

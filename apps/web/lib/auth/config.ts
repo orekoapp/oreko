@@ -71,7 +71,7 @@ export const authConfig: NextAuthConfig = {
         // Check every 5 minutes
         if (now - lastChecked > 300) {
           try {
-            const { prisma } = await import('@quotecraft/database');
+            const { prisma } = await import('@oreko/database');
             const dbUser = await prisma.user.findUnique({
               where: { id: token.id },
               select: { deletedAt: true, passwordChangedAt: true },

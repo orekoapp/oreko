@@ -30,7 +30,7 @@ vi.mock('@/lib/notifications/actions', () => ({ createNotification: vi.fn().mock
 vi.mock('@/lib/routes', () => ({ ROUTES: { quotes: '/quotes', invoices: '/invoices', quoteDetail: (id: string) => `/quotes/${id}`, invoiceDetail: (id: string) => `/invoices/${id}` } }));
 vi.mock('@/lib/events/emitter', () => ({ domainEvents: { emit: vi.fn() } }));
 vi.mock('@/lib/workspace/get-current-workspace', () => ({ getCurrentUserWorkspace: mockGetCurrentUserWorkspace }));
-vi.mock('@quotecraft/database', () => ({
+vi.mock('@oreko/database', () => ({
   prisma: mockPrisma,
   Prisma: { InputJsonValue: {}, TransactionClient: {} },
 }));

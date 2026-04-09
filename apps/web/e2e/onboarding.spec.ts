@@ -25,7 +25,7 @@ function getOnboardingCredentials() {
   } catch {
     // Fallback if file doesn't exist
     return {
-      email: `onboarding-fallback-${Date.now()}@quotecraft.dev`,
+      email: `onboarding-fallback-${Date.now()}@oreko.dev`,
       password: 'OnboardingTest123!',
       name: 'Onboarding Test User',
     };
@@ -125,7 +125,7 @@ test.describe('Onboarding Flow', () => {
       test.skip(!needsOnboarding, 'User has already completed onboarding');
 
       // Should see the onboarding wizard welcome text and first step heading
-      await expect(page.getByText('Welcome to QuoteCraft')).toBeVisible();
+      await expect(page.getByText('Welcome to Oreko')).toBeVisible();
       await expect(page.getByRole('heading', { name: /tell us about your business/i })).toBeVisible();
     });
 
