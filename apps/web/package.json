@@ -100,7 +100,7 @@
     "recharts": "^2.15.0",
     "resend": "^6.9.1",
     "sanitize-html": "^2.17.1",
-    "sonner": "^1.7.0",
+    "sonner": "^2.0.7",
     "stripe": "^17.4.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
