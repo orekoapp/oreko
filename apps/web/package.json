@@ -127,7 +127,7 @@
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.5.12",
     "eslint-plugin-react-hooks": "^5.1.0",
-    "jsdom": "^25.0.0",
+    "jsdom": "^29.0.2",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.7.0",
