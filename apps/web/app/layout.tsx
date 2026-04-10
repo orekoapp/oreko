@@ -9,6 +9,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { FontSizeProvider } from '@/components/providers/font-size-provider';
 import { SessionProvider } from '@/components/providers/session-provider';
+import { UiProvider } from '@/components/providers/ui-provider';
 import { GlobalErrorHandler } from '@/components/providers/global-error-handler';
 import '@/styles/globals.css';
 
@@ -164,9 +165,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               disableTransitionOnChange
             >
               <FontSizeProvider>
-                {children}
-                <GlobalErrorHandler />
-                <Toaster richColors position="top-right" />
+                <UiProvider>
+                  {children}
+                  <GlobalErrorHandler />
+                  <Toaster richColors position="top-right" />
+                </UiProvider>
               </FontSizeProvider>
             </ThemeProvider>
           </NextIntlClientProvider>

@@ -1,5 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { BETA_TOOLTIP_MESSAGE } from '@/lib/constants/beta';
 
 interface LogoProps {
   href?: string;
@@ -42,11 +50,19 @@ export function Logo({ href, showText = true, className, size = 'md' }: LogoProp
       {showText && (
         <span
           className={cn(
-            'font-bold text-slate-900 dark:text-white',
+            'font-bold text-slate-900 dark:text-white flex items-center gap-1',
             sizes.text
           )}
         >
           Oreko
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-blue-500 font-medium cursor-default text-sm">β</span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[220px] text-center leading-relaxed">
+              {BETA_TOOLTIP_MESSAGE}
+            </TooltipContent>
+          </Tooltip>
         </span>
       )}
     </div>

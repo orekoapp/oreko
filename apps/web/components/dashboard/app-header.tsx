@@ -28,6 +28,12 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { BETA_TOOLTIP_MESSAGE } from '@/lib/constants/beta';
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -187,6 +193,16 @@ export function AppHeader({ user, unreadCount = 0, notifications = [] }: AppHead
         {/* Left: Sidebar trigger + Breadcrumbs */}
         <div className="flex items-center gap-4">
           <SidebarTrigger className="[&_svg]:!size-5" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="cursor-default rounded-full border border-blue-400 px-2 py-0.5 text-[11px] font-medium text-blue-500">
+                Beta
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[220px] text-center leading-relaxed">
+              {BETA_TOOLTIP_MESSAGE}
+            </TooltipContent>
+          </Tooltip>
           <Separator orientation="vertical" className="hidden !h-4 md:block" />
 
           {/* Breadcrumbs - hidden on mobile */}
