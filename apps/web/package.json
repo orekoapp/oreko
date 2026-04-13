@@ -70,7 +70,7 @@
     "@tiptap/extension-text-style": "^2.10.0",
     "@tiptap/extension-underline": "^2.10.0",
     "@tiptap/pm": "^2.10.0",
-    "@tiptap/react": "^2.10.0",
+    "@tiptap/react": "^3.22.3",
     "@tiptap/starter-kit": "^2.10.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
