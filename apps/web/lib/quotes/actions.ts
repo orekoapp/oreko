@@ -391,7 +391,7 @@ export async function updateQuote(
 
   // Calculate totals
   const subtotal = Math.round((lineItems?.reduce((sum, item) => sum + item.amount, 0) || 0) * 100) / 100;
-  const taxTotal = Math.round((lineItems?.reduce((sum, item) => sum + item.taxAmount, 0) || 0) * 100) / 100;
+  let taxTotal = Math.round((lineItems?.reduce((sum, item) => sum + item.taxAmount, 0) || 0) * 100) / 100;
 
   // Bug #123: Validate discount values server-side
   const mergedSettings = { ...(existingQuote.settings as Record<string, unknown>), ...data.settings };
