@@ -499,6 +499,11 @@ export const useQuoteBuilderStore = create<QuoteBuilderStore>()(
               }
             }
 
+            // Tax applies to the discounted amount, not the full subtotal
+            if (subtotal > 0 && discountAmount > 0) {
+              taxTotal = taxTotal * ((subtotal - discountAmount) / subtotal);
+            }
+
             state.document.totals.subtotal = subtotal;
             state.document.totals.discountAmount = discountAmount;
             state.document.totals.taxTotal = taxTotal;

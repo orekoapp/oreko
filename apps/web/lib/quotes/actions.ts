@@ -414,6 +414,11 @@ export async function updateQuote(
   } else if (discountType === 'fixed') {
     discountAmount = Math.min(discountValue, subtotal);
   }
+
+  // Tax applies to the discounted amount, not the full subtotal
+  if (subtotal > 0 && discountAmount > 0) {
+    taxTotal = Math.round(taxTotal * ((subtotal - discountAmount) / subtotal) * 100) / 100;
+  }
   const total = subtotal - discountAmount + taxTotal;
 
   // Update quote

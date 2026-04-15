@@ -408,9 +408,10 @@ export function NewInvoiceForm({
     return match?.[1] ? parseFloat(match[1]) : 0;
   }, [taxRate, customTaxRate]);
 
-  const taxAmount = subtotal * (parsedTaxPercent / 100);
-  const discountAmount = discountType === 'percent' ? subtotal * (discount / 100) : discount;
-  const total = Math.max(0, subtotal + taxAmount - discountAmount);
+  const discountAmount = Math.round((discountType === 'percent' ? subtotal * (discount / 100) : discount) * 100) / 100;
+  const discountedSubtotal = Math.max(0, Math.round((subtotal - discountAmount) * 100) / 100);
+  const taxAmount = Math.round(discountedSubtotal * (parsedTaxPercent / 100) * 100) / 100;
+  const total = Math.max(0, Math.round((discountedSubtotal + taxAmount) * 100) / 100);
 
   // ─── Handlers ────────────────────────────────────────
   const [addItemOpen, setAddItemOpen] = useState(false);

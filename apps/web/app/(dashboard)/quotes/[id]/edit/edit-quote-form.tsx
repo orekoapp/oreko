@@ -402,14 +402,18 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
 
   const tpl = (QUOTE_TEMPLATES[templateName] ?? QUOTE_TEMPLATES.clean) as QuoteTemplate;
 
-  const subtotal = lineItems.reduce(
-    (acc, item) => acc + item.quantity * item.rate,
+  // Round each line item to match server-side calculation (Bug #178)
+  const subtotal = Math.round(lineItems.reduce(
+    (acc, item) => acc + Math.round(item.quantity * item.rate * 100) / 100,
     0
-  );
-  const discountAmount = discountType === 'percent'
-    ? Math.round(subtotal * (discount / 100) * 100) / 100
-    : discount;
-  const total = Math.max(0, subtotal - discountAmount);
+  ) * 100) / 100;
+  const discountAmount = Math.round((discountType === 'percent'
+    ? subtotal * (discount / 100)
+    : discount) * 100) / 100;
+  const effectiveTaxRate = customTaxRate ? parseFloat(customTaxRate) : (taxRate !== 'custom' && taxRate !== '0% - Default' ? parseFloat(taxRate) : 0);
+  const discountedSubtotal = Math.max(0, Math.round((subtotal - discountAmount) * 100) / 100);
+  const taxAmount = effectiveTaxRate > 0 ? Math.round(discountedSubtotal * (effectiveTaxRate / 100) * 100) / 100 : 0;
+  const total = Math.max(0, Math.round((discountedSubtotal + taxAmount) * 100) / 100);
 
   const expirationDate = issueDate
     ? addDays(issueDate, parseInt(expirationDays) || 30)

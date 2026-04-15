@@ -79,11 +79,17 @@ function calculateTotals(
   discountAmount = Math.min(discountAmount, subtotal);
   discountAmount = Math.round(discountAmount * 100) / 100;
 
+  // Tax should apply to the discounted amount, not the full subtotal.
+  // Proportionally reduce tax by the same ratio as the discount.
+  if (subtotal > 0 && discountAmount > 0) {
+    taxTotal = Math.round(taxTotal * ((subtotal - discountAmount) / subtotal) * 100) / 100;
+  }
+
   return {
     subtotal,
     taxTotal,
     discountAmount,
-    total: Math.round((subtotal + taxTotal - discountAmount) * 100) / 100,
+    total: Math.round((subtotal - discountAmount + taxTotal) * 100) / 100,
   };
 }
 
@@ -162,7 +168,7 @@ export async function createInvoice(data: CreateInvoiceData) {
       return { success: false, error: 'Discount amount cannot be negative' };
     }
     // Cap fixed discount at subtotal (calculateTotals also clamps, but reject early for clarity)
-    const preliminarySubtotal = data.lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+    const preliminarySubtotal = data.lineItems.reduce((sum, item) => sum + Math.round(item.quantity * item.rate * 100) / 100, 0);
     if (data.discountValue > preliminarySubtotal) {
       data.discountValue = preliminarySubtotal;
     }
