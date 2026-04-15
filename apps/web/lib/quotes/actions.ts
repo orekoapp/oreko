@@ -436,16 +436,17 @@ export async function updateQuote(
           notes: data.notes,
           terms: data.terms,
           internalNotes: data.internalNotes,
-          // Always include discount fields when calculated
-          ...(discountType && { discountType }),
-          ...(discountValue !== undefined && { discountValue }),
-          ...(discountAmount !== undefined && { discountAmount }),
+          // Always persist discount fields — use null to clear when no discount
+          discountType: discountType || null,
+          discountValue: discountValue ?? 0,
+          discountAmount,
           ...(data.blocks && {
             subtotal,
             taxTotal,
             total,
             settings: {
               ...(existingQuote.settings as object),
+              ...data.settings,
               blocks: data.blocks,
             } as unknown as Prisma.InputJsonValue,
             lineItems: {
