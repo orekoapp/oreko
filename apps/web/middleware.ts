@@ -7,12 +7,33 @@ const secret = (process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || '')
 
 // Use a lightweight NextAuth instance for middleware (Edge Runtime compatible).
 // This does NOT import the Prisma adapter, which requires Node.js runtime.
-// The full auth config (with adapter) is used in server components and API routes.
+// The JWT callback is overridden to skip the Prisma DB check (soft-delete/password-change)
+// because Prisma binary engine does not run in Edge Runtime. The full DB check still runs
+// in the main auth (server components, server actions) which uses Node.js runtime.
 const { auth } = NextAuth({
   secret,
   session: { strategy: 'jwt' },
   trustHost: process.env.NODE_ENV === 'development' || !!process.env.VERCEL || process.env.AUTH_TRUST_HOST === 'true',
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user, trigger, session }) {
+      if (user) {
+        token.id = user.id ?? '';
+        token.email = user.email ?? '';
+        token.name = user.name ?? '';
+        token.avatarUrl = user.avatarUrl;
+      }
+      if (trigger === 'update' && session) {
+        token.name = session.name;
+        token.avatarUrl = session.avatarUrl;
+      }
+      // No DB check here — Edge Runtime cannot import Prisma binary engine.
+      // The full JWT callback (with soft-delete + password-change checks) runs
+      // in the Node.js auth instance on every server action / server component call.
+      return token;
+    },
+  },
 });
 
 export default auth;
