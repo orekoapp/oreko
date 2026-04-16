@@ -391,7 +391,7 @@ export async function updateQuote(
 
   // Calculate totals
   const subtotal = Math.round((lineItems?.reduce((sum, item) => sum + item.amount, 0) || 0) * 100) / 100;
-  const taxTotal = Math.round((lineItems?.reduce((sum, item) => sum + item.taxAmount, 0) || 0) * 100) / 100;
+  let taxTotal = Math.round((lineItems?.reduce((sum, item) => sum + item.taxAmount, 0) || 0) * 100) / 100;
 
   // Bug #123: Validate discount values server-side
   const mergedSettings = { ...(existingQuote.settings as Record<string, unknown>), ...data.settings };
@@ -413,6 +413,11 @@ export async function updateQuote(
     discountAmount = Math.round(subtotal * (discountValue / 100) * 100) / 100;
   } else if (discountType === 'fixed') {
     discountAmount = Math.min(discountValue, subtotal);
+  }
+
+  // Tax applies to the discounted amount, not the full subtotal
+  if (subtotal > 0 && discountAmount > 0) {
+    taxTotal = Math.round(taxTotal * ((subtotal - discountAmount) / subtotal) * 100) / 100;
   }
   const total = subtotal - discountAmount + taxTotal;
 

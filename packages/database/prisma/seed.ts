@@ -419,42 +419,42 @@ async function main() {
 
     // Add line items (C03 fix: add multiple items per quote for realistic preview)
     // Split the total into primary (70%) and secondary (30%) line items
-    const primaryAmount = Math.round(q.subtotal * 0.7);
-    const secondaryAmount = q.subtotal - primaryAmount;
+    const primaryAmount = Math.round(q.subtotal * 0.7 * 100) / 100;
+    const secondaryAmount = Math.round((q.subtotal - primaryAmount) * 100) / 100;
     const primaryQty = Math.max(1, Math.round(q.qty * 0.7));
     const secondaryQty = Math.max(1, q.qty - primaryQty);
-    const primaryRate = Math.round(primaryAmount / primaryQty);
-    const secondaryRate = Math.round(secondaryAmount / secondaryQty);
+    const primaryRate = Math.round(primaryAmount / primaryQty * 100) / 100;
+    const secondaryRate = Math.round(secondaryAmount / secondaryQty * 100) / 100;
 
     await prisma.quoteLineItem.upsert({
       where: { id: `quote-item-${quote.id}` },
-      update: { name: q.itemName, quantity: primaryQty, rate: primaryRate, amount: primaryQty * primaryRate, sortOrder: 0 },
+      update: { name: q.itemName, quantity: primaryQty, rate: primaryRate, amount: Math.round(primaryQty * primaryRate * 100) / 100, sortOrder: 0 },
       create: {
         id: `quote-item-${quote.id}`,
         quoteId: quote.id,
         name: q.itemName,
         quantity: primaryQty,
         rate: primaryRate,
-        amount: primaryQty * primaryRate,
+        amount: Math.round(primaryQty * primaryRate * 100) / 100,
         sortOrder: 0,
       },
     });
     await prisma.quoteLineItem.upsert({
       where: { id: `quote-item-2-${quote.id}` },
-      update: { name: 'Project Management', quantity: secondaryQty, rate: secondaryRate, amount: secondaryQty * secondaryRate, sortOrder: 1 },
+      update: { name: 'Project Management', quantity: secondaryQty, rate: secondaryRate, amount: Math.round(secondaryQty * secondaryRate * 100) / 100, sortOrder: 1 },
       create: {
         id: `quote-item-2-${quote.id}`,
         quoteId: quote.id,
         name: 'Project Management',
         quantity: secondaryQty,
         rate: secondaryRate,
-        amount: secondaryQty * secondaryRate,
+        amount: Math.round(secondaryQty * secondaryRate * 100) / 100,
         sortOrder: 1,
       },
     });
 
     // Update totals to match actual line item sums
-    const actualTotal = (primaryQty * primaryRate) + (secondaryQty * secondaryRate);
+    const actualTotal = Math.round((primaryQty * primaryRate + secondaryQty * secondaryRate) * 100) / 100;
     if (actualTotal !== q.subtotal) {
       await prisma.quote.update({
         where: { id: quote.id },
