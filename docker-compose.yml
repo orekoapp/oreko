@@ -21,6 +21,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis (for BullMQ job queues)
+  redis:
+    image: redis:7-alpine
+    container_name: oreko-redis
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
   # Mailpit for email testing in development
   # NOTE: Dev-only — do NOT use in production. Insecure auth is enabled for local testing.
   mailpit:
@@ -31,11 +46,12 @@ services:
       - '8025:8025' # Web UI
       - '1025:1025' # SMTP
     environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: 1        # Dev-only: accept any SMTP credentials
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1    # Dev-only: allow plaintext auth
+      MP_SMTP_AUTH_ACCEPT_ANY: 1 # Dev-only: accept any SMTP credentials
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1 # Dev-only: allow plaintext auth
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   default:

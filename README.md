@@ -24,6 +24,7 @@
 <br />
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![CI](https://github.com/orekoapp/oreko/actions/workflows/ci.yml/badge.svg)](https://github.com/orekoapp/oreko/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black.svg)](https://nextjs.org/)
 
@@ -39,10 +40,10 @@
 
 ## What You Can Do With Oreko
 
-+ [Visual Quote Builder](#visual-quote-builder)
-+ [Invoicing with one-click conversion](#invoicing-with-one-click-conversion)
-+ [Client Management](#client-management)
-+ [Contracts, payments, and analytics](#contracts-payments-and-analytics)
+- [Visual Quote Builder](#visual-quote-builder)
+- [Invoicing with one-click conversion](#invoicing-with-one-click-conversion)
+- [Client Management](#client-management)
+- [Contracts, payments, and analytics](#contracts-payments-and-analytics)
 
 ### Visual Quote Builder
 
@@ -70,18 +71,18 @@ Centralized client database with full history, lifetime value tracking, and cont
 
 ### Contracts, payments, and analytics
 
-| Feature                        | Description                                                                |
-| ------------------------------ | -------------------------------------------------------------------------- |
-| **E-Signature Capture**        | Legally compliant electronic signatures (E-SIGN, UETA)                     |
-| **Stripe Payment Integration** | Accept credit cards and ACH payments via Stripe Connect                    |
-| **PDF Generation**             | Professional PDF exports for quotes and invoices                           |
-| **Email Notifications**        | Automated email workflows for quotes, invoices, and reminders              |
+| Feature                        | Description                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------- |
+| **E-Signature Capture**        | Legally compliant electronic signatures (E-SIGN, UETA)                      |
+| **Stripe Payment Integration** | Accept credit cards and ACH payments via Stripe Connect                     |
+| **PDF Generation**             | Professional PDF exports for quotes and invoices                            |
+| **Email Notifications**        | Automated email workflows for quotes, invoices, and reminders               |
 | **Dashboard Analytics**        | Revenue trends, quote conversion rates, invoice status, and client insights |
-| **Contract Templates**         | Draft contracts from templates, send for e-signature                       |
-| **Rate Card System**           | Predefined services and pricing tiers for quick quoting                    |
-| **Milestone Payments**         | Support for deposits, milestones, and recurring payments                   |
-| **Modular Workspace**          | Enable only the modules you need                                           |
-| **Self-Hosted**                | Full control over your data with Docker deployment                         |
+| **Contract Templates**         | Draft contracts from templates, send for e-signature                        |
+| **Rate Card System**           | Predefined services and pricing tiers for quick quoting                     |
+| **Milestone Payments**         | Support for deposits, milestones, and recurring payments                    |
+| **Modular Workspace**          | Enable only the modules you need                                            |
+| **Self-Hosted**                | Full control over your data with Docker deployment                          |
 
 <br />
 
@@ -105,7 +106,7 @@ Open `http://localhost:3000`
 git clone https://github.com/orekoapp/oreko.git
 cd oreko
 pnpm install
-cp .env.example .env
+cp .env.example .env.local   # Next.js loads .env.local automatically
 pnpm db:migrate
 pnpm dev
 ```
@@ -130,6 +131,8 @@ See the [full setup guide](https://oreko.app/docs) for detailed instructions.
 ## Contributing
 
 We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
+
+Check `specs/PRODUCT_SPEC.md` for the roadmap and `specs/TECHNICAL_SPEC.md` for architecture details.
 
 ```bash
 # Fork, clone, then:
