@@ -155,10 +155,10 @@ pnpm install
 #### 3. Set Up Environment
 
 ```bash
-# Copy the root environment file
-cp .env.example .env.local
+# Copy the environment file for the web app
+cp apps/web/.env.example apps/web/.env.local
 
-# Edit .env.local with your local configuration
+# Edit apps/web/.env.local with your local configuration
 # Required variables:
 # - DATABASE_URL
 # - NEXTAUTH_SECRET

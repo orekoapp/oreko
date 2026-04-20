@@ -95,8 +95,8 @@ The base `docker-compose.yml` runs supporting services (PostgreSQL, Mailpit) whi
 ```bash
 git clone https://github.com/orekoapp/oreko.git
 cd oreko
-cp .env.example .env.local   # Next.js loads .env.local automatically
-docker-compose up -d          # Start Postgres and Mailpit
+cp apps/web/.env.example apps/web/.env.local   # Next.js loads .env.local from apps/web/
+docker-compose up -d                            # Start Postgres and Mailpit
 pnpm install
 pnpm db:migrate
 pnpm dev
@@ -110,8 +110,8 @@ Open `http://localhost:3000`
 git clone https://github.com/orekoapp/oreko.git
 cd oreko
 pnpm install
-cp .env.example .env.local   # Next.js loads .env.local automatically
-# Ensure PostgreSQL is running and DATABASE_URL is set in .env.local
+cp apps/web/.env.example apps/web/.env.local   # Next.js loads .env.local from apps/web/
+# Ensure PostgreSQL is running and DATABASE_URL is set in apps/web/.env.local
 pnpm db:migrate
 pnpm dev
 ```
