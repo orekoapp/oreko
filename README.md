@@ -88,25 +88,30 @@ Centralized client database with full history, lifetime value tracking, and cont
 
 ## Quick Start
 
-### Docker (Recommended)
+### Using Docker for Services
+
+The base `docker-compose.yml` runs supporting services (PostgreSQL, Mailpit) while you run Next.js locally:
 
 ```bash
 git clone https://github.com/orekoapp/oreko.git
 cd oreko
-cp .env.example .env
-docker-compose up -d
-docker-compose exec web pnpm db:migrate
+cp .env.example .env.local   # Next.js loads .env.local automatically
+docker-compose up -d          # Start Postgres and Mailpit
+pnpm install
+pnpm db:migrate
+pnpm dev
 ```
 
 Open `http://localhost:3000`
 
-### Manual Installation
+### Manual Installation (No Docker)
 
 ```bash
 git clone https://github.com/orekoapp/oreko.git
 cd oreko
 pnpm install
 cp .env.example .env.local   # Next.js loads .env.local automatically
+# Ensure PostgreSQL is running and DATABASE_URL is set in .env.local
 pnpm db:migrate
 pnpm dev
 ```
@@ -120,7 +125,6 @@ See the [full setup guide](https://oreko.app/docs) for detailed instructions.
 - [TypeScript](https://www.typescriptlang.org/) 5.x
 - [Next.js](https://nextjs.org/) 14+ (App Router)
 - [Prisma](https://www.prisma.io/) + [PostgreSQL](https://www.postgresql.org/)
-- [Redis](https://redis.io/) + [BullMQ](https://bullmq.io/)
 - [Shadcn UI](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/)
 - [Stripe Connect](https://stripe.com/connect) for payments
 - [Turborepo](https://turbo.build/) monorepo
