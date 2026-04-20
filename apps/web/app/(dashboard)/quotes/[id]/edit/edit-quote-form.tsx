@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSavedLineItems, type SavedLineItemData } from '@/lib/saved-items/actions';
 import {
@@ -379,7 +379,6 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
   const [previewTab, setPreviewTab] = useState<PreviewTab>('quote');
   const [showPreviewDetails, setShowPreviewDetails] = useState(true);
   const [templateName, setTemplateName] = useState<TemplateName>('oreko');
-  const [pdfGenerating, setPdfGenerating] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [savedItems, setSavedItems] = useState<SavedLineItemData[]>([]);
 
@@ -390,9 +389,6 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
       setInvoiceTemplates(data.map((t) => ({ id: t.id, name: t.name, lineItems: t.lineItems })));
     }).catch(() => {});
   }, []);
-
-  // Refs
-  const pdfRef = useRef<HTMLDivElement>(null);
 
   // Derived State
   const selectedClient = useMemo(
@@ -541,32 +537,9 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
   };
 
   // ─── PDF Download Handler ─────────────────────────────
-  const handleDownloadPdf = useCallback(async () => {
-    if (!pdfRef.current) return;
-    setPdfGenerating(true);
-    try {
-      const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).default;
-
-      const canvas = await html2canvas(pdfRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: 595,
-        height: 842,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-      pdf.addImage(imgData, 'PNG', 0, 0, 595, 842);
-      pdf.save(`Quote-${quoteNumber}.pdf`);
-    } catch (err) {
-      console.error('PDF generation failed:', err);
-      toast.error('Failed to generate PDF. Please try again.');
-    } finally {
-      setPdfGenerating(false);
-    }
-  }, [quoteNumber]);
+  const handleDownloadPdf = useCallback(() => {
+    window.open(`/api/pdf/quote/${quote.id}`, '_blank');
+  }, [quote.id]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
@@ -1599,7 +1572,8 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                     Accept Quote
                   </button>
                   <button
-                    className="w-full h-10 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors border border-border text-muted-foreground hover:bg-muted/50 cursor-default"
+                    onClick={handleDownloadPdf}
+                    className="w-full h-10 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors border border-border text-muted-foreground hover:bg-muted/50"
                   >
                     <Download className="h-4 w-4" />
                     Download Quote
@@ -1639,18 +1613,10 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                 >
                   <button
                     onClick={handleDownloadPdf}
-                    disabled={pdfGenerating}
-                    className={cn(
-                      'absolute top-2.5 right-2.5 h-7 w-7 rounded-full bg-muted/80 hover:bg-muted transition-colors flex items-center justify-center z-20',
-                      pdfGenerating && 'opacity-70 cursor-not-allowed'
-                    )}
+                    className="absolute top-2.5 right-2.5 h-7 w-7 rounded-full bg-muted/80 hover:bg-muted transition-colors flex items-center justify-center z-20"
                     title="Download PDF"
                   >
-                    {pdfGenerating ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                    ) : (
-                      <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                    )}
+                    <Download className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
 
                   <div className="w-full h-full flex flex-col text-black" style={{ fontFamily: 'system-ui, sans-serif' }}>
@@ -1786,6 +1752,7 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
                     View Quote
                   </button>
                   <button
+                    onClick={handleDownloadPdf}
                     className="flex-1 h-11 rounded-lg font-medium text-sm flex items-center justify-center gap-2 border border-border hover:bg-muted transition-colors"
                   >
                     Download PDF
@@ -1859,119 +1826,6 @@ export default function EditQuoteForm({ quote }: EditQuoteFormProps) {
             </div>
             )}
 
-            {/* ═══ HIDDEN A4 RENDER DIV (for PDF capture) ═══ */}
-            <div
-              ref={pdfRef}
-              className="fixed"
-              style={{
-                left: '-9999px',
-                top: 0,
-                width: '595px',
-                height: '842px',
-                background: '#ffffff',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                color: '#111111',
-                zIndex: -1,
-              }}
-            >
-              {tpl.topBorder && (
-                <div style={{ width: '100%', height: '4px', background: tpl.topBorder }} />
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '32px 40px 24px' }}>
-                <div>
-                  <p style={{ fontSize: '18px', fontWeight: 700 }}>{businessName}</p>
-                  <p style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>hello@company.com</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '22px', fontWeight: 700, color: tpl.accent, letterSpacing: '0.05em' }}>QUOTE</p>
-                  <p style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>#{quoteNumber}</p>
-                  <p style={{ fontSize: '11px', color: '#666' }}>
-                    Date: {issueDate ? format(issueDate, 'MMM dd, yyyy') : 'Not set'}
-                  </p>
-                  {expirationDate && (
-                    <p style={{ fontSize: '11px', color: '#666' }}>
-                      Valid until: {format(expirationDate, 'MMM dd, yyyy')}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ padding: '0 40px 24px' }}>
-                <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#999', marginBottom: '4px' }}>Prepared For</p>
-                <p style={{ fontSize: '13px', fontWeight: 500 }}>
-                  {selectedClient?.name || 'Customer Name'}
-                </p>
-                {selectedClient?.company && (
-                  <p style={{ fontSize: '11px', color: '#666' }}>{selectedClient.company}</p>
-                )}
-              </div>
-
-              <div style={{ padding: '0 40px' }}>
-                <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                      <th style={{ textAlign: 'left', padding: '8px 0', fontWeight: 600, color: '#333' }}>Description</th>
-                      <th style={{ textAlign: 'center', padding: '8px 0', fontWeight: 600, color: '#333' }}>Qty</th>
-                      <th style={{ textAlign: 'right', padding: '8px 0', fontWeight: 600, color: '#333' }}>Rate</th>
-                      <th style={{ textAlign: 'right', padding: '8px 0', fontWeight: 600, color: '#333' }}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lineItems.length > 0 ? lineItems.map((item) => (
-                      <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                        <td style={{ padding: '8px 0' }}>
-                          <p style={{ fontWeight: 500 }}>{item.name || 'Untitled'}</p>
-                          {item.description && <p style={{ color: '#888', marginTop: '2px' }}>{item.description}</p>}
-                        </td>
-                        <td style={{ textAlign: 'center', padding: '8px 0', color: '#333' }}>{item.quantity}</td>
-                        <td style={{ textAlign: 'right', padding: '8px 0', color: '#333' }}>{formatCurrency(item.rate, currency)}</td>
-                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>{formatCurrency(item.quantity * item.rate, currency)}</td>
-                      </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={4} style={{ padding: '24px 0', textAlign: 'center', color: '#999' }}>
-                          No items added
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div style={{ padding: '16px 40px', marginTop: 'auto' }}>
-                <div style={{ marginLeft: 'auto', width: '200px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#666' }}>
-                    <span>Subtotal</span>
-                    <span>{formatCurrency(subtotal, currency)}</span>
-                  </div>
-                  {discountAmount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', color: '#22c55e' }}>
-                      <span>Discount</span>
-                      <span>-{formatCurrency(discountAmount, currency)}</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '11px', borderTop: '1px solid #e5e7eb', color: '#333', fontWeight: 500 }}>
-                    <span>Total</span>
-                    <span>{formatCurrency(total, currency)}</span>
-                  </div>
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-                    padding: '8px', marginTop: '4px', borderRadius: '4px',
-                    background: `${tpl.accent}15`,
-                  }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700 }}>Quote Total</span>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: tpl.accent }}>{formatCurrency(total, currency)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {notes && (
-                <div style={{ padding: '0 40px 16px' }}>
-                  <p style={{ fontSize: '10px', color: '#999' }}>{notes}</p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
