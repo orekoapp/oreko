@@ -1,9 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   cn,
   formatCurrency,
   formatDate,
   formatRelativeTime,
+  getBaseUrl,
+  toNumber,
 } from '@/lib/utils';
 
 describe('cn (class name merger)', () => {
@@ -56,11 +58,65 @@ describe('formatDate', () => {
 });
 
 describe('formatRelativeTime', () => {
-  it('returns a string', () => {
+  it('returns hours for recent timestamps', () => {
     const date = new Date();
     date.setHours(date.getHours() - 2);
+
     const result = formatRelativeTime(date);
-    expect(typeof result).toBe('string');
+
     expect(result).toContain('hour');
+  });
+
+  it('returns days for older timestamps', () => {
+    const date = new Date();
+    date.setDate(date.getDate() - 3);
+
+    const result = formatRelativeTime(date);
+
+    expect(result).toContain('day');
+  });
+});
+
+describe('toNumber', () => {
+  it('returns numbers unchanged', () => {
+    expect(toNumber(12.5)).toBe(12.5);
+  });
+
+  it('converts Decimal-like objects with toString', () => {
+    expect(toNumber({ toString: () => '42.75' })).toBe(42.75);
+  });
+
+  it('falls back to zero for nullish values', () => {
+    expect(toNumber(null)).toBe(0);
+    expect(toNumber(undefined)).toBe(0);
+  });
+});
+
+describe('getBaseUrl', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.VERCEL_URL;
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  it('prefers NEXT_PUBLIC_APP_URL when set', () => {
+    process.env.NEXT_PUBLIC_APP_URL = 'https://app.example.com';
+
+    expect(getBaseUrl()).toBe('https://app.example.com');
+  });
+
+  it('falls back to VERCEL_URL when app url is missing', () => {
+    process.env.VERCEL_URL = 'preview.example.com';
+
+    expect(getBaseUrl()).toBe('https://preview.example.com');
+  });
+
+  it('returns localhost during local development', () => {
+    expect(getBaseUrl()).toBe('http://localhost:3000');
   });
 });
