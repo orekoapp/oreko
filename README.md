@@ -24,6 +24,7 @@
 <br />
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![CI](https://github.com/orekoapp/oreko/actions/workflows/ci.yml/badge.svg)](https://github.com/orekoapp/oreko/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black.svg)](https://nextjs.org/)
 
@@ -39,10 +40,10 @@
 
 ## What You Can Do With Oreko
 
-+ [Visual Quote Builder](#visual-quote-builder)
-+ [Invoicing with one-click conversion](#invoicing-with-one-click-conversion)
-+ [Client Management](#client-management)
-+ [Contracts, payments, and analytics](#contracts-payments-and-analytics)
+- [Visual Quote Builder](#visual-quote-builder)
+- [Invoicing with one-click conversion](#invoicing-with-one-click-conversion)
+- [Client Management](#client-management)
+- [Contracts, payments, and analytics](#contracts-payments-and-analytics)
 
 ### Visual Quote Builder
 
@@ -70,42 +71,47 @@ Centralized client database with full history, lifetime value tracking, and cont
 
 ### Contracts, payments, and analytics
 
-| Feature                        | Description                                                                |
-| ------------------------------ | -------------------------------------------------------------------------- |
-| **E-Signature Capture**        | Legally compliant electronic signatures (E-SIGN, UETA)                     |
-| **Stripe Payment Integration** | Accept credit cards and ACH payments via Stripe Connect                    |
-| **PDF Generation**             | Professional PDF exports for quotes and invoices                           |
-| **Email Notifications**        | Automated email workflows for quotes, invoices, and reminders              |
+| Feature                        | Description                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------- |
+| **E-Signature Capture**        | Legally compliant electronic signatures (E-SIGN, UETA)                      |
+| **Stripe Payment Integration** | Accept credit cards and ACH payments via Stripe Connect                     |
+| **PDF Generation**             | Professional PDF exports for quotes and invoices                            |
+| **Email Notifications**        | Automated email workflows for quotes, invoices, and reminders               |
 | **Dashboard Analytics**        | Revenue trends, quote conversion rates, invoice status, and client insights |
-| **Contract Templates**         | Draft contracts from templates, send for e-signature                       |
-| **Rate Card System**           | Predefined services and pricing tiers for quick quoting                    |
-| **Milestone Payments**         | Support for deposits, milestones, and recurring payments                   |
-| **Modular Workspace**          | Enable only the modules you need                                           |
-| **Self-Hosted**                | Full control over your data with Docker deployment                         |
+| **Contract Templates**         | Draft contracts from templates, send for e-signature                        |
+| **Rate Card System**           | Predefined services and pricing tiers for quick quoting                     |
+| **Milestone Payments**         | Support for deposits, milestones, and recurring payments                    |
+| **Modular Workspace**          | Enable only the modules you need                                            |
+| **Self-Hosted**                | Full control over your data with Docker deployment                          |
 
 <br />
 
 ## Quick Start
 
-### Docker (Recommended)
+### Using Docker for Services
+
+The base `docker-compose.yml` runs supporting services (PostgreSQL, Mailpit) while you run Next.js locally:
 
 ```bash
 git clone https://github.com/orekoapp/oreko.git
 cd oreko
-cp .env.example .env
-docker-compose up -d
-docker-compose exec web pnpm db:migrate
+cp apps/web/.env.example apps/web/.env.local   # Next.js loads .env.local from apps/web/
+docker-compose up -d                            # Start Postgres and Mailpit
+pnpm install
+pnpm db:migrate
+pnpm dev
 ```
 
 Open `http://localhost:3000`
 
-### Manual Installation
+### Manual Installation (No Docker)
 
 ```bash
 git clone https://github.com/orekoapp/oreko.git
 cd oreko
 pnpm install
-cp .env.example .env
+cp apps/web/.env.example apps/web/.env.local   # Next.js loads .env.local from apps/web/
+# Ensure PostgreSQL is running and DATABASE_URL is set in apps/web/.env.local
 pnpm db:migrate
 pnpm dev
 ```
@@ -119,7 +125,6 @@ See the [full setup guide](https://oreko.app/docs) for detailed instructions.
 - [TypeScript](https://www.typescriptlang.org/) 5.x
 - [Next.js](https://nextjs.org/) 14+ (App Router)
 - [Prisma](https://www.prisma.io/) + [PostgreSQL](https://www.postgresql.org/)
-- [Redis](https://redis.io/) + [BullMQ](https://bullmq.io/)
 - [Shadcn UI](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/)
 - [Stripe Connect](https://stripe.com/connect) for payments
 - [Turborepo](https://turbo.build/) monorepo
@@ -130,6 +135,8 @@ See the [full setup guide](https://oreko.app/docs) for detailed instructions.
 ## Contributing
 
 We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
+
+Check `specs/PRODUCT_SPEC.md` for the roadmap and `specs/TECHNICAL_SPEC.md` for architecture details.
 
 ```bash
 # Fork, clone, then:

@@ -28,11 +28,11 @@ services:
     container_name: oreko-mailpit
     restart: unless-stopped
     ports:
-      - '8025:8025' # Web UI
-      - '1025:1025' # SMTP
+      - '127.0.0.1:8025:8025' # Web UI
+      - '127.0.0.1:1025:1025' # SMTP
     environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: 1        # Dev-only: accept any SMTP credentials
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1    # Dev-only: allow plaintext auth
+      MP_SMTP_AUTH_ACCEPT_ANY: 1 # Dev-only: accept any SMTP credentials
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1 # Dev-only: allow plaintext auth
 
 volumes:
   postgres_data:

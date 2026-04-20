@@ -22,6 +22,7 @@ Oreko is an open-source, self-hosted visual quote and invoice management tool de
 By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). We are committed to providing a welcoming and inclusive environment for everyone. Please be respectful, considerate, and constructive in all interactions.
 
 Key principles:
+
 - Be welcoming and inclusive
 - Be respectful of differing viewpoints
 - Accept constructive criticism gracefully
@@ -42,24 +43,30 @@ When creating a bug report, please use the following template:
 
 ```markdown
 ## Bug Description
+
 A clear and concise description of what the bug is.
 
 ## Steps to Reproduce
+
 1. Go to '...'
 2. Click on '...'
 3. Scroll down to '...'
 4. See error
 
 ## Expected Behavior
+
 A clear description of what you expected to happen.
 
 ## Actual Behavior
+
 What actually happened instead.
 
 ## Screenshots
+
 If applicable, add screenshots to help explain the problem.
 
 ## Environment
+
 - OS: [e.g., macOS 14.0, Ubuntu 22.04, Windows 11]
 - Browser: [e.g., Chrome 120, Firefox 121]
 - Node.js version: [e.g., 20.10.0]
@@ -67,6 +74,7 @@ If applicable, add screenshots to help explain the problem.
 - Oreko version/commit: [e.g., v1.0.0 or commit hash]
 
 ## Additional Context
+
 Add any other context about the problem here, including error logs from the console or server.
 ```
 
@@ -82,24 +90,31 @@ Have an idea for a new feature? We'd love to hear it! Before suggesting a featur
 
 ```markdown
 ## Feature Summary
+
 A brief, one-line description of the feature.
 
 ## Problem Statement
+
 What problem does this feature solve? Who would benefit from it?
 
 ## Proposed Solution
+
 Describe your proposed solution in detail.
 
 ## Alternative Solutions
+
 Have you considered any alternative approaches? What are their pros and cons?
 
 ## Additional Context
+
 - Mock-ups or wireframes (if applicable)
 - Examples from other applications
 - Any technical considerations
 
 ## Priority Suggestion
+
 Where do you think this fits?
+
 - [ ] P0 - Critical for MVP
 - [ ] P1 - Should have for v1.1
 - [ ] P2 - Nice to have for future versions
@@ -113,9 +128,8 @@ Before you begin, ensure you have the following installed:
 
 - Node.js 20+
 - pnpm 8+
-- Docker and Docker Compose
+- Docker and Docker Compose (recommended for PostgreSQL and Mailpit)
 - PostgreSQL 15+ (or use Docker)
-- Redis 7+ (or use Docker)
 - Git
 
 ### Getting Started
@@ -141,13 +155,12 @@ pnpm install
 #### 3. Set Up Environment
 
 ```bash
-# Copy the example environment file
+# Copy the environment file for the web app
 cp apps/web/.env.example apps/web/.env.local
 
-# Edit .env.local with your local configuration
+# Edit apps/web/.env.local with your local configuration
 # Required variables:
 # - DATABASE_URL
-# - REDIS_URL
 # - NEXTAUTH_SECRET
 # - NEXTAUTH_URL
 ```
@@ -172,14 +185,14 @@ pnpm dev
 
 Use descriptive branch names with the appropriate prefix:
 
-| Prefix | Use Case | Example |
-|--------|----------|---------|
-| `feature/` | New features | `feature/quote-pdf-export` |
-| `fix/` | Bug fixes | `fix/invoice-calculation-error` |
-| `chore/` | Maintenance tasks | `chore/update-dependencies` |
-| `docs/` | Documentation only | `docs/api-reference` |
-| `refactor/` | Code refactoring | `refactor/quote-builder-hooks` |
-| `test/` | Test additions/fixes | `test/stripe-integration` |
+| Prefix      | Use Case             | Example                         |
+| ----------- | -------------------- | ------------------------------- |
+| `feature/`  | New features         | `feature/quote-pdf-export`      |
+| `fix/`      | Bug fixes            | `fix/invoice-calculation-error` |
+| `chore/`    | Maintenance tasks    | `chore/update-dependencies`     |
+| `docs/`     | Documentation only   | `docs/api-reference`            |
+| `refactor/` | Code refactoring     | `refactor/quote-builder-hooks`  |
+| `test/`     | Test additions/fixes | `test/stripe-integration`       |
 
 ### Creating a Branch
 
@@ -208,19 +221,19 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/) for clear
 
 #### Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | A new feature |
-| `fix` | A bug fix |
-| `docs` | Documentation changes only |
-| `style` | Code style changes (formatting, semicolons, etc.) |
+| Type       | Description                                         |
+| ---------- | --------------------------------------------------- |
+| `feat`     | A new feature                                       |
+| `fix`      | A bug fix                                           |
+| `docs`     | Documentation changes only                          |
+| `style`    | Code style changes (formatting, semicolons, etc.)   |
 | `refactor` | Code changes that neither fix bugs nor add features |
-| `perf` | Performance improvements |
-| `test` | Adding or updating tests |
-| `build` | Build system or dependency changes |
-| `ci` | CI/CD configuration changes |
-| `chore` | Other changes that don't modify src or test files |
-| `revert` | Reverts a previous commit |
+| `perf`     | Performance improvements                            |
+| `test`     | Adding or updating tests                            |
+| `build`    | Build system or dependency changes                  |
+| `ci`       | CI/CD configuration changes                         |
+| `chore`    | Other changes that don't modify src or test files   |
+| `revert`   | Reverts a previous commit                           |
 
 #### Scopes (optional)
 
@@ -286,13 +299,13 @@ git rebase upstream/main
 
 ### Naming Conventions
 
-| Element | Convention | Example |
-|---------|------------|---------|
-| Components | PascalCase | `QuoteBuilder.tsx` |
-| Utilities | camelCase | `formatCurrency.ts` |
-| Constants | UPPER_SNAKE_CASE | `API_ENDPOINTS` |
-| CSS classes | Tailwind utility-first | `className="flex items-center"` |
-| Database tables | snake_case | `quote_line_items` |
+| Element         | Convention             | Example                         |
+| --------------- | ---------------------- | ------------------------------- |
+| Components      | PascalCase             | `QuoteBuilder.tsx`              |
+| Utilities       | camelCase              | `formatCurrency.ts`             |
+| Constants       | UPPER_SNAKE_CASE       | `API_ENDPOINTS`                 |
+| CSS classes     | Tailwind utility-first | `className="flex items-center"` |
+| Database tables | snake_case             | `quote_line_items`              |
 
 ### File Organization
 
@@ -360,11 +373,11 @@ All contributions must include appropriate tests. Our testing strategy:
 
 ### Test Types
 
-| Type | Tool | Location | Purpose |
-|------|------|----------|---------|
-| Unit | Vitest | `*.test.ts` | Utilities, hooks, pure functions |
-| Component | React Testing Library | `*.test.tsx` | Component behavior |
-| E2E | Playwright | `e2e/*.spec.ts` | Critical user flows |
+| Type      | Tool                  | Location        | Purpose                          |
+| --------- | --------------------- | --------------- | -------------------------------- |
+| Unit      | Vitest                | `*.test.ts`     | Utilities, hooks, pure functions |
+| Component | React Testing Library | `*.test.tsx`    | Component behavior               |
+| E2E       | Playwright            | `e2e/*.spec.ts` | Critical user flows              |
 
 ### Running Tests
 
@@ -444,9 +457,11 @@ describe('calculateQuoteTotal', () => {
 
 ```markdown
 ## Description
+
 Brief description of changes and motivation.
 
 ## Type of Change
+
 - [ ] Bug fix (non-breaking change that fixes an issue)
 - [ ] New feature (non-breaking change that adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to change)
@@ -454,9 +469,11 @@ Brief description of changes and motivation.
 - [ ] Refactoring (no functional changes)
 
 ## Related Issues
+
 Fixes #(issue number)
 
 ## How Has This Been Tested?
+
 Describe the tests you ran to verify your changes.
 
 - [ ] Unit tests
@@ -465,9 +482,11 @@ Describe the tests you ran to verify your changes.
 - [ ] Manual testing
 
 ## Screenshots (if applicable)
+
 Add screenshots for UI changes.
 
 ## Checklist
+
 - [ ] My code follows the project's style guidelines
 - [ ] I have performed a self-review of my code
 - [ ] I have commented my code where necessary
@@ -583,4 +602,3 @@ pnpm db:studio    # Open Prisma Studio
 ---
 
 Thank you for contributing to Oreko! Your efforts help make quote and invoice management better for small businesses everywhere.
-
