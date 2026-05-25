@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type Page, type Browser } from '@playwright/test';
 
 // Test user credentials for E2E tests
 export const TEST_USER = {
@@ -16,8 +16,8 @@ export const ADMIN_USER = {
 
 // Fixture type definitions
 type AuthFixtures = {
-  authenticatedPage: typeof base;
-  adminPage: typeof base;
+  authenticatedPage: Page;
+  adminPage: Page;
 };
 
 /**
@@ -49,7 +49,7 @@ export const test = base.extend<AuthFixtures>({
     }
 
     // Use the authenticated page
-    await use(page as any);
+    await use(page);
   },
 
   // Admin user fixture
@@ -66,7 +66,7 @@ export const test = base.extend<AuthFixtures>({
       await page.waitForURL(/\/(dashboard|onboarding|quotes|invoices|clients)?$/);
     }
 
-    await use(page as any);
+    await use(page);
   },
 });
 
@@ -76,7 +76,7 @@ export { expect };
  * Helper function to set up authentication state via storage state
  * This can be used in globalSetup to authenticate once per test run
  */
-export async function setupAuthState(browser: any): Promise<void> {
+export async function setupAuthState(browser: Browser): Promise<void> {
   const context = await browser.newContext();
   const page = await context.newPage();
 
@@ -103,7 +103,7 @@ export async function setupAuthState(browser: any): Promise<void> {
  * Helper to create a test user if it doesn't exist
  * Use this in a setup script before running E2E tests
  */
-export async function ensureTestUserExists(page: any): Promise<void> {
+export async function ensureTestUserExists(page: Page): Promise<void> {
   // Try to login first
   await page.goto('/login');
 
@@ -141,7 +141,7 @@ export async function ensureTestUserExists(page: any): Promise<void> {
 /**
  * Helper to logout the current user
  */
-export async function logout(page: any): Promise<void> {
+export async function logout(page: Page): Promise<void> {
   // Click user menu
   await page.click('[data-testid="user-menu"]');
 
@@ -155,7 +155,7 @@ export async function logout(page: any): Promise<void> {
 /**
  * Helper to switch between test users
  */
-export async function switchUser(page: any, user: typeof TEST_USER): Promise<void> {
+export async function switchUser(page: Page, user: typeof TEST_USER): Promise<void> {
   await logout(page);
 
   await page.fill('#email', user.email);
