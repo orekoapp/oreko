@@ -64,7 +64,7 @@
     "@tanstack/react-table": "^8.20.0",
     "@tiptap/extension-color": "^2.10.0",
     "@tiptap/extension-image": "^2.27.2",
-    "@tiptap/extension-link": "^2.10.0",
+    "@tiptap/extension-link": "^3.22.3",
     "@tiptap/extension-placeholder": "^2.10.0",
     "@tiptap/extension-text-align": "^2.10.0",
     "@tiptap/extension-text-style": "^2.10.0",
