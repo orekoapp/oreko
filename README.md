@@ -96,8 +96,12 @@ The base `docker-compose.yml` runs supporting services (PostgreSQL, Mailpit) whi
 git clone https://github.com/orekoapp/oreko.git
 cd oreko
 cp apps/web/.env.example apps/web/.env.local   # Next.js loads .env.local from apps/web/
+echo 'DATABASE_URL="postgresql://oreko:oreko_dev_only@localhost:5432/oreko?schema=public"' > packages/database/.env
+npx auth secret # Then add the output to apps/web/.env.local as AUTH_SECRET and in NEXTAUTH_SECRET as fallback
 docker-compose up -d                            # Start Postgres and Mailpit
 pnpm install
+pnpm db:generate
+pnpm db:seed
 pnpm db:migrate
 pnpm dev
 ```

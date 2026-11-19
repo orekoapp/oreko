@@ -1,7 +1,6 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin');
 
 const withNextIntl = createNextIntlPlugin();
@@ -29,7 +28,7 @@ const nextConfig: NextConfig = {
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "img-src 'self' data: blob: https:",
           "font-src 'self' https://fonts.gstatic.com",
-          "frame-src https://js.stripe.com",
+          'frame-src https://js.stripe.com',
           "connect-src 'self' https://api.stripe.com",
           "object-src 'none'",
           "base-uri 'self'",
@@ -45,24 +44,15 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/q/:token*',
-        headers: [
-          ...securityHeaders,
-          { key: 'Referrer-Policy', value: 'no-referrer' },
-        ],
+        headers: [...securityHeaders, { key: 'Referrer-Policy', value: 'no-referrer' }],
       },
       {
         source: '/i/:token*',
-        headers: [
-          ...securityHeaders,
-          { key: 'Referrer-Policy', value: 'no-referrer' },
-        ],
+        headers: [...securityHeaders, { key: 'Referrer-Policy', value: 'no-referrer' }],
       },
       {
         source: '/c/:token*',
-        headers: [
-          ...securityHeaders,
-          { key: 'Referrer-Policy', value: 'no-referrer' },
-        ],
+        headers: [...securityHeaders, { key: 'Referrer-Policy', value: 'no-referrer' }],
       },
     ];
   },
@@ -78,7 +68,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core', 'pino', 'pino-pretty'],
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
