@@ -39,7 +39,7 @@ async function getUserProfile() {
 
   // Bug #90: Check password existence without fetching the full hash into memory
   const [{ has_password }] = await prisma.$queryRaw<[{ has_password: boolean }]>`
-    SELECT password_hash IS NOT NULL AS has_password FROM "User" WHERE id = ${session.user.id}
+    SELECT password_hash IS NOT NULL AS has_password FROM "public"."users" WHERE id = ${session.user.id}
   `;
 
   return {
@@ -65,16 +65,11 @@ export default async function AccountSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
-          <CardDescription>
-            Update your personal information.
-          </CardDescription>
+          <CardDescription>Update your personal information.</CardDescription>
         </CardHeader>
         <CardContent>
           <Suspense fallback={<ProfileFormSkeleton />}>
-            <ProfileForm
-              initialName={user.name || ''}
-              initialEmail={user.email}
-            />
+            <ProfileForm initialName={user.name || ''} initialEmail={user.email} />
           </Suspense>
         </CardContent>
       </Card>
@@ -94,8 +89,8 @@ export default async function AccountSettingsPage() {
             <Alert className="mb-4">
               <InfoIcon className="h-4 w-4" />
               <AlertDescription>
-                You signed up with {user.oauthProviders.join(' and ')}.
-                Setting a password will allow you to also log in with your email.
+                You signed up with {user.oauthProviders.join(' and ')}. Setting a password will
+                allow you to also log in with your email.
               </AlertDescription>
             </Alert>
           )}
@@ -110,9 +105,7 @@ export default async function AccountSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Connected Accounts</CardTitle>
-            <CardDescription>
-              Accounts you&apos;ve connected for sign-in.
-            </CardDescription>
+            <CardDescription>Accounts you&apos;ve connected for sign-in.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -149,7 +142,7 @@ export default async function AccountSettingsPage() {
                     )}
                     <span className="font-medium capitalize">{provider}</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">Connected</span>
+                  <span className="text-muted-foreground text-sm">Connected</span>
                 </div>
               ))}
             </div>
